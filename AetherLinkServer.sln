@@ -1,0 +1,60 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29020.237
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CA9AC87F-097E-4F15-8393-4BC07735A5B0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{04DBDB01-70F4-4E06-B468-8F87850B22BE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherLink.Multisignature", "src\AetherLink.Multisignature\AetherLink.Multisignature.csproj", "{40FAD8D1-36F3-4073-A3C7-615657F491AA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherLink.Multisignature.Tests", "test\AetherLink.Multisignature.Tests\AetherLink.Multisignature.Tests.csproj", "{B7F794B7-16FA-48E5-8476-3314A1621079}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherLink.Worker.Core", "src\AetherLink.Worker.Core\AetherLink.Worker.Core.csproj", "{B00C9E2E-CD12-4640-AFD2-57A3E9CC6371}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherLink.Worker", "src\AetherLink.Worker\AetherLink.Worker.csproj", "{259527FA-F8A9-44BF-8447-B85771517BDA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherLink.MockServer", "src\AetherLink.MockServer\AetherLink.MockServer.csproj", "{7AB4D23D-0D10-4758-9AA4-CC2CC6B02F91}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{40FAD8D1-36F3-4073-A3C7-615657F491AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40FAD8D1-36F3-4073-A3C7-615657F491AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40FAD8D1-36F3-4073-A3C7-615657F491AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40FAD8D1-36F3-4073-A3C7-615657F491AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7F794B7-16FA-48E5-8476-3314A1621079}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7F794B7-16FA-48E5-8476-3314A1621079}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7F794B7-16FA-48E5-8476-3314A1621079}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7F794B7-16FA-48E5-8476-3314A1621079}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B00C9E2E-CD12-4640-AFD2-57A3E9CC6371}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B00C9E2E-CD12-4640-AFD2-57A3E9CC6371}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B00C9E2E-CD12-4640-AFD2-57A3E9CC6371}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B00C9E2E-CD12-4640-AFD2-57A3E9CC6371}.Release|Any CPU.Build.0 = Release|Any CPU
+		{259527FA-F8A9-44BF-8447-B85771517BDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{259527FA-F8A9-44BF-8447-B85771517BDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{259527FA-F8A9-44BF-8447-B85771517BDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{259527FA-F8A9-44BF-8447-B85771517BDA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7AB4D23D-0D10-4758-9AA4-CC2CC6B02F91}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7AB4D23D-0D10-4758-9AA4-CC2CC6B02F91}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7AB4D23D-0D10-4758-9AA4-CC2CC6B02F91}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7AB4D23D-0D10-4758-9AA4-CC2CC6B02F91}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{40FAD8D1-36F3-4073-A3C7-615657F491AA} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{B7F794B7-16FA-48E5-8476-3314A1621079} = {04DBDB01-70F4-4E06-B468-8F87850B22BE}
+		{B00C9E2E-CD12-4640-AFD2-57A3E9CC6371} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{259527FA-F8A9-44BF-8447-B85771517BDA} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{7AB4D23D-0D10-4758-9AA4-CC2CC6B02F91} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {28315BFD-90E7-4E14-A2EA-F3D23AF4126F}
+	EndGlobalSection
+EndGlobal
