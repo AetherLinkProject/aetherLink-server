@@ -64,7 +64,11 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
             var request = await _requestProvider.GetAsync(args);
             if (request == null || request.State is RequestState.RequestCanceled) return;
 
-            if (!IsReportEnough(args, request)) return;
+            TryProcessReportAsync(args, request);
+
+            if (!IsReportEnough(args) || _stateProvider.IsReportGenerated(GenerateReportId(args))) return;
+
+            _stateProvider.SetReportGeneratedFlag(GenerateReportId(args));
             _logger.LogInformation("[Step3][Leader] {name} Generate report, index:{index}", argId, index);
 
             var observations = _stateProvider.GetPartialObservation(GenerateReportId(args)).OrderBy(p => p.Index)
@@ -87,14 +91,21 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
         }
     }
 
-    private bool IsReportEnough(GenerateReportJobArgs args, RequestDto request)
+    private bool IsReportEnough(GenerateReportJobArgs args)
+    {
+        if (!_options.ChainConfig.TryGetValue(args.ChainId, out var chainConfig)) return false;
+
+        var observations = _stateProvider.GetPartialObservation(GenerateReportId(args));
+        if (observations == null) return false;
+
+        return observations.Count >= chainConfig.ObservationsThreshold;
+    }
+
+    private void TryProcessReportAsync(GenerateReportJobArgs args, RequestDto request)
     {
         try
         {
-            if (!_options.ChainConfig.TryGetValue(args.ChainId, out var chainConfig)) return false;
-
             Lock.AcquireWriterLock(Timeout.Infinite);
-
             var reportId = GenerateReportId(args);
             if (_stateProvider.GetPartialObservation(reportId) == null)
             {
@@ -102,24 +113,16 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
                 _schedulerService.StartScheduler(request, SchedulerType.ObservationCollectWaitingScheduler);
             }
 
-            var observations = _stateProvider.AddOrUpdateReport(reportId, new ObservationDto
+            _stateProvider.AddOrUpdateReport(reportId, new ObservationDto
             {
                 Index = args.Index,
                 ObservationResult = args.Data
             });
-
-            if (observations.Count < chainConfig.ObservationsThreshold ||
-                _stateProvider.IsReportGenerated(reportId)) return false;
-
-            _logger.LogInformation("[step3][Leader] Report enough, queue length {len}", observations.Count);
-            _stateProvider.SetReportGeneratedFlag(reportId);
-            return true;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "[Step3][Leader] ReportGenerated failed. reqId:{Req}, index:{index}", args.RequestId,
                 args.Index);
-            return false;
         }
         finally
         {

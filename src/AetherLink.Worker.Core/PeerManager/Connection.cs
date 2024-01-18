@@ -20,13 +20,14 @@ public class Connection
             Credentials = ChannelCredentials.Insecure,
             InitialReconnectBackoff = TimeSpan.FromSeconds(GrpcConstants.DefaultInitialBackoff),
             MaxReconnectBackoff = TimeSpan.FromSeconds(GrpcConstants.DefaultMaxBackoff),
-            // ThrowOperationCanceledOnCancellation = true,
             ServiceConfig = new ServiceConfig
             {
                 MethodConfigs =
                 {
+                    // https://learn.microsoft.com/en-us/aspnet/core/grpc/retries
                     new MethodConfig
                     {
+                        // This method is configured with MethodName.Default, so it's applied to all gRPC methods called by this channel.
                         Names = { MethodName.Default },
                         RetryPolicy = new RetryPolicy
                         {

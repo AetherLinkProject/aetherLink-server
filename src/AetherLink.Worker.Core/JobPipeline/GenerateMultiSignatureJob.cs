@@ -77,8 +77,12 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
             var msg = HashHelper.ConcatAndCompute(HashHelper.ComputeFrom(transmitData.Report.ToByteArray()),
                 HashHelper.ComputeFrom(transmitData.ReportContext.ToString())).ToByteArray();
 
-            if (!IsSignatureEnough(args, msg)) return;
+            TryProcessMultiSignature(args, msg);
 
+            if (!IsSignatureEnough(args) ||
+                _stateProvider.GetMultiSignatureSignedFlag(GenerateMultiSignatureId(args))) return;
+
+            _stateProvider.SetMultiSignatureSignedFlag(GenerateMultiSignatureId(args));
             _logger.LogInformation("[Step5][Leader] {name} MultiSignature generate success.", argId);
 
             var multiSignature = _stateProvider.GetMultiSignature(GenerateMultiSignatureId(args));
@@ -98,20 +102,31 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
         }
     }
 
-    private bool IsSignatureEnough(GenerateMultiSignatureJobArgs args, byte[] msg)
+    private bool IsSignatureEnough(GenerateMultiSignatureJobArgs args)
+    {
+        var sign = _stateProvider.GetMultiSignature(GenerateMultiSignatureId(args));
+        return sign != null && sign.IsEnoughPartialSig();
+    }
+
+    private void TryProcessMultiSignature(GenerateMultiSignatureJobArgs args, byte[] msg)
     {
         try
         {
-            if (!_options.ChainConfig.TryGetValue(args.ChainId, out var chainConfig)) return false;
+            if (!_options.ChainConfig.TryGetValue(args.ChainId, out var config)) return;
 
             Lock.AcquireWriterLock(Timeout.Infinite);
 
             var id = GenerateMultiSignatureId(args);
-            var sign = AddOrUpdateMultiSignature(chainConfig, id, msg, args.PartialSignature);
-            if (!sign.IsEnoughPartialSig() || _stateProvider.GetMultiSignatureSignedFlag(id)) return false;
+            var sign = _stateProvider.GetMultiSignature(id);
+            if (sign == null)
+            {
+                _stateProvider.SetMultiSignature(id, new MultiSignature(
+                    ByteArrayHelper.HexStringToByteArray(config.SignerSecret),
+                    msg, config.DistPublicKey, config.PartialSignaturesThreshold));
+                return;
+            }
 
-            _stateProvider.SetMultiSignatureSignedFlag(id);
-            return true;
+            if (sign.ProcessPartialSignature(args.PartialSignature)) _stateProvider.SetMultiSignature(id, sign);
         }
         finally
         {
@@ -119,32 +134,15 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
         }
     }
 
-    private MultiSignature AddOrUpdateMultiSignature(ChainConfig chainConfig, string id, byte[] msg,
-        PartialSignatureDto partialSign)
-    {
-        var sign = _stateProvider.GetMultiSignature(id) ?? new MultiSignature(
-            ByteArrayHelper.HexStringToByteArray(chainConfig.SignerSecret),
-            msg, chainConfig.DistPublicKey, chainConfig.PartialSignaturesThreshold);
-
-        // todo: skip process owner partial sign
-        if (!sign.ProcessPartialSignature(partialSign)) return sign;
-
-        _stateProvider.SetMultiSignature(id, sign);
-
-        return sign;
-    }
-
     private async Task ProcessTransactionResultAsync(GenerateMultiSignatureJobArgs args, string transactionId,
         RequestDto request)
     {
-        var txResult = _objectMapper.Map<GenerateMultiSignatureJobArgs, CommitTransmitResultRequest>(args);
-        txResult.TransmitTransactionId = transactionId;
-
         var finishArgs = _objectMapper.Map<RequestDto, TransmitResultProcessJobArgs>(request);
         finishArgs.TransactionId = transactionId;
+        await _backgroundJobManager.EnqueueAsync(finishArgs);
 
-        await _backgroundJobManager.EnqueueAsync(args);
-
+        var txResult = _objectMapper.Map<GenerateMultiSignatureJobArgs, CommitTransmitResultRequest>(args);
+        txResult.TransmitTransactionId = transactionId;
         var context = new CancellationTokenSource(TimeSpan.FromSeconds(GrpcConstants.DefaultRequestTimeout));
         await _peerManager.BroadcastAsync(p => p.CommitTransmitResultAsync(txResult, cancellationToken: context.Token));
     }
