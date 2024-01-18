@@ -13,8 +13,3 @@ public class DataFeedsJobSpec
     public DataFeedsType Type { get; set; }
     public string CurrencyPair { get; set; }
 }
-
-public class PriceDataFeedsJobSpec : DataFeedsJobSpec
-{
-    public string CurrencyPair { get; set; }
-}

@@ -5,7 +5,6 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
 using AetherLink.Contracts.Oracle;
-using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Common.ContractHandler;
 using AetherLink.Worker.Core.Consts;
 using AetherLink.Worker.Core.Options;
@@ -26,7 +25,7 @@ public interface IContractProvider
     public Task<long> GetBlockLatestHeightAsync(string chainId);
     public Task<Commitment> GetCommitmentAsync(string chainId, string transactionId);
     public Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId);
-    public Transmitted GetTransmitted(TransactionResultDto transaction);
+    public Transmitted ParseTransmitted(TransactionResultDto transaction);
 }
 
 public class ContractProvider : IContractProvider, ISingletonDependency
@@ -86,7 +85,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         return Commitment.Parser.ParseFrom(ParseLogEvents<RequestStarted>(result).Commitment);
     }
 
-    public Transmitted GetTransmitted(TransactionResultDto transaction)
+    public Transmitted ParseTransmitted(TransactionResultDto transaction)
     {
         return ParseLogEvents<Transmitted>(transaction);
     }
@@ -122,7 +121,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         return await client.GetTransactionResultAsync(transactionId);
     }
 
-    private T ParseLogEvents<T>(TransactionResultDto txResult) where T : class, IMessage<T>, new()
+    private static T ParseLogEvents<T>(TransactionResultDto txResult) where T : class, IMessage<T>, new()
     {
         var log = txResult.Logs.FirstOrDefault(l => l.Name == typeof(T).Name);
         if (log == null) return new T();

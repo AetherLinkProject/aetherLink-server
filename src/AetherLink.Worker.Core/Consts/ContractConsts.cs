@@ -1,6 +1,6 @@
 namespace AetherLink.Worker.Core.Consts;
 
-public class ContractConsts
+public static class ContractConsts
 {
     public const string GetConfig = "GetConfig";
     public const string GetLatestRound = "GetLatestRound";

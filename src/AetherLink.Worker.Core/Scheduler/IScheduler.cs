@@ -12,23 +12,26 @@ namespace AetherLink.Worker.Core.Scheduler;
 
 public interface ISchedulerService
 {
-    void StartScheduler(RequestDto request, SchedulerType type);
-    void CancelScheduler(RequestDto request, SchedulerType type);
+    public void StartScheduler(RequestDto request, SchedulerType type);
+    public void CancelScheduler(RequestDto request, SchedulerType type);
+    public void CancelAllSchedule(RequestDto request);
     public DateTime UpdateBlockTime(DateTime blockStartTime);
 }
 
 public class SchedulerService : ISchedulerService, ISingletonDependency
 {
-    private readonly ISchedulerJob _schedulerJob;
-    private readonly ILogger<SchedulerService> _logger;
     private readonly SchedulerOptions _options;
+    private readonly ILogger<SchedulerService> _logger;
+    private readonly IResetRequestSchedulerJob _resetRequestScheduler;
+    private readonly IObservationCollectSchedulerJob _observationScheduler;
 
-    public SchedulerService(ISchedulerJob schedulerJob, ILogger<SchedulerService> logger,
-        IOptionsSnapshot<SchedulerOptions> schedulerOptions)
+    public SchedulerService(IResetRequestSchedulerJob resetRequestScheduler, ILogger<SchedulerService> logger,
+        IOptionsSnapshot<SchedulerOptions> schedulerOptions, IObservationCollectSchedulerJob observationScheduler)
     {
         _logger = logger;
-        _schedulerJob = schedulerJob;
         _options = schedulerOptions.Value;
+        _observationScheduler = observationScheduler;
+        _resetRequestScheduler = resetRequestScheduler;
         ListenForStart();
         ListenForEnd();
     }
@@ -36,81 +39,69 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
     public void StartScheduler(RequestDto request, SchedulerType type)
     {
         JobManager.UseUtcTime();
+        DateTime overTime;
         var registry = new Registry();
-        var schedulerName = GenerateScheduleName(request.ChainId, request.RequestId, request.Epoch, type);
-        _logger.LogDebug("[SchedulerService] New scheduler {name}.", schedulerName);
+        var schedulerName = GenerateScheduleName(request.ChainId, request.RequestId, type);
+        CancelSchedulerByName(schedulerName);
 
-        var overTime = GetOverTime(request, type);
-
-        _logger.LogDebug("[SchedulerService] {name} OverTime:{overTime}", schedulerName, overTime);
+        switch (type)
+        {
+            case SchedulerType.ObservationCollectWaitingScheduler:
+                overTime = DateTime.Now.AddMinutes(_options.ObservationCollectTimeoutWindow);
+                registry.Schedule(() => _observationScheduler.Execute(request)).WithName(schedulerName).NonReentrant()
+                    .ToRunOnceAt(overTime);
+                break;
+            case SchedulerType.CheckRequestEndScheduler:
+                overTime = request.RequestReceiveTime.AddMinutes(_options.MaximumToleratedTimeoutWindow);
+                registry.Schedule(() => _resetRequestScheduler.Execute(request)).WithName(schedulerName)
+                    .NonReentrant().ToRunOnceAt(overTime);
+                break;
+            default:
+                overTime = DateTime.MinValue;
+                break;
+        }
 
         if (DateTime.UtcNow > overTime) return;
-
-        CancelScheduler(request, type);
-
-        registry.Schedule(() =>
-            {
-                // cancel small window need cancel bigger window with same time.
-                if (type != SchedulerType.CheckRequestEndScheduler)
-                {
-                    _logger.LogInformation("[SchedulerService] {type} timeout, cancel all scheduler with the same time",
-                        type.ToString());
-                    foreach (SchedulerType schedulerType in Enum.GetValues(typeof(SchedulerType)))
-                    {
-                        CancelScheduler(request, type);
-                    }
-                }
-
-                _schedulerJob.Execute(request, type);
-            }).WithName(schedulerName).NonReentrant()
-            .ToRunOnceAt(overTime);
+        _logger.LogDebug("[SchedulerService] Registry scheduler {name} OverTime:{overTime}", schedulerName, overTime);
         JobManager.Initialize(registry);
     }
 
     public void CancelScheduler(RequestDto request, SchedulerType type)
     {
-        var schedulerName = GenerateScheduleName(request.ChainId, request.RequestId, request.Epoch, type);
+        CancelSchedulerByName(GenerateScheduleName(request.ChainId, request.RequestId, type));
+    }
+
+    public void CancelAllSchedule(RequestDto request)
+    {
+        foreach (SchedulerType schedulerType in Enum.GetValues(typeof(SchedulerType)))
+        {
+            CancelSchedulerByName(GenerateScheduleName(request.ChainId, request.RequestId, schedulerType));
+        }
+    }
+
+    private void CancelSchedulerByName(string schedulerName)
+    {
         var scheduler = JobManager.GetSchedule(schedulerName);
         if (scheduler == null) return;
 
-        _logger.LogInformation("[SchedulerService] Ready to cancel scheduler: {Name}", schedulerName);
+        _logger.LogDebug("[SchedulerService] Ready to cancel scheduler: {Name}", schedulerName);
         scheduler.Disable();
         JobManager.RemoveJob(schedulerName);
     }
 
-    private DateTime GetOverTime(RequestDto request, SchedulerType type)
-    {
-        return type switch
-        {
-            SchedulerType.CheckRequestReceiveScheduler => request.RequestReceiveTime.AddMilliseconds(
-                _options.CheckRequestReceiveTimeOut * 60 * 1000),
-            SchedulerType.CheckObservationResultCommitScheduler => request.RequestStartTime.AddMilliseconds(
-                _options.CheckObservationResultCommitTimeOut * 60 * 1000),
-            SchedulerType.CheckReportReceiveScheduler => request.ObservationResultCommitTime.AddMilliseconds(
-                _options.CheckReportReceiveTimeOut * 60 * 1000),
-            SchedulerType.CheckReportCommitScheduler => request.ReportSendTime.AddMilliseconds(
-                _options.CheckReportCommitTimeOut * 60 * 1000),
-            SchedulerType.CheckTransmitScheduler => request.ReportSignTime.AddMilliseconds(
-                _options.CheckTransmitTimeOut * 60 * 1000),
-            SchedulerType.CheckRequestEndScheduler => request.RequestReceiveTime.AddMilliseconds(
-                _options.CheckRequestEndTimeOut * 60 * 1000),
-            _ => DateTime.MinValue
-        };
-    }
-
     private void ListenForStart()
     {
-        JobManager.JobStart += (info) => _logger.LogInformation("{Name}: started", info.Name);
+        JobManager.JobStart += info => _logger.LogInformation("{Name}: started", info.Name);
     }
 
     private void ListenForEnd()
     {
-        JobManager.JobEnd += (info) => _logger.LogInformation("{Name}: ended", info.Name);
+        JobManager.JobEnd += info => _logger.LogInformation("{Name}: ended", info.Name);
     }
 
-    private static string GenerateScheduleName(string chainId, string requestId, long epoch, SchedulerType scheduleType)
+    private static string GenerateScheduleName(string chainId, string requestId, SchedulerType scheduleType)
     {
-        return IdGeneratorHelper.GenerateId(chainId, requestId, epoch, scheduleType);
+        return IdGeneratorHelper.GenerateId(chainId, requestId, scheduleType);
     }
 
     public DateTime UpdateBlockTime(DateTime blockStartTime)
@@ -119,7 +110,7 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         while (true)
         {
             // block += 30 < nowTime, need add 30min continue
-            var temp = blockStartTime.AddMilliseconds(_options.CheckRequestEndTimeOut * 60 * 1000);
+            var temp = blockStartTime.AddMilliseconds(_options.MaximumToleratedTimeoutWindow * 60 * 1000);
             if (temp < nowTime)
             {
                 blockStartTime = temp;
@@ -127,7 +118,7 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
             }
 
             // block += 10 < nowTime, need add 10min continue
-            temp = blockStartTime.AddMilliseconds(_options.CheckRequestReceiveTimeOut * 60 * 1000);
+            temp = blockStartTime.AddMilliseconds(_options.ScheduledTaskReceiveTimeoutWindow * 60 * 1000);
             if (temp < nowTime)
             {
                 blockStartTime = temp;
@@ -135,7 +126,7 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
             }
 
             // block += 5 > nowTime, no need add, return
-            temp = blockStartTime.AddMilliseconds(_options.CheckTransmitTimeOut * 60 * 1000);
+            temp = blockStartTime.AddMilliseconds(_options.SmallTolerantTimeoutWindow * 60 * 1000);
             if (temp > nowTime)
             {
                 return blockStartTime;

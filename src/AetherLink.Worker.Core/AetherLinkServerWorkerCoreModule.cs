@@ -4,20 +4,22 @@ using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Modularity;
 
-namespace AetherLink.Worker.Core
+namespace AetherLink.Worker.Core;
+
+[DependsOn(
+    typeof(AbpAutoMapperModule)
+)]
+public class AetherLinkServerWorkerCoreModule : AbpModule
 {
-    [DependsOn(
-        typeof(AbpAutoMapperModule)
-    )]
-    public class AetherLinkServerWorkerCoreModule : AbpModule
+    public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        public override void ConfigureServices(ServiceConfigurationContext context)
-        {
-            Configure<AbpAutoMapperOptions>(options => { options.AddMaps<AetherLinkServerWorkerCoreModule>(); });
-            context.Services.AddTransient<IJobRequestProvider, JobRequestProvider>();
-            context.Services.AddSingleton<ISchedulerService, SchedulerService>();
-            context.Services.AddSingleton<ISchedulerJob, ResetRequestSchedulerJob>();
-            context.Services.AddTransient<IPriceDataProvider, PriceDataProvider>();
-        }
+        Configure<AbpAutoMapperOptions>(options => { options.AddMaps<AetherLinkServerWorkerCoreModule>(); });
+        context.Services.AddTransient<IStorageProvider, StorageProvider>();
+        context.Services.AddTransient<IPriceDataProvider, PriceDataProvider>();
+        context.Services.AddTransient<IRequestProvider, RequestProvider>();
+
+        context.Services.AddTransient<IObservationCollectSchedulerJob, ObservationCollectSchedulerJob>();
+        context.Services.AddTransient<IResetRequestSchedulerJob, ResetRequestSchedulerJob>();
+        context.Services.AddSingleton<ISchedulerService, SchedulerService>();
     }
 }

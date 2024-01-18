@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using GraphQL;
+using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Provider;
@@ -11,74 +12,150 @@ namespace AetherLink.Worker.Core.Provider;
 public interface IIndexerProvider
 {
     public Task<List<OcrLogEventDto>> SubscribeLogsAsync(string chainId, long to, long from);
+    public Task<List<TransmittedDto>> SubscribeTransmittedAsync(string chainId, long to, long from);
+    public Task<List<RequestCancelledDto>> SubscribeRequestCancelledAsync(string chainId, long to, long from);
     public Task<long> GetIndexBlockHeightAsync(string chainId);
     public Task<string> GetOracleConfigAsync(string chainId);
-    public Task<long> GetLatestRoundAsync(string chainId);
-    public Task<string> GetCommitmentAsync(string chainId, string requestId);
-    public Task<List<OcrLogEventDto>> GetJobsAsync(string chainId, string requestId, int requestType);
+    public Task<long> GetOracleLatestEpochAsync(string chainId, long blockHeight);
+    public Task<string> GetRequestCommitmentAsync(string chainId, string requestId);
 }
 
 public class IndexerProvider : IIndexerProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
+    private readonly ILogger<IndexerProvider> _logger;
 
-    public IndexerProvider(IGraphQLHelper graphQlHelper)
+    public IndexerProvider(IGraphQLHelper graphQlHelper, ILogger<IndexerProvider> logger)
     {
         _graphQlHelper = graphQlHelper;
+        _logger = logger;
     }
 
     public async Task<List<OcrLogEventDto>> SubscribeLogsAsync(string chainId, long to, long from)
     {
-        var indexerResult = await _graphQlHelper.QueryAsync<IndexerLogEventListDto>(new GraphQLRequest
+        try
         {
-            Query =
-                @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
+            var indexerResult = await _graphQlHelper.QueryAsync<IndexerLogEventListDto>(new GraphQLRequest
+            {
+                Query =
+                    @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
                     ocrJobEvents(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
-                        requestTypeIndex,
                         chainId,
+                        requestTypeIndex,
                         transactionId,
+                        blockHeight,
+                        startTime,
+                        requestId
+                }
+            }",
+                Variables = new
+                {
+                    chainId = chainId, fromBlockHeight = from, toBlockHeight = to
+                }
+            });
+            return indexerResult.OcrJobEvents;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Indexer] SubscribeLogs failed.");
+            return new List<OcrLogEventDto>();
+        }
+    }
+
+
+    public async Task<List<TransmittedDto>> SubscribeTransmittedAsync(string chainId, long to, long from)
+    {
+        try
+        {
+            var indexerResult = await _graphQlHelper.QueryAsync<IndexerTransmittedListDto>(new GraphQLRequest
+            {
+                Query =
+                    @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
+                    transmitted(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
+                        chainId,
                         startTime,
                         epoch,
                         requestId
                 }
             }",
-            Variables = new
+                Variables = new
+                {
+                    chainId = chainId, fromBlockHeight = from, toBlockHeight = to
+                }
+            });
+            return indexerResult.Transmitted;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Indexer] SubscribeTransmitted failed.");
+            return new List<TransmittedDto>();
+        }
+    }
+
+    public async Task<List<RequestCancelledDto>> SubscribeRequestCancelledAsync(string chainId, long to, long from)
+    {
+        try
+        {
+            var indexerResult = await _graphQlHelper.QueryAsync<IndexerRequestCancelledListDto>(new GraphQLRequest
             {
-                chainId = chainId, fromBlockHeight = from, toBlockHeight = to
-            }
-        });
-        return indexerResult.OcrJobEvents;
+                Query =
+                    @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
+                    requestCancelled(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
+                        chainId,
+                        requestId
+                }
+            }",
+                Variables = new
+                {
+                    chainId = chainId, fromBlockHeight = from, toBlockHeight = to
+                }
+            });
+            return indexerResult.RequestCancelled;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Indexer] SubscribeRequestCancelled failed.");
+            return new List<RequestCancelledDto>();
+        }
     }
 
     public async Task<long> GetIndexBlockHeightAsync(string chainId)
     {
-        var indexerResult = await _graphQlHelper.QueryAsync<ConfirmedBlockHeightRecord>(new GraphQLRequest
+        try
         {
-            Query = @"
+            var res = await _graphQlHelper.QueryAsync<ConfirmedBlockHeightRecord>(new GraphQLRequest
+            {
+                Query = @"
 			    query($chainId:String!,$filterType:BlockFilterType!) {
                     syncState(input: {chainId:$chainId,filterType:$filterType}){
                         confirmedBlockHeight
                 }
             }",
-            Variables = new
-            {
-                chainId, filterType = BlockFilterType.LOG_EVENT
-            }
-        });
+                Variables = new
+                {
+                    chainId, filterType = BlockFilterType.LOG_EVENT
+                }
+            });
 
-        return indexerResult.SyncState.ConfirmedBlockHeight;
+            if (res.SyncState == null) return 0;
+            return res.SyncState.ConfirmedBlockHeight;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Indexer] GetIndexBlockHeight failed.");
+            return 0;
+        }
     }
 
     public async Task<string> GetOracleConfigAsync(string chainId)
     {
         try
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<ConfigDigestsDto>(new GraphQLRequest
+            var res = await _graphQlHelper.QueryAsync<OracleConfigDigestRecord>(new GraphQLRequest
             {
                 Query = @"
 			        query($chainId:String!){
-                        configSets(input: {chainId:$chainId}){
-                            chainId,
+                        oracleConfigDigest(input: {chainId:$chainId}){
                             configDigest
                     }
                 }",
@@ -88,49 +165,53 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                 }
             });
 
-            return indexerResult.ConfigSets[0].ConfigDigest;
+            if (res.OracleConfigDigest == null) return "";
+            return res.OracleConfigDigest.ConfigDigest;
         }
         catch (Exception e)
         {
+            _logger.LogError(e, "[Indexer] GetOracleConfig failed.");
             return "";
         }
     }
 
-    public async Task<long> GetLatestRoundAsync(string chainId)
+    public async Task<long> GetOracleLatestEpochAsync(string chainId, long blockHeight)
     {
         try
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<LatestRoundsDto>(new GraphQLRequest
+            var res = await _graphQlHelper.QueryAsync<OracleLatestEpochRecord>(new GraphQLRequest
             {
                 Query = @"
-			        query($chainId:String!){
-                        latestRounds(input: {chainId:$chainId}){
-                            epochAndRound
+			        query($chainId:String!,$blockHeight:Long!){
+                        oracleLatestEpoch(input: {chainId:$chainId,blockHeight:$blockHeight}){
+                        epoch
                     }
                 }",
                 Variables = new
                 {
-                    chainId = chainId
+                    chainId = chainId, blockHeight = blockHeight
                 }
             });
 
-            return indexerResult.LatestRounds[0].EpochAndRound;
+            if (res.OracleLatestEpoch == null) return 0;
+            return res.OracleLatestEpoch.Epoch;
         }
         catch (Exception e)
         {
+            _logger.LogError(e, "[Indexer] GetOracleLatestEpoch failed.");
             return 0;
         }
     }
 
-    public async Task<string> GetCommitmentAsync(string chainId, string requestId)
+    public async Task<string> GetRequestCommitmentAsync(string chainId, string requestId)
     {
         try
         {
-            var res = await _graphQlHelper.QueryAsync<CommitmentsDto>(new GraphQLRequest
+            var res = await _graphQlHelper.QueryAsync<RequestCommitmentRecord>(new GraphQLRequest
             {
                 Query = @"
                     query($chainId:String!,$requestId:String!){
-                        commitments(input: {chainId:$chainId,requestId:$requestId}){
+                        requestCommitment(input: {chainId:$chainId,requestId:$requestId}){
                             chainId,
                             requestId,
                             commitment
@@ -142,41 +223,13 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                 }
             });
 
-            return res.Commitments[0].Commitment;
+            if (res.RequestCommitment == null) return "";
+            return res.RequestCommitment.Commitment;
         }
         catch (Exception e)
         {
+            _logger.LogError(e, "[Indexer] GetRequestCommitment failed.");
             return "";
-        }
-    }
-
-    public async Task<List<OcrLogEventDto>> GetJobsAsync(string chainId, string requestId, int requestType)
-    {
-        try
-        {
-            var indexerResult = await _graphQlHelper.QueryAsync<RequestsDto>(new GraphQLRequest
-            {
-                Query = @"
-                    query($chainId:String!,$requestId:String!,$requestType:Int!){
-                        requests(input: {chainId:$chainId,requestId:$requestId,requestType:$requestType}){
-                            requestTypeIndex,
-                            chainId,
-                            transactionId,
-                            startTime,
-                            epoch,
-                            requestId
-                    }
-            }",
-                Variables = new
-                {
-                    chainId = chainId, requestId = requestId, requestType = requestType
-                }
-            });
-            return indexerResult.Requests;
-        }
-        catch (Exception e)
-        {
-            return new List<OcrLogEventDto>();
         }
     }
 }

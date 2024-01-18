@@ -1,79 +1,79 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using AElf;
 using AetherLink.Multisignature;
 using AetherLink.Worker.Core.Dtos;
+using AetherLink.Worker.Core.Options;
+using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Provider;
 
 public interface IStateProvider
 {
-    public bool GetReportGeneratedFlag(string key);
-    public void SetReportGeneratedFlag(string key);
-    public List<ObservationDto> GetPartialObservation(string key);
-    public void SetPartialObservation(string key, List<ObservationDto> queue);
+    public bool IsReportGenerated(string id);
+    public void SetReportGeneratedFlag(string id);
+    public List<ObservationDto> GetPartialObservation(string id);
+    public List<ObservationDto> AddOrUpdateReport(string id, ObservationDto observation);
     public MultiSignature GetMultiSignature(string id);
-    public void SetMultiSignature(string id, MultiSignature multisignature);
-    public bool GetMultiSignatureSignedFlag(string key);
-    public void SetMultiSignatureSignedFlag(string key);
-    public void CleanEpochState(string key, long epoch);
+    public void SetMultiSignature(string id, MultiSignature signature);
+    public bool GetMultiSignatureSignedFlag(string id);
+    public void SetMultiSignatureSignedFlag(string id);
+    public long GetFollowerObservationCurrentEpoch(string id);
+    public void SetFollowerObservationCurrentEpoch(string id, long epoch);
+    public void CleanEpochState(string id, long epoch);
 }
 
 public class StateProvider : IStateProvider, ISingletonDependency
 {
-    private readonly ConcurrentDictionary<string, MultiSignature> _multiSignatureDict = new();
     private readonly ConcurrentDictionary<string, bool> _signedFlag = new();
     private readonly ConcurrentDictionary<string, bool> _reportGeneratedFlag = new();
     private readonly ConcurrentDictionary<string, List<ObservationDto>> _reports = new();
+    private readonly ConcurrentDictionary<string, MultiSignature> _multiSignatureDict = new();
+    private readonly ConcurrentDictionary<string, long> _followerObservationCurrentEpochs = new();
 
     // ReportGenerated
-    public bool GetReportGeneratedFlag(string key)
-    {
-        return _reportGeneratedFlag.TryGetValue(key, out _);
-    }
-
-    public void SetReportGeneratedFlag(string key)
-    {
-        _reportGeneratedFlag[key] = true;
-    }
+    public bool IsReportGenerated(string id) => _reportGeneratedFlag.TryGetValue(id, out _);
+    public void SetReportGeneratedFlag(string id) => _reportGeneratedFlag[id] = true;
 
     // PartialObservation
-    public List<ObservationDto> GetPartialObservation(string key)
+    public List<ObservationDto> GetPartialObservation(string id) =>
+        _reports.TryGetValue(id, out var index) ? index : null;
+
+    public List<ObservationDto> AddOrUpdateReport(string id, ObservationDto observation)
     {
-        if (_reports.TryGetValue(key, out var index)) return index;
-        return null;
+        if (!_reports.TryGetValue(id, out var observations))
+        {
+            _reports[id] = new List<ObservationDto> { observation };
+        }
+        else if (observations.All(o => o.Index != observation.Index))
+        {
+            _reports[id].Add(observation);
+        }
+
+        return _reports[id];
     }
 
-    public void SetPartialObservation(string key, List<ObservationDto> observations)
-    {
-        _reports[key] = observations;
-    }
+    public long GetFollowerObservationCurrentEpoch(string id)
+        => _followerObservationCurrentEpochs.TryGetValue(id, out var currentEpoch) ? currentEpoch : 0;
+
+    public void SetFollowerObservationCurrentEpoch(string id, long epoch) =>
+        _followerObservationCurrentEpochs[id] = epoch;
 
     // MultiSignature
     public MultiSignature GetMultiSignature(string id)
-    {
-        if (_multiSignatureDict.TryGetValue(id, out var multiSignature)) return multiSignature;
-        return null;
-    }
+        => _multiSignatureDict.TryGetValue(id, out var multiSignature) ? multiSignature : null;
 
-    public void SetMultiSignature(string id, MultiSignature multisignature)
-    {
-        _multiSignatureDict[id] = multisignature;
-    }
+    public void SetMultiSignature(string id, MultiSignature signature) => _multiSignatureDict[id] = signature;
 
     // MultiSignatureSignedFlag
-    public bool GetMultiSignatureSignedFlag(string key)
-    {
-        return _signedFlag.TryGetValue(key, out _);
-    }
+    public bool GetMultiSignatureSignedFlag(string id) => _signedFlag.TryGetValue(id, out _);
 
-    public void SetMultiSignatureSignedFlag(string key)
-    {
-        _signedFlag[key] = true;
-    }
+    public void SetMultiSignatureSignedFlag(string id) => _signedFlag[id] = true;
 
     // Clean up transmitted KV
-    public void CleanEpochState(string key, long epoch)
+    public void CleanEpochState(string id, long epoch)
     {
     }
 }

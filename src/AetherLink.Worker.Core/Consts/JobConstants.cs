@@ -4,8 +4,6 @@ public static class RequestTypeConst
 {
     public const int Datafeeds = 1;
     public const int Vrf = 2;
-    public const int Transmitted = -1;
-    public const int RequestedCancel = -2;
 }
 
 public enum DataFeedsType
@@ -16,10 +14,6 @@ public enum DataFeedsType
 
 public enum SchedulerType
 {
-    CheckRequestReceiveScheduler,
-    CheckObservationResultCommitScheduler,
-    CheckReportReceiveScheduler,
-    CheckReportCommitScheduler,
-    CheckTransmitScheduler,
-    CheckRequestEndScheduler
+    CheckRequestEndScheduler,
+    ObservationCollectWaitingScheduler
 }

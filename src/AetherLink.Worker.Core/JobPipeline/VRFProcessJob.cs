@@ -1,46 +1,37 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Cryptography;
 using AetherLink.Contracts.Oracle;
 using AetherLink.Contracts.VRF.Coordinator;
-using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
-using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Oracle;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.JobPipeline;
 
-public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ISingletonDependency
+public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependency
 {
-    private readonly IPeerManager _peerManager;
     private readonly OracleInfoOptions _options;
+    private readonly IRetryProvider _retryProvider;
     private readonly ILogger<VRFProcessJob> _logger;
     private readonly IContractProvider _contractProvider;
-    private readonly ProcessJobOptions _processJobOptions;
-    private readonly IBackgroundJobManager _backgroundJobManager;
     private readonly IOracleContractProvider _oracleContractProvider;
-    private readonly ConcurrentDictionary<string, int> _retryCount = new();
 
     public VRFProcessJob(ILogger<VRFProcessJob> logger, IOptionsSnapshot<OracleInfoOptions> options,
-        IBackgroundJobManager backgroundJobManager, IContractProvider contractProvider, IPeerManager peerManager,
-        IOracleContractProvider oracleContractProvider, IOptionsSnapshot<ProcessJobOptions> processJobOptions)
+        IContractProvider contractProvider, IOracleContractProvider oracleContractProvider,
+        IRetryProvider retryProvider)
     {
         _logger = logger;
         _options = options.Value;
-        _peerManager = peerManager;
+        _retryProvider = retryProvider;
         _contractProvider = contractProvider;
-        _processJobOptions = processJobOptions.Value;
-        _backgroundJobManager = backgroundJobManager;
         _oracleContractProvider = oracleContractProvider;
     }
 
@@ -49,7 +40,11 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ISingletonDependenc
         var chainId = args.ChainId;
         var reqId = args.RequestId;
 
-        if (!_options.ChainConfig.TryGetValue(chainId, out var vrfInfo)) return;
+        if (!_options.ChainConfig.TryGetValue(chainId, out var vrfInfo))
+        {
+            _logger.LogWarning("[VRF] Unsupported chain{chainId}", chainId);
+            return;
+        }
 
         try
         {
@@ -58,7 +53,7 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ISingletonDependenc
 
             // check vrf request transaction exist.
             var commitment =
-                await _oracleContractProvider.GetCommitmentAsync(args.ChainId, args.TransactionId, reqId);
+                await _oracleContractProvider.GetRequestCommitmentAsync(args.ChainId, args.TransactionId, reqId);
             var specificData = SpecificData.Parser.ParseFrom(commitment.SpecificData);
 
             // validate keyHash
@@ -71,9 +66,6 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ISingletonDependenc
             // get random hash in ConsensusContract by blockHeight
             var random = await _contractProvider.GetRandomHashAsync(specificData.BlockNumber, chainId);
             var alpha = HashHelper.ConcatAndCompute(random, specificData.PreSeed).ToByteArray();
-
-            // todo For test, will remove
-            // var alpha = HashHelper.ConcatAndCompute(random, Hash.Empty).ToByteArray();
             var proof = CryptoHelper.ECVrfProve(vrfKp, alpha);
 
             // Verify that proof, return false if failed.
@@ -86,26 +78,11 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ISingletonDependenc
             _logger.LogInformation("[VRF] Verify proof success, ready to send transmit.");
 
             // generate vrf prove in report
-            var transmitInput = new TransmitInput
-            {
-                Report = new Report
-                {
-                    Result = ByteString.CopyFrom(proof),
-                    OnChainMetadata = commitment.ToByteString(),
-                    Error = ByteString.Empty,
-                    OffChainMetadata = ByteString.Empty
-                }.ToByteString()
-            };
+            var transmitInput = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, reqId,
+                args.TransactionId, await _oracleContractProvider.GetOracleLatestEpochAndRoundAsync(chainId),
+                ByteString.CopyFrom(proof));
 
-            // get config fill ReportContext
-            transmitInput.ReportContext.Add(await _peerManager.GetLatestConfigDigestAsync(chainId));
-
-            // get latest round fill ReportContext
-            transmitInput.ReportContext.Add(HashHelper.ComputeFrom(await _peerManager.GetEpochAsync(chainId)));
-            transmitInput.ReportContext.Add(HashHelper.ComputeFrom(0));
-
-            var signatures = new List<ByteString>();
-            signatures.Add(GenerateSignature(vrfKp.PrivateKey, transmitInput));
+            var signatures = new List<ByteString> { GenerateSignature(vrfKp.PrivateKey, transmitInput) };
             transmitInput.Signatures.AddRange(signatures);
 
             // send to oracle contract
@@ -115,7 +92,7 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ISingletonDependenc
         catch (Exception e)
         {
             _logger.LogError(e, "[VRF] ReqId {reqId} generate VRF Failed", reqId);
-            await RetryAsync(args);
+            await _retryProvider.RetryAsync(args);
         }
     }
 
@@ -138,18 +115,6 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ISingletonDependenc
         {
             _logger.LogError(e, "[VRF] ECVrfVerify Failed!");
             return false;
-        }
-    }
-
-    private async Task RetryAsync(VRFJobArgs args)
-    {
-        _logger.LogInformation("[VRF] Retry process, reqId:{Req}, chainId:{ChainId}", args.RequestId, args.ChainId);
-        var id = IdGeneratorHelper.GenerateId(args.RequestId, args.RoundId);
-        _retryCount.TryGetValue(id, out var time);
-        if (time < _processJobOptions.RetryCount)
-        {
-            _retryCount[id] = time + 1;
-            await _backgroundJobManager.EnqueueAsync(args, delay: TimeSpan.FromSeconds(time));
         }
     }
 }

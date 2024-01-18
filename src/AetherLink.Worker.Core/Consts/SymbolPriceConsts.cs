@@ -1,6 +1,6 @@
 namespace AetherLink.Worker.Core.Consts;
 
-public class SymbolPriceDecimalConst
+public static class SymbolPriceConst
 {
     public const int DefaultDecimal = 8;
 }

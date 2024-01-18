@@ -5,10 +5,8 @@ namespace AetherLink.Worker.Core.Options;
 public class WorkerOptions
 {
     public int SearchTimer { get; set; } = 30;
-    public int HealthCheckTimer { get; set; } = 5;
-    public int HealthCheckMaxRetryTimes { get; set; } = 15;
-    public int LogBackFillBatchSize { get; set; } = 10;
-    public int BlockBackFillDepth { get; set; } = 500000;
+    public int ReconnectDelay { get; set; } = 10;
+    public int LogBackFillBatchSize { get; set; } = 100;
     public List<ChainInfo> Chains { get; set; }
 }
 

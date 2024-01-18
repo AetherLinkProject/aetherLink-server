@@ -1,5 +1,5 @@
-using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Consts;
@@ -9,7 +9,6 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundJobs;
-using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -19,8 +18,12 @@ namespace AetherLink.Worker.Core.Provider;
 public interface IWorkerProvider
 {
     public Task<List<OcrLogEventDto>> SearchJobsAsync(string chainId, long to, long from);
+    public Task<List<TransmittedDto>> SearchTransmittedAsync(string chainId, long to, long from);
+    public Task<List<RequestCancelledDto>> SearchRequestCanceledAsync(string chainId, long to, long from);
     public Task<long> GetBlockLatestHeightAsync(string chainId);
     public Task HandleJobAsync(OcrLogEventDto logEvent);
+    public Task HandleTransmittedLogEventAsync(TransmittedDto transmitted);
+    public Task HandleRequestCancelledLogEventAsync(RequestCancelledDto requestCancelled);
     public Task<long> GetStartHeightAsync(string chainId);
     public Task SetLatestSearchHeightAsync(string chainId, long searchHeight);
 }
@@ -30,21 +33,23 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<WorkerProvider> _logger;
     private readonly IIndexerProvider _indexerProvider;
+    private readonly IStorageProvider _storageProvider;
     private readonly IContractProvider _contractProvider;
-    private readonly IDistributedCacheSerializer _serializer;
+    private readonly Dictionary<int, IRequestJob> _requestJob;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public WorkerProvider(IBackgroundJobManager backgroundJobManager, ILogger<WorkerProvider> logger,
         IObjectMapper objectMapper, IIndexerProvider indexerProvider, IContractProvider contractProvider,
-        IOptionsSnapshot<RedisCacheOptions> optionsAccessor, IDistributedCacheSerializer serializer) : base(
-        optionsAccessor)
+        IOptionsSnapshot<RedisCacheOptions> optionsAccessor, IEnumerable<IRequestJob> requestJobs,
+        IStorageProvider storageProvider) : base(optionsAccessor)
     {
         _logger = logger;
-        _serializer = serializer;
         _objectMapper = objectMapper;
+        _storageProvider = storageProvider;
         _indexerProvider = indexerProvider;
         _contractProvider = contractProvider;
         _backgroundJobManager = backgroundJobManager;
+        _requestJob = requestJobs.ToDictionary(x => x.RequestTypeIndex, y => y);
     }
 
     public async Task<long> GetBlockLatestHeightAsync(string chainId)
@@ -55,61 +60,47 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
     }
 
     public async Task<List<OcrLogEventDto>> SearchJobsAsync(string chainId, long to, long from)
-    {
-        return await _indexerProvider.SubscribeLogsAsync(chainId, to, from);
-    }
+        => await _indexerProvider.SubscribeLogsAsync(chainId, to, from);
+
+    public async Task<List<TransmittedDto>> SearchTransmittedAsync(string chainId, long to, long from)
+        => await _indexerProvider.SubscribeTransmittedAsync(chainId, to, from);
+
+    public async Task<List<RequestCancelledDto>> SearchRequestCanceledAsync(string chainId, long to, long from)
+        => await _indexerProvider.SubscribeRequestCancelledAsync(chainId, to, from);
 
     public async Task HandleJobAsync(OcrLogEventDto logEvent)
     {
-        switch (logEvent.RequestTypeIndex)
+        if (!_requestJob.TryGetValue(logEvent.RequestTypeIndex, out var request))
         {
-            case RequestTypeConst.Datafeeds:
-                await _backgroundJobManager.EnqueueAsync(
-                    _objectMapper.Map<OcrLogEventDto, DataFeedsProcessJobArgs>(logEvent));
-                break;
-            case RequestTypeConst.Vrf:
-                await _backgroundJobManager.EnqueueAsync(
-                    _objectMapper.Map<OcrLogEventDto, VRFJobArgs>(logEvent));
-                break;
-            case RequestTypeConst.Transmitted:
-                await _backgroundJobManager.EnqueueAsync(
-                    _objectMapper.Map<OcrLogEventDto, TransmittedProcessJobArgs>(logEvent));
-                break;
-            case RequestTypeConst.RequestedCancel:
-                await _backgroundJobManager.EnqueueAsync(
-                    _objectMapper.Map<OcrLogEventDto, RequestCancelProcessJobArgs>(logEvent));
-                break;
-            default:
-                _logger.LogWarning("unknown job type: {type}", logEvent.RequestTypeIndex);
-                return;
+            _logger.LogWarning("unknown job type: {type}", logEvent.RequestTypeIndex);
+            return;
         }
+
+        await request.EnqueueAsync(logEvent);
     }
 
     public async Task<long> GetStartHeightAsync(string chainId)
     {
-        await ConnectAsync();
-        var searchHeightKey = IdGeneratorHelper.GenerateId(RedisKeyConst.SearchHeightKey, chainId);
-        var height = await RedisDatabase.StringGetAsync(searchHeightKey);
-        if (!height.HasValue)
-        {
-            _logger.LogWarning("Latest search height is not set.");
-            return 0;
-        }
-
-        return _serializer.Deserialize<long>(height);
+        var latestBlockHeight = await _storageProvider.GetAsync<SearchHeightDto>(GetSearchHeightRedisKey(chainId));
+        return latestBlockHeight?.BlockHeight ?? 0;
     }
 
     public async Task SetLatestSearchHeightAsync(string chainId, long searchHeight)
+        => await _storageProvider.SetAsync(GetSearchHeightRedisKey(chainId),
+            new SearchHeightDto { BlockHeight = searchHeight });
+
+    public async Task HandleTransmittedLogEventAsync(TransmittedDto transmitted)
     {
-        try
-        {
-            await ConnectAsync();
-            await RedisDatabase.StringSetAsync(IdGeneratorHelper.GenerateId(RedisKeyConst.SearchHeightKey, chainId),
-                searchHeight);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Set latest search height to redis error.");
-        }
+        await _backgroundJobManager.EnqueueAsync(
+            _objectMapper.Map<TransmittedDto, TransmittedEventProcessJobArgs>(transmitted));
     }
+
+    public async Task HandleRequestCancelledLogEventAsync(RequestCancelledDto requestCancelled)
+    {
+        await _backgroundJobManager.EnqueueAsync(
+            _objectMapper.Map<RequestCancelledDto, RequestCancelProcessJobArgs>(requestCancelled));
+    }
+
+    private static string GetSearchHeightRedisKey(string chainId)
+        => IdGeneratorHelper.GenerateId(RedisKeyConst.SearchHeightKey, chainId);
 }
