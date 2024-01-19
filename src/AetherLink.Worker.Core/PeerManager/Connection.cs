@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Grpc.Net.Client.Configuration;
@@ -8,6 +10,7 @@ namespace AetherLink.Worker.Core.PeerManager;
 
 public class Connection
 {
+    private readonly GrpcChannel _channel;
     private readonly AetherLinkServer.AetherLinkServerClient _client;
 
     public Connection(string endpoint)
@@ -18,6 +21,7 @@ public class Connection
         var options = new GrpcChannelOptions
         {
             Credentials = ChannelCredentials.Insecure,
+            MaxRetryAttempts = GrpcConstants.DefaultMaxAttempts,
             InitialReconnectBackoff = TimeSpan.FromSeconds(GrpcConstants.DefaultInitialBackoff),
             MaxReconnectBackoff = TimeSpan.FromSeconds(GrpcConstants.DefaultMaxBackoff),
             ServiceConfig = new ServiceConfig
@@ -43,15 +47,41 @@ public class Connection
         };
 
         // without protocol
-        var channel = endpoint.Split(":").Length < 3
+        _channel = endpoint.Split(":").Length < 3
             ? options.Credentials == ChannelCredentials.Insecure
                 ? GrpcChannel.ForAddress(new Uri($"{NetworkConstants.InsecurePrefix}{endpoint}"), options)
                 : GrpcChannel.ForAddress(new Uri($"{NetworkConstants.SecurePrefix}{endpoint}"), options)
             : GrpcChannel.ForAddress(endpoint, options);
 
-        _client = new AetherLinkServer.AetherLinkServerClient(channel);
+        _client = new AetherLinkServer.AetherLinkServerClient(_channel);
     }
 
     public TResponse CallAsync<TResponse>(Func<AetherLinkServer.AetherLinkServerClient, TResponse> callFunc) =>
         callFunc.Invoke(_client);
+
+    public bool IsConnectionReady()
+    {
+        try
+        {
+            // Because grpc update connection state is locked, there is no need to add additional locks to obtain the state here, and then establish the connection.
+            switch (_channel.State)
+            {
+                case ConnectivityState.Ready:
+                    return true;
+                case ConnectivityState.Idle:
+                case ConnectivityState.Connecting:
+                case ConnectivityState.TransientFailure:
+                    _channel.ConnectAsync().ConfigureAwait(false);
+                    return true;
+                case ConnectivityState.Shutdown:
+                default:
+                    return false;
+            }
+        }
+        catch (Exception)
+        {
+            // OperationCanceledException
+            return false;
+        }
+    }
 }

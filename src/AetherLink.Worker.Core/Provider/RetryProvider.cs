@@ -47,8 +47,8 @@ public class RetryProvider : IRetryProvider, ISingletonDependency
         _retryCount.TryGetValue(id, out var time);
         if (!untilFailed && time > _processJobOptions.RetryCount) return;
 
-        _retryCount[id] = time + 1;
-        var delay = backOff ? Math.Pow(_retryCount[id] + delayDelta, 2) : _retryCount[id] + delayDelta;
+        var delay = backOff ? Math.Pow(_retryCount[id] + delayDelta, 2) : time + delayDelta;
+        _retryCount[id] += 1;
         var hangfireId = await _backgroundJobManager.EnqueueAsync(args, delay: TimeSpan.FromSeconds(delay));
         _logger.LogWarning(
             "Task {id} will be executed in {delay} seconds by {hangfireId}. The task has been executed {times} times.",

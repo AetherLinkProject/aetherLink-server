@@ -55,7 +55,7 @@ public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcess
             if (txResult.Status is TransactionState.Pending)
             {
                 _logger.LogWarning(
-                    "[Step6] Request {ReqId} transactionId {transactionId} is not mined, will retry in {time}.", reqId,
+                    "[Step6] Request {ReqId} transactionId {transactionId} is not mined, will retry in {time} s.", reqId,
                     transactionId, _processJobOptions.TransactionResultDelay);
                 await _retryProvider.RetryAsync(args, true, delayDelta: _processJobOptions.TransactionResultDelay);
                 return;

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AElf;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Consts;
 using AetherLink.Worker.Core.Dtos;
@@ -22,6 +21,7 @@ namespace AetherLink.Worker.Core.JobPipeline;
 
 public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISingletonDependency
 {
+    private readonly object _lock;
     private readonly IPeerManager _peerManager;
     private readonly OracleInfoOptions _options;
     private readonly IObjectMapper _objectMapper;
@@ -30,7 +30,6 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
     private readonly IRequestProvider _requestProvider;
     private readonly ILogger<GenerateReportJob> _logger;
     private readonly ISchedulerService _schedulerService;
-    private static readonly ReaderWriterLock Lock = new();
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public GenerateReportJob(ILogger<GenerateReportJob> logger, ISchedulerService schedulerService,
@@ -39,6 +38,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
         IBackgroundJobManager backgroundJobManager)
     {
         _logger = logger;
+        _lock = new object();
         _options = options.Value;
         _peerManager = peerManager;
         _objectMapper = objectMapper;
@@ -103,13 +103,13 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
 
     private void TryProcessReportAsync(GenerateReportJobArgs args, RequestDto request)
     {
-        try
+        lock (_lock)
         {
-            Lock.AcquireWriterLock(Timeout.Infinite);
             var reportId = GenerateReportId(args);
             if (_stateProvider.GetPartialObservation(reportId) == null)
             {
-                _logger.LogInformation("[step3][Leader] Init {id}, start observation collection scheduler", reportId);
+                _logger.LogInformation("[step3][Leader] Init {id}, start observation collection scheduler",
+                    reportId);
                 _schedulerService.StartScheduler(request, SchedulerType.ObservationCollectWaitingScheduler);
             }
 
@@ -118,15 +118,6 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
                 Index = args.Index,
                 ObservationResult = args.Data
             });
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Step3][Leader] ReportGenerated failed. reqId:{Req}, index:{index}", args.RequestId,
-                args.Index);
-        }
-        finally
-        {
-            Lock.ReleaseWriterLock();
         }
     }
 

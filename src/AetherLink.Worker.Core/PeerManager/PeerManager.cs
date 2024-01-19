@@ -39,8 +39,9 @@ public class PeerManager : IPeerManager, ISingletonDependency
     public int GetOwnIndex() => _ownerIndex;
     public bool IsLeader(long epoch, int roundId) => LeaderElection(epoch, roundId) == _ownerIndex;
 
-    public Task BroadcastAsync<TResponse>(Func<AetherlinkClient, TResponse> func)
-        => Task.WhenAll(_peers.Select(p => Task.FromResult(p.Value.CallAsync(func))));
+    public async Task BroadcastAsync<TResponse>(Func<AetherlinkClient, TResponse> func)
+        => await Task.WhenAll(_peers.Where(p => p.Value.IsConnectionReady())
+            .Select(p => Task.FromResult(p.Value.CallAsync(func))));
 
     public Task CommitToLeaderAsync<TResponse>(Func<AetherlinkClient, TResponse> func, long epoch, int roundId)
         => Task.FromResult(_peers[_option.Domains[LeaderElection(epoch, roundId)]].CallAsync(func));

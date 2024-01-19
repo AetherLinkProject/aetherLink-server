@@ -40,12 +40,12 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
     {
         _logger = logger;
         _options = options.Value;
+        _peerManager = peerManager;
         _objectMapper = objectMapper;
         _stateProvider = stateProvider;
         _reportProvider = reportProvider;
-        _peerManager = peerManager;
-        _backgroundJobManager = backgroundJobManager;
         _requestProvider = requestProvider;
+        _backgroundJobManager = backgroundJobManager;
     }
 
     public async Task Execute(RequestDto request)

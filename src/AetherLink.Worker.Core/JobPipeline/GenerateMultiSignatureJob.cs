@@ -22,6 +22,7 @@ namespace AetherLink.Worker.Core.JobPipeline;
 
 public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatureJobArgs>, ISingletonDependency
 {
+    private readonly object _lock;
     private readonly IPeerManager _peerManager;
     private readonly OracleInfoOptions _options;
     private readonly IObjectMapper _objectMapper;
@@ -29,7 +30,6 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
     private readonly IReportProvider _reportProvider;
     private readonly IRequestProvider _requestProvider;
     private readonly IContractProvider _contractProvider;
-    private static readonly ReaderWriterLock Lock = new();
     private readonly ILogger<GenerateMultiSignatureJob> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
     private readonly IOracleContractProvider _oracleContractProvider;
@@ -40,6 +40,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
         IReportProvider reportProvider, IPeerManager peerManager, IBackgroundJobManager backgroundJobManager)
     {
         _logger = logger;
+        _lock = new object();
         _peerManager = peerManager;
         _objectMapper = objectMapper;
         _stateProvider = stateProvider;
@@ -110,12 +111,9 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
 
     private void TryProcessMultiSignature(GenerateMultiSignatureJobArgs args, byte[] msg)
     {
-        try
+        if (!_options.ChainConfig.TryGetValue(args.ChainId, out var config)) return;
+        lock (_lock)
         {
-            if (!_options.ChainConfig.TryGetValue(args.ChainId, out var config)) return;
-
-            Lock.AcquireWriterLock(Timeout.Infinite);
-
             var id = GenerateMultiSignatureId(args);
             var sign = _stateProvider.GetMultiSignature(id);
             if (sign == null)
@@ -127,10 +125,6 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
             }
 
             if (sign.ProcessPartialSignature(args.PartialSignature)) _stateProvider.SetMultiSignature(id, sign);
-        }
-        finally
-        {
-            Lock.ReleaseWriterLock();
         }
     }
 
