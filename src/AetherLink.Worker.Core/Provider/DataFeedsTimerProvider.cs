@@ -45,7 +45,7 @@ public class DataFeedsTimerProvider : ISingletonDependency
 
         // this epoch not finished, Wait for transmitted log event.
         _epochDict.TryGetValue(argId, out var epoch);
-        if (request.Epoch == epoch)
+        if (request.Epoch == epoch && request.Epoch != 0)
         {
             _logger.LogInformation("[DataFeedsTimer] The last epoch {Epoch} wasn't finished. reqId {reqId}", epoch,
                 reqId);

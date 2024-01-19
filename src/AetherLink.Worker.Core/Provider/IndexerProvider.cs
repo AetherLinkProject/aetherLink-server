@@ -137,8 +137,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                 }
             });
 
-            if (res.SyncState == null) return 0;
-            return res.SyncState.ConfirmedBlockHeight;
+            return res.SyncState?.ConfirmedBlockHeight ?? 0;
         }
         catch (Exception e)
         {
@@ -165,8 +164,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                 }
             });
 
-            if (res.OracleConfigDigest == null) return "";
-            return res.OracleConfigDigest.ConfigDigest;
+            return res.OracleConfigDigest == null ? "" : res.OracleConfigDigest.ConfigDigest;
         }
         catch (Exception e)
         {
@@ -193,8 +191,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                 }
             });
 
-            if (res.OracleLatestEpoch == null) return 0;
-            return res.OracleLatestEpoch.Epoch;
+            return res.OracleLatestEpoch?.Epoch ?? 0;
         }
         catch (Exception e)
         {
@@ -223,8 +220,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                 }
             });
 
-            if (res.RequestCommitment == null) return "";
-            return res.RequestCommitment.Commitment;
+            return res.RequestCommitment == null ? "" : res.RequestCommitment.Commitment;
         }
         catch (Exception e)
         {
