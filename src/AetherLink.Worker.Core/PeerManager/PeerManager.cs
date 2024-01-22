@@ -47,4 +47,6 @@ public class PeerManager : IPeerManager, ISingletonDependency
         => Task.FromResult(_peers[_option.Domains[LeaderElection(epoch, roundId)]].CallAsync(func));
 
     private int LeaderElection(long epoch, int roundId) => (int)(epoch + roundId) % _peersCount;
+    
+    // todo: add meta insert
 }

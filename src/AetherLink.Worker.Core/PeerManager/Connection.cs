@@ -1,6 +1,4 @@
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Grpc.Net.Client.Configuration;
@@ -46,6 +44,8 @@ public class Connection
             }
         };
 
+        // todo: handle with localhost
+
         // without protocol
         _channel = endpoint.Split(":").Length < 3
             ? options.Credentials == ChannelCredentials.Insecure
@@ -68,19 +68,22 @@ public class Connection
             {
                 case ConnectivityState.Ready:
                     return true;
-                case ConnectivityState.Idle:
                 case ConnectivityState.Connecting:
                 case ConnectivityState.TransientFailure:
                     _channel.ConnectAsync().ConfigureAwait(false);
                     return true;
+                case ConnectivityState.Idle:
                 case ConnectivityState.Shutdown:
                 default:
                     return false;
             }
         }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
         catch (Exception)
         {
-            // OperationCanceledException
             return false;
         }
     }
