@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using AetherLink.Multisignature;
 using AetherLink.Worker.Core.Common;
-using AetherLink.Worker.Core.Consts;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;

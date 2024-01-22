@@ -1,6 +1,6 @@
-namespace AetherLink.Worker.Core.Consts;
+namespace AetherLink.Worker.Core.Constants;
 
-public static class RedisKeyConst
+public static class RedisKeyConstants
 {
     public const string JobRequestRedisKey = "JobRequest";
     public const string DataMessageRedisKey = "DataMessage";

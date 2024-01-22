@@ -1,4 +1,4 @@
-namespace AetherLink.Worker.Core.Consts;
+namespace AetherLink.Worker.Core.Constants;
 
 public static class RequestTypeConst
 {

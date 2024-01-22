@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using AElf;
 using AElf.Types;
@@ -74,18 +75,31 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
 
     public async Task<long> GetStartEpochAsync(string chainId, long blockHeight)
     {
-        var epoch = await _indexerProvider.GetOracleLatestEpochAsync(chainId, blockHeight);
-
-        if (epoch > 0)
+        try
         {
-            _logger.LogDebug(
-                "[OracleContractProvider] Get indexer request start epoch:{epoch} before blockHeight:{height}", epoch,
-                blockHeight);
-            return epoch;
-        }
+            var epoch = await _indexerProvider.GetOracleLatestEpochAsync(chainId, blockHeight);
 
-        var latestR = await _contractProvider.GetLatestRoundAsync(chainId);
-        return latestR.Value;
+            if (epoch > 0)
+            {
+                _logger.LogDebug(
+                    "[OracleContractProvider] Get indexer request start epoch:{epoch} before blockHeight:{height}",
+                    epoch, blockHeight);
+                return epoch;
+            }
+
+            var latestR = await _contractProvider.GetLatestRoundAsync(chainId);
+            return latestR.Value;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogError("[OracleContractProvider] Get {chain} start epoch timeout", chainId);
+            throw;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[OracleContractProvider] Get {chain} start epoch failed", chainId);
+            throw;
+        }
     }
 
     public async Task<TransmitInput> GenerateTransmitDataAsync(string chainId, string requestId, string transactionId,

@@ -15,14 +15,16 @@ namespace AetherLink.Worker.Core.JobPipeline;
 
 public class DataFeedsProcessJob : AsyncBackgroundJob<DataFeedsProcessJobArgs>, ITransientDependency
 {
+    private readonly RetryProvider _retryProvider;
     private readonly ILogger<DataFeedsProcessJob> _logger;
     private readonly IRecurringJobManager _recurringJobManager;
     private readonly IOracleContractProvider _oracleContractProvider;
 
     public DataFeedsProcessJob(IRecurringJobManager recurringJobManager, ILogger<DataFeedsProcessJob> logger,
-        IOracleContractProvider oracleContractProvider)
+        IOracleContractProvider oracleContractProvider, RetryProvider retryProvider)
     {
         _logger = logger;
+        _retryProvider = retryProvider;
         _recurringJobManager = recurringJobManager;
         _oracleContractProvider = oracleContractProvider;
     }
@@ -52,6 +54,11 @@ public class DataFeedsProcessJob : AsyncBackgroundJob<DataFeedsProcessJobArgs>, 
             _logger.LogInformation("[DataFeedsProcessJob] {name} Start a data feeds timer.", argId);
             _recurringJobManager.AddOrUpdate<DataFeedsTimerProvider>(IdGeneratorHelper.GenerateId(chainId, reqId),
                 timer => timer.ExecuteAsync(args), () => dataFeedsDto.Cron);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogError("[DataFeedsProcessJob] Get Datafeed job info {name} timeout, retry later.", argId);
+            await _retryProvider.RetryAsync(args, untilFailed: true, backOff: true);
         }
         catch (Exception e)
         {

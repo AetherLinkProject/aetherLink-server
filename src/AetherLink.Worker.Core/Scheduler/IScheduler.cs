@@ -1,6 +1,6 @@
 using System;
 using AetherLink.Worker.Core.Common;
-using AetherLink.Worker.Core.Consts;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using Volo.Abp.DependencyInjection;
@@ -52,7 +52,7 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
                     .ToRunOnceAt(overTime);
                 break;
             case SchedulerType.CheckRequestEndScheduler:
-                overTime = request.RequestReceiveTime.AddMinutes(_options.MaximumToleratedTimeoutWindow);
+                overTime = request.RequestReceiveTime.AddMinutes(_options.CheckRequestEndTimeoutWindow);
                 registry.Schedule(() => _resetRequestScheduler.Execute(request)).WithName(schedulerName)
                     .NonReentrant().ToRunOnceAt(overTime);
                 break;
@@ -110,7 +110,7 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         while (true)
         {
             // block += 30 < nowTime, need add 30min continue
-            var temp = blockStartTime.AddMilliseconds(_options.MaximumToleratedTimeoutWindow * 60 * 1000);
+            var temp = blockStartTime.AddSeconds(SchedulerTimeConstants.MaximumTimeoutWindow);
             if (temp < nowTime)
             {
                 blockStartTime = temp;
@@ -118,7 +118,7 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
             }
 
             // block += 10 < nowTime, need add 10min continue
-            temp = blockStartTime.AddMilliseconds(_options.ScheduledTaskReceiveTimeoutWindow * 60 * 1000);
+            temp = blockStartTime.AddSeconds(SchedulerTimeConstants.MediumTimeoutWindow);
             if (temp < nowTime)
             {
                 blockStartTime = temp;
@@ -126,7 +126,7 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
             }
 
             // block += 5 > nowTime, no need add, return
-            temp = blockStartTime.AddMilliseconds(_options.SmallTolerantTimeoutWindow * 60 * 1000);
+            temp = blockStartTime.AddSeconds(SchedulerTimeConstants.SmallTimeoutWindow);
             if (temp > nowTime)
             {
                 return blockStartTime;

@@ -196,7 +196,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
         catch (Exception e)
         {
             _logger.LogError(e, "[Indexer] GetOracleLatestEpoch failed.");
-            return 0;
+            throw;
         }
     }
 

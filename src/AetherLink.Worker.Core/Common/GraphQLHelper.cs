@@ -53,12 +53,12 @@ public class GraphQLHelper : IGraphQLHelper, ISingletonDependency
         catch (OperationCanceledException)
         {
             _logger.LogError("[GraphQLHelper] Query graphQL timed out.");
-            return default;
+            throw;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "[GraphQLHelper] Query graphQL fail.");
-            return default;
+            throw;
         }
     }
 }

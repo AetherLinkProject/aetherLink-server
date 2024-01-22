@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
-using AetherLink.Worker.Core.Consts;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using Microsoft.Extensions.Logging;
@@ -37,5 +37,5 @@ public class ReportProvider : IReportProvider, ITransientDependency
         => await _storageProvider.GetAsync<ReportDto>(GetReportRedisKey(arg.ChainId, arg.RequestId, arg.Epoch));
 
     private static string GetReportRedisKey(string chainId, string requestId, long epoch)
-        => IdGeneratorHelper.GenerateId(RedisKeyConst.ReportRedisKey, chainId, requestId, epoch);
+        => IdGeneratorHelper.GenerateId(RedisKeyConstants.ReportRedisKey, chainId, requestId, epoch);
 }

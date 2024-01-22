@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using AetherLink.Worker.Core.Common;
-using AetherLink.Worker.Core.Consts;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using Binance.Spot;
@@ -78,7 +78,7 @@ public class PriceDataProvider : IPriceDataProvider, ITransientDependency
                 await market.SymbolPriceTicker($"{priceData.BaseCurrency}{priceData.QuoteCurrency}");
             var binancePriceDto = JsonConvert.DeserializeObject<BinancePriceDto>(symbolPriceTicker);
             return Convert.ToInt64(Math.Round(double.Parse(binancePriceDto.Price) *
-                                              Math.Pow(10, SymbolPriceConst.DefaultDecimal)));
+                                              Math.Pow(10, SymbolPriceConstants.DefaultDecimal)));
         }
         catch (Exception e)
         {
@@ -106,7 +106,7 @@ public class PriceDataProvider : IPriceDataProvider, ITransientDependency
             var response = await _httpClient.GetAsync<CoinMarketResponseDto>(url.ToString(), head, cancellationToken);
             return Convert.ToInt64(Math.Round(
                 response.Data[priceData.BaseCurrency].Quote[priceData.QuoteCurrency].Price *
-                Math.Pow(10, SymbolPriceConst.DefaultDecimal)));
+                Math.Pow(10, SymbolPriceConstants.DefaultDecimal)));
         }
         catch (Exception e)
         {
@@ -128,7 +128,7 @@ public class PriceDataProvider : IPriceDataProvider, ITransientDependency
             }
 
             var last = currencyPair[0].Last;
-            return Convert.ToInt64(Math.Round(double.Parse(last) * Math.Pow(10, SymbolPriceConst.DefaultDecimal)));
+            return Convert.ToInt64(Math.Round(double.Parse(last) * Math.Pow(10, SymbolPriceConstants.DefaultDecimal)));
         }
         catch (Exception e)
         {
@@ -147,7 +147,7 @@ public class PriceDataProvider : IPriceDataProvider, ITransientDependency
                 cancellationToken);
 
             return Convert.ToInt64(Math.Round(double.Parse(response.Data["amount"]) *
-                                              Math.Pow(10, SymbolPriceConst.DefaultDecimal)));
+                                              Math.Pow(10, SymbolPriceConstants.DefaultDecimal)));
         }
         catch (Exception e)
         {
@@ -192,7 +192,7 @@ public class PriceDataProvider : IPriceDataProvider, ITransientDependency
             }
 
             _logger.LogInformation("[PriceDataProvider][Okex] response: {res}", price.First().Price);
-            return Convert.ToInt64(price.First().Price * (decimal)Math.Pow(10, SymbolPriceConst.DefaultDecimal));
+            return Convert.ToInt64(price.First().Price * (decimal)Math.Pow(10, SymbolPriceConstants.DefaultDecimal));
         }
         catch (Exception e)
         {

@@ -7,7 +7,7 @@ using System.Net.Mime;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using AetherLink.Worker.Core.Consts;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;

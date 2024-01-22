@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
-using AetherLink.Worker.Core.Consts;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
@@ -102,5 +102,5 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
     }
 
     private static string GetSearchHeightRedisKey(string chainId)
-        => IdGeneratorHelper.GenerateId(RedisKeyConst.SearchHeightKey, chainId);
+        => IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, chainId);
 }

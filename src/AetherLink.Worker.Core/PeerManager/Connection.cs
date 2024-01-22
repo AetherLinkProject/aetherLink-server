@@ -1,9 +1,9 @@
 using System;
 using System.Threading;
+using AetherLink.Worker.Core.Constants;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Grpc.Net.Client.Configuration;
-using AetherLink.Worker.Core.Consts;
 
 namespace AetherLink.Worker.Core.PeerManager;
 

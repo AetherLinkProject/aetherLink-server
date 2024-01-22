@@ -1,4 +1,4 @@
-using AetherLink.Worker.Core.Consts;
+using AetherLink.Worker.Core.Constants;
 
 namespace AetherLink.Worker.Core.Dtos;
 

@@ -6,7 +6,7 @@ using AElf.Client.Service;
 using AElf.Types;
 using AetherLink.Contracts.Oracle;
 using AetherLink.Worker.Core.Common.ContractHandler;
-using AetherLink.Worker.Core.Consts;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
@@ -45,7 +45,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     public async Task<Hash> GetRandomHashAsync(long blockNumber, string chainId)
     {
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return Hash.Empty;
-        return await CallTransactionAsync<Hash>(chainId, await GenerateRawTransactionAsync(ContractConsts.GetRandomHash,
+        return await CallTransactionAsync<Hash>(chainId, await GenerateRawTransactionAsync(ContractConstants.GetRandomHash,
             new Int64Value { Value = blockNumber }, chainId, chainInfo.ConsensusContractAddress));
     }
 
@@ -53,7 +53,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     {
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return new GetConfigOutput();
         return await CallTransactionAsync<GetConfigOutput>(chainId,
-            await GenerateRawTransactionAsync(ContractConsts.GetConfig, new Empty(), chainId,
+            await GenerateRawTransactionAsync(ContractConstants.GetConfig, new Empty(), chainId,
                 chainInfo.OracleContractAddress));
     }
 
@@ -61,14 +61,14 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     {
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return new Int64Value();
         return await CallTransactionAsync<Int64Value>(chainId,
-            await GenerateRawTransactionAsync(ContractConsts.GetLatestRound, new Empty(), chainId,
+            await GenerateRawTransactionAsync(ContractConstants.GetLatestRound, new Empty(), chainId,
                 chainInfo.OracleContractAddress));
     }
 
     public async Task<string> SendTransmitAsync(string chainId, TransmitInput transmitInput)
     {
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return "";
-        var txRes = await SendTransactionAsync(chainId, await GenerateRawTransactionAsync(ContractConsts.Transmit,
+        var txRes = await SendTransactionAsync(chainId, await GenerateRawTransactionAsync(ContractConstants.Transmit,
             transmitInput, chainId, chainInfo.OracleContractAddress));
         return txRes.TransactionId;
     }

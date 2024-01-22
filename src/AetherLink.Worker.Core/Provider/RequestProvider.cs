@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
-using AetherLink.Worker.Core.Consts;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using Microsoft.Extensions.Logging;
@@ -37,5 +37,5 @@ public class RequestProvider : IRequestProvider, ITransientDependency
         => await _storageProvider.GetAsync<RequestDto>(GetJobRequestKey(arg.ChainId, arg.RequestId));
 
     private static string GetJobRequestKey(string chainId, string requestId)
-        => IdGeneratorHelper.GenerateId(RedisKeyConst.JobRequestRedisKey, chainId, requestId);
+        => IdGeneratorHelper.GenerateId(RedisKeyConstants.JobRequestRedisKey, chainId, requestId);
 }
