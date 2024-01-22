@@ -1,5 +1,3 @@
-using System.Threading;
-
 namespace AetherLink.Worker.Core.Consts;
 
 public class GrpcConstants
