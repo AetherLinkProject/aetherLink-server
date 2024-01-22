@@ -186,8 +186,9 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
         msg.Data = result;
         msg.Index = _peerManager.GetOwnIndex();
 
-        var context = new CancellationTokenSource(TimeSpan.FromSeconds(GrpcConstants.DefaultRequestTimeout));
-        await _peerManager.CommitToLeaderAsync(p => p.CommitObservationAsync(msg, cancellationToken: context.Token),
-            args.Epoch, args.RoundId);
+        // var context = new CancellationTokenSource(TimeSpan.FromSeconds(GrpcConstants.DefaultRequestTimeout));
+        // await _peerManager.CommitToLeaderAsync(p => p.CommitObservationAsync(msg, cancellationToken: context.Token),
+        //     args.Epoch, args.RoundId);
+        await _peerManager.CommitToLeaderAsync(p => p.CommitObservationAsync(msg), args.Epoch, args.RoundId);
     }
 }

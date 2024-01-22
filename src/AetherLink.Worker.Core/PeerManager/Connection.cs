@@ -19,7 +19,6 @@ public class Connection
         var options = new GrpcChannelOptions
         {
             Credentials = ChannelCredentials.Insecure,
-            MaxRetryAttempts = GrpcConstants.DefaultMaxAttempts,
             InitialReconnectBackoff = TimeSpan.FromSeconds(GrpcConstants.DefaultInitialBackoff),
             MaxReconnectBackoff = TimeSpan.FromSeconds(GrpcConstants.DefaultMaxBackoff),
             ServiceConfig = new ServiceConfig
@@ -68,11 +67,11 @@ public class Connection
             {
                 case ConnectivityState.Ready:
                     return true;
+                case ConnectivityState.Idle:
                 case ConnectivityState.Connecting:
                 case ConnectivityState.TransientFailure:
                     _channel.ConnectAsync().ConfigureAwait(false);
                     return true;
-                case ConnectivityState.Idle:
                 case ConnectivityState.Shutdown:
                 default:
                     return false;
