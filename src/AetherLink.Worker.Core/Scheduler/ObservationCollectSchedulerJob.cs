@@ -91,7 +91,6 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
 
             await _backgroundJobManager.EnqueueAsync(args);
 
-            var context = new CancellationTokenSource(TimeSpan.FromSeconds(GrpcConstants.DefaultRequestTimeout));
             await _peerManager.BroadcastAsync(p => p.CommitReportAsync(new CommitReportRequest
             {
                 RequestId = request.RequestId,
@@ -100,7 +99,7 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
                 Epoch = request.Epoch,
                 ObservationResults = { collectResult },
                 StartTime = reportStartSignTime
-            }, cancellationToken: context.Token));
+            }));
 
             _stateProvider.SetReportGeneratedFlag(reportId);
         }

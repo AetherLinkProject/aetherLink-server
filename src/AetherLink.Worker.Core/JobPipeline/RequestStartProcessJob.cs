@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Consts;
@@ -74,18 +73,19 @@ public class RequestStartProcessJob : AsyncBackgroundJob<RequestStartProcessJobA
                     _objectMapper.Map<RequestStartProcessJobArgs, CollectObservationJobArgs>(args),
                     BackgroundJobPriority.High);
 
-                var context = new CancellationTokenSource(TimeSpan.FromSeconds(GrpcConstants.DefaultRequestTimeout));
-                await _peerManager.BroadcastAsync(p => p.QueryObservationAsync(new QueryObservationRequest
-                {
-                    RequestId = args.RequestId,
-                    ChainId = args.ChainId,
-                    RoundId = args.RoundId,
-                    Epoch = args.Epoch
-                }, cancellationToken: context.Token));
+                await _peerManager.BroadcastAsync(p => p.QueryObservationAsync(
+                    new QueryObservationRequest
+                    {
+                        RequestId = args.RequestId,
+                        ChainId = args.ChainId,
+                        RoundId = args.RoundId,
+                        Epoch = args.Epoch
+                    }));
             }
 
-            _logger.LogInformation("[step1] {name} Waiting for request end.", argId);
             _schedulerService.StartScheduler(request, SchedulerType.CheckRequestEndScheduler);
+
+            _logger.LogInformation("[step1] {name} Waiting for request end.", argId);
         }
         catch (Exception e)
         {

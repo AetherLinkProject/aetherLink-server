@@ -137,8 +137,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
 
         var txResult = _objectMapper.Map<GenerateMultiSignatureJobArgs, CommitTransmitResultRequest>(args);
         txResult.TransmitTransactionId = transactionId;
-        var context = new CancellationTokenSource(TimeSpan.FromSeconds(GrpcConstants.DefaultRequestTimeout));
-        await _peerManager.BroadcastAsync(p => p.CommitTransmitResultAsync(txResult, cancellationToken: context.Token));
+        await _peerManager.BroadcastAsync(p => p.CommitTransmitResultAsync(txResult));
     }
 
     private string GenerateMultiSignatureId(GenerateMultiSignatureJobArgs args)

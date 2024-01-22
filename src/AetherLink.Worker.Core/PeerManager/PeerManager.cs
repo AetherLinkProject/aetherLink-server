@@ -55,7 +55,7 @@ public class PeerManager : IPeerManager, ISingletonDependency
                 }
 
                 _logger.LogDebug("[PeerManager] Send to peer {peer}", peer.Key);
-                peer.Value.CallAsync(func);
+                await Task.FromResult(peer.Value.CallAsync(func));
             }
             catch (OperationCanceledException)
             {
@@ -67,18 +67,16 @@ public class PeerManager : IPeerManager, ISingletonDependency
                 _logger.LogError(e, "[PeerManager] Peer {peer} request failed.", peer.Key);
             }
         }
-
-        // await Task.WhenAll(_peers.Where(p => p.Value.IsConnectionReady())
-        //     .Select(p => Task.FromResult(p.Value.CallAsync(func))));
     }
 
-    public async Task CommitToLeaderAsync<TResponse>(Func<AetherlinkClient, TResponse> func, long epoch, int roundId)
+    public async Task CommitToLeaderAsync<TResponse>(Func<AetherlinkClient, TResponse> func, long epoch,
+        int roundId)
     {
         var leader = _option.Domains[LeaderElection(epoch, roundId)];
         try
         {
             _logger.LogDebug("[PeerManager] Send to leader {peer}", leader);
-            _peers[leader].CallAsync(func);
+            await Task.FromResult(_peers[leader].CallAsync(func));
         }
         catch (Exception e)
         {

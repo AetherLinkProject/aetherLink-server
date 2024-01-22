@@ -128,10 +128,8 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
 
         var procJob = _objectMapper.Map<RequestDto, GeneratePartialSignatureJobArgs>(request);
         procJob.Observations = observations;
-
         await _backgroundJobManager.EnqueueAsync(procJob);
 
-        var context = new CancellationTokenSource(TimeSpan.FromSeconds(GrpcConstants.DefaultRequestTimeout));
         await _peerManager.BroadcastAsync(p => p.CommitReportAsync(new CommitReportRequest
         {
             RequestId = request.RequestId,
@@ -139,7 +137,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
             RoundId = request.RoundId,
             Epoch = request.Epoch,
             ObservationResults = { observations }
-        }, cancellationToken: context.Token));
+        }));
     }
 
     private string GenerateReportId(GenerateReportJobArgs args)

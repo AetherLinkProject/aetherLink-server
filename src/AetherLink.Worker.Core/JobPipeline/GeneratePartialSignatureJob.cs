@@ -116,13 +116,10 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
         var reportSign = _objectMapper.Map<GeneratePartialSignatureJobArgs, CommitSignatureRequest>(args);
         reportSign.Signature = ByteString.CopyFrom(partialSig.Signature);
         reportSign.Index = partialSig.Index;
+        await _peerManager.CommitToLeaderAsync(p => p.CommitSignatureAsync(reportSign), epoch,
+            roundId);
 
-        _logger.LogInformation("[Step4][Follower] Send report signature to leader.");
-
-        await _peerManager.CommitToLeaderAsync(p => p.CommitSignatureAsync(reportSign), epoch, roundId);
-        // var context = new CancellationTokenSource(TimeSpan.FromSeconds(GrpcConstants.DefaultRequestTimeout));
-        // await _peerManager.CommitToLeaderAsync(
-        //     p => p.CommitSignatureAsync(reportSign, cancellationToken: context.Token), epoch, roundId);
-        _logger.LogInformation("[step4][Follower] {reqId}-{epoch} Waiting for leader transmitted.", reqId, epoch);
+        _logger.LogInformation("[step4][Follower] {reqId}-{epoch} Send signature to leader, Waiting for transmitted.",
+            reqId, epoch);
     }
 }

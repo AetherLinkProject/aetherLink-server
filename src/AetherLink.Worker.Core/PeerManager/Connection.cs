@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Grpc.Net.Client.Configuration;
@@ -70,7 +71,9 @@ public class Connection
                 case ConnectivityState.Idle:
                 case ConnectivityState.Connecting:
                 case ConnectivityState.TransientFailure:
-                    _channel.ConnectAsync().ConfigureAwait(false);
+                    var context =
+                        new CancellationTokenSource(TimeSpan.FromSeconds(GrpcConstants.DefaultConnectTimeout));
+                    _channel.ConnectAsync(context.Token);
                     return true;
                 case ConnectivityState.Shutdown:
                 default:
@@ -79,7 +82,7 @@ public class Connection
         }
         catch (OperationCanceledException)
         {
-            return false;
+            throw;
         }
         catch (Exception)
         {
