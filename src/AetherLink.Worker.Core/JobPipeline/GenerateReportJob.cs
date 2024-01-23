@@ -121,11 +121,9 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
 
     private List<long> GenerateObservations(GenerateReportJobArgs args)
     {
-        var observations = _stateProvider.GetPartialObservation(GenerateReportId(args));
-        _logger.LogDebug("[Step3][Leader] {requestId} observations: {results}", args.RequestId, observations);
-
         var aggregationResults = Enumerable.Repeat(0L, _peerManager.GetPeersCount()).ToList();
-        observations.ForEach(o => aggregationResults[o.Index] = o.ObservationResult);
+        _stateProvider.GetPartialObservation(GenerateReportId(args))
+            .ForEach(o => aggregationResults[o.Index] = o.ObservationResult);
         _logger.LogDebug("[Step3][Leader] {requestId} report: {results}", args.RequestId, aggregationResults);
         return aggregationResults;
     }

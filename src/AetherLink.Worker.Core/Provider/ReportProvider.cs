@@ -28,7 +28,7 @@ public class ReportProvider : IReportProvider, ITransientDependency
     public async Task SetAsync(ReportDto report)
     {
         var key = GetReportRedisKey(report.ChainId, report.RequestId, report.Epoch);
-        _logger.LogDebug("[ReportProvider] Start to set request {key}. state:{state}", key, report.Observations);
+        _logger.LogDebug("[ReportProvider] Start to set request {key}. result:{state}", key, report.Observations);
 
         await _storageProvider.SetAsync(key, report);
     }
