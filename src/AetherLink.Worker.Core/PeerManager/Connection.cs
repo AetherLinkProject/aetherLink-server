@@ -15,7 +15,6 @@ public class Connection
     public Connection(string endpoint)
     {
         // todo: complete ip address validate 
-        if (string.IsNullOrWhiteSpace(endpoint)) throw new ArgumentNullException(nameof(endpoint));
 
         var options = new GrpcChannelOptions
         {

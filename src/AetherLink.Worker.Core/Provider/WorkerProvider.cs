@@ -72,7 +72,7 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
     {
         if (!_requestJob.TryGetValue(logEvent.RequestTypeIndex, out var request))
         {
-            _logger.LogWarning("unknown job type: {type}", logEvent.RequestTypeIndex);
+            _logger.LogError("unknown job type: {type}", logEvent.RequestTypeIndex);
             return;
         }
 

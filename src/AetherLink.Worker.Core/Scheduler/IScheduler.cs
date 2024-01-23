@@ -12,9 +12,9 @@ namespace AetherLink.Worker.Core.Scheduler;
 
 public interface ISchedulerService
 {
-    public void StartScheduler(RequestDto request, SchedulerType type);
-    public void CancelScheduler(RequestDto request, SchedulerType type);
-    public void CancelAllSchedule(RequestDto request);
+    public void StartScheduler(JobDto job, SchedulerType type);
+    public void CancelScheduler(JobDto job, SchedulerType type);
+    public void CancelAllSchedule(JobDto job);
     public DateTime UpdateBlockTime(DateTime blockStartTime);
 }
 
@@ -36,24 +36,24 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         ListenForEnd();
     }
 
-    public void StartScheduler(RequestDto request, SchedulerType type)
+    public void StartScheduler(JobDto job, SchedulerType type)
     {
         JobManager.UseUtcTime();
         DateTime overTime;
         var registry = new Registry();
-        var schedulerName = GenerateScheduleName(request.ChainId, request.RequestId, type);
+        var schedulerName = GenerateScheduleName(job.ChainId, job.RequestId, type);
         CancelSchedulerByName(schedulerName);
 
         switch (type)
         {
             case SchedulerType.ObservationCollectWaitingScheduler:
                 overTime = DateTime.Now.AddMinutes(_options.ObservationCollectTimeoutWindow);
-                registry.Schedule(() => _observationScheduler.Execute(request)).WithName(schedulerName).NonReentrant()
+                registry.Schedule(() => _observationScheduler.Execute(job)).WithName(schedulerName).NonReentrant()
                     .ToRunOnceAt(overTime);
                 break;
             case SchedulerType.CheckRequestEndScheduler:
-                overTime = request.RequestReceiveTime.AddMinutes(_options.CheckRequestEndTimeoutWindow);
-                registry.Schedule(() => _resetRequestScheduler.Execute(request)).WithName(schedulerName)
+                overTime = job.RequestReceiveTime.AddMinutes(_options.CheckRequestEndTimeoutWindow);
+                registry.Schedule(() => _resetRequestScheduler.Execute(job)).WithName(schedulerName)
                     .NonReentrant().ToRunOnceAt(overTime);
                 break;
             default:
@@ -66,16 +66,16 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         JobManager.Initialize(registry);
     }
 
-    public void CancelScheduler(RequestDto request, SchedulerType type)
+    public void CancelScheduler(JobDto job, SchedulerType type)
     {
-        CancelSchedulerByName(GenerateScheduleName(request.ChainId, request.RequestId, type));
+        CancelSchedulerByName(GenerateScheduleName(job.ChainId, job.RequestId, type));
     }
 
-    public void CancelAllSchedule(RequestDto request)
+    public void CancelAllSchedule(JobDto job)
     {
         foreach (SchedulerType schedulerType in Enum.GetValues(typeof(SchedulerType)))
         {
-            CancelSchedulerByName(GenerateScheduleName(request.ChainId, request.RequestId, schedulerType));
+            CancelSchedulerByName(GenerateScheduleName(job.ChainId, job.RequestId, schedulerType));
         }
     }
 

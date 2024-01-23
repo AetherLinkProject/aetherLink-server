@@ -19,27 +19,27 @@ namespace AetherLink.Worker.Core.JobPipeline;
 public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArgs>, ITransientDependency
 {
     private readonly IPeerManager _peerManager;
+    private readonly IJobProvider _jobProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly IPriceDataProvider _provider;
     private readonly IStateProvider _stateProvider;
     private readonly IRetryProvider _retryProvider;
-    private readonly IRequestProvider _requestProvider;
+    private readonly ILogger<CollectObservationJob> _logger;
     private readonly IDataMessageProvider _dataMessageProvider;
     private readonly IBackgroundJobManager _backgroundJobManager;
-    private readonly ILogger<CollectObservationJob> _logger;
 
     public CollectObservationJob(IPeerManager peerManager, ILogger<CollectObservationJob> logger,
         IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper, IPriceDataProvider provider,
-        IRetryProvider retryProvider, IStateProvider stateProvider, IRequestProvider requestProvider,
+        IRetryProvider retryProvider, IStateProvider stateProvider, IJobProvider jobProvider,
         IDataMessageProvider dataMessageProvider)
     {
         _logger = logger;
         _provider = provider;
         _peerManager = peerManager;
+        _jobProvider = jobProvider;
         _objectMapper = objectMapper;
         _retryProvider = retryProvider;
         _stateProvider = stateProvider;
-        _requestProvider = requestProvider;
         _dataMessageProvider = dataMessageProvider;
         _backgroundJobManager = backgroundJobManager;
     }
@@ -55,24 +55,24 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
 
         try
         {
-            _logger.LogInformation("[Step2] Get leader observation collect request {name}.", argId);
+            _logger.LogInformation("[Step2] Get leader observation collect job {name}.", argId);
             var currentEpoch = _stateProvider.GetFollowerObservationCurrentEpoch(requestEpochId);
             if (epoch < currentEpoch)
             {
-                _logger.LogInformation("[Step2] The epoch in the request {name} is older than the local {epoch}",
+                _logger.LogInformation("[Step2] The epoch in the job {name} is older than the local {epoch}",
                     argId, currentEpoch);
                 return;
             }
 
-            var request = await _requestProvider.GetAsync(args);
-            if (!await IsJobNeedExecuteAsync(args, request))
+            var job = await _jobProvider.GetAsync(args);
+            if (!await IsJobNeedExecuteAsync(args, job))
             {
-                _logger.LogWarning("[Step2] {name} no need to execute", argId);
+                _logger.LogDebug("[Step2] {name} no need to execute", argId);
                 return;
             }
 
             var data = await _dataMessageProvider.GetAsync(args);
-            var observationResult = data == null ? await GetDataFeedsDataAsync(request.JobSpec) : data.Data;
+            var observationResult = data == null ? await GetDataFeedsDataAsync(job.JobSpec) : data.Data;
 
             _logger.LogDebug("[step2] Get DataFeeds observation result: {result}", observationResult);
 
@@ -93,31 +93,31 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
         }
     }
 
-    private async Task<bool> IsJobNeedExecuteAsync(CollectObservationJobArgs args, RequestDto request)
+    private async Task<bool> IsJobNeedExecuteAsync(CollectObservationJobArgs args, JobDto job)
     {
         var argRequestId = args.RequestId;
         var argRoundId = args.RoundId;
         var argEpoch = args.Epoch;
 
-        if (request == null)
+        if (job == null)
         {
             _logger.LogInformation("[Step2] {reqId}-{epoch} is not exist yet.", argRequestId, argEpoch);
             await _retryProvider.RetryAsync(args, backOff: true);
             return false;
         }
 
-        var reqRequestId = request.RequestId;
-        var reqEpoch = request.Epoch;
-        var reqRoundId = request.RoundId;
+        var reqRequestId = job.RequestId;
+        var reqEpoch = job.Epoch;
+        var reqRoundId = job.RoundId;
 
-        if (argEpoch > reqEpoch || (argEpoch == reqEpoch && request.State is RequestState.RequestEnd))
+        if (argEpoch > reqEpoch || (argEpoch == reqEpoch && job.State is RequestState.RequestEnd))
         {
             _logger.LogInformation("[Step2] {reqId}-{epoch} is not ready yet.", argRequestId, argEpoch);
             await _retryProvider.RetryAsync(args, delayDelta: argEpoch - reqEpoch);
             return false;
         }
 
-        if (request.State is RequestState.RequestCanceled)
+        if (job.State is RequestState.RequestCanceled)
         {
             _logger.LogInformation("[Step2] {RequestId} is canceled.", reqRequestId);
             return false;

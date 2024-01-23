@@ -23,28 +23,28 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
 {
     private readonly object _lock;
     private readonly IPeerManager _peerManager;
+    private readonly IJobProvider _jobProvider;
     private readonly OracleInfoOptions _options;
     private readonly IObjectMapper _objectMapper;
     private readonly IStateProvider _stateProvider;
     private readonly IReportProvider _reportProvider;
-    private readonly IRequestProvider _requestProvider;
     private readonly ILogger<GenerateReportJob> _logger;
     private readonly ISchedulerService _schedulerService;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public GenerateReportJob(ILogger<GenerateReportJob> logger, ISchedulerService schedulerService,
         IObjectMapper objectMapper, IStateProvider stateProvider, IOptionsSnapshot<OracleInfoOptions> options,
-        IRequestProvider requestProvider, IReportProvider reportProvider, IPeerManager peerManager,
+        IJobProvider jobProvider, IReportProvider reportProvider, IPeerManager peerManager,
         IBackgroundJobManager backgroundJobManager)
     {
         _logger = logger;
         _lock = new object();
         _options = options.Value;
         _peerManager = peerManager;
+        _jobProvider = jobProvider;
         _objectMapper = objectMapper;
         _stateProvider = stateProvider;
         _reportProvider = reportProvider;
-        _requestProvider = requestProvider;
         _schedulerService = schedulerService;
         _backgroundJobManager = backgroundJobManager;
     }
@@ -61,10 +61,10 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
         try
         {
             // check epoch state
-            var request = await _requestProvider.GetAsync(args);
-            if (request == null || request.State is RequestState.RequestCanceled) return;
+            var job = await _jobProvider.GetAsync(args);
+            if (job == null || job.State is RequestState.RequestCanceled) return;
 
-            TryProcessReportAsync(args, request);
+            TryProcessReportAsync(args, job);
 
             if (!IsReportEnough(args) || _stateProvider.IsReportGenerated(GenerateReportId(args))) return;
 
@@ -81,7 +81,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
                 Observations = observations
             });
 
-            await ProcessReportGeneratedResultAsync(request, observations);
+            await ProcessReportGeneratedResultAsync(job, observations);
         }
         catch (Exception e)
         {
@@ -99,7 +99,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
         return observations.Count >= chainConfig.ObservationsThreshold;
     }
 
-    private void TryProcessReportAsync(GenerateReportJobArgs args, RequestDto request)
+    private void TryProcessReportAsync(GenerateReportJobArgs args, JobDto job)
     {
         lock (_lock)
         {
@@ -108,7 +108,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
             {
                 _logger.LogInformation("[step3][Leader] Init {id}, start observation collection scheduler",
                     reportId);
-                _schedulerService.StartScheduler(request, SchedulerType.ObservationCollectWaitingScheduler);
+                _schedulerService.StartScheduler(job, SchedulerType.ObservationCollectWaitingScheduler);
             }
 
             _stateProvider.AddOrUpdateReport(reportId, new ObservationDto
@@ -128,21 +128,21 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
         return aggregationResults;
     }
 
-    private async Task ProcessReportGeneratedResultAsync(RequestDto request, List<long> observations)
+    private async Task ProcessReportGeneratedResultAsync(JobDto job, List<long> observations)
     {
         // cancel ObservationCollectWaiting scheduler if observations collection is enough
-        _schedulerService.CancelScheduler(request, SchedulerType.ObservationCollectWaitingScheduler);
+        _schedulerService.CancelScheduler(job, SchedulerType.ObservationCollectWaitingScheduler);
 
-        var procJob = _objectMapper.Map<RequestDto, GeneratePartialSignatureJobArgs>(request);
+        var procJob = _objectMapper.Map<JobDto, GeneratePartialSignatureJobArgs>(job);
         procJob.Observations = observations;
         await _backgroundJobManager.EnqueueAsync(procJob);
 
         await _peerManager.BroadcastAsync(p => p.CommitReportAsync(new CommitReportRequest
         {
-            RequestId = request.RequestId,
-            ChainId = request.ChainId,
-            RoundId = request.RoundId,
-            Epoch = request.Epoch,
+            RequestId = job.RequestId,
+            ChainId = job.ChainId,
+            RoundId = job.RoundId,
+            Epoch = job.Epoch,
             ObservationResults = { observations }
         }));
     }

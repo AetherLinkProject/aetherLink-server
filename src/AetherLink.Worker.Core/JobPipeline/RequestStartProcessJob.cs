@@ -17,20 +17,20 @@ namespace AetherLink.Worker.Core.JobPipeline;
 public class RequestStartProcessJob : AsyncBackgroundJob<RequestStartProcessJobArgs>, ITransientDependency
 {
     private readonly IPeerManager _peerManager;
+    private readonly IJobProvider _jobProvider;
     private readonly IObjectMapper _objectMapper;
-    private readonly IRequestProvider _requestProvider;
     private readonly ISchedulerService _schedulerService;
     private readonly ILogger<RequestStartProcessJob> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public RequestStartProcessJob(IPeerManager peerManager, ILogger<RequestStartProcessJob> logger,
         IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper, ISchedulerService schedulerService,
-        IRequestProvider requestProvider)
+        IJobProvider jobProvider)
     {
         _logger = logger;
         _peerManager = peerManager;
+        _jobProvider = jobProvider;
         _objectMapper = objectMapper;
-        _requestProvider = requestProvider;
         _schedulerService = schedulerService;
         _backgroundJobManager = backgroundJobManager;
     }
@@ -42,29 +42,29 @@ public class RequestStartProcessJob : AsyncBackgroundJob<RequestStartProcessJobA
 
         try
         {
-            var request = await _requestProvider.GetAsync(args);
-            if (request == null)
+            var job = await _jobProvider.GetAsync(args);
+            if (job == null)
             {
-                request = _objectMapper.Map<RequestStartProcessJobArgs, RequestDto>(args);
+                job = _objectMapper.Map<RequestStartProcessJobArgs, JobDto>(args);
             }
-            else if (request.State == RequestState.RequestCanceled || args.Epoch < request.Epoch)
+            else if (job.State == RequestState.RequestCanceled || args.Epoch < job.Epoch)
             {
                 return;
             }
             // Update blockTime through transmitted event time, used for node consensus task start time.
-            else if (request.RoundId == 0 && request.State == RequestState.RequestEnd)
+            else if (job.RoundId == 0 && job.State == RequestState.RequestEnd)
             {
-                blockTime = DateTimeOffset.FromUnixTimeMilliseconds(request.TransactionBlockTime).DateTime;
+                blockTime = DateTimeOffset.FromUnixTimeMilliseconds(job.TransactionBlockTime).DateTime;
             }
 
             // This transaction completion time is not the start time of scheduled task execution, so the node needs to align this time to the official execution time.
-            request.RequestReceiveTime = _schedulerService.UpdateBlockTime(blockTime);
-            request.RoundId = args.RoundId;
-            request.State = RequestState.RequestStart;
-            await _requestProvider.SetAsync(request);
+            job.RequestReceiveTime = _schedulerService.UpdateBlockTime(blockTime);
+            job.RoundId = args.RoundId;
+            job.State = RequestState.RequestStart;
+            await _jobProvider.SetAsync(job);
 
             _logger.LogDebug("[Step1] {name} start startTime {time}, blockTime {blockTime}", argId, args.StartTime,
-                request.TransactionBlockTime);
+                job.TransactionBlockTime);
 
             if (_peerManager.IsLeader(args.Epoch, args.RoundId))
             {
@@ -83,7 +83,7 @@ public class RequestStartProcessJob : AsyncBackgroundJob<RequestStartProcessJobA
                     }));
             }
 
-            _schedulerService.StartScheduler(request, SchedulerType.CheckRequestEndScheduler);
+            _schedulerService.StartScheduler(job, SchedulerType.CheckRequestEndScheduler);
 
             _logger.LogInformation("[step1] {name} Waiting for request end.", argId);
         }

@@ -23,11 +23,11 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
 {
     private readonly object _lock;
     private readonly IPeerManager _peerManager;
+    private readonly IJobProvider _jobProvider;
     private readonly OracleInfoOptions _options;
     private readonly IObjectMapper _objectMapper;
     private readonly IStateProvider _stateProvider;
     private readonly IReportProvider _reportProvider;
-    private readonly IRequestProvider _requestProvider;
     private readonly IContractProvider _contractProvider;
     private readonly ILogger<GenerateMultiSignatureJob> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
@@ -35,16 +35,16 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
 
     public GenerateMultiSignatureJob(ILogger<GenerateMultiSignatureJob> logger, IStateProvider stateProvider,
         IOptionsSnapshot<OracleInfoOptions> oracleChainInfoOptions, IContractProvider contractProvider,
-        IOracleContractProvider oracleContractProvider, IObjectMapper objectMapper, IRequestProvider requestProvider,
+        IOracleContractProvider oracleContractProvider, IObjectMapper objectMapper, IJobProvider jobProvider,
         IReportProvider reportProvider, IPeerManager peerManager, IBackgroundJobManager backgroundJobManager)
     {
         _logger = logger;
         _lock = new object();
+        _jobProvider = jobProvider;
         _peerManager = peerManager;
         _objectMapper = objectMapper;
         _stateProvider = stateProvider;
         _reportProvider = reportProvider;
-        _requestProvider = requestProvider;
         _contractProvider = contractProvider;
         _options = oracleChainInfoOptions.Value;
         _backgroundJobManager = backgroundJobManager;
@@ -61,18 +61,18 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
 
         try
         {
-            var request = await _requestProvider.GetAsync(args);
-            if (request == null || request.State == RequestState.RequestCanceled) return;
+            var job = await _jobProvider.GetAsync(args);
+            if (job == null || job.State == RequestState.RequestCanceled) return;
 
             var observations = await _reportProvider.GetAsync(args);
             if (observations == null)
             {
-                _logger.LogWarning("[Step5][Leader] {name} Report is null.", argId);
+                _logger.LogError("[Step5][Leader] {name} Report is null.", argId);
                 return;
             }
 
             var transmitData = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, reqId,
-                request.TransactionId, epoch, new LongList { Data = { observations.Observations } }.ToByteString());
+                job.TransactionId, epoch, new LongList { Data = { observations.Observations } }.ToByteString());
 
             var msg = HashHelper.ConcatAndCompute(HashHelper.ComputeFrom(transmitData.Report.ToByteArray()),
                 HashHelper.ComputeFrom(transmitData.ReportContext.ToString())).ToByteArray();
@@ -94,7 +94,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
             _logger.LogInformation("[step5][Leader] {name} Transmit transaction {transactionId}", argId,
                 transactionId);
 
-            await ProcessTransactionResultAsync(args, transactionId, request);
+            await ProcessTransactionResultAsync(args, transactionId, job);
         }
         catch (Exception e)
         {
@@ -128,9 +128,9 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
     }
 
     private async Task ProcessTransactionResultAsync(GenerateMultiSignatureJobArgs args, string transactionId,
-        RequestDto request)
+        JobDto job)
     {
-        var finishArgs = _objectMapper.Map<RequestDto, TransmitResultProcessJobArgs>(request);
+        var finishArgs = _objectMapper.Map<JobDto, TransmitResultProcessJobArgs>(job);
         finishArgs.TransactionId = transactionId;
         await _backgroundJobManager.EnqueueAsync(finishArgs);
 

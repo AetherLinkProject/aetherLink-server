@@ -33,11 +33,7 @@ public class PeerManager : IPeerManager, ISingletonDependency
         _option = option.Value;
         _ownerIndex = _option.Index;
         _peersCount = _option.Domains.Count;
-
-        var peerList = _option.Domains.ToList();
-        peerList.RemoveAt(_ownerIndex);
-        peerList.Where(domain => !string.IsNullOrEmpty(domain)).ToList()
-            .ForEach(domain => _peers.TryAdd(domain, new Connection(domain)));
+        InitConnection();
     }
 
     public int GetOwnIndex() => _ownerIndex;
@@ -84,6 +80,24 @@ public class PeerManager : IPeerManager, ISingletonDependency
         {
             _logger.LogError(e, "[PeerManager] Send to leader {peer} failed.", leader);
         }
+    }
+
+    private void InitConnection()
+    {
+        var peerList = _option.Domains.ToList();
+        peerList.RemoveAt(_ownerIndex);
+        peerList.Where(domain => !string.IsNullOrEmpty(domain)).ToList()
+            .ForEach(domain =>
+            {
+                try
+                {
+                    _peers.TryAdd(domain, new Connection(domain));
+                }
+                catch (Exception e)
+                {
+                    _logger.LogWarning(e, "[PeerManager] Init {domain} client failed, please check address", domain);
+                }
+            });
     }
 
     private int LeaderElection(long epoch, int roundId) => (int)(epoch + roundId) % _peersCount;

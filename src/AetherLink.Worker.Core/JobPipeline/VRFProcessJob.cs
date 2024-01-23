@@ -59,7 +59,7 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
             // validate keyHash
             if (HashHelper.ComputeFrom(vrfKp.PublicKey.ToHex()) != specificData.KeyHash)
             {
-                _logger.LogWarning("[VRF] This vrf job isn't belong to this node. reqId {reqId}", reqId);
+                _logger.LogInformation("[VRF] This vrf job isn't belong to this node. reqId {reqId}", reqId);
                 return;
             }
 

@@ -14,7 +14,7 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
         CreateMap<RequestCancelledDto, RequestCancelProcessJobArgs>();
 
         CreateMap<DataFeedsProcessJobArgs, RequestStartProcessJobArgs>();
-        CreateMap<RequestStartProcessJobArgs, RequestDto>()
+        CreateMap<RequestStartProcessJobArgs, JobDto>()
             .ForMember(t => t.TransactionBlockTime, m => m.MapFrom(f => f.StartTime));
         CreateMap<GenerateMultiSignatureJobArgs, TransmitResultProcessJobArgs>();
 
@@ -32,10 +32,10 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
         CreateMap<GenerateMultiSignatureJobArgs, CommitTransmitResultRequest>();
 
 
-        CreateMap<RequestDto, RequestStartProcessJobArgs>()
+        CreateMap<JobDto, RequestStartProcessJobArgs>()
             .ForMember(t => t.StartTime, m => m.MapFrom(f => f.TransactionBlockTime));
-        CreateMap<RequestDto, TransmitResultProcessJobArgs>();
-        CreateMap<RequestDto, GeneratePartialSignatureJobArgs>();
+        CreateMap<JobDto, TransmitResultProcessJobArgs>();
+        CreateMap<JobDto, GeneratePartialSignatureJobArgs>();
 
         // grpc request
         CreateMap<CommitTransmitResultRequest, TransmitResultProcessJobArgs>()

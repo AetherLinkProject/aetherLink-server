@@ -14,53 +14,53 @@ namespace AetherLink.Worker.Core.Scheduler;
 
 public interface IResetRequestSchedulerJob
 {
-    public Task Execute(RequestDto request);
+    public Task Execute(JobDto job);
 }
 
 public class ResetRequestSchedulerJob : IResetRequestSchedulerJob, ITransientDependency
 {
     private readonly IObjectMapper _objectMapper;
-    private readonly IRequestProvider _requestProvider;
+    private readonly IJobProvider _jobProvider;
     private readonly SchedulerOptions _schedulerOptions;
     private readonly ILogger<ResetRequestSchedulerJob> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public ResetRequestSchedulerJob(IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper,
         ILogger<ResetRequestSchedulerJob> logger, IOptionsSnapshot<SchedulerOptions> schedulerOptions,
-        IRequestProvider requestProvider)
+        IJobProvider jobProvider)
     {
         _logger = logger;
         _objectMapper = objectMapper;
-        _requestProvider = requestProvider;
+        _jobProvider = jobProvider;
         _schedulerOptions = schedulerOptions.Value;
         _backgroundJobManager = backgroundJobManager;
     }
 
-    public async Task Execute(RequestDto request)
+    public async Task Execute(JobDto job)
     {
         try
         {
-            if (request.State == RequestState.RequestCanceled) return;
+            if (job.State == RequestState.RequestCanceled) return;
 
             _logger.LogInformation(
                 "[ResetScheduler] Scheduler job execute. reqId {ReqId}, roundId:{RoundId}, reqState:{State}",
-                request.RequestId, request.RoundId, request.State.ToString());
-            request.RoundId++;
+                job.RequestId, job.RoundId, job.State.ToString());
+            job.RoundId++;
 
-            while (DateTime.UtcNow > DateTimeOffset.FromUnixTimeMilliseconds(request.TransactionBlockTime).DateTime)
+            while (DateTime.UtcNow > DateTimeOffset.FromUnixTimeMilliseconds(job.TransactionBlockTime).DateTime)
             {
-                request.TransactionBlockTime += _schedulerOptions.RetryTimeOut * 60 * 1000;
+                job.TransactionBlockTime += _schedulerOptions.RetryTimeOut * 60 * 1000;
             }
 
-            _logger.LogDebug("[ResetScheduler] blockTime {time}", request.TransactionBlockTime);
+            _logger.LogDebug("[ResetScheduler] blockTime {time}", job.TransactionBlockTime);
 
-            await _requestProvider.SetAsync(request);
+            await _jobProvider.SetAsync(job);
 
             var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
-                _objectMapper.Map<RequestDto, RequestStartProcessJobArgs>(request), BackgroundJobPriority.High);
+                _objectMapper.Map<JobDto, RequestStartProcessJobArgs>(job), BackgroundJobPriority.High);
             _logger.LogInformation(
                 "[ResetScheduler] Request {ReqId} timeout, will starting in new round:{RoundId}, hangfireId:{hangfire}",
-                request.RequestId, request.RoundId, hangfireJobId);
+                job.RequestId, job.RoundId, hangfireJobId);
         }
         catch (Exception e)
         {

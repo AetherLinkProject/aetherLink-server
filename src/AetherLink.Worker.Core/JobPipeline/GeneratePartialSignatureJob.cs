@@ -22,24 +22,24 @@ namespace AetherLink.Worker.Core.JobPipeline;
 
 public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSignatureJobArgs>, ITransientDependency
 {
+    private readonly IJobProvider _jobProvider;
     private readonly IPeerManager _peerManager;
     private readonly IObjectMapper _objectMapper;
     private readonly OracleInfoOptions _infoOptions;
-    private readonly IRequestProvider _requestProvider;
     private readonly IDataMessageProvider _dataMessageProvider;
     private readonly IBackgroundJobManager _backgroundJobManager;
     private readonly ILogger<GeneratePartialSignatureJob> _logger;
     private readonly IOracleContractProvider _oracleContractProvider;
 
     public GeneratePartialSignatureJob(IPeerManager peerManager, ILogger<GeneratePartialSignatureJob> logger,
-        IObjectMapper objectMapper, IBackgroundJobManager backgroundJobManager, IRequestProvider requestProvider,
+        IObjectMapper objectMapper, IBackgroundJobManager backgroundJobManager, IJobProvider jobProvider,
         IOptionsSnapshot<OracleInfoOptions> chainInfoOptions, IOracleContractProvider oracleContractProvider,
         IDataMessageProvider dataMessageProvider)
     {
         _logger = logger;
+        _jobProvider = jobProvider;
         _peerManager = peerManager;
         _objectMapper = objectMapper;
-        _requestProvider = requestProvider;
         _infoOptions = chainInfoOptions.Value;
         _dataMessageProvider = dataMessageProvider;
         _backgroundJobManager = backgroundJobManager;
@@ -59,8 +59,8 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
         try
         {
             // Check Request State
-            var request = await _requestProvider.GetAsync(args);
-            if (request == null || request.State is RequestState.RequestCanceled) return;
+            var job = await _jobProvider.GetAsync(args);
+            if (job == null || job.State is RequestState.RequestCanceled) return;
 
             // Check Data In Report
             var dataMessage = await _dataMessageProvider.GetAsync(args);
@@ -71,7 +71,7 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
             }
 
             await ProcessReportValidateResultAsync(args,
-                await GeneratedPartialSignatureAsync(chainId, request.TransactionId, reqId, observations, epoch));
+                await GeneratedPartialSignatureAsync(chainId, job.TransactionId, reqId, observations, epoch));
         }
         catch (Exception e)
         {

@@ -14,16 +14,16 @@ namespace AetherLink.Worker.Core.JobPipeline;
 
 public class RequestCancelProcessJob : AsyncBackgroundJob<RequestCancelProcessJobArgs>, ITransientDependency
 {
-    private readonly IRequestProvider _requestProvider;
+    private readonly IJobProvider _jobProvider;
     private readonly ISchedulerService _schedulerService;
     private readonly ILogger<RequestCancelProcessJob> _logger;
     private readonly IRecurringJobManager _recurringJobManager;
 
     public RequestCancelProcessJob(IRecurringJobManager recurringJobManager, ILogger<RequestCancelProcessJob> logger,
-        ISchedulerService schedulerService, IRequestProvider requestProvider)
+        ISchedulerService schedulerService, IJobProvider jobProvider)
     {
         _logger = logger;
-        _requestProvider = requestProvider;
+        _jobProvider = jobProvider;
         _schedulerService = schedulerService;
         _recurringJobManager = recurringJobManager;
     }
@@ -38,17 +38,17 @@ public class RequestCancelProcessJob : AsyncBackgroundJob<RequestCancelProcessJo
             _logger.LogInformation("[RequestCancelProcess] {name} Start cancel job timer.", argId);
             _recurringJobManager.RemoveIfExists(IdGeneratorHelper.GenerateId(chainId, reqId));
 
-            var request = await _requestProvider.GetAsync(args);
-            if (request == null)
+            var job = await _jobProvider.GetAsync(args);
+            if (job == null)
             {
-                _logger.LogWarning("[RequestCancelProcess] {name} not exist", args);
+                _logger.LogInformation("[RequestCancelProcess] {name} not exist", args);
                 return;
             }
 
-            request.State = RequestState.RequestCanceled;
-            await _requestProvider.SetAsync(request);
+            job.State = RequestState.RequestCanceled;
+            await _jobProvider.SetAsync(job);
 
-            _schedulerService.CancelAllSchedule(request);
+            _schedulerService.CancelAllSchedule(job);
 
             _logger.LogInformation("[RequestCancelProcess] {name} Cancel job timer finished.", argId);
         }

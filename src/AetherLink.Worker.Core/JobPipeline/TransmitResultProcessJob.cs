@@ -15,8 +15,8 @@ namespace AetherLink.Worker.Core.JobPipeline;
 
 public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcessJobArgs>, ITransientDependency
 {
+    private readonly IJobProvider _jobProvider;
     private readonly IRetryProvider _retryProvider;
-    private readonly IRequestProvider _requestProvider;
     private readonly IContractProvider _contractProvider;
     private readonly ISchedulerService _schedulerService;
     private readonly ProcessJobOptions _processJobOptions;
@@ -24,11 +24,11 @@ public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcess
 
     public TransmitResultProcessJob(ILogger<TransmitResultProcessJob> logger, IContractProvider contractProvider,
         IOptionsSnapshot<ProcessJobOptions> processJobOptions, ISchedulerService schedulerService,
-        IRetryProvider retryProvider, IRequestProvider requestProvider)
+        IRetryProvider retryProvider, IJobProvider jobProvider)
     {
         _logger = logger;
+        _jobProvider = jobProvider;
         _retryProvider = retryProvider;
-        _requestProvider = requestProvider;
         _contractProvider = contractProvider;
         _schedulerService = schedulerService;
         _processJobOptions = processJobOptions.Value;
@@ -47,15 +47,16 @@ public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcess
                 "[Step6] Get leader transmitted result broadcast. reqId:{ReqId}, transactionId:{transactionId}",
                 reqId, transactionId);
 
-            var request = await _requestProvider.GetAsync(args);
+            var job = await _jobProvider.GetAsync(args);
 
-            if (request == null || request.State is RequestState.RequestCanceled || request.Epoch > args.Epoch) return;
+            if (job == null || job.State is RequestState.RequestCanceled || job.Epoch > args.Epoch) return;
 
             var txResult = await _contractProvider.GetTxResultAsync(chainId, transactionId);
             if (txResult.Status is TransactionState.Pending)
             {
-                _logger.LogWarning(
-                    "[Step6] Request {ReqId} transactionId {transactionId} is not mined, will retry in {time} s.", reqId,
+                _logger.LogInformation(
+                    "[Step6] Request {ReqId} transactionId {transactionId} is not mined, will retry in {time} s.",
+                    reqId,
                     transactionId, _processJobOptions.TransactionResultDelay);
                 await _retryProvider.RetryAsync(args, true, delayDelta: _processJobOptions.TransactionResultDelay);
                 return;
@@ -65,7 +66,7 @@ public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcess
             if (!string.IsNullOrEmpty(txResult.Error) && txResult.Error.Contains("Invalid request id"))
             {
                 _logger.LogWarning("[Step6] Request {ReqId} is canceled before transmit.", reqId);
-                _schedulerService.CancelAllSchedule(request);
+                _schedulerService.CancelAllSchedule(job);
                 return;
             }
 
@@ -78,18 +79,18 @@ public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcess
             }
 
             var transmittedLogEvent = _contractProvider.ParseTransmitted(txResult);
-            if (reqId != transmittedLogEvent.RequestId.ToHex() || transmittedLogEvent.EpochAndRound < request.Epoch)
+            if (reqId != transmittedLogEvent.RequestId.ToHex() || transmittedLogEvent.EpochAndRound < job.Epoch)
             {
-                _logger.LogWarning("[Step6] Request {ReqId} transactionId {transactionId} not match.", reqId,
+                _logger.LogError("[Step6] Request {ReqId} transactionId {transactionId} not match.", reqId,
                     transactionId);
                 return;
             }
 
             _logger.LogInformation(
                 "[Step6] {ReqId}-{epoch}-{round} Transmitted validate successful, job execute total time {time}s.",
-                reqId, epoch, roundId, DateTime.Now.Subtract(request.RequestReceiveTime).TotalSeconds);
+                reqId, epoch, roundId, DateTime.Now.Subtract(job.RequestReceiveTime).TotalSeconds);
 
-            _schedulerService.CancelAllSchedule(request);
+            _schedulerService.CancelAllSchedule(job);
         }
         catch (Exception e)
         {

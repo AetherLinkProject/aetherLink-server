@@ -18,7 +18,7 @@ namespace AetherLink.Worker.Core.Scheduler;
 
 public interface IObservationCollectSchedulerJob
 {
-    Task Execute(RequestDto request);
+    Task Execute(JobDto job);
 }
 
 public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, ITransientDependency
@@ -28,12 +28,12 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
     private readonly IObjectMapper _objectMapper;
     private readonly IStateProvider _stateProvider;
     private readonly IReportProvider _reportProvider;
-    private readonly IRequestProvider _requestProvider;
+    private readonly IJobProvider _jobProvider;
     private readonly ILogger<ResetRequestSchedulerJob> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public ObservationCollectSchedulerJob(IObjectMapper objectMapper, ILogger<ResetRequestSchedulerJob> logger,
-        IOptionsSnapshot<OracleInfoOptions> options, IStateProvider stateProvider, IRequestProvider requestProvider,
+        IOptionsSnapshot<OracleInfoOptions> options, IStateProvider stateProvider, IJobProvider jobProvider,
         IReportProvider reportProvider, IPeerManager peerManager, IBackgroundJobManager backgroundJobManager)
     {
         _logger = logger;
@@ -42,30 +42,30 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
         _objectMapper = objectMapper;
         _stateProvider = stateProvider;
         _reportProvider = reportProvider;
-        _requestProvider = requestProvider;
+        _jobProvider = jobProvider;
         _backgroundJobManager = backgroundJobManager;
     }
 
-    public async Task Execute(RequestDto request)
+    public async Task Execute(JobDto job)
     {
         try
         {
-            var chainId = request.ChainId;
-            var reqId = request.RequestId;
-            var roundId = request.RoundId;
-            var epoch = request.Epoch;
+            var chainId = job.ChainId;
+            var reqId = job.RequestId;
+            var roundId = job.RoundId;
+            var epoch = job.Epoch;
 
             _logger.LogInformation(
                 "[ObservationCollectScheduler] Scheduler job execute. reqId {ReqId}, roundId:{RoundId}, reqState:{State}",
-                request.RequestId, request.RoundId, request.State.ToString());
+                job.RequestId, job.RoundId, job.State.ToString());
 
-            if (!_options.ChainConfig.TryGetValue(request.ChainId, out var chainConfig)) return;
-            var reportId = IdGeneratorHelper.GenerateId(request.ChainId, request.RequestId, request.Epoch);
+            if (!_options.ChainConfig.TryGetValue(job.ChainId, out var chainConfig)) return;
+            var reportId = IdGeneratorHelper.GenerateId(job.ChainId, job.RequestId, job.Epoch);
 
             var observations = _stateProvider.GetPartialObservation(reportId);
             if (observations == null || observations.Count < chainConfig.PartialSignaturesThreshold)
             {
-                _logger.LogWarning("[ObservationCollectScheduler] Observation collection not enough.");
+                _logger.LogInformation("[ObservationCollectScheduler] Observation collection not enough.");
                 return;
             }
 
@@ -79,22 +79,22 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
                 Observations = collectResult
             });
 
-            // save request.
-            request.RoundId = roundId;
-            await _requestProvider.SetAsync(request);
+            // save job.
+            job.RoundId = roundId;
+            await _jobProvider.SetAsync(job);
 
             var reportStartSignTime = Timestamp.FromDateTime(DateTime.UtcNow);
-            var args = _objectMapper.Map<RequestDto, GeneratePartialSignatureJobArgs>(request);
+            var args = _objectMapper.Map<JobDto, GeneratePartialSignatureJobArgs>(job);
             args.Observations = collectResult;
 
             await _backgroundJobManager.EnqueueAsync(args);
 
             await _peerManager.BroadcastAsync(p => p.CommitReportAsync(new CommitReportRequest
             {
-                RequestId = request.RequestId,
-                ChainId = request.ChainId,
-                RoundId = request.RoundId,
-                Epoch = request.Epoch,
+                RequestId = job.RequestId,
+                ChainId = job.ChainId,
+                RoundId = job.RoundId,
+                Epoch = job.Epoch,
                 ObservationResults = { collectResult },
                 StartTime = reportStartSignTime
             }));

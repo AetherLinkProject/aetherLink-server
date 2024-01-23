@@ -12,17 +12,17 @@ namespace AetherLink.Worker.Core.Provider;
 public class DataFeedsTimerProvider : ISingletonDependency
 {
     private readonly IObjectMapper _objectMapper;
-    private readonly IRequestProvider _requestProvider;
+    private readonly IJobProvider _jobProvider;
     private readonly ILogger<DataFeedsTimerProvider> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
     private readonly ConcurrentDictionary<string, long> _epochDict = new();
 
     public DataFeedsTimerProvider(IBackgroundJobManager backgroundJobManager, ILogger<DataFeedsTimerProvider> logger,
-        IObjectMapper objectMapper, IRequestProvider requestProvider)
+        IObjectMapper objectMapper, IJobProvider jobProvider)
     {
         _logger = logger;
         _objectMapper = objectMapper;
-        _requestProvider = requestProvider;
+        _jobProvider = jobProvider;
         _backgroundJobManager = backgroundJobManager;
     }
 
@@ -33,7 +33,7 @@ public class DataFeedsTimerProvider : ISingletonDependency
         var argId = IdGeneratorHelper.GenerateId(chainId, reqId);
         _logger.LogInformation("[DataFeedsTimer] {name} Execute checking.", argId);
 
-        var request = await _requestProvider.GetAsync(args);
+        var request = await _jobProvider.GetAsync(args);
         if (request == null)
         {
             // only new request will update epochDict from args Epoch, others will updated epoch by request epoch from transmitted logevent

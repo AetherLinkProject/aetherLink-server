@@ -108,7 +108,7 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         var commitment = await GetRequestCommitmentAsync(chainId, transactionId, requestId);
         var transmitData = new TransmitInput
         {
-            Report = new Oracle.Report
+            Report = new Report
             {
                 Result = result,
                 OnChainMetadata = commitment.ToByteString(),

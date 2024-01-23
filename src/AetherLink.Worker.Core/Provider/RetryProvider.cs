@@ -50,7 +50,7 @@ public class RetryProvider : IRetryProvider, ISingletonDependency
         var delay = backOff ? Math.Pow(time + delayDelta, 2) : time + delayDelta;
         _retryCount[id] = time + 1;
         var hangfireId = await _backgroundJobManager.EnqueueAsync(args, delay: TimeSpan.FromSeconds(delay));
-        _logger.LogWarning(
+        _logger.LogInformation(
             "Task {id} will be executed in {delay} seconds by {hangfireId}. The task has been executed {times} times.",
             id, delay, hangfireId, _retryCount[id]);
     }

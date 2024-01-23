@@ -1,6 +1,6 @@
 namespace AetherLink.Worker.Core.Dtos;
 
-public class RequestBase
+public class OracleRequestBase
 {
     public string ChainId { get; set; }
     public string RequestId { get; set; }
