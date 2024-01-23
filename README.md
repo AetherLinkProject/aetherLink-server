@@ -39,3 +39,7 @@ Aetherlink Server includes the following services:
 ## Contributing
 
 We welcome contributions to the Aetherlink Server project. If you would like to contribute, please fork the repository and submit a pull request with your changes. Before submitting a pull request, please ensure that your code is well-tested.
+
+## License
+
+AetherlinkServer is licensed under [MIT](https://github.com/AetherLinkProject/aetherLink-server/blob/master/LICENSE).
