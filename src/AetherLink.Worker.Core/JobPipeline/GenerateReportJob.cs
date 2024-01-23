@@ -71,9 +71,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
             _stateProvider.SetReportGeneratedFlag(GenerateReportId(args));
             _logger.LogInformation("[Step3][Leader] {name} Generate report, index:{index}", argId, index);
 
-            var observations = _stateProvider.GetPartialObservation(GenerateReportId(args)).OrderBy(p => p.Index)
-                .Select(p => p.ObservationResult).ToList();
-
+            var observations = GenerateObservations(args);
             await _reportProvider.SetAsync(new ReportDto
             {
                 ChainId = chainId,
@@ -119,6 +117,17 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
                 ObservationResult = args.Data
             });
         }
+    }
+
+    private List<long> GenerateObservations(GenerateReportJobArgs args)
+    {
+        var observations = _stateProvider.GetPartialObservation(GenerateReportId(args));
+        _logger.LogDebug("[Step3][Leader] {requestId} observations: {results}", args.RequestId, observations);
+
+        var aggregationResults = Enumerable.Repeat(0L, _peerManager.GetPeersCount()).ToList();
+        observations.ForEach(o => aggregationResults[o.Index] = o.ObservationResult);
+        _logger.LogDebug("[Step3][Leader] {requestId} report: {results}", args.RequestId, aggregationResults);
+        return aggregationResults;
     }
 
     private async Task ProcessReportGeneratedResultAsync(RequestDto request, List<long> observations)

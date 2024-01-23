@@ -13,6 +13,7 @@ namespace AetherLink.Worker.Core.PeerManager;
 public interface IPeerManager
 {
     public int GetOwnIndex();
+    public int GetPeersCount();
     public bool IsLeader(long epoch, int roundId);
     public Task BroadcastAsync<TResponse>(Func<AetherlinkClient, TResponse> func);
     public Task CommitToLeaderAsync<TResponse>(Func<AetherlinkClient, TResponse> func, long epoch, int roundId);
@@ -40,6 +41,7 @@ public class PeerManager : IPeerManager, ISingletonDependency
     }
 
     public int GetOwnIndex() => _ownerIndex;
+    public int GetPeersCount() => _peersCount;
     public bool IsLeader(long epoch, int roundId) => LeaderElection(epoch, roundId) == _ownerIndex;
 
     public async Task BroadcastAsync<TResponse>(Func<AetherlinkClient, TResponse> func)
