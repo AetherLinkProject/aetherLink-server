@@ -139,8 +139,8 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
         var aggregationResults = Enumerable.Repeat(0L, _peerManager.GetPeersCount()).ToList();
         _stateProvider.GetPartialObservation(GenerateReportId(args))
             .ForEach(o => aggregationResults[o.Index] = o.ObservationResult);
-        _logger.LogDebug("[Step3][Leader] {requestId} report: {results}", args.RequestId,
-            aggregationResults.JoinAsString(","));
+        _logger.LogDebug("[Step3][Leader] {requestId} report:{results} count:{count}", args.RequestId,
+            aggregationResults.JoinAsString(","), aggregationResults.Count);
         return aggregationResults;
     }
 
