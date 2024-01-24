@@ -45,8 +45,9 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     public async Task<Hash> GetRandomHashAsync(long blockNumber, string chainId)
     {
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return Hash.Empty;
-        return await CallTransactionAsync<Hash>(chainId, await GenerateRawTransactionAsync(ContractConstants.GetRandomHash,
-            new Int64Value { Value = blockNumber }, chainId, chainInfo.ConsensusContractAddress));
+        return await CallTransactionAsync<Hash>(chainId, await GenerateRawTransactionAsync(
+            ContractConstants.GetRandomHash, new Int64Value { Value = blockNumber }, chainId,
+            chainInfo.ConsensusContractAddress));
     }
 
     public async Task<GetConfigOutput> GetOracleConfigAsync(string chainId)
@@ -65,6 +66,19 @@ public class ContractProvider : IContractProvider, ISingletonDependency
                 chainInfo.OracleContractAddress));
     }
 
+    public async Task<long> GetBlockLatestHeightAsync(string chainId)
+        => await _blockchainClientFactory.GetClient(chainId).GetBlockHeightAsync();
+
+    public async Task<Commitment> GetCommitmentAsync(string chainId, string transactionId)
+        => Commitment.Parser.ParseFrom(ParseLogEvents<RequestStarted>(await GetTxResultAsync(chainId, transactionId))
+            .Commitment);
+
+    public async Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId)
+    {
+        var client = _blockchainClientFactory.GetClient(chainId);
+        return await client.GetTransactionResultAsync(transactionId);
+    }
+
     public async Task<string> SendTransmitAsync(string chainId, TransmitInput transmitInput)
     {
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return "";
@@ -73,22 +87,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         return txRes.TransactionId;
     }
 
-    public async Task<long> GetBlockLatestHeightAsync(string chainId)
-    {
-        var client = _blockchainClientFactory.GetClient(chainId);
-        return await client.GetBlockHeightAsync();
-    }
-
-    public async Task<Commitment> GetCommitmentAsync(string chainId, string transactionId)
-    {
-        var result = await GetTxResultAsync(chainId, transactionId);
-        return Commitment.Parser.ParseFrom(ParseLogEvents<RequestStarted>(result).Commitment);
-    }
-
-    public Transmitted ParseTransmitted(TransactionResultDto transaction)
-    {
-        return ParseLogEvents<Transmitted>(transaction);
-    }
+    public Transmitted ParseTransmitted(TransactionResultDto transaction) => ParseLogEvents<Transmitted>(transaction);
 
     private async Task<T> CallTransactionAsync<T>(string chainId, string rawTx) where T : class, IMessage<T>, new()
     {
@@ -100,10 +99,8 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     }
 
     private async Task<SendTransactionOutput> SendTransactionAsync(string chainId, string rawTx)
-    {
-        var client = _blockchainClientFactory.GetClient(chainId);
-        return await client.SendTransactionAsync(new SendTransactionInput { RawTransaction = rawTx });
-    }
+        => await _blockchainClientFactory.GetClient(chainId)
+            .SendTransactionAsync(new SendTransactionInput { RawTransaction = rawTx });
 
     private async Task<string> GenerateRawTransactionAsync(string methodName, IMessage param, string chainId,
         string contractAddress)
@@ -113,12 +110,6 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         return client.SignTransaction(chainInfo.TransmitterSecret, await client.GenerateTransactionAsync(
                 client.GetAddressFromPrivateKey(chainInfo.TransmitterSecret), contractAddress, methodName, param))
             .ToByteArray().ToHex();
-    }
-
-    public async Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId)
-    {
-        var client = _blockchainClientFactory.GetClient(chainId);
-        return await client.GetTransactionResultAsync(transactionId);
     }
 
     private static T ParseLogEvents<T>(TransactionResultDto txResult) where T : class, IMessage<T>, new()

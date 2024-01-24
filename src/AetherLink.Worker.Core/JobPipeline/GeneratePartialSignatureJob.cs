@@ -66,10 +66,10 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
             // Check Data In Report
             var dataMessage = await _dataMessageProvider.GetAsync(args);
             var index = _peerManager.GetOwnIndex();
-            if (dataMessage != null && (observations.Count < index || observations[index] != dataMessage.Data))
+            if (dataMessage != null && observations[index] != dataMessage.Data)
             {
                 _logger.LogWarning("[step4] {name} Leader report result:{observation}, Check data fail", argId,
-                    observations.ToString());
+                    JoinData(observations));
                 return;
             }
 
@@ -127,4 +127,6 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
         _logger.LogInformation("[step4][Follower] {reqId}-{epoch} Send signature to leader, Waiting for transmitted.",
             reqId, epoch);
     }
+
+    private static string JoinData(IEnumerable<long> data) => data.JoinAsString(",");
 }

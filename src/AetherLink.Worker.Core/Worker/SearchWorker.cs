@@ -19,12 +19,11 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
     private readonly ILogger<SearchWorker> _logger;
     private readonly ConcurrentDictionary<string, long> _heightMap = new();
 
-    public SearchWorker(AbpAsyncTimer timer, IOptionsSnapshot<WorkerOptions> workerOptions,
-        IServiceScopeFactory serviceScopeFactory, IWorkerProvider provider, ILogger<SearchWorker> logger) : base(timer,
-        serviceScopeFactory)
+    public SearchWorker(AbpAsyncTimer timer, IOptionsSnapshot<WorkerOptions> workerOptions, IWorkerProvider provider,
+        IServiceScopeFactory serviceScopeFactory, ILogger<SearchWorker> logger) : base(timer, serviceScopeFactory)
     {
-        _provider = provider;
         _logger = logger;
+        _provider = provider;
         _options = workerOptions.Value;
         Timer.Period = 1000 * _options.SearchTimer;
     }

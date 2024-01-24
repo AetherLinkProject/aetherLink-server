@@ -83,8 +83,7 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
         if (!ValidateRequest(context)) return;
 
         await _backgroundJobManager.EnqueueAsync(
-            _objectMapper.Map<CommitTransmitResultRequest, TransmitResultProcessJobArgs>(request),
-            delay: TimeSpan.FromSeconds(3));
+            _objectMapper.Map<CommitTransmitResultRequest, TransmitResultProcessJobArgs>(request));
     }
 
     // todo: add metadata validate

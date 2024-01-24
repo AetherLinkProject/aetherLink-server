@@ -15,14 +15,13 @@ public interface IServer
 public class Server : IServer, ISingletonDependency
 {
     private Grpc.Core.Server _server;
-    private readonly AetherLinkServer.AetherLinkServerBase _serverService;
     private readonly NetworkOptions _options;
+    private readonly AetherLinkServer.AetherLinkServerBase _serverService;
 
-    public Server(AetherLinkServer.AetherLinkServerBase serverService,
-        IOptionsSnapshot<NetworkOptions> options)
+    public Server(AetherLinkServer.AetherLinkServerBase serverService, IOptionsSnapshot<NetworkOptions> options)
     {
-        _serverService = serverService;
         _options = options.Value;
+        _serverService = serverService;
     }
 
     public Task StartAsync()

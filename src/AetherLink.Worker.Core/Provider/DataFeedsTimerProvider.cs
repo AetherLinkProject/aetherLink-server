@@ -11,8 +11,8 @@ namespace AetherLink.Worker.Core.Provider;
 
 public class DataFeedsTimerProvider : ISingletonDependency
 {
-    private readonly IObjectMapper _objectMapper;
     private readonly IJobProvider _jobProvider;
+    private readonly IObjectMapper _objectMapper;
     private readonly ILogger<DataFeedsTimerProvider> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
     private readonly ConcurrentDictionary<string, long> _epochDict = new();
@@ -21,8 +21,8 @@ public class DataFeedsTimerProvider : ISingletonDependency
         IObjectMapper objectMapper, IJobProvider jobProvider)
     {
         _logger = logger;
-        _objectMapper = objectMapper;
         _jobProvider = jobProvider;
+        _objectMapper = objectMapper;
         _backgroundJobManager = backgroundJobManager;
     }
 

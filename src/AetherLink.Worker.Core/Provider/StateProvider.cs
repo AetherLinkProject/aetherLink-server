@@ -15,14 +15,14 @@ public interface IStateProvider
     public bool IsReportGenerated(string id);
     public void SetReportGeneratedFlag(string id);
     public List<ObservationDto> GetPartialObservation(string id);
-    public List<ObservationDto> AddOrUpdateReport(string id, ObservationDto observation);
+    public void AddOrUpdateReport(string id, ObservationDto observation);
     public MultiSignature GetMultiSignature(string id);
     public void SetMultiSignature(string id, MultiSignature signature);
     public bool GetMultiSignatureSignedFlag(string id);
     public void SetMultiSignatureSignedFlag(string id);
     public long GetFollowerObservationCurrentEpoch(string id);
     public void SetFollowerObservationCurrentEpoch(string id, long epoch);
-    public void CleanEpochState(string id, long epoch);
+    public void CleanEpochState(string id);
 }
 
 public class StateProvider : IStateProvider, ISingletonDependency
@@ -30,8 +30,8 @@ public class StateProvider : IStateProvider, ISingletonDependency
     private readonly ConcurrentDictionary<string, bool> _signedFlag = new();
     private readonly ConcurrentDictionary<string, bool> _reportGeneratedFlag = new();
     private readonly ConcurrentDictionary<string, List<ObservationDto>> _reports = new();
+    private readonly ConcurrentDictionary<string, long> _observationCurrentEpochs = new();
     private readonly ConcurrentDictionary<string, MultiSignature> _multiSignatureDict = new();
-    private readonly ConcurrentDictionary<string, long> _followerObservationCurrentEpochs = new();
 
     // ReportGenerated
     public bool IsReportGenerated(string id) => _reportGeneratedFlag.TryGetValue(id, out _);
@@ -41,7 +41,7 @@ public class StateProvider : IStateProvider, ISingletonDependency
     public List<ObservationDto> GetPartialObservation(string id) =>
         _reports.TryGetValue(id, out var index) ? index : null;
 
-    public List<ObservationDto> AddOrUpdateReport(string id, ObservationDto observation)
+    public void AddOrUpdateReport(string id, ObservationDto observation)
     {
         if (!_reports.TryGetValue(id, out var observations))
         {
@@ -51,15 +51,12 @@ public class StateProvider : IStateProvider, ISingletonDependency
         {
             _reports[id].Add(observation);
         }
-
-        return _reports[id];
     }
 
     public long GetFollowerObservationCurrentEpoch(string id)
-        => _followerObservationCurrentEpochs.TryGetValue(id, out var currentEpoch) ? currentEpoch : 0;
+        => _observationCurrentEpochs.TryGetValue(id, out var currentEpoch) ? currentEpoch : 0;
 
-    public void SetFollowerObservationCurrentEpoch(string id, long epoch) =>
-        _followerObservationCurrentEpochs[id] = epoch;
+    public void SetFollowerObservationCurrentEpoch(string id, long epoch) => _observationCurrentEpochs[id] = epoch;
 
     // MultiSignature
     public MultiSignature GetMultiSignature(string id)
@@ -73,7 +70,7 @@ public class StateProvider : IStateProvider, ISingletonDependency
     public void SetMultiSignatureSignedFlag(string id) => _signedFlag[id] = true;
 
     // Clean up transmitted KV
-    public void CleanEpochState(string id, long epoch)
+    public void CleanEpochState(string id)
     {
     }
 }

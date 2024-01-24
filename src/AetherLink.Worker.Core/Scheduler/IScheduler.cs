@@ -67,9 +67,7 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
     }
 
     public void CancelScheduler(JobDto job, SchedulerType type)
-    {
-        CancelSchedulerByName(GenerateScheduleName(job.ChainId, job.RequestId, type));
-    }
+        => CancelSchedulerByName(GenerateScheduleName(job.ChainId, job.RequestId, type));
 
     public void CancelAllSchedule(JobDto job)
     {

@@ -43,55 +43,83 @@ public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcess
         var transactionId = args.TransactionId;
         try
         {
-            _logger.LogInformation(
-                "[Step6] Get leader transmitted result broadcast. reqId:{ReqId}, transactionId:{transactionId}",
+            _logger.LogInformation("[Step6] Get leader transmitted result. reqId:{ReqId}, transactionId:{txId}",
                 reqId, transactionId);
 
             var job = await _jobProvider.GetAsync(args);
-
             if (job == null || job.State is RequestState.RequestCanceled || job.Epoch > args.Epoch) return;
 
             var txResult = await _contractProvider.GetTxResultAsync(chainId, transactionId);
-            if (txResult.Status is TransactionState.Pending)
+            switch (txResult.Status)
             {
-                _logger.LogInformation(
-                    "[Step6] Request {ReqId} transactionId {transactionId} is not mined, will retry in {time} s.",
-                    reqId,
-                    transactionId, _processJobOptions.TransactionResultDelay);
-                await _retryProvider.RetryAsync(args, true, delayDelta: _processJobOptions.TransactionResultDelay);
-                return;
+                case TransactionState.Mined:
+                    var transmittedLogEvent = _contractProvider.ParseTransmitted(txResult);
+                    if (reqId != transmittedLogEvent.RequestId.ToHex() || transmittedLogEvent.EpochAndRound < job.Epoch)
+                    {
+                        _logger.LogError("[Step6] Job {ReqId} transactionId {txId} not match.", reqId, transactionId);
+                        break;
+                    }
+
+                    _logger.LogInformation(
+                        "[Step6] {ReqId}-{epoch}-{round} Transmitted validate successful, execute {time}s.", reqId,
+                        epoch, roundId, DateTime.Now.Subtract(job.RequestReceiveTime).TotalSeconds);
+
+                    _schedulerService.CancelAllSchedule(job);
+                    break;
+                case TransactionState.Pending:
+                    _logger.LogInformation("[Step6] Job {ReqId} transactionId {txId} is pending, will retry later.",
+                        reqId, transactionId);
+
+                    await _retryProvider.RetryAsync(args, untilFailed: true,
+                        delayDelta: _processJobOptions.TransactionResultDelay);
+                    break;
+                case TransactionState.NotExisted:
+                    _logger.LogInformation("[Step6] Job {ReqId} transactionId {txId} is not exist, will retry later.",
+                        reqId, transactionId);
+
+                    await _retryProvider.RetryAsync(args, backOff: true);
+                    break;
+                default:
+                    // for canceled request 
+                    if (!string.IsNullOrEmpty(txResult.Error) && txResult.Error.Contains("Invalid request id"))
+                    {
+                        _logger.LogWarning("[Step6] Job {ReqId} is canceled before transmit.", reqId);
+
+                        _schedulerService.CancelAllSchedule(job);
+                    }
+
+                    break;
             }
 
-            // for canceled request 
-            if (!string.IsNullOrEmpty(txResult.Error) && txResult.Error.Contains("Invalid request id"))
-            {
-                _logger.LogWarning("[Step6] Request {ReqId} is canceled before transmit.", reqId);
-                _schedulerService.CancelAllSchedule(job);
-                return;
-            }
-
-            // When Transaction status is not mined or pending, Transaction is judged to be failed.
-            if (txResult.Status is not TransactionState.Mined)
-            {
-                _logger.LogWarning("[Step6] Request {ReqId} is {state} not Mined, transactionId {txId} error: {error}",
-                    reqId, txResult.Status, transactionId, txResult.Error);
-                // todo: add tx fail execution.
-                return;
-            }
-
-            var transmittedLogEvent = _contractProvider.ParseTransmitted(txResult);
-            if (reqId != transmittedLogEvent.RequestId.ToHex() || transmittedLogEvent.EpochAndRound < job.Epoch)
-            {
-                _logger.LogError("[Step6] Request {ReqId} transactionId {transactionId} not match.", reqId,
-                    transactionId);
-                return;
-            }
-
-            _logger.LogInformation(
-                "[Step6] {ReqId}-{epoch}-{round} Transmitted validate successful, job execute total time {time}s.",
-                reqId, epoch, roundId, DateTime.Now.Subtract(job.RequestReceiveTime).TotalSeconds);
-
-            _schedulerService.CancelAllSchedule(job);
+            // if (!string.IsNullOrEmpty(txResult.Error) && txResult.Error.Contains("Invalid request id"))
+            // {
+            //     _logger.LogWarning("[Step6] Request {ReqId} is canceled before transmit.", reqId);
+            //     _schedulerService.CancelAllSchedule(job);
+            //     return;
+            // }
+            //
+            // // When Transaction status is not mined or pending, Transaction is judged to be failed.
+            // if (txResult.Status is not TransactionState.Mined)
+            // {
+            //     _logger.LogWarning("[Step6] Request {ReqId} is {state} not Mined, transactionId {txId} error: {error}",
+            //         reqId, txResult.Status, transactionId, txResult.Error);
+            //     // todo: add tx fail execution.
+            //     return;
+            // }
+            //
+            // var transmittedLogEvent = _contractProvider.ParseTransmitted(txResult);
+            // if (reqId != transmittedLogEvent.RequestId.ToHex() || transmittedLogEvent.EpochAndRound < job.Epoch)
+            // {
+            //     _logger.LogError("[Step6] Request {ReqId} transactionId {transactionId} not match.", reqId,
+            //         transactionId);
+            //     return;
+            // }
+            //
+            // _logger.LogInformation(
+            //     "[Step6] {ReqId}-{epoch}-{round} Transmitted validate successful, job execute total time {time}s.",
+            //     reqId, epoch, roundId, DateTime.Now.Subtract(job.RequestReceiveTime).TotalSeconds);
+            //
+            // _schedulerService.CancelAllSchedule(job);
         }
         catch (Exception e)
         {

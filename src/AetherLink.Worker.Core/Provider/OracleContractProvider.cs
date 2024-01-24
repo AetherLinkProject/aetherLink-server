@@ -120,7 +120,6 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         transmitData.ReportContext.Add(await GetOracleConfigAsync(chainId));
         transmitData.ReportContext.Add(HashHelper.ComputeFrom(epoch));
         transmitData.ReportContext.Add(HashHelper.ComputeFrom(0));
-
         return transmitData;
     }
 
