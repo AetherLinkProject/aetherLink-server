@@ -73,7 +73,8 @@ public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcess
             // When Transaction status is not mined or pending, Transaction is judged to be failed.
             if (txResult.Status is not TransactionState.Mined)
             {
-                _logger.LogWarning("[Step6] Request {ReqId} is {state} not Mined", reqId, txResult.Status);
+                _logger.LogWarning("[Step6] Request {ReqId} is {state} not Mined, transactionId {txId} error: {error}",
+                    reqId, txResult.Status, transactionId, txResult.Error);
                 // todo: add tx fail execution.
                 return;
             }
