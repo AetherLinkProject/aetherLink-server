@@ -63,14 +63,25 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
             var job = await _jobProvider.GetAsync(args);
             if (job == null || job.State is RequestState.RequestCanceled) return;
 
+            _logger.LogDebug("[step4] {name} Leader report: {result}", argId, observations.JoinAsString(","));
+
             // Check Data In Report
-            var dataMessage = await _dataMessageProvider.GetAsync(args);
             var index = _peerManager.GetOwnIndex();
-            if (dataMessage != null && observations[index] != dataMessage.Data)
+            var dataMessage = await _dataMessageProvider.GetAsync(args);
+            if (dataMessage != null)
             {
-                _logger.LogWarning("[step4] {name} Leader report result:{observation}, Check data fail", argId,
-                    observations.JoinAsString(","));
-                return;
+                if (observations.Count < _peerManager.GetPeersCount())
+                {
+                    _logger.LogWarning("[step4] {name} observations {count} count not enough", argId,
+                        observations.Count);
+                    return;
+                }
+
+                if (observations[index] != dataMessage.Data)
+                {
+                    _logger.LogWarning("[step4] {name} Check data fail", argId);
+                    return;
+                }
             }
 
             await ProcessReportValidateResultAsync(args,
