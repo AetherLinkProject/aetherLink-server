@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
@@ -69,7 +70,11 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
                 return;
             }
 
-            var collectResult = observations.OrderBy(p => p.Index).Select(p => p.ObservationResult).ToList();
+            var collectResult = Enumerable.Repeat(0L, _peerManager.GetPeersCount()).ToList();
+            _stateProvider.GetPartialObservation(reportId).ForEach(o => collectResult[o.Index] = o.ObservationResult);
+            _logger.LogDebug("[Step3][Leader] {requestId} report:{results} count:{count}", job.RequestId,
+                collectResult.JoinAsString(","), collectResult.Count);
+
             await _reportProvider.SetAsync(new ReportDto
             {
                 ChainId = chainId,

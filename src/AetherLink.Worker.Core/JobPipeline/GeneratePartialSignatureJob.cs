@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AetherLink.Contracts.Consumer;
@@ -64,24 +63,20 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
             if (job == null || job.State is RequestState.RequestCanceled) return;
 
             _logger.LogDebug("[step4] {name} Leader report: {result}", argId, observations.JoinAsString(","));
+            if (observations.Count < _peerManager.GetPeersCount())
+            {
+                _logger.LogWarning("[step4] {name} observations {count} count not enough", argId,
+                    observations.Count);
+                return;
+            }
 
             // Check Data In Report
-            var index = _peerManager.GetOwnIndex();
             var dataMessage = await _dataMessageProvider.GetAsync(args);
-            if (dataMessage != null)
+            if ((dataMessage != null && observations[_peerManager.GetOwnIndex()] != dataMessage.Data) ||
+                (dataMessage == null && observations[_peerManager.GetOwnIndex()] != 0))
             {
-                if (observations.Count < _peerManager.GetPeersCount())
-                {
-                    _logger.LogWarning("[step4] {name} observations {count} count not enough", argId,
-                        observations.Count);
-                    return;
-                }
-
-                if (observations[index] != dataMessage.Data)
-                {
-                    _logger.LogWarning("[step4] {name} Check data fail", argId);
-                    return;
-                }
+                _logger.LogWarning("[step4] {name} Check data fail", argId);
+                return;
             }
 
             await ProcessReportValidateResultAsync(args,

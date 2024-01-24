@@ -1,6 +1,4 @@
-using AElf;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
@@ -76,9 +74,7 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
 
             _logger.LogDebug("[step2] Get DataFeeds observation result: {result}", observationResult);
 
-            var ownerIndex = _peerManager.GetOwnIndex();
             var dataMsg = _objectMapper.Map<CollectObservationJobArgs, DataMessageDto>(args);
-            dataMsg.Index = ownerIndex;
             dataMsg.Data = observationResult;
             await _dataMessageProvider.SetAsync(dataMsg);
 
