@@ -1,5 +1,6 @@
 using AElf;
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Consumer;
@@ -119,9 +120,13 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
 
     private void TryProcessMultiSignature(GenerateMultiSignatureJobArgs args, byte[] msg)
     {
-        if (!_options.ChainConfig.TryGetValue(args.ChainId, out var config)) return;
         lock (_lock)
         {
+            if (!_options.ChainConfig.TryGetValue(args.ChainId, out var config))
+            {
+                throw new InvalidDataException($"Not support chain {args.ChainId}.");
+            }
+
             var id = GenerateMultiSignatureId(args);
             var sign = _stateProvider.GetMultiSignature(id);
             if (sign == null)
@@ -132,7 +137,13 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
                 return;
             }
 
-            if (sign.ProcessPartialSignature(args.PartialSignature)) _stateProvider.SetMultiSignature(id, sign);
+            if (!sign.ProcessPartialSignature(args.PartialSignature))
+            {
+                _logger.LogDebug("[Step5] {index} Process multi signature failed", args.PartialSignature.Index);
+                return;
+            }
+
+            _stateProvider.SetMultiSignature(id, sign);
         }
     }
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using AElf;
@@ -66,7 +67,8 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
             var dataMessage = await _dataMessageProvider.GetAsync(args);
             if (dataMessage != null && observations[_peerManager.GetOwnIndex()] != dataMessage.Data)
             {
-                _logger.LogWarning("[step4] {name} Check data fail", argId);
+                _logger.LogWarning("[step4] {name} Leader report result:{observation}, Check data fail", argId,
+                    observations.ToString());
                 return;
             }
 
@@ -82,7 +84,10 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
     private async Task<PartialSignatureDto> GeneratedPartialSignatureAsync(string chainId, string transactionId,
         string requestId, IEnumerable<long> observations, long epoch)
     {
-        if (!_infoOptions.ChainConfig.TryGetValue(chainId, out var chainConfig)) return new PartialSignatureDto();
+        if (!_infoOptions.ChainConfig.TryGetValue(chainId, out var chainConfig))
+        {
+            throw new InvalidDataException($"Not support chain {chainId}.");
+        }
 
         var transmitData = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, requestId,
             transactionId, epoch, new LongList { Data = { observations } }.ToByteString());
