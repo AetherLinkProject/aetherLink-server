@@ -123,11 +123,14 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
             return false;
         }
 
-        if ((argEpoch != reqEpoch || reqRoundId <= argRoundId) && argEpoch >= reqEpoch) return true;
+        if (reqRoundId > argRoundId || argEpoch < reqEpoch)
+        {
+            _logger.LogInformation("[Step2] {RequestId} is not match, epoch:{epoch} round:{Round}.", reqRequestId,
+                reqEpoch, reqRoundId);
+            return false;
+        }
 
-        _logger.LogInformation("[Step2] {RequestId} is not match, epoch:{epoch} round:{Round}.", reqRequestId,
-            reqEpoch, reqRoundId);
-        return false;
+        return true;
     }
 
     private async Task<long> GetDataFeedsDataAsync(string spec)

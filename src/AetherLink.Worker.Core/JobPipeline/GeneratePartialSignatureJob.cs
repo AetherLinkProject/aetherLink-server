@@ -65,7 +65,8 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
 
             // Check Data In Report
             var dataMessage = await _dataMessageProvider.GetAsync(args);
-            if (dataMessage != null && observations[_peerManager.GetOwnIndex()] != dataMessage.Data)
+            var index = _peerManager.GetOwnIndex();
+            if (dataMessage != null && (observations.Count < index || observations[index] != dataMessage.Data))
             {
                 _logger.LogWarning("[step4] {name} Leader report result:{observation}, Check data fail", argId,
                     observations.ToString());
