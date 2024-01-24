@@ -131,6 +131,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
             var sign = _stateProvider.GetMultiSignature(id);
             if (sign == null)
             {
+                _logger.LogDebug("[Step5] {index} init multi signature.", args.PartialSignature.Index);
                 _stateProvider.SetMultiSignature(id, new MultiSignature(
                     ByteArrayHelper.HexStringToByteArray(config.SignerSecret),
                     msg, config.DistPublicKey, config.PartialSignaturesThreshold));
