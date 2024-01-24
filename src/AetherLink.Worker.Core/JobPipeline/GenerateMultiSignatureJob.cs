@@ -132,9 +132,10 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
             if (sign == null)
             {
                 _logger.LogDebug("[Step5] {index} init multi signature.", args.PartialSignature.Index);
-                _stateProvider.SetMultiSignature(id, new MultiSignature(
-                    ByteArrayHelper.HexStringToByteArray(config.SignerSecret),
-                    msg, config.DistPublicKey, config.PartialSignaturesThreshold));
+                var newMultiSignature = new MultiSignature(ByteArrayHelper.HexStringToByteArray(config.SignerSecret),
+                    msg, config.DistPublicKey, config.PartialSignaturesThreshold);
+                newMultiSignature.GeneratePartialSignature();
+                _stateProvider.SetMultiSignature(id, newMultiSignature);
                 return;
             }
 
@@ -161,7 +162,5 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
     }
 
     private string GenerateMultiSignatureId(GenerateMultiSignatureJobArgs args)
-    {
-        return IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch, args.RoundId);
-    }
+        => IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch, args.RoundId);
 }
