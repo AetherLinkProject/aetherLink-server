@@ -69,7 +69,7 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
             if (dataMessage != null && observations[index] != dataMessage.Data)
             {
                 _logger.LogWarning("[step4] {name} Leader report result:{observation}, Check data fail", argId,
-                    JoinData(observations));
+                    observations.JoinAsString(","));
                 return;
             }
 
@@ -127,6 +127,4 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
         _logger.LogInformation("[step4][Follower] {reqId}-{epoch} Send signature to leader, Waiting for transmitted.",
             reqId, epoch);
     }
-
-    private static string JoinData(IEnumerable<long> data) => data.JoinAsString(",");
 }

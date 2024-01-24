@@ -80,11 +80,14 @@ public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcess
                     await _retryProvider.RetryAsync(args, backOff: true);
                     break;
                 default:
+                    _logger.LogWarning(
+                        "[Step6] Request {ReqId} is {state} not Mined, transactionId {txId} error: {error}",
+                        reqId, txResult.Status, transactionId, txResult.Error);
+
                     // for canceled request 
                     if (!string.IsNullOrEmpty(txResult.Error) && txResult.Error.Contains("Invalid request id"))
                     {
                         _logger.LogWarning("[Step6] Job {ReqId} is canceled before transmit.", reqId);
-
                         _schedulerService.CancelAllSchedule(job);
                     }
 
