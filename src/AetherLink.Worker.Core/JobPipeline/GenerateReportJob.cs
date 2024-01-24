@@ -62,11 +62,26 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
         {
             // check epoch state
             var job = await _jobProvider.GetAsync(args);
-            if (job == null || job.State is RequestState.RequestCanceled) return;
+            if (job == null || job.State is RequestState.RequestCanceled)
+            {
+                _logger.LogDebug("[Step3][Leader] {name} no need to execute.", argId);
+                return;
+            }
 
+            _logger.LogInformation("[Step3][Leader] {name} Start process {index} request.", argId, index);
             TryProcessReportAsync(args, job);
 
-            if (!IsReportEnough(args) || _stateProvider.IsReportGenerated(GenerateReportId(args))) return;
+            if (!IsReportEnough(args))
+            {
+                _logger.LogDebug("[Step3][Leader] {name} is not enough, no need to generate report.", argId);
+                return;
+            }
+
+            if (_stateProvider.IsReportGenerated(GenerateReportId(args)))
+            {
+                _logger.LogDebug("[Step3][Leader] {name} report is finished.", argId);
+                return;
+            }
 
             _stateProvider.SetReportGeneratedFlag(GenerateReportId(args));
             _logger.LogInformation("[Step3][Leader] {name} Generate report, index:{index}", argId, index);

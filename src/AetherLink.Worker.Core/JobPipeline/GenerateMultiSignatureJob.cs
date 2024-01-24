@@ -79,8 +79,17 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
 
             TryProcessMultiSignature(args, msg);
 
-            if (!IsSignatureEnough(args) ||
-                _stateProvider.GetMultiSignatureSignedFlag(GenerateMultiSignatureId(args))) return;
+            if (!IsSignatureEnough(args))
+            {
+                _logger.LogDebug("[Step5][Leader] {name} is not enough, no need to generate signature.", argId);
+                return;
+            }
+
+            if (_stateProvider.GetMultiSignatureSignedFlag(GenerateMultiSignatureId(args)))
+            {
+                _logger.LogDebug("[Step5][Leader] {name} signature is finished.", argId);
+                return;
+            }
 
             _stateProvider.SetMultiSignatureSignedFlag(GenerateMultiSignatureId(args));
             _logger.LogInformation("[Step5][Leader] {name} MultiSignature generate success.", argId);
