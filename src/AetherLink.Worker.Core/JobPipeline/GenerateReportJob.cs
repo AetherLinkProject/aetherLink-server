@@ -141,7 +141,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
             // {
             //     _reports[id] = new List<ObservationDto> { observation };
             // }
-            if (observations.Any(o => o.Index != observation.Index)) return;
+            if (observations.Any(o => o.Index == observation.Index)) return;
             // {
             //     _reports[id].Add(observation);
             // }
