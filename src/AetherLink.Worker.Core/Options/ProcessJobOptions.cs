@@ -4,4 +4,5 @@ public class ProcessJobOptions
 {
     public int RetryCount { get; set; } = 5;
     public int TransactionResultDelay { get; set; } = 5;
+    public int DefaultEnqueueDelay { get; set; } = 0;
 }

@@ -50,6 +50,7 @@ public class RequestCancelProcessJob : AsyncBackgroundJob<RequestCancelProcessJo
 
             _schedulerService.CancelAllSchedule(job);
 
+            // todo: add state cleanup
             _logger.LogInformation("[RequestCancelProcess] {name} Cancel job timer finished.", argId);
         }
         catch (Exception e)

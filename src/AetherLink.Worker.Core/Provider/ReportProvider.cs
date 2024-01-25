@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
-using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using Microsoft.Extensions.Logging;
@@ -27,15 +26,14 @@ public class ReportProvider : IReportProvider, ITransientDependency
 
     public async Task SetAsync(ReportDto report)
     {
-        var key = GetReportRedisKey(report.ChainId, report.RequestId, report.Epoch);
+        var key = IdGeneratorHelper.GenerateReportRedisId(report.ChainId, report.RequestId, report.Epoch);
+
         _logger.LogDebug("[ReportProvider] Start to set request {key}. result:{state}", key, report.Observations);
 
         await _storageProvider.SetAsync(key, report);
     }
 
     public async Task<ReportDto> GetAsync<T>(T arg) where T : JobPipelineArgsBase
-        => await _storageProvider.GetAsync<ReportDto>(GetReportRedisKey(arg.ChainId, arg.RequestId, arg.Epoch));
-
-    private static string GetReportRedisKey(string chainId, string requestId, long epoch)
-        => IdGeneratorHelper.GenerateId(RedisKeyConstants.ReportRedisKey, chainId, requestId, epoch);
+        => await _storageProvider.GetAsync<ReportDto>(
+            IdGeneratorHelper.GenerateReportRedisId(arg.ChainId, arg.RequestId, arg.Epoch));
 }

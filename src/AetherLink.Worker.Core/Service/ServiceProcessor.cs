@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AetherLink.Multisignature;
 using AetherLink.Worker.Core.JobPipeline.Args;
+using AetherLink.Worker.Core.Options;
 using Grpc.Core;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
@@ -22,11 +23,14 @@ public interface IServiceProcessor
 public class ServiceProcessor : IServiceProcessor, ISingletonDependency
 {
     private readonly IObjectMapper _objectMapper;
+    private readonly ProcessJobOptions _processJobOptions;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
-    public ServiceProcessor(IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper)
+    public ServiceProcessor(IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper,
+        ProcessJobOptions processJobOptions)
     {
         _objectMapper = objectMapper;
+        _processJobOptions = processJobOptions;
         _backgroundJobManager = backgroundJobManager;
     }
 
@@ -40,7 +44,7 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
             ChainId = request.ChainId,
             RoundId = request.RoundId,
             Epoch = request.Epoch,
-        });
+        }, delay: TimeSpan.FromSeconds(_processJobOptions.DefaultEnqueueDelay));
     }
 
     public async Task ProcessObservationAsync(CommitObservationRequest request, ServerCallContext context)
@@ -48,7 +52,8 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
         if (!ValidateRequest(context)) return;
 
         await _backgroundJobManager.EnqueueAsync(
-            _objectMapper.Map<CommitObservationRequest, GenerateReportJobArgs>(request));
+            _objectMapper.Map<CommitObservationRequest, GenerateReportJobArgs>(request)
+            , delay: TimeSpan.FromSeconds(_processJobOptions.DefaultEnqueueDelay));
     }
 
     public async Task ProcessReportAsync(CommitReportRequest request, ServerCallContext context)
@@ -62,7 +67,7 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
             RoundId = request.RoundId,
             RequestId = request.RequestId,
             Observations = request.ObservationResults.ToList(),
-        });
+        }, delay: TimeSpan.FromSeconds(_processJobOptions.DefaultEnqueueDelay));
     }
 
     public async Task ProcessProcessedReportAsync(CommitSignatureRequest request, ServerCallContext context)
@@ -75,7 +80,8 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
             Signature = request.Signature.ToByteArray(),
             Index = request.Index
         };
-        await _backgroundJobManager.EnqueueAsync(args);
+        await _backgroundJobManager.EnqueueAsync(args,
+            delay: TimeSpan.FromSeconds(_processJobOptions.DefaultEnqueueDelay));
     }
 
     public async Task ProcessTransmittedResultAsync(CommitTransmitResultRequest request, ServerCallContext context)
@@ -83,7 +89,8 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
         if (!ValidateRequest(context)) return;
 
         await _backgroundJobManager.EnqueueAsync(
-            _objectMapper.Map<CommitTransmitResultRequest, TransmitResultProcessJobArgs>(request));
+            _objectMapper.Map<CommitTransmitResultRequest, TransmitResultProcessJobArgs>(request)
+            , delay: TimeSpan.FromSeconds(_processJobOptions.DefaultEnqueueDelay));
     }
 
     // todo: add metadata validate

@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using AetherLink.Multisignature;
 using AetherLink.Worker.Core.Common;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
@@ -86,16 +87,17 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
                 return;
             }
 
-            if (_stateProvider.GetMultiSignatureSignedFlag(GenerateMultiSignatureId(args)))
+            if (_stateProvider.IsFinished(IdGeneratorHelper.GenerateMultiSignatureId(args)))
             {
                 _logger.LogDebug("[Step5][Leader] {name} signature is finished.", argId);
                 return;
             }
 
-            _stateProvider.SetMultiSignatureSignedFlag(GenerateMultiSignatureId(args));
+            // _stateProvider.SetMultiSignatureSignedFlag(GenerateMultiSignatureId(args));
+            _stateProvider.SetFinishedFlag(IdGeneratorHelper.GenerateMultiSignatureId(args));
             _logger.LogInformation("[Step5][Leader] {name} MultiSignature generate success.", argId);
 
-            var multiSignature = _stateProvider.GetMultiSignature(GenerateMultiSignatureId(args));
+            var multiSignature = _stateProvider.GetMultiSignature(IdGeneratorHelper.GenerateMultiSignatureId(args));
             multiSignature.TryGetSignatures(out var signature);
             transmitData.Signatures.AddRange(signature);
 
@@ -114,7 +116,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
 
     private bool IsSignatureEnough(GenerateMultiSignatureJobArgs args)
     {
-        var sign = _stateProvider.GetMultiSignature(GenerateMultiSignatureId(args));
+        var sign = _stateProvider.GetMultiSignature(IdGeneratorHelper.GenerateMultiSignatureId(args));
         return sign != null && sign.IsEnoughPartialSig();
     }
 
@@ -127,7 +129,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
                 throw new InvalidDataException($"Not support chain {args.ChainId}.");
             }
 
-            var id = GenerateMultiSignatureId(args);
+            var id = IdGeneratorHelper.GenerateMultiSignatureId(args);
             var sign = _stateProvider.GetMultiSignature(id);
             if (sign == null)
             {
@@ -161,6 +163,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
         await _peerManager.BroadcastAsync(p => p.CommitTransmitResultAsync(txResult));
     }
 
-    private string GenerateMultiSignatureId(GenerateMultiSignatureJobArgs args)
-        => IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch, args.RoundId);
+    // private string GenerateMultiSignatureId(GenerateMultiSignatureJobArgs args)
+    //     => IdGeneratorHelper.GenerateId(MemoryConstants.MultiSignaturePrefix, args.ChainId, args.RequestId, args.Epoch,
+    //         args.RoundId);
 }

@@ -54,7 +54,7 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
         try
         {
             _logger.LogInformation("[Step2] Get leader observation collect job {name}.", argId);
-            var currentEpoch = _stateProvider.GetFollowerObservationCurrentEpoch(requestEpochId);
+            var currentEpoch = _stateProvider.GetObserveCurrentEpoch(requestEpochId);
             if (epoch < currentEpoch)
             {
                 _logger.LogInformation("[Step2] The epoch in the job {name} is older than the local {epoch}",
@@ -80,7 +80,7 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
 
             await ProcessObservationResultAsync(args, observationResult);
 
-            _stateProvider.SetFollowerObservationCurrentEpoch(requestEpochId, args.Epoch);
+            _stateProvider.SetObserveCurrentEpoch(requestEpochId, args.Epoch);
         }
         catch (Exception e)
         {

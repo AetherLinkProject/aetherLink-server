@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
-using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using Microsoft.Extensions.Logging;
@@ -27,15 +26,14 @@ public class JobProvider : IJobProvider, ITransientDependency
 
     public async Task SetAsync(JobDto job)
     {
-        var key = GetJobRequestKey(job.ChainId, job.RequestId);
+        var key = IdGeneratorHelper.GenerateJobRequestRedisId(job.ChainId, job.RequestId);
+
         _logger.LogDebug("[JobProvider] Start to set job {key}. state:{state}", key, job.State);
 
         await _storageProvider.SetAsync(key, job);
     }
 
     public async Task<JobDto> GetAsync<T>(T arg) where T : JobPipelineArgsBase
-        => await _storageProvider.GetAsync<JobDto>(GetJobRequestKey(arg.ChainId, arg.RequestId));
-
-    private static string GetJobRequestKey(string chainId, string requestId)
-        => IdGeneratorHelper.GenerateId(RedisKeyConstants.JobRedisKey, chainId, requestId);
+        => await _storageProvider.GetAsync<JobDto>(
+            IdGeneratorHelper.GenerateJobRequestRedisId(arg.ChainId, arg.RequestId));
 }

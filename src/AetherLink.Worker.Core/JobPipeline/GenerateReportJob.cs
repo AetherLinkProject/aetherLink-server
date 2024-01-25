@@ -69,7 +69,8 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
             }
 
             _logger.LogInformation("[Step3][Leader] {name} Start process {index} request.", argId, index);
-            TryProcessReportAsync(args, job);
+
+            TryProcessObservationAsync(args, job);
 
             if (!IsReportEnough(args))
             {
@@ -77,13 +78,14 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
                 return;
             }
 
-            if (_stateProvider.IsReportGenerated(GenerateReportId(args)))
+            if (_stateProvider.IsFinished(IdGeneratorHelper.GenerateReportId(args)))
             {
                 _logger.LogDebug("[Step3][Leader] {name} report is finished.", argId);
                 return;
             }
 
-            _stateProvider.SetReportGeneratedFlag(GenerateReportId(args));
+            _stateProvider.SetFinishedFlag(IdGeneratorHelper.GenerateReportId(args));
+
             _logger.LogInformation("[Step3][Leader] {name} Generate report, index:{index}", argId, index);
 
             var observations = GenerateObservations(args);
@@ -108,36 +110,56 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
     {
         if (!_options.ChainConfig.TryGetValue(args.ChainId, out var chainConfig)) return false;
 
-        var observations = _stateProvider.GetPartialObservation(GenerateReportId(args));
+        var observations = _stateProvider.GetObservations(IdGeneratorHelper.GenerateReportId(args));
         if (observations == null) return false;
 
         return observations.Count >= chainConfig.ObservationsThreshold;
     }
 
-    private void TryProcessReportAsync(GenerateReportJobArgs args, JobDto job)
+    private void TryProcessObservationAsync(GenerateReportJobArgs args, JobDto job)
     {
         lock (_lock)
         {
-            var reportId = GenerateReportId(args);
-            if (_stateProvider.GetPartialObservation(reportId) == null)
-            {
-                _logger.LogInformation("[step3][Leader] Init {id}, start observation collection scheduler",
-                    reportId);
-                _schedulerService.StartScheduler(job, SchedulerType.ObservationCollectWaitingScheduler);
-            }
-
-            _stateProvider.AddOrUpdateReport(reportId, new ObservationDto
+            var observation = new ObservationDto
             {
                 Index = args.Index,
                 ObservationResult = args.Data
-            });
+            };
+
+            var reportId = IdGeneratorHelper.GenerateReportId(args);
+            var observations = _stateProvider.GetObservations(reportId);
+            if (observations == null)
+            {
+                _logger.LogInformation("[step3][Leader] Init {id}, start observation collection scheduler",
+                    reportId);
+                _stateProvider.SetObservations(reportId, new List<ObservationDto> { observation });
+                _schedulerService.StartScheduler(job, SchedulerType.ObservationCollectWaitingScheduler);
+                return;
+            }
+
+            // if (!_reports.TryGetValue(id, out var observations))
+            // {
+            //     _reports[id] = new List<ObservationDto> { observation };
+            // }
+            if (observations.Any(o => o.Index != observation.Index)) return;
+            // {
+            //     _reports[id].Add(observation);
+            // }
+            observations.Add(observation);
+            _stateProvider.SetObservations(reportId, observations);
+
+            // _stateProviderider.AddOrUpdateReport(reportId, new ObservationDto
+            // {
+            //     Index = args.Index,
+            //     ObservationResult = args.Data
+            // });
         }
     }
 
     private List<long> GenerateObservations(GenerateReportJobArgs args)
     {
         var aggregationResults = Enumerable.Repeat(0L, _peerManager.GetPeersCount()).ToList();
-        _stateProvider.GetPartialObservation(GenerateReportId(args))
+        _stateProvider.GetObservations(IdGeneratorHelper.GenerateReportId(args))
             .ForEach(o => aggregationResults[o.Index] = o.ObservationResult);
         _logger.LogDebug("[Step3][Leader] {requestId} report:{results} count:{count}", args.RequestId,
             aggregationResults.JoinAsString(","), aggregationResults.Count);
@@ -162,7 +184,4 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
             ObservationResults = { observations }
         }));
     }
-
-    private string GenerateReportId(GenerateReportJobArgs args)
-        => IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch);
 }

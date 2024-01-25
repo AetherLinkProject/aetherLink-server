@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
@@ -61,9 +62,11 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
                 job.RequestId, job.RoundId, job.State.ToString());
 
             if (!_options.ChainConfig.TryGetValue(job.ChainId, out var chainConfig)) return;
-            var reportId = IdGeneratorHelper.GenerateId(job.ChainId, job.RequestId, job.Epoch);
+            // var reportId =
+            //     IdGeneratorHelper.GenerateId(MemoryConstants.ReportPrefix, job.ChainId, job.RequestId, job.Epoch);
+            var reportId = IdGeneratorHelper.GenerateReportId(job: job);
 
-            var observations = _stateProvider.GetPartialObservation(reportId);
+            var observations = _stateProvider.GetObservations(reportId);
             if (observations == null || observations.Count < chainConfig.PartialSignaturesThreshold)
             {
                 _logger.LogInformation("[ObservationCollectScheduler] Observation collection not enough.");
@@ -71,7 +74,7 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
             }
 
             var collectResult = Enumerable.Repeat(0L, _peerManager.GetPeersCount()).ToList();
-            _stateProvider.GetPartialObservation(reportId).ForEach(o => collectResult[o.Index] = o.ObservationResult);
+            _stateProvider.GetObservations(reportId).ForEach(o => collectResult[o.Index] = o.ObservationResult);
             _logger.LogDebug("[Step3][Leader] {requestId} report:{results} count:{count}", job.RequestId,
                 collectResult.JoinAsString(","), collectResult.Count);
 
@@ -104,7 +107,8 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
                 StartTime = reportStartSignTime
             }));
 
-            _stateProvider.SetReportGeneratedFlag(reportId);
+            _stateProvider.SetFinishedFlag(reportId);
+            // _stateProvider.SetReportGeneratedFlag(reportId);
         }
         catch (Exception e)
         {
