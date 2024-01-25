@@ -5,6 +5,7 @@ using AetherLink.Multisignature;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
 using Grpc.Core;
+using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -22,15 +23,15 @@ public interface IServiceProcessor
 
 public class ServiceProcessor : IServiceProcessor, ISingletonDependency
 {
+    private readonly ProcessJobOptions _option;
     private readonly IObjectMapper _objectMapper;
-    private readonly ProcessJobOptions _processJobOptions;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public ServiceProcessor(IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper,
-        ProcessJobOptions processJobOptions)
+        IOptionsSnapshot<ProcessJobOptions> option)
     {
+        _option = option.Value;
         _objectMapper = objectMapper;
-        _processJobOptions = processJobOptions;
         _backgroundJobManager = backgroundJobManager;
     }
 
@@ -38,36 +39,34 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
     {
         if (!ValidateRequest(context)) return;
 
-        await _backgroundJobManager.EnqueueAsync(new CollectObservationJobArgs
+        await EnqueueAsync(new CollectObservationJobArgs
         {
             RequestId = request.RequestId,
             ChainId = request.ChainId,
             RoundId = request.RoundId,
             Epoch = request.Epoch,
-        }, delay: TimeSpan.FromSeconds(_processJobOptions.DefaultEnqueueDelay));
+        });
     }
 
     public async Task ProcessObservationAsync(CommitObservationRequest request, ServerCallContext context)
     {
         if (!ValidateRequest(context)) return;
 
-        await _backgroundJobManager.EnqueueAsync(
-            _objectMapper.Map<CommitObservationRequest, GenerateReportJobArgs>(request)
-            , delay: TimeSpan.FromSeconds(_processJobOptions.DefaultEnqueueDelay));
+        await EnqueueAsync(_objectMapper.Map<CommitObservationRequest, GenerateReportJobArgs>(request));
     }
 
     public async Task ProcessReportAsync(CommitReportRequest request, ServerCallContext context)
     {
         if (!ValidateRequest(context)) return;
 
-        await _backgroundJobManager.EnqueueAsync(new GeneratePartialSignatureJobArgs
+        await EnqueueAsync(new GeneratePartialSignatureJobArgs
         {
             Epoch = request.Epoch,
             ChainId = request.ChainId,
             RoundId = request.RoundId,
             RequestId = request.RequestId,
             Observations = request.ObservationResults.ToList(),
-        }, delay: TimeSpan.FromSeconds(_processJobOptions.DefaultEnqueueDelay));
+        });
     }
 
     public async Task ProcessProcessedReportAsync(CommitSignatureRequest request, ServerCallContext context)
@@ -80,19 +79,19 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
             Signature = request.Signature.ToByteArray(),
             Index = request.Index
         };
-        await _backgroundJobManager.EnqueueAsync(args,
-            delay: TimeSpan.FromSeconds(_processJobOptions.DefaultEnqueueDelay));
+        await EnqueueAsync(args);
     }
 
     public async Task ProcessTransmittedResultAsync(CommitTransmitResultRequest request, ServerCallContext context)
     {
         if (!ValidateRequest(context)) return;
 
-        await _backgroundJobManager.EnqueueAsync(
-            _objectMapper.Map<CommitTransmitResultRequest, TransmitResultProcessJobArgs>(request)
-            , delay: TimeSpan.FromSeconds(_processJobOptions.DefaultEnqueueDelay));
+        await EnqueueAsync(_objectMapper.Map<CommitTransmitResultRequest, TransmitResultProcessJobArgs>(request));
     }
 
     // todo: add metadata validate
     private bool ValidateRequest(ServerCallContext context) => true;
+
+    private async Task EnqueueAsync<T>(T arg) where T : JobPipelineArgsBase
+        => await _backgroundJobManager.EnqueueAsync(arg, delay: TimeSpan.FromSeconds(_option.DefaultEnqueueDelay));
 }
