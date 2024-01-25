@@ -20,7 +20,6 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
     private readonly IJobProvider _jobProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly IPriceDataProvider _provider;
-    private readonly IStateProvider _stateProvider;
     private readonly IRetryProvider _retryProvider;
     private readonly ILogger<CollectObservationJob> _logger;
     private readonly IDataMessageProvider _dataMessageProvider;
@@ -28,8 +27,7 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
 
     public CollectObservationJob(IPeerManager peerManager, ILogger<CollectObservationJob> logger,
         IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper, IPriceDataProvider provider,
-        IRetryProvider retryProvider, IStateProvider stateProvider, IJobProvider jobProvider,
-        IDataMessageProvider dataMessageProvider)
+        IRetryProvider retryProvider, IJobProvider jobProvider, IDataMessageProvider dataMessageProvider)
     {
         _logger = logger;
         _provider = provider;
@@ -37,7 +35,6 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
         _jobProvider = jobProvider;
         _objectMapper = objectMapper;
         _retryProvider = retryProvider;
-        _stateProvider = stateProvider;
         _dataMessageProvider = dataMessageProvider;
         _backgroundJobManager = backgroundJobManager;
     }
@@ -49,18 +46,10 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
         var epoch = args.Epoch;
         var roundId = args.RoundId;
         var argId = IdGeneratorHelper.GenerateId(chainId, reqId, epoch, roundId);
-        var requestEpochId = IdGeneratorHelper.GenerateId(chainId, reqId);
 
         try
         {
             _logger.LogInformation("[Step2] Get leader observation collect job {name}.", argId);
-            var currentEpoch = _stateProvider.GetObserveCurrentEpoch(requestEpochId);
-            if (epoch < currentEpoch)
-            {
-                _logger.LogInformation("[Step2] The epoch in the job {name} is older than the local {epoch}",
-                    argId, currentEpoch);
-                return;
-            }
 
             var job = await _jobProvider.GetAsync(args);
             if (!await IsJobNeedExecuteAsync(args, job))
@@ -79,8 +68,6 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
             await _dataMessageProvider.SetAsync(dataMsg);
 
             await ProcessObservationResultAsync(args, observationResult);
-
-            _stateProvider.SetObserveCurrentEpoch(requestEpochId, args.Epoch);
         }
         catch (Exception e)
         {

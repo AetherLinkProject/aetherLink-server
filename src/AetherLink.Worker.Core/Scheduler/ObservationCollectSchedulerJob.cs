@@ -25,12 +25,12 @@ public interface IObservationCollectSchedulerJob
 
 public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, ITransientDependency
 {
+    private readonly IJobProvider _jobProvider;
     private readonly IPeerManager _peerManager;
     private readonly OracleInfoOptions _options;
     private readonly IObjectMapper _objectMapper;
     private readonly IStateProvider _stateProvider;
     private readonly IReportProvider _reportProvider;
-    private readonly IJobProvider _jobProvider;
     private readonly ILogger<ResetRequestSchedulerJob> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
@@ -40,11 +40,11 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
     {
         _logger = logger;
         _options = options.Value;
+        _jobProvider = jobProvider;
         _peerManager = peerManager;
         _objectMapper = objectMapper;
         _stateProvider = stateProvider;
         _reportProvider = reportProvider;
-        _jobProvider = jobProvider;
         _backgroundJobManager = backgroundJobManager;
     }
 
@@ -62,8 +62,6 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
                 job.RequestId, job.RoundId, job.State.ToString());
 
             if (!_options.ChainConfig.TryGetValue(job.ChainId, out var chainConfig)) return;
-            // var reportId =
-            //     IdGeneratorHelper.GenerateId(MemoryConstants.ReportPrefix, job.ChainId, job.RequestId, job.Epoch);
             var reportId = IdGeneratorHelper.GenerateReportId(job: job);
 
             var observations = _stateProvider.GetObservations(reportId);
@@ -108,7 +106,6 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
             }));
 
             _stateProvider.SetFinishedFlag(reportId);
-            // _stateProvider.SetReportGeneratedFlag(reportId);
         }
         catch (Exception e)
         {

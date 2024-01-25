@@ -1,7 +1,6 @@
 using AElf;
 using System;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Consumer;
 using Google.Protobuf;
@@ -9,7 +8,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using AetherLink.Multisignature;
 using AetherLink.Worker.Core.Common;
-using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
@@ -66,6 +64,9 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
             var job = await _jobProvider.GetAsync(args);
             if (job == null || job.State == RequestState.RequestCanceled) return;
 
+            var multiSignId = IdGeneratorHelper.GenerateMultiSignatureId(args);
+            if (_stateProvider.IsFinished(multiSignId)) return;
+
             var observations = await _reportProvider.GetAsync(args);
             if (observations == null)
             {
@@ -87,17 +88,16 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
                 return;
             }
 
-            if (_stateProvider.IsFinished(IdGeneratorHelper.GenerateMultiSignatureId(args)))
+            if (_stateProvider.IsFinished(multiSignId))
             {
                 _logger.LogDebug("[Step5][Leader] {name} signature is finished.", argId);
                 return;
             }
 
-            // _stateProvider.SetMultiSignatureSignedFlag(GenerateMultiSignatureId(args));
-            _stateProvider.SetFinishedFlag(IdGeneratorHelper.GenerateMultiSignatureId(args));
+            _stateProvider.SetFinishedFlag(multiSignId);
             _logger.LogInformation("[Step5][Leader] {name} MultiSignature generate success.", argId);
 
-            var multiSignature = _stateProvider.GetMultiSignature(IdGeneratorHelper.GenerateMultiSignatureId(args));
+            var multiSignature = _stateProvider.GetMultiSignature(multiSignId);
             multiSignature.TryGetSignatures(out var signature);
             transmitData.Signatures.AddRange(signature);
 

@@ -90,16 +90,12 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
             new SearchHeightDto { BlockHeight = searchHeight });
 
     public async Task HandleTransmittedLogEventAsync(TransmittedDto transmitted)
-    {
-        await _backgroundJobManager.EnqueueAsync(
+        => await _backgroundJobManager.EnqueueAsync(
             _objectMapper.Map<TransmittedDto, TransmittedEventProcessJobArgs>(transmitted));
-    }
 
     public async Task HandleRequestCancelledLogEventAsync(RequestCancelledDto requestCancelled)
-    {
-        await _backgroundJobManager.EnqueueAsync(
+        => await _backgroundJobManager.EnqueueAsync(
             _objectMapper.Map<RequestCancelledDto, RequestCancelProcessJobArgs>(requestCancelled));
-    }
 
     private static string GetSearchHeightRedisKey(string chainId)
         => IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, chainId);

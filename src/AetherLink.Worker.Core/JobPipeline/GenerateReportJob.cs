@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
@@ -62,11 +61,10 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
         {
             // check epoch state
             var job = await _jobProvider.GetAsync(args);
-            if (job == null || job.State is RequestState.RequestCanceled)
-            {
-                _logger.LogDebug("[Step3][Leader] {name} no need to execute.", argId);
-                return;
-            }
+            if (job == null || job.State is RequestState.RequestCanceled) return;
+
+            var reportId = IdGeneratorHelper.GenerateReportId(args);
+            if (_stateProvider.IsFinished(reportId)) return;
 
             _logger.LogInformation("[Step3][Leader] {name} Start process {index} request.", argId, index);
 
@@ -78,13 +76,13 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
                 return;
             }
 
-            if (_stateProvider.IsFinished(IdGeneratorHelper.GenerateReportId(args)))
+            if (_stateProvider.IsFinished(reportId))
             {
                 _logger.LogDebug("[Step3][Leader] {name} report is finished.", argId);
                 return;
             }
 
-            _stateProvider.SetFinishedFlag(IdGeneratorHelper.GenerateReportId(args));
+            _stateProvider.SetFinishedFlag(reportId);
 
             _logger.LogInformation("[Step3][Leader] {name} Generate report, index:{index}", argId, index);
 
@@ -137,22 +135,9 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
                 return;
             }
 
-            // if (!_reports.TryGetValue(id, out var observations))
-            // {
-            //     _reports[id] = new List<ObservationDto> { observation };
-            // }
             if (observations.Any(o => o.Index == observation.Index)) return;
-            // {
-            //     _reports[id].Add(observation);
-            // }
             observations.Add(observation);
             _stateProvider.SetObservations(reportId, observations);
-
-            // _stateProviderider.AddOrUpdateReport(reportId, new ObservationDto
-            // {
-            //     Index = args.Index,
-            //     ObservationResult = args.Data
-            // });
         }
     }
 

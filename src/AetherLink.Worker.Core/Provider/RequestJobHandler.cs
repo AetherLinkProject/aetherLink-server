@@ -39,9 +39,7 @@ public class DataFeedRequestJobHandler : RequestJobHandler, ISingletonDependency
     }
 
     public override async Task EnqueueAsync(OcrLogEventDto job)
-    {
-        await BackgroundJobManager.EnqueueAsync(ObjectMapper.Map<OcrLogEventDto, DataFeedsProcessJobArgs>(job));
-    }
+        => await BackgroundJobManager.EnqueueAsync(ObjectMapper.Map<OcrLogEventDto, DataFeedsProcessJobArgs>(job));
 }
 
 public class VrfRequestJobHandler : RequestJobHandler, ISingletonDependency
@@ -54,7 +52,5 @@ public class VrfRequestJobHandler : RequestJobHandler, ISingletonDependency
     }
 
     public override async Task EnqueueAsync(OcrLogEventDto job)
-    {
-        await BackgroundJobManager.EnqueueAsync(ObjectMapper.Map<OcrLogEventDto, VRFJobArgs>(job));
-    }
+        => await BackgroundJobManager.EnqueueAsync(ObjectMapper.Map<OcrLogEventDto, VRFJobArgs>(job));
 }

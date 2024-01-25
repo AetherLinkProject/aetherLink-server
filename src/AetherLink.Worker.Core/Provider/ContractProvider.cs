@@ -74,10 +74,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             .Commitment);
 
     public async Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId)
-    {
-        var client = _blockchainClientFactory.GetClient(chainId);
-        return await client.GetTransactionResultAsync(transactionId);
-    }
+        => await _blockchainClientFactory.GetClient(chainId).GetTransactionResultAsync(transactionId);
 
     public async Task<string> SendTransmitAsync(string chainId, TransmitInput transmitInput)
     {

@@ -77,31 +77,6 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         }
     }
 
-    private void CancelSchedulerByName(string schedulerName)
-    {
-        var scheduler = JobManager.GetSchedule(schedulerName);
-        if (scheduler == null) return;
-
-        _logger.LogDebug("[SchedulerService] Ready to cancel scheduler: {Name}", schedulerName);
-        scheduler.Disable();
-        JobManager.RemoveJob(schedulerName);
-    }
-
-    private void ListenForStart()
-    {
-        JobManager.JobStart += info => _logger.LogInformation("{Name}: started", info.Name);
-    }
-
-    private void ListenForEnd()
-    {
-        JobManager.JobEnd += info => _logger.LogInformation("{Name}: ended", info.Name);
-    }
-
-    private static string GenerateScheduleName(string chainId, string requestId, SchedulerType scheduleType)
-    {
-        return IdGeneratorHelper.GenerateId(chainId, requestId, scheduleType);
-    }
-
     public DateTime UpdateBlockTime(DateTime blockStartTime)
     {
         var nowTime = DateTime.Now;
@@ -133,5 +108,30 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
             //  nowTime < block+5 < nowTime+10, nowTime+10 is RequestReceive time window
             blockStartTime = temp;
         }
+    }
+
+    private void CancelSchedulerByName(string schedulerName)
+    {
+        var scheduler = JobManager.GetSchedule(schedulerName);
+        if (scheduler == null) return;
+
+        _logger.LogDebug("[SchedulerService] Ready to cancel scheduler: {Name}", schedulerName);
+        scheduler.Disable();
+        JobManager.RemoveJob(schedulerName);
+    }
+
+    private void ListenForStart()
+    {
+        JobManager.JobStart += info => _logger.LogInformation("{Name}: started", info.Name);
+    }
+
+    private void ListenForEnd()
+    {
+        JobManager.JobEnd += info => _logger.LogInformation("{Name}: ended", info.Name);
+    }
+
+    private static string GenerateScheduleName(string chainId, string requestId, SchedulerType scheduleType)
+    {
+        return IdGeneratorHelper.GenerateId(chainId, requestId, scheduleType);
     }
 }
