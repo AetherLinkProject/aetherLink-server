@@ -93,36 +93,6 @@ public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcess
 
                     break;
             }
-
-            // if (!string.IsNullOrEmpty(txResult.Error) && txResult.Error.Contains("Invalid request id"))
-            // {
-            //     _logger.LogWarning("[Step6] Request {ReqId} is canceled before transmit.", reqId);
-            //     _schedulerService.CancelAllSchedule(job);
-            //     return;
-            // }
-            //
-            // // When Transaction status is not mined or pending, Transaction is judged to be failed.
-            // if (txResult.Status is not TransactionState.Mined)
-            // {
-            //     _logger.LogWarning("[Step6] Request {ReqId} is {state} not Mined, transactionId {txId} error: {error}",
-            //         reqId, txResult.Status, transactionId, txResult.Error);
-            //     // todo: add tx fail execution.
-            //     return;
-            // }
-            //
-            // var transmittedLogEvent = _contractProvider.ParseTransmitted(txResult);
-            // if (reqId != transmittedLogEvent.RequestId.ToHex() || transmittedLogEvent.EpochAndRound < job.Epoch)
-            // {
-            //     _logger.LogError("[Step6] Request {ReqId} transactionId {transactionId} not match.", reqId,
-            //         transactionId);
-            //     return;
-            // }
-            //
-            // _logger.LogInformation(
-            //     "[Step6] {ReqId}-{epoch}-{round} Transmitted validate successful, job execute total time {time}s.",
-            //     reqId, epoch, roundId, DateTime.Now.Subtract(job.RequestReceiveTime).TotalSeconds);
-            //
-            // _schedulerService.CancelAllSchedule(job);
         }
         catch (Exception e)
         {
