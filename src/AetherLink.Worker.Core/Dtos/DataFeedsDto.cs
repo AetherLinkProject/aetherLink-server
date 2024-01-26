@@ -1,4 +1,4 @@
-using AetherLink.Worker.Core.Consts;
+using AetherLink.Worker.Core.Constants;
 
 namespace AetherLink.Worker.Core.Dtos;
 
@@ -11,10 +11,5 @@ public class DataFeedsDto
 public class DataFeedsJobSpec
 {
     public DataFeedsType Type { get; set; }
-    public string CurrencyPair { get; set; }
-}
-
-public class PriceDataFeedsJobSpec : DataFeedsJobSpec
-{
     public string CurrencyPair { get; set; }
 }

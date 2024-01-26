@@ -57,10 +57,7 @@ public class MultiSignature
         return true;
     }
 
-    public bool IsEnoughPartialSig()
-    {
-        return _partialSignatures.Count >= _threshold;
-    }
+    public bool IsEnoughPartialSig() => _partialSignatures.Count >= _threshold;
 
     public bool TryGetSignatures(out List<ByteString> signature)
     {
@@ -76,11 +73,9 @@ public class MultiSignature
         var pubkey = CryptoHelper.FromPrivateKey(_secret).PublicKey.ToHex();
         for (var i = 0; i < _publicKeys.Length; i++)
         {
-            if (_publicKeys[i] == pubkey)
-            {
-                index = i;
-                return true;
-            }
+            if (_publicKeys[i] != pubkey) continue;
+            index = i;
+            return true;
         }
 
         return false;

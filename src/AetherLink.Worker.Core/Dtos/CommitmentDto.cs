@@ -1,10 +1,8 @@
-using System.Collections.Generic;
-
 namespace AetherLink.Worker.Core.Dtos;
 
-public class CommitmentsDto
+public class RequestCommitmentRecord
 {
-    public List<CommitmentDto> Commitments { get; set; }
+    public CommitmentDto RequestCommitment { get; set; }
 }
 
 public class CommitmentDto

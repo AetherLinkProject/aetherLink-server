@@ -1,0 +1,118 @@
+// the version of the language, use proto3 for contracts
+syntax = "proto3";
+
+package consumer;
+
+// some core imports for AElf chain types
+import "aelf/core.proto";
+import "aelf/options.proto";
+import "acs12.proto";
+import "request_interface.proto";
+
+// import for using the google.protobuf.* type.
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+
+// the name of the C# namespace in which the contract code will be,
+// generated code will also be in this namespace.
+option csharp_namespace = "AetherLink.Contracts.Consumer";
+
+// the contract definition: a gRPC service definition.
+service ConsumerContract {
+
+    // the full name of the C# class that will contain the state (here <namespace>.<state-class-name> format).
+    option (aelf.base) = "acs12.proto";
+    option (aelf.base) = "request_interface.proto";
+    option (aelf.csharp_state) = "AetherLink.Contracts.Consumer.ConsumerContractState";
+
+    rpc Initialize(InitializeInput) returns (google.protobuf.Empty) {}
+    rpc TransferAdmin(aelf.Address) returns (google.protobuf.Empty) {}
+    rpc AcceptAdmin(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+    rpc AddController(AddressList) returns (google.protobuf.Empty) {}
+    rpc RemoveController(AddressList) returns (google.protobuf.Empty) {}
+    rpc SetOracleContract(aelf.Address) returns (google.protobuf.Empty) {}
+    rpc SetDataFeedsRequestTypeIndex(google.protobuf.Int32Value) returns (google.protobuf.Empty) {}
+    rpc SetVrfRequestTypeIndex(google.protobuf.Int32Value) returns (google.protobuf.Empty) {}
+    
+    rpc GetAdmin(google.protobuf.Empty) returns (aelf.Address) { option (aelf.is_view) = true; }
+    rpc GetController(google.protobuf.Empty) returns (AddressList) { option (aelf.is_view) = true; }
+    rpc GetOracleResponse(aelf.Hash) returns (oracle.OracleResponse) { option (aelf.is_view) = true; }
+    rpc GetOracleContract(google.protobuf.Empty) returns (aelf.Address) { option (aelf.is_view) = true; }
+    rpc GetPriceList(aelf.Hash) returns (LongList) { option (aelf.is_view) = true; }
+    rpc GetLatestPriceRoundData(google.protobuf.Empty) returns (PriceRoundData) { option (aelf.is_view) = true; }
+    rpc GetLatestRound(google.protobuf.Empty) returns (google.protobuf.Int64Value) { option (aelf.is_view) = true; }
+    rpc GetPriceRoundData(google.protobuf.Int64Value) returns (PriceRoundData) { option (aelf.is_view) = true; }
+    rpc GetRandomHashList(aelf.Hash) returns (HashList) { option (aelf.is_view) = true; }
+    rpc GetDataFeedsRequestTypeIndex(google.protobuf.Empty) returns (google.protobuf.Int32Value) { option (aelf.is_view) = true; }
+    rpc GetVrfRequestTypeIndex(google.protobuf.Empty) returns (google.protobuf.Int32Value) { option (aelf.is_view) = true; }
+}
+
+message InitializeInput {
+    aelf.Address admin = 1;
+    aelf.Address oracle = 2;
+    int32 data_feeds_request_type_index = 3;
+    int32 vrf_request_type_index = 4;
+}
+
+message PriceRoundData {
+    int64 round_id = 1;
+    int64 price = 2;
+    google.protobuf.Timestamp updated_at = 3;
+}
+
+message LongList {
+    repeated int64 data = 1;
+}
+
+message HashList {
+    repeated aelf.Hash data = 1;
+}
+
+message AddressList {
+    repeated aelf.Address data = 1;
+}
+
+// log event
+message PriceUpdated {
+    option (aelf.is_event) = true;
+    int64 from = 1;
+    int64 to = 2;
+    int64 round_number = 3;
+    google.protobuf.Timestamp update_at = 4;
+}
+
+message OracleFulfillmentHandled {
+    option (aelf.is_event) = true;
+    aelf.Hash requestId = 1;
+    int32 request_type_index = 2;
+}
+
+message AdminTransferRequested {
+    option (aelf.is_event) = true;
+    aelf.Address from = 1;
+    aelf.Address to = 2;
+}
+
+message AdminTransferred {
+    option (aelf.is_event) = true;
+    aelf.Address from = 1;
+    aelf.Address to = 2;
+}
+
+message OracleRequestStarted {
+    option (aelf.is_event) = true;
+    int64 subscription_id = 1;
+    int32 request_type_index = 2;
+    bytes specific_data = 3;
+}
+
+message ControllerAdded {
+    option (aelf.is_event) = true;
+    AddressList controllers = 1;
+}
+
+message ControllerRemoved {
+    option (aelf.is_event) = true;
+    AddressList controllers = 1;
+}

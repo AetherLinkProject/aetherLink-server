@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.JobPipeline.Args;
-using AetherLink.Worker.Core.PeerManager;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
@@ -12,20 +11,18 @@ namespace AetherLink.Worker.Core.Provider;
 
 public class DataFeedsTimerProvider : ISingletonDependency
 {
-    private readonly IPeerManager _peerManager;
+    private readonly IJobProvider _jobProvider;
     private readonly IObjectMapper _objectMapper;
-    private readonly IJobRequestProvider _jobRequestProvider;
     private readonly ILogger<DataFeedsTimerProvider> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
     private readonly ConcurrentDictionary<string, long> _epochDict = new();
 
     public DataFeedsTimerProvider(IBackgroundJobManager backgroundJobManager, ILogger<DataFeedsTimerProvider> logger,
-        IPeerManager peerManager, IObjectMapper objectMapper, IJobRequestProvider jobRequestProvider)
+        IObjectMapper objectMapper, IJobProvider jobProvider)
     {
         _logger = logger;
-        _peerManager = peerManager;
+        _jobProvider = jobProvider;
         _objectMapper = objectMapper;
-        _jobRequestProvider = jobRequestProvider;
         _backgroundJobManager = backgroundJobManager;
     }
 
@@ -33,41 +30,36 @@ public class DataFeedsTimerProvider : ISingletonDependency
     {
         var reqId = args.RequestId;
         var chainId = args.ChainId;
-        var argsName = IdGeneratorHelper.GenerateId(chainId, reqId);
-        _logger.LogInformation("[DataFeedsTimer] {name} Execute checking.", argsName);
+        var argId = IdGeneratorHelper.GenerateId(chainId, reqId);
+        _logger.LogInformation("[DataFeedsTimer] {name} Execute checking.", argId);
 
-        var currentEpoch = await _peerManager.GetEpochAsync(chainId);
-        _epochDict.TryGetValue(chainId, out var epoch);
-        if (currentEpoch == epoch &&
-            _epochDict.TryGetValue(IdGeneratorHelper.GenerateId(chainId, reqId), out _))
+        var request = await _jobProvider.GetAsync(args);
+        if (request == null)
         {
-            _logger.LogInformation(
-                "[DataFeedsTimer] The last epoch {Epoch} wasn't finished. reqId {reqId}, chainId : {chainId}",
-                epoch, reqId, chainId);
+            // only new request will update epochDict from args Epoch, others will updated epoch by request epoch from transmitted logevent
+            _epochDict[argId] = args.Epoch;
+            await _backgroundJobManager.EnqueueAsync(
+                _objectMapper.Map<DataFeedsProcessJobArgs, RequestStartProcessJobArgs>(args));
             return;
         }
 
-        _logger.LogInformation("[DataFeedsTimer] {ChainId} Local epoch will updated, {oldEpoch} => {newEpoch}",
-            chainId, epoch, currentEpoch);
-        _epochDict[IdGeneratorHelper.GenerateId(chainId, reqId)] = currentEpoch;
-        _epochDict[chainId] = currentEpoch;
-
-        // epoch != 0, request == null, request canceled & transmitted with new epoch
-        // epoch != 0, request.Retrying = true, retry 
-        // epoch == 0, request != null, node restart 
-        var request = await _jobRequestProvider.GetJobRequestAsync(chainId, reqId, currentEpoch);
-        if (epoch != 0 && request is { Retrying: true })
+        // this epoch not finished, Wait for transmitted log event.
+        _epochDict.TryGetValue(argId, out var epoch);
+        if (request.Epoch == epoch && request.Epoch != 0)
         {
-            _logger.LogWarning("[DataFeedsTimer] {reqId}-{chainId}-{epoch} Request not exist.", reqId, chainId,
-                currentEpoch);
+            _logger.LogInformation("[DataFeedsTimer] The last epoch {Epoch} wasn't finished. reqId {reqId}", epoch,
+                reqId);
             return;
         }
 
-        _logger.LogInformation("[DataFeedsTimer] New {ChainId} epoch {Epoch} start.", chainId, currentEpoch);
+        // when node restart _epochDict request is existed, and epoch is 0, 0 => newEpoch
+        _logger.LogInformation("[DataFeedsTimer] {reqId} Local epoch will updated, {oldEpoch} => {newEpoch}", reqId,
+            epoch, request.Epoch);
 
-        var requestArgs = _objectMapper.Map<DataFeedsProcessJobArgs, RequestStartProcessJobArgs>(args);
-        requestArgs.Epoch = currentEpoch;
+        var requestStartArgs = _objectMapper.Map<DataFeedsProcessJobArgs, RequestStartProcessJobArgs>(args);
+        requestStartArgs.Epoch = request.Epoch;
+        await _backgroundJobManager.EnqueueAsync(requestStartArgs);
 
-        await _backgroundJobManager.EnqueueAsync(requestArgs);
+        _epochDict[argId] = request.Epoch;
     }
 }
