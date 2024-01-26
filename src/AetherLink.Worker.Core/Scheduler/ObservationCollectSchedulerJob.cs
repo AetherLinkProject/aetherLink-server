@@ -85,10 +85,6 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
                 Observations = collectResult
             });
 
-            // save job.
-            job.RoundId = roundId;
-            await _jobProvider.SetAsync(job);
-
             var reportStartSignTime = Timestamp.FromDateTime(DateTime.UtcNow);
             var args = _objectMapper.Map<JobDto, GeneratePartialSignatureJobArgs>(job);
             args.Observations = collectResult;
