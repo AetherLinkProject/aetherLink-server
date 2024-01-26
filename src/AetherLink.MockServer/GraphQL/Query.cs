@@ -30,26 +30,26 @@ public class Query
     [Name("commitments")]
     public static List<CommitmentDto> CommitmentsQueryAsync(CommitmentsInput input)
     {
-        return new List<CommitmentDto> { };
+        return new List<CommitmentDto>();
     }
 
 
     [Name("latestRounds")]
     public static List<LatestRoundDto> LatestRoundQueryAsync(LatestRoundInput input)
     {
-        return new List<LatestRoundDto> { };
+        return new List<LatestRoundDto>();
     }
 
 
     [Name("configSets")]
     public static List<ConfigDigestDto> ConfigDigestQueryAsync(ConfigDigestInput input)
     {
-        return new List<ConfigDigestDto> { };
+        return new List<ConfigDigestDto>();
     }
 
     [Name("requests")]
     public static List<OcrJobEventDto> RequestsQueryAsync(RequestInput input)
     {
-        return new List<OcrJobEventDto> { };
+        return new List<OcrJobEventDto>();
     }
 }

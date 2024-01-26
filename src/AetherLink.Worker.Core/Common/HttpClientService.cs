@@ -5,8 +5,9 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Mime;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using AetherLink.Worker.Core.Consts;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -16,11 +17,13 @@ namespace AetherLink.Worker.Core.Common;
 
 public interface IHttpClientService
 {
-    Task<T> GetAsync<T>(string url);
-    Task<T> GetAsync<T>(string url, IDictionary<string, string> headers);
-    Task<T> PostAsync<T>(string url);
-    Task<T> PostAsync<T>(string url, object paramObj);
-    Task<T> PostAsync<T>(string url, object paramObj, Dictionary<string, string> headers);
+    Task<T> GetAsync<T>(string url, CancellationToken cancellationToken);
+    Task<T> GetAsync<T>(string url, IDictionary<string, string> headers, CancellationToken cancellationToken);
+    Task<T> PostAsync<T>(string url, CancellationToken cancellationToken);
+    Task<T> PostAsync<T>(string url, object paramObj, CancellationToken cancellationToken);
+
+    Task<T> PostAsync<T>(string url, object paramObj, Dictionary<string, string> headers,
+        CancellationToken cancellationToken);
 }
 
 public class HttpClientService : IHttpClientService
@@ -34,63 +37,67 @@ public class HttpClientService : IHttpClientService
         _logger = logger;
     }
 
-    public async Task<T> GetAsync<T>(string url)
+    public async Task<T> GetAsync<T>(string url, CancellationToken cancellationToken)
     {
         var client = _httpClientFactory.CreateClient();
-        client.Timeout = TimeSpan.FromSeconds(HttpConst.DefaultTimout);
-        var response = await client.GetStringAsync(url);
+        client.Timeout = TimeSpan.FromSeconds(NetworkConstants.DefaultTimout);
+        var response = await client.GetStringAsync(url, cancellationToken);
 
         return JsonConvert.DeserializeObject<T>(response);
     }
 
-    public async Task<T> GetAsync<T>(string url, Dictionary<string, string> headers)
+    public async Task<T> GetAsync<T>(string url, Dictionary<string, string> headers,
+        CancellationToken cancellationToken)
     {
         var client = _httpClientFactory.CreateClient();
-        client.Timeout = TimeSpan.FromSeconds(HttpConst.DefaultTimout);
+        client.Timeout = TimeSpan.FromSeconds(NetworkConstants.DefaultTimout);
         foreach (var keyValuePair in headers)
         {
             client.DefaultRequestHeaders.Add(keyValuePair.Key, keyValuePair.Value);
         }
 
-        var response = await client.GetStringAsync(url);
+        var response = await client.GetStringAsync(url, cancellationToken);
         return JsonConvert.DeserializeObject<T>(response);
     }
 
-    public async Task<T> GetAsync<T>(string url, IDictionary<string, string> headers)
+    public async Task<T> GetAsync<T>(string url, IDictionary<string, string> headers,
+        CancellationToken cancellationToken)
     {
         if (headers == null)
         {
-            return await GetAsync<T>(url);
+            return await GetAsync<T>(url, cancellationToken);
         }
 
         var client = _httpClientFactory.CreateClient();
-        client.Timeout = TimeSpan.FromSeconds(HttpConst.DefaultTimout);
+        client.Timeout = TimeSpan.FromSeconds(NetworkConstants.DefaultTimout);
         foreach (var keyValuePair in headers)
         {
             client.DefaultRequestHeaders.Add(keyValuePair.Key, keyValuePair.Value);
         }
 
-        var response = await client.GetStringAsync(url);
+        var response = await client.GetStringAsync(url, cancellationToken);
         _logger.LogDebug("[HttpClientService] Response string: {str}", response);
         return JsonConvert.DeserializeObject<T>(response);
     }
 
-    public async Task<T> PostAsync<T>(string url)
+    public async Task<T> PostAsync<T>(string url, CancellationToken cancellationToken)
     {
-        return await PostJsonAsync<T>(url, null, null);
+        return await PostJsonAsync<T>(url, null, null, cancellationToken);
     }
 
-    public async Task<T> PostAsync<T>(string url, object paramObj)
+    public async Task<T> PostAsync<T>(string url, object paramObj, CancellationToken cancellationToken)
     {
-        return await PostJsonAsync<T>(url, paramObj, null);
+        return await PostJsonAsync<T>(url, paramObj, null, cancellationToken);
     }
 
-    public async Task<T> PostAsync<T>(string url, object paramObj, Dictionary<string, string> headers)
+    public async Task<T> PostAsync<T>(string url, object paramObj, Dictionary<string, string> headers,
+        CancellationToken cancellationToken)
     {
-        return await PostJsonAsync<T>(url, paramObj, headers);
+        return await PostJsonAsync<T>(url, paramObj, headers, cancellationToken);
     }
 
-    private async Task<T> PostJsonAsync<T>(string url, object paramObj, Dictionary<string, string> headers)
+    private async Task<T> PostJsonAsync<T>(string url, object paramObj, Dictionary<string, string> headers,
+        CancellationToken cancellationToken)
     {
         var requestInput = paramObj == null ? string.Empty : JsonConvert.SerializeObject(paramObj, Formatting.None);
 
@@ -100,7 +107,7 @@ public class HttpClientService : IHttpClientService
             MediaTypeNames.Application.Json);
 
         var client = _httpClientFactory.CreateClient();
-        client.Timeout = TimeSpan.FromSeconds(HttpConst.DefaultTimout);
+        client.Timeout = TimeSpan.FromSeconds(NetworkConstants.DefaultTimout);
 
         if (headers is { Count: > 0 })
         {
@@ -110,8 +117,8 @@ public class HttpClientService : IHttpClientService
             }
         }
 
-        var response = await client.PostAsync(url, requestContent);
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await client.PostAsync(url, requestContent, cancellationToken);
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!ResponseSuccess(response.StatusCode))
         {
@@ -125,10 +132,10 @@ public class HttpClientService : IHttpClientService
     }
 
     private async Task<T> PostFormAsync<T>(string url, Dictionary<string, string> paramDic,
-        Dictionary<string, string> headers)
+        Dictionary<string, string> headers, CancellationToken cancellationToken)
     {
         var client = _httpClientFactory.CreateClient();
-        client.Timeout = TimeSpan.FromSeconds(HttpConst.DefaultTimout);
+        client.Timeout = TimeSpan.FromSeconds(NetworkConstants.DefaultTimout);
 
         if (headers is { Count: > 0 })
         {
@@ -144,8 +151,8 @@ public class HttpClientService : IHttpClientService
             param.AddRange(paramDic.ToList());
         }
 
-        var response = await client.PostAsync(url, new FormUrlEncodedContent(param));
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await client.PostAsync(url, new FormUrlEncodedContent(param), cancellationToken);
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!ResponseSuccess(response.StatusCode))
         {
