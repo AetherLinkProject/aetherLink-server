@@ -54,10 +54,7 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
     public async Task<Commitment> GetRequestCommitmentAsync(string chainId, string transactionId, string requestId)
     {
         var commitmentId = IdGeneratorHelper.GenerateId(chainId, requestId);
-        if (_commitmentsCache.TryGetValue(commitmentId, out var commitmentCache))
-        {
-            return commitmentCache;
-        }
+        if (_commitmentsCache.TryGetValue(commitmentId, out var commitmentCache)) return commitmentCache;
 
         var commitmentStr = await _indexerProvider.GetRequestCommitmentAsync(chainId, requestId);
         if (!string.IsNullOrEmpty(commitmentStr))
