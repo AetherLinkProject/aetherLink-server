@@ -162,8 +162,4 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
         txResult.TransmitTransactionId = transactionId;
         await _peerManager.BroadcastAsync(p => p.CommitTransmitResultAsync(txResult));
     }
-
-    // private string GenerateMultiSignatureId(GenerateMultiSignatureJobArgs args)
-    //     => IdGeneratorHelper.GenerateId(MemoryConstants.MultiSignaturePrefix, args.ChainId, args.RequestId, args.Epoch,
-    //         args.RoundId);
 }
