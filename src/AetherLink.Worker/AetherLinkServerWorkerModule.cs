@@ -18,6 +18,8 @@ using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Service;
 using AetherLink.Worker.Core.Worker;
 using Hangfire.Dashboard;
+using Microsoft.AspNetCore.Builder;
+using Prometheus;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy;
 using Volo.Abp.Autofac;
@@ -70,27 +72,34 @@ namespace AetherLink.Worker
             ConfigureGraphQl(context, configuration);
             ConfigureHangfire(context, configuration);
             ConfigureDataFeeds(context, configuration);
+            ConfigureMetrics(context, configuration);
             ConfigureRequestJobs(context);
+        }
+
+        private void ConfigureMetrics(ServiceConfigurationContext context, IConfiguration configuration)
+        {
+            var metricsOption = configuration.GetSection("Metrics").Get<MetricsOption>();
+            context.Services.AddMetricServer(options => { options.Port = metricsOption.Port; });
+            context.Services.AddHealthChecks();
         }
 
         public override void OnApplicationInitialization(ApplicationInitializationContext context)
         {
             var configuration = context.GetConfiguration();
             var hangfireOptions = configuration.GetSection("Hangfire").Get<HangfireOptions>();
+            var app = context.GetApplicationBuilder();
+            app.UseRouting();
+            app.UseGrpcMetrics();
+            app.UseEndpoints(endpoints => { endpoints.MapMetrics(); });
+
             if (hangfireOptions.UseDashboard)
             {
-                var app = context.GetApplicationBuilder();
-
-                var dashboardOptions = new DashboardOptions
-                {
-                    Authorization = new[] { new CustomAuthorizeFilter() }
-                };
-                app.UseHangfireDashboard("/hangfire", dashboardOptions);
+                app.UseHangfireDashboard("/hangfire",
+                    new DashboardOptions { Authorization = new[] { new CustomAuthorizeFilter() } });
             }
 
             context.AddBackgroundWorkerAsync<SearchWorker>();
-            AsyncHelper.RunSync(
-                async () => { await context.ServiceProvider.GetService<IServer>().StartAsync(); });
+            AsyncHelper.RunSync(async () => { await context.ServiceProvider.GetService<IServer>().StartAsync(); });
         }
 
         private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
@@ -119,7 +128,7 @@ namespace AetherLink.Worker
                     .UseDashboardMetric(DashboardMetrics.DeletedCount);
             });
 
-            context.Services.AddHangfireServer();
+            // context.Services.AddHangfireServer();
         }
 
         private void ConfigureGraphQl(ServiceConfigurationContext context, IConfiguration configuration)

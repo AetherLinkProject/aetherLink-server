@@ -13,6 +13,7 @@ using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Reporter;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -21,13 +22,14 @@ namespace AetherLink.Worker.Core.JobPipeline;
 
 public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatureJobArgs>, ISingletonDependency
 {
-    private readonly object _lock;
+    private readonly object _lock = new();
     private readonly IPeerManager _peerManager;
     private readonly IJobProvider _jobProvider;
     private readonly OracleInfoOptions _options;
     private readonly IObjectMapper _objectMapper;
     private readonly IStateProvider _stateProvider;
     private readonly IReportProvider _reportProvider;
+    private readonly IMultiSignatureReporter _reporter;
     private readonly IContractProvider _contractProvider;
     private readonly ILogger<GenerateMultiSignatureJob> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
@@ -36,10 +38,11 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
     public GenerateMultiSignatureJob(ILogger<GenerateMultiSignatureJob> logger, IStateProvider stateProvider,
         IOptionsSnapshot<OracleInfoOptions> oracleChainInfoOptions, IContractProvider contractProvider,
         IOracleContractProvider oracleContractProvider, IObjectMapper objectMapper, IJobProvider jobProvider,
-        IReportProvider reportProvider, IPeerManager peerManager, IBackgroundJobManager backgroundJobManager)
+        IReportProvider reportProvider, IPeerManager peerManager, IBackgroundJobManager backgroundJobManager,
+        IMultiSignatureReporter reporter)
     {
         _logger = logger;
-        _lock = new object();
+        _reporter = reporter;
         _jobProvider = jobProvider;
         _peerManager = peerManager;
         _objectMapper = objectMapper;
@@ -138,16 +141,20 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
                     msg, config.DistPublicKey, config.PartialSignaturesThreshold);
                 newMultiSignature.GeneratePartialSignature();
                 _stateProvider.SetMultiSignature(id, newMultiSignature);
+                _reporter.RecordMultiSignatureAsync(args.ChainId, args.RequestId, args.Epoch);
                 return;
             }
 
             if (!sign.ProcessPartialSignature(args.PartialSignature))
             {
                 _logger.LogDebug("[Step5] {index} Process multi signature failed", args.PartialSignature.Index);
+                _reporter.RecordMultiSignatureProcessResultAsync(args.ChainId, args.RequestId, args.Epoch,
+                    args.PartialSignature.Index, "failed");
                 return;
             }
 
             _stateProvider.SetMultiSignature(id, sign);
+            _reporter.RecordMultiSignatureAsync(args.ChainId, args.RequestId, args.Epoch);
         }
     }
 
@@ -161,9 +168,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
         var txResult = _objectMapper.Map<GenerateMultiSignatureJobArgs, CommitTransmitResultRequest>(args);
         txResult.TransmitTransactionId = transactionId;
         await _peerManager.BroadcastAsync(p => p.CommitTransmitResultAsync(txResult));
+        _reporter.RecordMultiSignatureProcessResultAsync(args.ChainId, args.RequestId, args.Epoch,
+            args.PartialSignature.Index);
     }
-
-    // private string GenerateMultiSignatureId(GenerateMultiSignatureJobArgs args)
-    //     => IdGeneratorHelper.GenerateId(MemoryConstants.MultiSignaturePrefix, args.ChainId, args.RequestId, args.Epoch,
-    //         args.RoundId);
 }

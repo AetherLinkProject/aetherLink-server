@@ -57,14 +57,10 @@ namespace AetherLink.Worker
             }
         }
 
-        private static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureAppConfiguration(build => { build.AddJsonFile("appsettings.secrets.json", optional: true); })
-                .ConfigureServices((hostContext, services) =>
-                {
-                    services.AddApplication<AetherLinkServerWorkerModule>();
-                })
-                .UseAutofac()
-                .UseSerilog();
+        private static IHostBuilder CreateHostBuilder(string[] args) => Host.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration(build => { build.AddJsonFile("appsettings.secrets.json", optional: true); })
+            .ConfigureServices((hostContext, services) => { services.AddApplication<AetherLinkServerWorkerModule>(); })
+            .UseAutofac()
+            .UseSerilog();
     }
 }

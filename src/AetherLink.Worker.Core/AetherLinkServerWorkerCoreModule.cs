@@ -1,4 +1,5 @@
 ﻿using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Reporter;
 using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;
@@ -21,5 +22,10 @@ public class AetherLinkServerWorkerCoreModule : AbpModule
         context.Services.AddTransient<IObservationCollectSchedulerJob, ObservationCollectSchedulerJob>();
         context.Services.AddTransient<IResetRequestSchedulerJob, ResetRequestSchedulerJob>();
         context.Services.AddSingleton<ISchedulerService, SchedulerService>();
+
+        // Reporter
+        context.Services.AddSingleton<IWorkerReporter, WorkerReporter>();
+        context.Services.AddSingleton<IReportReporter, ReportReporter>();
+        context.Services.AddSingleton<IMultiSignatureReporter, MultiSignatureReporter>();
     }
 }

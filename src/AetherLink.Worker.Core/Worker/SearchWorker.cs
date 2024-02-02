@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Reporter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,13 +17,16 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly WorkerOptions _options;
     private readonly IWorkerProvider _provider;
+    private readonly IWorkerReporter _reporter;
     private readonly ILogger<SearchWorker> _logger;
     private readonly ConcurrentDictionary<string, long> _heightMap = new();
 
     public SearchWorker(AbpAsyncTimer timer, IOptionsSnapshot<WorkerOptions> workerOptions, IWorkerProvider provider,
-        IServiceScopeFactory serviceScopeFactory, ILogger<SearchWorker> logger) : base(timer, serviceScopeFactory)
+        IServiceScopeFactory serviceScopeFactory, ILogger<SearchWorker> logger, IWorkerReporter reporter) : base(timer,
+        serviceScopeFactory)
     {
         _logger = logger;
+        _reporter = reporter;
         _provider = provider;
         _options = workerOptions.Value;
         Timer.Period = 1000 * _options.SearchTimer;
@@ -67,6 +71,10 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
             "[Search] {chainId} startHeight: {s}, targetHeight:{t} found a total of {jobs} jobs, {transmit} transmitted, {canceled} canceled and took {time} ms.",
             chainId, startHeight, blockLatestHeight, jobsCount, transmittedCount, requestCanceledCount,
             DateTime.Now.Subtract(startTime).TotalMilliseconds);
+
+        _reporter.RecordOracleJobAsync(chainId, jobsCount);
+        _reporter.RecordTransmittedAsync(chainId, transmittedCount);
+        _reporter.RecordCanceledAsync(chainId, requestCanceledCount);
 
         _heightMap[chainId] = blockLatestHeight;
         await _provider.SetLatestSearchHeightAsync(chainId, blockLatestHeight);
