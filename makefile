@@ -19,6 +19,7 @@ init:
 	$(call kvrocks,6380)
 	$(call kvrocks,6381)
 	$(call kvrocks,6382)
+	$(call kvrocks,6383)
 	@cp -a /app/NuGet.Config ~/.nuget/NuGet/ 
 	$(call publish)
 	$(call startmock)
@@ -26,21 +27,24 @@ init:
 	$(call init,node2)
 	$(call init,node3)
 	$(call init,node4)
+	$(call init,node5)
 
 
 ## restart: restart cluster in mac docker container
 restart:
 	$(call publish)
-	@killall -r dotnet 
+	@killall -r dotnet* 
 	$(call flushall,6379)
 	$(call flushall,6380)
 	$(call flushall,6381)
 	$(call flushall,6382)
+	$(call flushall,6383)
 	$(call startmock)
 	$(call restart,node1)
 	$(call restart,node2)
 	$(call restart,node3)
 	$(call restart,node4)
+	$(call restart,node5)
     
 flushall:
 	$(call flushall,${REDIS},$(REDIS_PORT))

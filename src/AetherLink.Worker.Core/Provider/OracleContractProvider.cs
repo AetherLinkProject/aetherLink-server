@@ -1,9 +1,12 @@
-using System.Threading.Tasks;
+using System;
+using System.Collections.Concurrent;
+using AElf;
 using AElf.Types;
-using AetherLink.Worker.Core.Common.ContractHandler;
+using System.Threading.Tasks;
+using AetherLink.Contracts.Oracle;
+using AetherLink.Worker.Core.Common;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Oracle;
 using Volo.Abp.DependencyInjection;
 
@@ -11,16 +14,21 @@ namespace AetherLink.Worker.Core.Provider;
 
 public interface IOracleContractProvider
 {
-    public Task<Hash> GetOracleConfigAsync(string chainId);
-    public Task<long> GetLatestRoundAsync(string chainId);
-    public Task<Commitment> GetCommitmentAsync(string chainId, string transactionId, string requestId);
+    public Task<long> GetOracleLatestEpochAndRoundAsync(string chainId);
+    public Task<Commitment> GetRequestCommitmentAsync(string chainId, string transactionId, string requestId);
+    public Task<long> GetStartEpochAsync(string chainId, long blockHeight);
+
+    public Task<TransmitInput> GenerateTransmitDataAsync(string chainId, string requestId, string transactionId,
+        long epoch, ByteString result);
 }
 
+// If there is request-related data loss in Indexer, the transaction results and contract view method will be used as a backup.
 public class OracleContractProvider : IOracleContractProvider, ISingletonDependency
 {
     private readonly IIndexerProvider _indexerProvider;
     private readonly IContractProvider _contractProvider;
     private readonly ILogger<OracleContractProvider> _logger;
+    private readonly ConcurrentDictionary<string, Commitment> _commitmentsCache = new();
 
     public OracleContractProvider(IIndexerProvider indexerProvider, IContractProvider contractProvider,
         ILogger<OracleContractProvider> logger)
@@ -30,36 +38,98 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         _contractProvider = contractProvider;
     }
 
-    public async Task<Hash> GetOracleConfigAsync(string chainId)
+    public async Task<long> GetOracleLatestEpochAndRoundAsync(string chainId)
     {
-        var configStr = await _indexerProvider.GetOracleConfigAsync(chainId);
-        _logger.LogInformation("[OracleContractProvider] Get indexer Oracle config :{config}", configStr);
-
-        if (!string.IsNullOrEmpty(configStr)) return Hash.LoadFromHex(configStr);
-
-        var config = await _contractProvider.GetOracleConfigAsync(chainId);
-        return config.Config.LatestConfigDigest;
-    }
-
-    public async Task<long> GetLatestRoundAsync(string chainId)
-    {
-        var latestRound = await _indexerProvider.GetLatestRoundAsync(chainId);
-        _logger.LogInformation("[OracleContractProvider] Get indexer Latest round :{epoch}", latestRound);
-
-        if (latestRound > 0) return latestRound;
+        var epoch = await _indexerProvider.GetOracleLatestEpochAsync(chainId, 0);
+        if (epoch > 0)
+        {
+            _logger.LogDebug("[OracleContractProvider] Get indexer Latest epoch :{epoch}", epoch);
+            return epoch;
+        }
 
         var latestR = await _contractProvider.GetLatestRoundAsync(chainId);
         return latestR.Value;
     }
 
-    public async Task<Commitment> GetCommitmentAsync(string chainId, string transactionId, string requestId)
+    public async Task<Commitment> GetRequestCommitmentAsync(string chainId, string transactionId, string requestId)
     {
-        var commitment = await _indexerProvider.GetCommitmentAsync(chainId, requestId);
-        _logger.LogInformation("[OracleContractProvider] Get indexer Commitment:{commitment}", commitment);
+        var commitmentId = IdGeneratorHelper.GenerateId(chainId, requestId);
+        if (_commitmentsCache.TryGetValue(commitmentId, out var commitmentCache)) return commitmentCache;
 
-        if (!string.IsNullOrEmpty(commitment))
-            return Commitment.Parser.ParseFrom(ByteString.FromBase64(commitment));
+        var commitmentStr = await _indexerProvider.GetRequestCommitmentAsync(chainId, requestId);
+        if (!string.IsNullOrEmpty(commitmentStr))
+        {
+            _logger.LogDebug("[OracleContractProvider] Get indexer Commitment:{commitment}", commitmentStr);
+            _commitmentsCache[commitmentId] = Commitment.Parser.ParseFrom(ByteString.FromBase64(commitmentStr));
+        }
+        else
+        {
+            _commitmentsCache[commitmentId] = await _contractProvider.GetCommitmentAsync(chainId, transactionId);
+        }
 
-        return await _contractProvider.GetCommitmentAsync(chainId, transactionId);
+        return _commitmentsCache[commitmentId];
+    }
+
+    public async Task<long> GetStartEpochAsync(string chainId, long blockHeight)
+    {
+        try
+        {
+            var epoch = await _indexerProvider.GetOracleLatestEpochAsync(chainId, blockHeight);
+
+            if (epoch > 0)
+            {
+                _logger.LogDebug(
+                    "[OracleContractProvider] Get indexer request start epoch:{epoch} before blockHeight:{height}",
+                    epoch, blockHeight);
+                return epoch;
+            }
+
+            var latestR = await _contractProvider.GetLatestRoundAsync(chainId);
+            return latestR.Value;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogError("[OracleContractProvider] Get {chain} start epoch timeout", chainId);
+            throw;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[OracleContractProvider] Get {chain} start epoch failed", chainId);
+            throw;
+        }
+    }
+
+    public async Task<TransmitInput> GenerateTransmitDataAsync(string chainId, string requestId, string transactionId,
+        long epoch, ByteString result)
+    {
+        var commitment = await GetRequestCommitmentAsync(chainId, transactionId, requestId);
+        var transmitData = new TransmitInput
+        {
+            Report = new Report
+            {
+                Result = result,
+                OnChainMetadata = commitment.ToByteString(),
+                Error = ByteString.Empty,
+                OffChainMetadata = ByteString.Empty
+            }.ToByteString()
+        };
+
+        transmitData.ReportContext.Add(await GetOracleConfigAsync(chainId));
+        transmitData.ReportContext.Add(HashHelper.ComputeFrom(epoch));
+        transmitData.ReportContext.Add(HashHelper.ComputeFrom(0));
+        return transmitData;
+    }
+
+    private async Task<Hash> GetOracleConfigAsync(string chainId)
+    {
+        var configStr = await _indexerProvider.GetOracleConfigAsync(chainId);
+        if (!string.IsNullOrEmpty(configStr))
+        {
+            _logger.LogDebug("[OracleContractProvider] Get indexer Oracle config :{config}", configStr);
+            return Hash.LoadFromHex(configStr);
+        }
+
+        var config = await _contractProvider.GetOracleConfigAsync(chainId);
+        return config.Config.LatestConfigDigest;
     }
 }
