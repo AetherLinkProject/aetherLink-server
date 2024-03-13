@@ -5,6 +5,7 @@ using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Reporter;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundJobs;
@@ -17,6 +18,7 @@ public class VrfTxResultCheckProcessJob : AsyncBackgroundJob<VrfTxResultCheckJob
 {
     private readonly IVrfProvider _vrfProvider;
     private readonly IObjectMapper _objectMapper;
+    private readonly IVrfJobReporter _vrfReporter;
     private readonly ProcessJobOptions _jobOptions;
     private readonly IRetryProvider _retryProvider;
     private readonly IBackgroundJobManager _jobManager;
@@ -26,11 +28,12 @@ public class VrfTxResultCheckProcessJob : AsyncBackgroundJob<VrfTxResultCheckJob
 
     public VrfTxResultCheckProcessJob(ILogger<VrfTxResultCheckProcessJob> logger, IContractProvider contractProvider,
         IVrfProvider vrfProvider, IRetryProvider retryProvider, IOptionsSnapshot<ProcessJobOptions> processJobOptions,
-        IBackgroundJobManager jobManager, IObjectMapper objectMapper)
+        IBackgroundJobManager jobManager, IObjectMapper objectMapper, IVrfJobReporter vrfReporter)
     {
         _logger = logger;
         _jobManager = jobManager;
         _vrfProvider = vrfProvider;
+        _vrfReporter = vrfReporter;
         _objectMapper = objectMapper;
         _retryProvider = retryProvider;
         _contractProvider = contractProvider;
@@ -64,6 +67,7 @@ public class VrfTxResultCheckProcessJob : AsyncBackgroundJob<VrfTxResultCheckJob
 
                 vrfJob.Status = VrfJobState.Consumed;
                 await _vrfProvider.SetAsync(vrfJob);
+                _vrfReporter.RecordVrfJob(chainId, requestId);
 
                 _logger.LogInformation("[VRF] {ReqId} Transmitted validate successful.", requestId);
 

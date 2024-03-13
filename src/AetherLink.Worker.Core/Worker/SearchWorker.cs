@@ -77,11 +77,8 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         _logger.LogDebug("[Search] {chain} search log took {time} ms.", chainId,
             DateTime.Now.Subtract(startTime).TotalMilliseconds);
 
-        _reporter.RecordOracleJobAsync(chainId, jobsCount);
-        _reporter.RecordTransmittedAsync(chainId, transmittedCount);
-        _reporter.RecordCanceledAsync(chainId, requestCanceledCount);
-
         _heightMap[chainId] = blockLatestHeight;
+        _reporter.RecordConfirmBlockHeight(chainId, blockLatestHeight);
         await _provider.SetLatestSearchHeightAsync(chainId, blockLatestHeight);
     }
 
@@ -114,8 +111,9 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         // If there are no new events in this interval, the starting position will not be updated, but the search length will be updated.
         _unconfirmedHeightMap[chainId] = maxHeight == startHeight ? maxHeight - 1 : maxHeight;
         _heightCompensationMap[chainId] = maxHeight == startHeight ? batchSize : 0;
-        _logger.LogDebug(
-            "[UnconfirmedSearch] {chain} height Compensation: {compensation}.", chainId,
+        _reporter.RecordUnconfirmedBlockHeight(chainId, _unconfirmedHeightMap[chainId]);
+
+        _logger.LogDebug("[UnconfirmedSearch] {chain} height Compensation: {compensation}.", chainId,
             _heightCompensationMap[chainId]);
 
         await _provider.SetLatestUnconfirmedHeightAsync(chainId, _unconfirmedHeightMap[chainId]);
@@ -153,6 +151,7 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
     {
         var jobs = await _provider.SearchJobsAsync(chainId, to, from);
         var tasks = jobs.Select(job => _provider.HandleJobAsync(job));
+        _reporter.RecordOracleJobAsync(chainId, jobs.Count);
 
         _logger.LogDebug("[Search] {chain} found a total of {count} jobs.", chainId, jobs.Count);
 
@@ -166,6 +165,7 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         var transmittedTasks =
             transmits.Select(transmitted => _provider.HandleTransmittedLogEventAsync(transmitted));
 
+        _reporter.RecordTransmittedAsync(chainId, transmits.Count);
         _logger.LogDebug("[Search] {chain} found a total of {count} transmitted.", chainId, transmits.Count);
 
         await Task.WhenAll(transmittedTasks);
@@ -177,6 +177,7 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         var cancels = await _provider.SearchRequestCanceledAsync(chainId, to, from);
         var requestCancelsTasks = cancels.Select(requestCancelled =>
             _provider.HandleRequestCancelledLogEventAsync(requestCancelled));
+        _reporter.RecordCanceledAsync(chainId, cancels.Count);
 
         _logger.LogDebug("[Search] {chain} found a total of {count} canceled.", chainId, cancels.Count);
 
