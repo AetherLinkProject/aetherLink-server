@@ -6,6 +6,7 @@ using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Reporter;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
@@ -20,6 +21,7 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
     private readonly IJobProvider _jobProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly IPriceDataProvider _provider;
+    private readonly IDataFeedsReporter _reporter;
     private readonly IRetryProvider _retryProvider;
     private readonly ILogger<CollectObservationJob> _logger;
     private readonly IDataMessageProvider _dataMessageProvider;
@@ -27,9 +29,11 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
 
     public CollectObservationJob(IPeerManager peerManager, ILogger<CollectObservationJob> logger,
         IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper, IPriceDataProvider provider,
-        IRetryProvider retryProvider, IJobProvider jobProvider, IDataMessageProvider dataMessageProvider)
+        IRetryProvider retryProvider, IJobProvider jobProvider, IDataMessageProvider dataMessageProvider,
+        IDataFeedsReporter reporter)
     {
         _logger = logger;
+        _reporter = reporter;
         _provider = provider;
         _peerManager = peerManager;
         _jobProvider = jobProvider;
@@ -141,13 +145,18 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
             var parts = currencyPair.Split(new[] { "/" }, StringSplitOptions.None);
             var symbol = parts[0];
             var vsCurrency = parts[1];
+
             _logger.LogInformation("[step2] PriceFeeds search {symbol}:{currency}", symbol, vsCurrency);
 
-            return await _provider.GetPriceAsync(new PriceDataDto
+            var result = await _provider.GetPriceAsync(new PriceDataDto
             {
                 BaseCurrency = symbol.ToUpper(),
                 QuoteCurrency = vsCurrency.ToUpper()
             });
+
+            _reporter.RecordPrice(currencyPair, result);
+
+            return result;
         }
         catch (Exception e)
         {

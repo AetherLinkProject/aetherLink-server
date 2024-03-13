@@ -10,6 +10,8 @@ public class WorkerMetricsDefinition
 
     public const string SearchBlockHeightGaugeName = "search_block_height";
     public static readonly string[] SearchBlockHeightGaugeLabels = { "chain_id", "subscribe_type" };
-    public const string ConfirmCounterLabel = "confirm";
-    public const string UnconfirmedCounterLabel = "unconfirmed";
+    public const string ConfirmStartCounterLabel = "confirm_start";
+    public const string ConfirmEndCounterLabel = "confirm_end";
+    public const string UnconfirmedStartCounterLabel = "unconfirmed_start";
+    public const string UnconfirmedEndCounterLabel = "unconfirmed_end";
 }

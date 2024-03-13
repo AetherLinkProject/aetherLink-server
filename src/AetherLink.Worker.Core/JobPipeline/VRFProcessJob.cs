@@ -11,6 +11,7 @@ using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Reporter;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -27,6 +28,7 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
     private readonly IObjectMapper _objectMapper;
     private readonly IRetryProvider _retryProvider;
     private readonly ILogger<VRFProcessJob> _logger;
+    private readonly IJobCommonReporter _commonReporter;
     private readonly IContractProvider _contractProvider;
     private readonly ProcessJobOptions _processJobOptions;
     private readonly IBackgroundJobManager _backgroundJobManager;
@@ -35,13 +37,15 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
     public VRFProcessJob(ILogger<VRFProcessJob> logger, IOptionsSnapshot<OracleInfoOptions> options,
         IContractProvider contractProvider, IOracleContractProvider oracleContractProvider,
         IRetryProvider retryProvider, IVrfProvider vrfProvider, IBackgroundJobManager backgroundJobManager,
-        IObjectMapper objectMapper, IOptionsSnapshot<ProcessJobOptions> processJobOptions)
+        IObjectMapper objectMapper, IOptionsSnapshot<ProcessJobOptions> processJobOptions,
+        IJobCommonReporter commonReporter)
     {
         _logger = logger;
         _options = options.Value;
         _vrfProvider = vrfProvider;
         _objectMapper = objectMapper;
         _retryProvider = retryProvider;
+        _commonReporter = commonReporter;
         _contractProvider = contractProvider;
         _processJobOptions = processJobOptions.Value;
         _backgroundJobManager = backgroundJobManager;
@@ -52,6 +56,7 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
     {
         var chainId = args.ChainId;
         var reqId = args.RequestId;
+        var startTime = DateTime.Now;
 
         if (!_options.ChainConfig.TryGetValue(chainId, out var vrfInfo))
         {
@@ -108,6 +113,7 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
             var vrfJob = _objectMapper.Map<VRFJobArgs, VrfJobDto>(vrfTransmitResult);
             vrfJob.Status = VrfJobState.CheckPending;
 
+            _commonReporter.RecordVrfJob(chainId, reqId, DateTime.Now.Subtract(startTime).TotalMilliseconds);
             await _vrfProvider.SetAsync(vrfJob);
             await _backgroundJobManager.EnqueueAsync(vrfTransmitResult,
                 delay: TimeSpan.FromSeconds(_processJobOptions.TransactionResultDelay));
