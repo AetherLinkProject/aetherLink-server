@@ -13,16 +13,16 @@ public interface IDataFeedsReporter
 public class DataFeedsReporter : IDataFeedsReporter, ISingletonDependency
 {
     private readonly Gauge _priceGauge;
-    private readonly Gauge _jobGauge;
+    private readonly Counter _dataFeedsCounter;
 
     public DataFeedsReporter()
     {
         _priceGauge = MetricsReporter.RegistryGauges(Definition.DataFeedsGaugeName, Definition.PriceLabels);
-        _jobGauge = MetricsReporter.RegistryGauges(Definition.DataFeedsGaugeName, Definition.DataFeedsJobLabels);
+        _dataFeedsCounter = MetricsReporter.RegistryCounters(Definition.DataFeedsSumName, Definition.DataFeedsJobSumLabels);
     }
 
     public void RecordPrice(string currencyPair, double price) => _priceGauge.WithLabels(currencyPair).Set(price);
 
     public void RecordDatafeedJob(string chainId, string requestId, long epoch, int roundId, double executeTime)
-        => _jobGauge.WithLabels(chainId, requestId, epoch.ToString(), roundId.ToString()).Set(executeTime);
+        => _dataFeedsCounter.WithLabels(chainId, requestId, epoch.ToString(), roundId.ToString()).Inc(executeTime);
 }

@@ -12,17 +12,17 @@ public interface IVRFReporter
 
 public class VRFReporter : IVRFReporter, ISingletonDependency
 {
-    private readonly Gauge _jobGauge;
+    private readonly Counter _vrfCounter;
 
     public VRFReporter()
     {
-        _jobGauge = MetricsReporter.RegistryGauges(Definition.VRFGaugeName, Definition.VRFGaugeLabels);
+        _vrfCounter = MetricsReporter.RegistryCounters(Definition.VRFSumName, Definition.VRFSumLabels);
     }
 
     public void RecordVrfJob(string chainId, string requestId, string keyHash, double generationTime,
         double executeTime)
     {
-        _jobGauge.WithLabels(chainId, requestId, keyHash, Definition.ExecuteTimeTypeLabel).Set(executeTime);
-        _jobGauge.WithLabels(chainId, requestId, keyHash, Definition.GenerateTimeTypeLabel).Set(generationTime);
+        _vrfCounter.WithLabels(chainId, requestId, keyHash, Definition.ExecuteTimeTypeLabel).Inc(executeTime);
+        _vrfCounter.WithLabels(chainId, requestId, keyHash, Definition.GenerateTimeTypeLabel).Inc(generationTime);
     }
 }
