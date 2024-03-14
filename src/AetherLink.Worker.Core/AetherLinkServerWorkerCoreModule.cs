@@ -25,7 +25,7 @@ public class AetherLinkServerWorkerCoreModule : AbpModule
 
         // Reporter
         context.Services.AddSingleton<IWorkerReporter, WorkerReporter>();
-        context.Services.AddSingleton<IJobCommonReporter, JobCommonReporter>();
+        context.Services.AddSingleton<IVRFReporter, VRFReporter>();
         context.Services.AddSingleton<IDataFeedsReporter, DataFeedsReporter>();
         context.Services.AddSingleton<IReportReporter, ReportReporter>();
         context.Services.AddSingleton<IMultiSignatureReporter, MultiSignatureReporter>();
