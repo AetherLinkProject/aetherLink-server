@@ -1,5 +1,7 @@
 ﻿using AetherlinkPriceServer.Provider;
 using AetherlinkPriceServer.Worker;
+using CoinGecko.Clients;
+using CoinGecko.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
@@ -18,6 +20,7 @@ public class AetherlinkPriceServerHttpApiModule : AbpModule
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<AetherlinkPriceServerHttpApiModule>(); });
         context.Services.AddTransient<IPriceProvider, PriceProvider>();
         context.Services.AddTransient<IStorageProvider, StorageProvider>();
+        context.Services.AddSingleton<ICoinGeckoClient, CoinGeckoClient>();
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
