@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using Aetherlink.PriceServer;
+using Aetherlink.PriceServer.Common;
 using AetherlinkPriceServer.Common;
 using AetherlinkPriceServer.Options;
 using Microsoft.AspNetCore.Builder;
@@ -23,6 +25,7 @@ namespace AetherlinkPriceServer;
 [DependsOn(
     typeof(AetherlinkPriceServerHttpApiModule),
     typeof(AbpCachingStackExchangeRedisModule),
+    typeof(AetherlinkPriceServerModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpSwashbuckleModule),
     typeof(AbpAutoMapperModule),
@@ -39,9 +42,6 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         ConfigureSwaggerServices(context, configuration);
 
         Configure<TokenPriceSourceOptions>(configuration.GetSection("TokenPriceSource"));
-
-        context.Services.AddHttpClient();
-        context.Services.AddScoped<IHttpClientService, HttpClientService>();
     }
 
     private void ConfigureConventionalControllers()

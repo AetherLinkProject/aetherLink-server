@@ -9,9 +9,6 @@ public class TokenPriceSourceOptions
 
     public TokenPriceSourceOption GetSourceOption(SourceType sourceType)
         => Sources.GetValueOrDefault(sourceType.ToString());
-
-    public List<string> GetTokenList(SourceType sourceType) =>
-        Sources.GetValueOrDefault(sourceType.ToString()).Tokens ?? new List<string> { "ELF" };
 }
 
 public class TokenPriceSourceOption

@@ -15,6 +15,7 @@ namespace AetherlinkPriceServer.Provider;
 public interface IStorageProvider
 {
     public Task SetAsync<T>(string key, T data) where T : class;
+    public Task SetAsync<T>(KeyValuePair<string, T>[] values) where T : class;
     public Task<T> GetAsync<T>(string key) where T : class, new();
     public Task<List<T>> GetAsync<T>(RedisKey[] keys) where T : class, new();
 }
@@ -45,6 +46,22 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
         }
     }
 
+    public async Task SetAsync<T>(KeyValuePair<string, T>[] values) where T : class
+    {
+        try
+        {
+            await ConnectAsync();
+
+            await RedisDatabase.StringSetAsync(values
+                .Select(kv => new KeyValuePair<RedisKey, RedisValue>(kv.Key, _serializer.Serialize(kv.Value)))
+                .ToArray());
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Batch set to redis error.");
+        }
+    }
+
     public async Task<T> GetAsync<T>(string key) where T : class, new()
     {
         try
@@ -59,7 +76,7 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Get {key} error.", key);
+            _logger.LogError(e, $"Get {key} error.");
             return null;
         }
     }
@@ -75,7 +92,7 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Get {keys} error.", keys);
+            _logger.LogError(e, $"Get {string.Join(",", keys)} error.");
             return null;
         }
     }

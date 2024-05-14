@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using Aetherlink.PriceServer.Common;
 
 namespace Aetherlink.PriceServer.Dtos;
 
@@ -14,6 +16,11 @@ public class GetTokenPriceRequestDto : IValidatableObject
         if (!Enum.IsDefined(typeof(SourceType), Source))
         {
             yield return new ValidationResult("Invalid SourceType");
+        }
+
+        if (!TokenPairHelper.IsValidTokenPair(TokenPair))
+        {
+            yield return new ValidationResult("Invalid TokenPair");
         }
     }
 }
@@ -29,6 +36,11 @@ public class GetTokenPriceListRequestDto : IValidatableObject
         {
             yield return new ValidationResult("Invalid SourceType");
         }
+
+        if (!TokenPairs.All(TokenPairHelper.IsValidTokenPair))
+        {
+            yield return new ValidationResult("Invalid TokenPairs input");
+        }
     }
 }
 
@@ -42,6 +54,11 @@ public class GetAggregatedTokenPriceRequestDto : IValidatableObject
         if (!Enum.IsDefined(typeof(AggregateType), AggregateType))
         {
             yield return new ValidationResult("Invalid AggregateType");
+        }
+
+        if (!TokenPairHelper.IsValidTokenPair(TokenPair))
+        {
+            yield return new ValidationResult("Invalid TokenPair");
         }
     }
 }

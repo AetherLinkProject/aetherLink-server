@@ -11,8 +11,9 @@ public enum SourceType
 {
     CoinGecko,
     Okx,
-    // Coinbase,
-    // CoinMarket,
-    // GateIo,
-    // Binance,
+    Binance,
+    CoinMarket,
+    GateIo,
+    CoinBase,
+    None
 }

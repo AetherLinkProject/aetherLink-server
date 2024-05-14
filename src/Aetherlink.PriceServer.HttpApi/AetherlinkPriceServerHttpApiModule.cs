@@ -28,5 +28,9 @@ public class AetherlinkPriceServerHttpApiModule : AbpModule
         var backgroundWorkerManger = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CoinGeckoTokenPriceSearchWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<OkxTokenPriceSearchWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<BinancePriceSearchWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CoinMarketTokenPriceSearchWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<GateIoPriceSearchWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CoinBaseTokenPriceSearchWorker>());
     }
 }

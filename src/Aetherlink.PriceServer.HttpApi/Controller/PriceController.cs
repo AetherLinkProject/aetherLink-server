@@ -7,7 +7,7 @@ using Volo.Abp;
 namespace AetherlinkPriceServer.Controller;
 
 [RemoteService]
-[Route("api/app")]
+[Route("api/v1")]
 public class PriceController : AetherlinkPriceServerController
 {
     private readonly IPriceAppService _priceAppService;
@@ -16,6 +16,10 @@ public class PriceController : AetherlinkPriceServerController
     {
         _priceAppService = priceAppService;
     }
+
+    [HttpGet]
+    [Route("ping")]
+    public async Task<string> TestConnectivityAsync() => "OK";
 
     [HttpGet]
     [Route("price")]

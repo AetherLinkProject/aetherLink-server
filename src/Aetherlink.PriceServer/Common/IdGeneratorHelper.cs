@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AetherlinkPriceServer.Helper;
+namespace Aetherlink.PriceServer.Common;
 
 public static class IdGeneratorHelper
 {

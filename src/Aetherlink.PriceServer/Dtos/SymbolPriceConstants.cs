@@ -1,4 +1,4 @@
-namespace AetherlinkPriceServer.Worker.Dtos;
+namespace Aetherlink.PriceServer.Dtos;
 
 public static class SymbolPriceConstants
 {

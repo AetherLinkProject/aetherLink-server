@@ -1,17 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Common;
-using AetherlinkPriceServer.Dtos;
 using CoinGecko.Interfaces;
-using AetherlinkPriceServer.Helper;
 using AetherlinkPriceServer.Options;
 using AetherlinkPriceServer.Provider;
-using AetherlinkPriceServer.Worker.Dtos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -22,84 +20,49 @@ namespace AetherlinkPriceServer.Worker;
 
 public class CoinGeckoTokenPriceSearchWorker : TokenPriceSearchWorkerBase
 {
+    private readonly string[] _coinIds;
     private const string FiatSymbol = "usd";
-    private readonly TokenPriceSourceOption _option;
     private readonly ICoinGeckoClient _coinGeckoClient;
-
+    private readonly Dictionary<string, string> _tokenDict;
     protected override SourceType SourceType => SourceType.CoinGecko;
 
     public CoinGeckoTokenPriceSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IOptionsSnapshot<TokenPriceSourceOptions> options, ILogger<TokenPriceSearchWorkerBase> baseLogger,
-        IPriceProvider priceProvider, IHttpClientService httpClient, ICoinGeckoClient coinGeckoClient) : base(timer,
-        serviceScopeFactory, options,
+        IPriceProvider priceProvider, ICoinGeckoClient coinGeckoClient) : base(timer, serviceScopeFactory, options,
         baseLogger, priceProvider)
     {
         _coinGeckoClient = coinGeckoClient;
-        _option = options.Value.GetSourceOption(SourceType);
+        var op = options.Value.GetSourceOption(SourceType);
+        _coinIds = op.Tokens.Select(x => x.Split(',')[0]).ToArray();
+        _tokenDict = op.Tokens.ToDictionary(x => x.Split(',')[0], x => x.Split(',')[1]);
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        BaseLogger.LogInformation("coingecko token price...");
-        // var tasks = _option.Tokens.Select(SyncPriceAsync);
+        BaseLogger.LogInformation("[CoinGecko] Search worker Start...");
 
-        // var ids = _option.Tokens.Where(t => _coinIdMapping.TryGetValue(t.Split('-')[0].ToUpper(), out var coinId))
-        //     .Select(_ => coinId).ToArray();
-        var ids = _option.Tokens.Select(t =>
-        {
-            _coinIdMapping.TryGetValue(t.Split('-')[0].ToUpper(), out var coinId);
-            return coinId;
-        }).Where(id => id != null).ToArray();
-       var coinData =  await _coinGeckoClient.SimpleClient.GetSimplePrice(ids, new[] { FiatSymbol });
-        // string[] tokens = input.Split('-');
-        // string quoteTokenName = tokens[0];
-        // string baseTokenName = tokens[1];
-        // await Task.WhenAll(tasks);
-        BaseLogger.LogInformation($"[CoinGecko]Get  price ...");
-
-    }
-
-    private async Task SyncPriceAsync(string tokenPair)
-    {
-        BaseLogger.LogInformation($"[CoinGecko]Get {tokenPair} price ...");
-
-        if (!_coinIdMapping.TryGetValue("ELF", out var coinId)) return;
         try
         {
-            var coinData =
-                await _coinGeckoClient.SimpleClient.GetSimplePrice(new[] { "aelf", "ethereum", "solana" },
-                    new[] { FiatSymbol });
-            await PriceProvider.UpdatePrice(GenerateId(tokenPair), new PriceDto
+            await PriceProvider.UpdatePricesAsync(SourceType.CoinGecko,
+                (await _coinGeckoClient.SimpleClient.GetSimplePrice(_coinIds, new[] { FiatSymbol })).Select(kv =>
+                    new KeyValuePair<string, PriceDto>($"{_tokenDict[kv.Key]}-USDT", new PriceDto
+                    {
+                        TokenPair = $"{_tokenDict[kv.Key]}-USDT",
+                        Price = PriceConvertHelper.ConvertPrice((double)kv.Value[FiatSymbol].Value),
+                        UpdateTime = DateTime.Now
+                    })).ToArray());
+        }
+        catch (HttpRequestException e)
+        {
+            if (e.StatusCode == HttpStatusCode.TooManyRequests)
             {
-                TokenPair = tokenPair,
-                Price = !coinData.TryGetValue(coinId, out var value)
-                    ? 0
-                    : Convert.ToInt64(value[FiatSymbol].Value),
-                Decimal = 8,
-                UpdateTime = DateTime.Now
-            });
+                BaseLogger.LogWarning("[CoinGecko] Too Many Requests");
+                Thread.Sleep(10000);
+            }
         }
         catch (Exception e)
         {
-            BaseLogger.LogError(e, "[Coingecko] Can not get current price.");
-            throw;
+            BaseLogger.LogError(e, "[CoinGecko] Query token price error.");
         }
     }
-
-    private string GenerateId(string token) => IdGeneratorHelper.GenerateId(SourceType.CoinGecko, token.ToLower());
-
-    private readonly Dictionary<string, string> _coinIdMapping = new()
-    {
-        { "ELF", "aelf" },
-        { "USDT", "tether" },
-        { "SETH", "ethereum" },
-        { "GETH", "ethereum" },
-        { "ETH", "ethereum" },
-        { "OP", "optimism" },
-        { "BSC", "binancecoin" },
-        { "TRX", "tron" },
-        { "SOL", "solana" },
-        { "MATIC", "matic-network" },
-        { "ARB", "arbitrum" }
-    };
 }

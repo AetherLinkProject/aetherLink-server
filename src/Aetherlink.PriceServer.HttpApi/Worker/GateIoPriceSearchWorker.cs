@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Aetherlink.PriceServer.Common;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Common;
 using AetherlinkPriceServer.Options;
@@ -12,16 +11,17 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
-using Okex.Net;
+using Io.Gate.GateApi.Api;
+using Volo.Abp;
 
 namespace AetherlinkPriceServer.Worker;
 
-public class OkxTokenPriceSearchWorker : TokenPriceSearchWorkerBase
+public class GateIoPriceSearchWorker : TokenPriceSearchWorkerBase
 {
     private readonly TokenPriceSourceOption _option;
-    protected override SourceType SourceType => SourceType.Okx;
+    protected override SourceType SourceType => SourceType.GateIo;
 
-    public OkxTokenPriceSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
+    public GateIoPriceSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IOptionsSnapshot<TokenPriceSourceOptions> options, ILogger<TokenPriceSearchWorkerBase> baseLogger,
         IPriceProvider priceProvider) : base(timer, serviceScopeFactory, options, baseLogger, priceProvider)
     {
@@ -30,9 +30,9 @@ public class OkxTokenPriceSearchWorker : TokenPriceSearchWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        BaseLogger.LogInformation("[OKX] Search worker Start...");
+        BaseLogger.LogInformation("[GateIo] Search worker Start...");
 
-        await PriceProvider.UpdatePricesAsync(SourceType.Okx,
+        await PriceProvider.UpdatePricesAsync(SourceType.GateIo,
             await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync)));
     }
 
@@ -40,22 +40,21 @@ public class OkxTokenPriceSearchWorker : TokenPriceSearchWorkerBase
     {
         try
         {
-            var price = (await new OkexClient().GetTradesAsync(tokenPair, 1, ContextHelper.GeneratorCtx())).Data
-                ?.FirstOrDefault();
-            if (price != null)
-                return new KeyValuePair<string, PriceDto>(tokenPair, new PriceDto
-                {
-                    TokenPair = tokenPair,
-                    Price = PriceConvertHelper.ConvertPrice(price.Price),
-                    UpdateTime = DateTime.Now
-                });
+            var currencyPair = await new SpotApi().ListTickersAsync(tokenPair.Replace("-", "_"));
 
-            BaseLogger.LogWarning($"[OKX] Token {tokenPair} price returned is empty.");
-            return new();
+            if (currencyPair == null || currencyPair.Count == 0)
+                throw new UserFriendlyException("[GateIo] Get token {tokenPair} price error.");
+
+            return new KeyValuePair<string, PriceDto>(tokenPair, new PriceDto
+            {
+                TokenPair = tokenPair,
+                Price = PriceConvertHelper.ConvertPrice(double.Parse(currencyPair[0].Last)),
+                UpdateTime = DateTime.Now
+            });
         }
         catch (Exception e)
         {
-            BaseLogger.LogError(e, $"[OKX] Can not get {tokenPair} current price.");
+            BaseLogger.LogError(e, $"[GateIo] Can not get {tokenPair} current price.");
             return new();
         }
     }
