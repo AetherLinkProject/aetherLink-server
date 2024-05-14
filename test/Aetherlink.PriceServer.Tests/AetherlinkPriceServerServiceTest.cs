@@ -149,4 +149,15 @@ public partial class AetherlinkPriceServerServiceTest : AetherlinkPriceServerTes
         result.Data.Price.ShouldBe(ELFPRICE + 100);
         result.Data.TokenPair.ShouldBe(ELFUSDT);
     }
+
+    [Fact]
+    public async Task GetNotExistAggregatedTokenPriceTest()
+    {
+        var result = await _priceAppService.GetAggregatedTokenPriceAsync(new()
+        {
+            TokenPair = ELFUSDT,
+            AggregateType = (AggregateType)10
+        });
+        result.Data.ShouldBeNull();
+    }
 }

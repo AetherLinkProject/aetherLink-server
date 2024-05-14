@@ -43,7 +43,7 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
 
         return price != null
             ? new() { AggregateType = input.AggregateType.ToString(), Data = price }
-            : new();
+            : null;
     }
 
     private async Task<PriceDto> GetAggregatedPriceAsync(GetAggregatedTokenPriceRequestDto input)
@@ -61,6 +61,8 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
             case AggregateType.Medium:
                 aggregatedPrice.Price = prices.OrderBy(p => p.Price).ElementAt((prices.Count - 1) / 2).Price;
                 break;
+            default:
+                return null;
         }
 
         return aggregatedPrice;
