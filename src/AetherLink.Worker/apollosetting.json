@@ -1,0 +1,11 @@
+{
+  "apollo": {
+    "UseApollo": true,
+    "AppId": "AetherLink.Testnet",
+    "MetaServer": "http://localhost:8080",
+    "Namespaces": [
+      "aetherlink_worker"
+    ]
+  },
+  "ClientId":"testnet"
+}
