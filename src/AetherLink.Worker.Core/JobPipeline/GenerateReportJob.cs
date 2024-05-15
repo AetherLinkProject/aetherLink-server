@@ -20,7 +20,7 @@ namespace AetherLink.Worker.Core.JobPipeline;
 
 public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISingletonDependency
 {
-    private readonly object _lock;
+    private readonly object _lock = new();
     private readonly IPeerManager _peerManager;
     private readonly IJobProvider _jobProvider;
     private readonly OracleInfoOptions _options;
@@ -37,7 +37,6 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
         IBackgroundJobManager backgroundJobManager)
     {
         _logger = logger;
-        _lock = new object();
         _options = options.Value;
         _peerManager = peerManager;
         _jobProvider = jobProvider;
