@@ -1,14 +1,11 @@
-using System.Collections.Generic;
-
 namespace AetherLink.Worker.Core.Dtos;
 
-public class ConfigDigestsDto
+public class OracleConfigDigestRecord
 {
-    public List<ConfigDigestDto> ConfigSets { get; set; }
+    public ConfigDigestDto OracleConfigDigest { get; set; }
 }
 
 public class ConfigDigestDto
 {
-    public string ChainId { get; set; }
     public string ConfigDigest { get; set; }
 }

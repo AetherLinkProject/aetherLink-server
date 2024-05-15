@@ -1,13 +1,12 @@
-using System.Collections.Generic;
-
 namespace AetherLink.Worker.Core.Dtos;
 
-public class LatestRoundsDto
+public class OracleLatestEpochRecord
 {
-    public List<LatestRoundDto> LatestRounds { get; set; }
+    public OracleLatestEpochDto OracleLatestEpoch { get; set; }
 }
 
-public class LatestRoundDto
+public class OracleLatestEpochDto
 {
-    public long EpochAndRound { get; set; }
+    public string ChainId { get; set; }
+    public long Epoch { get; set; }
 }

@@ -8,72 +8,29 @@ namespace AetherLink.Worker.Core.Provider;
 
 public interface IStateProvider
 {
-    public bool GetReportGeneratedFlag(string key);
-    public void SetReportGeneratedFlag(string key);
-    public List<ObservationDto> GetPartialObservation(string key);
-    public void SetPartialObservation(string key, List<ObservationDto> queue);
+    public List<ObservationDto> GetObservations(string id);
+    public void SetObservations(string id, List<ObservationDto> observations);
     public MultiSignature GetMultiSignature(string id);
-    public void SetMultiSignature(string id, MultiSignature multisignature);
-    public bool GetMultiSignatureSignedFlag(string key);
-    public void SetMultiSignatureSignedFlag(string key);
-    public void CleanEpochState(string key, long epoch);
+    public void SetMultiSignature(string id, MultiSignature signature);
+    public bool IsFinished(string id);
+    public void SetFinishedFlag(string id);
 }
 
 public class StateProvider : IStateProvider, ISingletonDependency
 {
-    private readonly ConcurrentDictionary<string, MultiSignature> _multiSignatureDict = new();
-    private readonly ConcurrentDictionary<string, bool> _signedFlag = new();
-    private readonly ConcurrentDictionary<string, bool> _reportGeneratedFlag = new();
+    private readonly ConcurrentDictionary<string, bool> _finishedFlag = new();
     private readonly ConcurrentDictionary<string, List<ObservationDto>> _reports = new();
+    private readonly ConcurrentDictionary<string, MultiSignature> _multiSignatures = new();
 
-    // ReportGenerated
-    public bool GetReportGeneratedFlag(string key)
-    {
-        return _reportGeneratedFlag.TryGetValue(key, out _);
-    }
-
-    public void SetReportGeneratedFlag(string key)
-    {
-        _reportGeneratedFlag[key] = true;
-    }
-
-    // PartialObservation
-    public List<ObservationDto> GetPartialObservation(string key)
-    {
-        if (_reports.TryGetValue(key, out var index)) return index;
-        return null;
-    }
-
-    public void SetPartialObservation(string key, List<ObservationDto> observations)
-    {
-        _reports[key] = observations;
-    }
+    // Report
+    public List<ObservationDto> GetObservations(string id) => _reports.TryGetValue(id, out var list) ? list : null;
+    public void SetObservations(string id, List<ObservationDto> observations) => _reports[id] = observations;
 
     // MultiSignature
-    public MultiSignature GetMultiSignature(string id)
-    {
-        if (_multiSignatureDict.TryGetValue(id, out var multiSignature)) return multiSignature;
-        return null;
-    }
+    public MultiSignature GetMultiSignature(string id) => _multiSignatures.TryGetValue(id, out var sign) ? sign : null;
+    public void SetMultiSignature(string id, MultiSignature signature) => _multiSignatures[id] = signature;
 
-    public void SetMultiSignature(string id, MultiSignature multisignature)
-    {
-        _multiSignatureDict[id] = multisignature;
-    }
-
-    // MultiSignatureSignedFlag
-    public bool GetMultiSignatureSignedFlag(string key)
-    {
-        return _signedFlag.TryGetValue(key, out _);
-    }
-
-    public void SetMultiSignatureSignedFlag(string key)
-    {
-        _signedFlag[key] = true;
-    }
-
-    // Clean up transmitted KV
-    public void CleanEpochState(string key, long epoch)
-    {
-    }
+    // Generate finished flag
+    public bool IsFinished(string id) => _finishedFlag.TryGetValue(id, out _);
+    public void SetFinishedFlag(string id) => _finishedFlag[id] = true;
 }

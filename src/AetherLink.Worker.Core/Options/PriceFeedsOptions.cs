@@ -5,6 +5,7 @@ namespace AetherLink.Worker.Core.Options;
 public class PriceFeedsOptions
 {
     public string Source { get; set; }
+    public int Timeout { get; set; } = 10;
     public CoinGeckoOptions CoinGecko { get; set; }
     public CoinBaseOptions CoinBase { get; set; }
     public CoinMarketOptions CoinMarket { get; set; }
@@ -34,4 +35,4 @@ public class OkexOptions
     public string ApiKey { get; set; }
     public string SecretKey { get; set; }
     public string Passphrase { get; set; }
-} 
+}
