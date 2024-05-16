@@ -6,20 +6,18 @@ using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Hangfire;
-using Hangfire.Dashboard;
 using Hangfire.Redis.StackExchange;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using AetherLink.Worker.Core;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Common.ContractHandler;
-using AetherLink.Worker.Core.Network;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Service;
 using AetherLink.Worker.Core.Worker;
-using Microsoft.Extensions.Hosting;
+using Hangfire.Dashboard;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy;
 using Volo.Abp.Autofac;
@@ -58,21 +56,21 @@ namespace AetherLink.Worker
             context.Services.AddHostedService<AetherLinkServerHostedService>();
             context.Services.AddSingleton<IPeerManager, PeerManager>();
             context.Services.AddSingleton<IRetryProvider, RetryProvider>();
-            context.Services.AddSingleton<INetworkServer, NetworkServer>();
+            context.Services.AddSingleton<IServer, Server>();
+            context.Services.AddSingleton<IStateProvider, StateProvider>();
             context.Services.AddSingleton<IWorkerProvider, WorkerProvider>();
             context.Services.AddSingleton<IContractProvider, ContractProvider>();
             context.Services.AddSingleton<IRecurringJobManager, RecurringJobManager>();
-            context.Services.AddSingleton<IStateProvider, StateProvider>();
-            context.Services.AddSingleton<AetherLinkService.AetherLinkServiceBase, AetherLinkOcrServerService>();
             context.Services.AddSingleton<IOracleContractProvider, OracleContractProvider>();
             context.Services.AddSingleton<IBlockchainClientFactory<AElfClient>, AElfClientFactory>();
+            context.Services.AddSingleton<AetherLinkServer.AetherLinkServerBase, AetherLinkService>();
             context.Services.AddHttpClient();
             context.Services.AddScoped<IHttpClientService, HttpClientService>();
 
             ConfigureGraphQl(context, configuration);
             ConfigureHangfire(context, configuration);
-            ConfigureDataFeeds(context);
-            ConfigureStreamMethods(context);
+            ConfigureDataFeeds(context, configuration);
+            ConfigureRequestJobs(context);
         }
 
         public override void OnApplicationInitialization(ApplicationInitializationContext context)
@@ -91,9 +89,8 @@ namespace AetherLink.Worker
             }
 
             context.AddBackgroundWorkerAsync<SearchWorker>();
-            context.AddBackgroundWorkerAsync<HealthCheckWorker>();
-            var server = context.ServiceProvider.GetService<INetworkServer>();
-            AsyncHelper.RunSync(async () => { await server.StartAsync(); });
+            AsyncHelper.RunSync(
+                async () => { await context.ServiceProvider.GetService<IServer>().StartAsync(); });
         }
 
         private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
@@ -127,23 +124,20 @@ namespace AetherLink.Worker
 
         private void ConfigureGraphQl(ServiceConfigurationContext context, IConfiguration configuration)
         {
+            Configure<GraphqlOptions>(configuration.GetSection("GraphQL"));
             context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
                 new NewtonsoftJsonSerializer()));
             context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
         }
 
-        private void ConfigureStreamMethods(ServiceConfigurationContext context)
+        private void ConfigureRequestJobs(ServiceConfigurationContext context)
         {
-            context.Services.AddSingleton<IStreamMethod, RequestJobMethod>();
-            context.Services.AddSingleton<IStreamMethod, RequestDataMessageMethod>();
-            context.Services.AddSingleton<IStreamMethod, RequestReportMethod>();
-            context.Services.AddSingleton<IStreamMethod, RequestReportSignatureMethod>();
-            context.Services.AddSingleton<IStreamMethod, RequestTransactionResultMethod>();
+            context.Services.AddSingleton<IRequestJob, VrfRequestJobHandler>();
+            context.Services.AddSingleton<IRequestJob, DataFeedRequestJobHandler>();
         }
 
-        private void ConfigureDataFeeds(ServiceConfigurationContext context)
+        private void ConfigureDataFeeds(ServiceConfigurationContext context, IConfiguration configuration)
         {
-            var configuration = context.Services.GetConfiguration();
             Configure<PriceFeedsOptions>(configuration.GetSection("PriceFeeds"));
             context.Services.AddSingleton<IPriceDataProvider, PriceDataProvider>();
             context.Services.AddSingleton<ICoinGeckoClient, CoinGeckoClient>();

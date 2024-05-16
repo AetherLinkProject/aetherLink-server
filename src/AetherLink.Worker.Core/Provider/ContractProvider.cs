@@ -5,9 +5,8 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
 using AetherLink.Contracts.Oracle;
-using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Common.ContractHandler;
-using AetherLink.Worker.Core.Consts;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
@@ -26,7 +25,7 @@ public interface IContractProvider
     public Task<long> GetBlockLatestHeightAsync(string chainId);
     public Task<Commitment> GetCommitmentAsync(string chainId, string transactionId);
     public Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId);
-    public Transmitted GetTransmitted(TransactionResultDto transaction);
+    public Transmitted ParseTransmitted(TransactionResultDto transaction);
 }
 
 public class ContractProvider : IContractProvider, ISingletonDependency
@@ -46,15 +45,16 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     public async Task<Hash> GetRandomHashAsync(long blockNumber, string chainId)
     {
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return Hash.Empty;
-        return await CallTransactionAsync<Hash>(chainId, await GenerateRawTransactionAsync(ContractConsts.GetRandomHash,
-            new Int64Value { Value = blockNumber }, chainId, chainInfo.ConsensusContractAddress));
+        return await CallTransactionAsync<Hash>(chainId, await GenerateRawTransactionAsync(
+            ContractConstants.GetRandomHash, new Int64Value { Value = blockNumber }, chainId,
+            chainInfo.ConsensusContractAddress));
     }
 
     public async Task<GetConfigOutput> GetOracleConfigAsync(string chainId)
     {
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return new GetConfigOutput();
         return await CallTransactionAsync<GetConfigOutput>(chainId,
-            await GenerateRawTransactionAsync(ContractConsts.GetConfig, new Empty(), chainId,
+            await GenerateRawTransactionAsync(ContractConstants.GetConfig, new Empty(), chainId,
                 chainInfo.OracleContractAddress));
     }
 
@@ -62,34 +62,29 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     {
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return new Int64Value();
         return await CallTransactionAsync<Int64Value>(chainId,
-            await GenerateRawTransactionAsync(ContractConsts.GetLatestRound, new Empty(), chainId,
+            await GenerateRawTransactionAsync(ContractConstants.GetLatestRound, new Empty(), chainId,
                 chainInfo.OracleContractAddress));
     }
+
+    public async Task<long> GetBlockLatestHeightAsync(string chainId)
+        => await _blockchainClientFactory.GetClient(chainId).GetBlockHeightAsync();
+
+    public async Task<Commitment> GetCommitmentAsync(string chainId, string transactionId)
+        => Commitment.Parser.ParseFrom(ParseLogEvents<RequestStarted>(await GetTxResultAsync(chainId, transactionId))
+            .Commitment);
+
+    public async Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId)
+        => await _blockchainClientFactory.GetClient(chainId).GetTransactionResultAsync(transactionId);
 
     public async Task<string> SendTransmitAsync(string chainId, TransmitInput transmitInput)
     {
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return "";
-        var txRes = await SendTransactionAsync(chainId, await GenerateRawTransactionAsync(ContractConsts.Transmit,
+        var txRes = await SendTransactionAsync(chainId, await GenerateRawTransactionAsync(ContractConstants.Transmit,
             transmitInput, chainId, chainInfo.OracleContractAddress));
         return txRes.TransactionId;
     }
 
-    public async Task<long> GetBlockLatestHeightAsync(string chainId)
-    {
-        var client = _blockchainClientFactory.GetClient(chainId);
-        return await client.GetBlockHeightAsync();
-    }
-
-    public async Task<Commitment> GetCommitmentAsync(string chainId, string transactionId)
-    {
-        var result = await GetTxResultAsync(chainId, transactionId);
-        return Commitment.Parser.ParseFrom(ParseLogEvents<RequestStarted>(result).Commitment);
-    }
-
-    public Transmitted GetTransmitted(TransactionResultDto transaction)
-    {
-        return ParseLogEvents<Transmitted>(transaction);
-    }
+    public Transmitted ParseTransmitted(TransactionResultDto transaction) => ParseLogEvents<Transmitted>(transaction);
 
     private async Task<T> CallTransactionAsync<T>(string chainId, string rawTx) where T : class, IMessage<T>, new()
     {
@@ -101,10 +96,8 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     }
 
     private async Task<SendTransactionOutput> SendTransactionAsync(string chainId, string rawTx)
-    {
-        var client = _blockchainClientFactory.GetClient(chainId);
-        return await client.SendTransactionAsync(new SendTransactionInput { RawTransaction = rawTx });
-    }
+        => await _blockchainClientFactory.GetClient(chainId)
+            .SendTransactionAsync(new SendTransactionInput { RawTransaction = rawTx });
 
     private async Task<string> GenerateRawTransactionAsync(string methodName, IMessage param, string chainId,
         string contractAddress)
@@ -116,13 +109,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             .ToByteArray().ToHex();
     }
 
-    public async Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId)
-    {
-        var client = _blockchainClientFactory.GetClient(chainId);
-        return await client.GetTransactionResultAsync(transactionId);
-    }
-
-    private T ParseLogEvents<T>(TransactionResultDto txResult) where T : class, IMessage<T>, new()
+    private static T ParseLogEvents<T>(TransactionResultDto txResult) where T : class, IMessage<T>, new()
     {
         var log = txResult.Logs.FirstOrDefault(l => l.Name == typeof(T).Name);
         if (log == null) return new T();

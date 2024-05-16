@@ -10,34 +10,37 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
     {
         CreateMap<OcrLogEventDto, VRFJobArgs>();
         CreateMap<OcrLogEventDto, DataFeedsProcessJobArgs>();
-        CreateMap<OcrLogEventDto, TransmittedProcessJobArgs>();
-        CreateMap<RequestDto, RequestStartProcessJobArgs>()
-            .ForMember(t => t.StartTime, m => m.MapFrom(f => f.TransactionBlockTime));
+        CreateMap<TransmittedDto, TransmittedEventProcessJobArgs>();
+        CreateMap<RequestCancelledDto, RequestCancelProcessJobArgs>();
+
         CreateMap<DataFeedsProcessJobArgs, RequestStartProcessJobArgs>();
-        CreateMap<RequestStartProcessJobArgs, RequestDto>()
+        CreateMap<RequestStartProcessJobArgs, JobDto>()
             .ForMember(t => t.TransactionBlockTime, m => m.MapFrom(f => f.StartTime));
-        CreateMap<OcrLogEventDto, RequestCancelProcessJobArgs>();
-        CreateMap<LeaderPartialSigProcessJobArgs, FinishedProcessJobArgs>();
-        CreateMap<RequestDto, FinishedProcessJobArgs>();
+        CreateMap<GenerateMultiSignatureJobArgs, TransmitResultProcessJobArgs>();
 
-        CreateMap<FollowerObservationProcessJobArgs, DataMessageDto>();
-        CreateMap<FollowerObservationProcessJobArgs, LeaderGenerateReportJobArgs>();
-        CreateMap<FollowerObservationProcessJobArgs, DataMessage>();
+        CreateMap<CollectObservationJobArgs, DataMessageDto>();
+        CreateMap<CollectObservationJobArgs, GenerateReportJobArgs>();
+        CreateMap<CollectObservationJobArgs, CommitObservationRequest>();
 
-        CreateMap<FollowerReportProcessJobArgs, LeaderPartialSigProcessJobArgs>();
-        CreateMap<FollowerReportProcessJobArgs, ReportSignature>();
+        CreateMap<GeneratePartialSignatureJobArgs, GenerateMultiSignatureJobArgs>();
+        CreateMap<GeneratePartialSignatureJobArgs, CommitSignatureRequest>();
 
-        CreateMap<LeaderGenerateReportJobArgs, FollowerReportProcessJobArgs>();
-        CreateMap<LeaderGenerateReportJobArgs, Observations>();
+        CreateMap<GenerateReportJobArgs, GeneratePartialSignatureJobArgs>();
 
-        CreateMap<RequestStartProcessJobArgs, FollowerObservationProcessJobArgs>();
+        CreateMap<RequestStartProcessJobArgs, CollectObservationJobArgs>();
 
-        CreateMap<LeaderPartialSigProcessJobArgs, TransactionResult>();
+        CreateMap<GenerateMultiSignatureJobArgs, CommitTransmitResultRequest>();
+
+
+        CreateMap<JobDto, RequestStartProcessJobArgs>()
+            .ForMember(t => t.StartTime, m => m.MapFrom(f => f.TransactionBlockTime));
+        CreateMap<JobDto, TransmitResultProcessJobArgs>();
+        CreateMap<JobDto, GeneratePartialSignatureJobArgs>();
 
         // grpc request
-        CreateMap<TransactionResult, FinishedProcessJobArgs>()
+        CreateMap<CommitTransmitResultRequest, TransmitResultProcessJobArgs>()
             .ForMember(t => t.TransactionId, m => m.MapFrom(f => f.TransmitTransactionId));
-        CreateMap<ReportSignature, LeaderPartialSigProcessJobArgs>();
-        CreateMap<DataMessage, LeaderGenerateReportJobArgs>();
+        CreateMap<CommitSignatureRequest, GenerateMultiSignatureJobArgs>();
+        CreateMap<CommitObservationRequest, GenerateReportJobArgs>();
     }
 }

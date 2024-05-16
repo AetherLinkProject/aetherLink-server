@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+option csharp_namespace = "AetherLink.Worker.Core";
+
+import "aelf/core.proto";
+import public "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service AetherLinkServer {
+  rpc QueryObservationAsync(QueryObservationRequest) returns (VoidReply);
+  rpc CommitObservationAsync(CommitObservationRequest) returns (VoidReply);
+  rpc CommitReportAsync(CommitReportRequest) returns (VoidReply);
+  rpc CommitSignatureAsync(CommitSignatureRequest) returns (VoidReply);
+  rpc CommitTransmitResultAsync(CommitTransmitResultRequest) returns (VoidReply);
+}
+
+message QueryObservationRequest {
+  string request_id = 1;
+  string chain_id = 2;
+  int32 round_id = 3;
+  int64 epoch = 4;
+  google.protobuf.Timestamp start_time = 5;
+}
+
+message CommitObservationRequest {
+  string request_id = 1;
+  string chain_id = 2;
+  int32 round_id = 3;
+  int64 epoch = 4;
+  int64 data = 5;
+  int32 index = 6;
+}
+
+message CommitReportRequest {
+  string request_id = 1;
+  string chain_id = 2;
+  int32 round_id = 3;
+  int64 epoch = 4;
+  repeated int64 observation_results = 5;
+  google.protobuf.Timestamp start_time = 6;
+}
+
+message CommitSignatureRequest {
+  string request_id = 1;
+  string chain_id = 2;
+  int32 round_id = 3;
+  int64 epoch = 4;
+  int32 index = 5;
+  bytes signature = 6;
+}
+
+message CommitTransmitResultRequest {
+  string request_id = 1;
+  string chain_id = 2;
+  int32 round_id = 3;
+  int64 epoch = 4;
+  string transmit_transaction_id = 5;
+}
+
+// **** No reply *****
+
+message VoidReply {
+}

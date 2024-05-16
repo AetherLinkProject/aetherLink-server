@@ -1,3 +1,5 @@
+using Google.Protobuf.WellKnownTypes;
+
 namespace AetherLink.MockServer.GraphQL.Dtos;
 
 public class OcrJobEventDto
