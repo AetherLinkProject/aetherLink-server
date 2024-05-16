@@ -43,7 +43,7 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
 
         return price != null
             ? new() { AggregateType = input.AggregateType.ToString(), Data = price }
-            : null;
+            : new();
     }
 
     private async Task<PriceDto> GetAggregatedPriceAsync(GetAggregatedTokenPriceRequestDto input)
