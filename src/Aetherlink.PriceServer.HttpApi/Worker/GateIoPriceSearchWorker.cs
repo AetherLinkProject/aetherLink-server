@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 using Io.Gate.GateApi.Api;
+using Io.Gate.GateApi.Client;
 using Volo.Abp;
 
 namespace AetherlinkPriceServer.Worker;
@@ -51,6 +52,11 @@ public class GateIoPriceSearchWorker : TokenPriceSearchWorkerBase
                 Price = PriceConvertHelper.ConvertPrice(double.Parse(currencyPair[0].Last)),
                 UpdateTime = DateTime.Now
             });
+        }
+        catch (ApiException ae)
+        {
+            BaseLogger.LogWarning(ae, "[GateIo] Connection error.");
+            return new();
         }
         catch (Exception e)
         {

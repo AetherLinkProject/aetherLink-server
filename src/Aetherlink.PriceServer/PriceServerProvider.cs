@@ -44,7 +44,7 @@ public class PriceServerProvider : IPriceServerProvider, ITransientDependency
     public async Task<PriceListResponseDto> GetTokenPriceListAsync(GetTokenPriceListRequestDto input)
         => await QueryAsync<PriceListResponseDto>(TOKEN_PRICE_LIST, input, ContextHelper.GeneratorCtx());
 
-    private async Task<T> QueryAsync<T>(string uri, object data, CancellationToken ctx)
+    private async Task<T> QueryAsync<T>(string uri, object? data, CancellationToken ctx)
         where T : class => data == null
         ? await _http.GetAsync<T>(_option.BaseUrl + uri, ctx)
         : await _http.GetAsync<T>(_option.BaseUrl + uri, data, ctx);

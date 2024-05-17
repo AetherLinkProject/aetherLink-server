@@ -63,6 +63,16 @@ public class GetAggregatedTokenPriceRequestDto : IValidatableObject
     }
 }
 
+public class GetPriceForLast24HoursRequestDto
+{
+    [Required] public string TokenPair { get; set; }
+}
+
+public class PriceForLast24HoursResponseDto
+{
+    public List<PriceDto> Prices { get; set; }
+}
+
 public class PriceListResponseDto
 {
     public string Source { get; set; }

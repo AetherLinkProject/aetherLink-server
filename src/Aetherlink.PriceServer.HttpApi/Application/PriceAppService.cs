@@ -12,6 +12,7 @@ public interface IPriceAppService
     public Task<PriceResponseDto> GetTokenPriceAsync(GetTokenPriceRequestDto input);
     public Task<AggregatedPriceResponseDto> GetAggregatedTokenPriceAsync(GetAggregatedTokenPriceRequestDto input);
     public Task<PriceListResponseDto> GetTokenPriceListAsync(GetTokenPriceListRequestDto input);
+    public Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(GetPriceForLast24HoursRequestDto input);
 }
 
 public class PriceAppService : IPriceAppService, ISingletonDependency
@@ -45,6 +46,10 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
             ? new() { AggregateType = input.AggregateType.ToString(), Data = price }
             : new();
     }
+
+    public async Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(
+        GetPriceForLast24HoursRequestDto input) => new()
+        { Prices = await _priceProvider.GetHourlyPriceAsync(input.TokenPair) };
 
     private async Task<PriceDto> GetAggregatedPriceAsync(GetAggregatedTokenPriceRequestDto input)
     {

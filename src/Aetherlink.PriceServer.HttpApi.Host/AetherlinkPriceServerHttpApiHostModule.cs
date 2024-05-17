@@ -42,6 +42,7 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         ConfigureSwaggerServices(context, configuration);
 
         Configure<TokenPriceSourceOptions>(configuration.GetSection("TokenPriceSource"));
+        Configure<HourlyPriceOption>(configuration.GetSection("HourlyPrice"));
     }
 
     private void ConfigureConventionalControllers()

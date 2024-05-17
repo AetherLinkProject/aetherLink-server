@@ -60,12 +60,16 @@ public class CoinMarketTokenPriceSearchWorker : TokenPriceSearchWorkerBase
                 UpdateTime = DateTime.Now
             });
         }
+
         catch (Exception ex)
         {
             switch (ex)
             {
                 case HttpRequestException { StatusCode: HttpStatusCode.TooManyRequests }:
                     BaseLogger.LogError("[CoinMarket] Too Many Requests.");
+                    break;
+                case TaskCanceledException:
+                    BaseLogger.LogWarning("[CoinMarket] Operation canceled, need check the network.");
                     break;
                 default:
                     BaseLogger.LogError(ex, $"[CoinMarket] Can not get {tokenPair} current price.");
