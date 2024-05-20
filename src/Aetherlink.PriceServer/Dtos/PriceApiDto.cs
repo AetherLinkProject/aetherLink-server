@@ -71,6 +71,7 @@ public class GetPriceForLast24HoursRequestDto
 public class PriceForLast24HoursResponseDto
 {
     public List<PriceDto> Prices { get; set; }
+    public double ChangeRate24Hours { get; set; }
 }
 
 public class PriceListResponseDto

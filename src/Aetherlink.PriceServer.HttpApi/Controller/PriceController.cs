@@ -18,10 +18,6 @@ public class PriceController : AetherlinkPriceServerController
     }
 
     [HttpGet]
-    [Route("ping")]
-    public async Task<string> TestConnectivityAsync() => "OK";
-
-    [HttpGet]
     [Route("price")]
     public async Task<PriceResponseDto> GetTokenPriceAsync(GetTokenPriceRequestDto input)
         => await _priceAppService.GetTokenPriceAsync(input);

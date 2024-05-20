@@ -25,9 +25,6 @@ public partial class AetherlinkPriceServerServiceTest : AetherlinkPriceServerTes
     }
 
     [Fact]
-    public async Task ConnectivityTest() => (await _priceController.TestConnectivityAsync()).ShouldBe("OK");
-
-    [Fact]
     public async Task GetTokenPriceTest()
     {
         var source = SourceType.CoinGecko;

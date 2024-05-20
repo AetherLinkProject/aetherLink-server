@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Options;
 using AetherlinkPriceServer.Provider;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,9 +33,8 @@ public class HourlyPriceWorker : AsyncPeriodicBackgroundWorkerBase
     {
         _logger.LogInformation("HourlyPriceWorker ...");
 
-        await Task.WhenAll(
-            (await _priceProvider.GetPriceListAsync(_option.Tokens)).Select(p =>
-                _priceProvider.UpdateHourlyPriceAsync(p)));
+        await Task.WhenAll((await _priceProvider.GetPriceListAsync(_option.Tokens)).Select(p =>
+            _priceProvider.UpdateHourlyPriceAsync(p)));
 
         SetNextWholeHourTimer();
     }
@@ -43,7 +43,7 @@ public class HourlyPriceWorker : AsyncPeriodicBackgroundWorkerBase
     {
         var now = DateTime.Now;
         var nextHour = now.Hour == 0 ? now.Date.AddHours(1) : now.AddHours(1).Date.AddHours(now.Hour + 1);
-        var period = (int)(nextHour - now).TotalMilliseconds;
+        var period = (int)(nextHour - now).TotalMilliseconds + 10000;
         _logger.LogInformation(
             $"Next whole hour time: {nextHour}, The millisecond time interval to the next whole hour {period}");
         Timer.Period = period;

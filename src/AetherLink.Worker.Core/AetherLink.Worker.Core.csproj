@@ -8,9 +8,9 @@
         <PackageReference Include="AElf.Indexing.Elasticsearch" Version="0.0.16" />
         <PackageReference Include="AElf.CSharp.Core" Version="1.6.0" />
         <PackageReference Include="AElf.Sdk.CSharp" Version="1.6.0" />
-        <PackageReference Include="AetherlinkPriceServer" Version="1.0.0" />
         <PackageReference Include="AutoMapper" Version="12.0.0" />
         <PackageReference Include="GraphQL" Version="7.0.0" />
+        <PackageReference Include="AetherlinkPriceServer" Version="1.0.2" />
         <PackageReference Include="GraphQL.Client.Abstractions" Version="5.1.0" />
         <PackageReference Include="Grpc.Core" Version="2.46.6" />
         <PackageReference Include="Grpc.Net.Client" Version="2.60.0" />
@@ -39,5 +39,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\AetherLink.Multisignature\AetherLink.Multisignature.csproj" />
+        <ProjectReference Include="..\Aetherlink.PriceServer\Aetherlink.PriceServer.csproj" />
     </ItemGroup>
 </Project>

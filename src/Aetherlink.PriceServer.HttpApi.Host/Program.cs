@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using AetherlinkPriceServer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 
-namespace CAServer.Signature;
+namespace AetherlinkPriceServer;
 
 public class Program
 {
