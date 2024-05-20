@@ -33,22 +33,22 @@ public class OkxTokenPriceSearchWorker : TokenPriceSearchWorkerBase
         BaseLogger.LogInformation("[OKX] Search worker Start...");
 
         await PriceProvider.UpdatePricesAsync(SourceType.Okx,
-            await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync)));
+            (await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync))).ToList());
     }
 
-    private async Task<KeyValuePair<string, PriceDto>> SearchTokenPriceAsync(string tokenPair)
+    private async Task<PriceDto> SearchTokenPriceAsync(string tokenPair)
     {
         try
         {
             var price = (await new OkexClient().GetTradesAsync(tokenPair, 1, ContextHelper.GeneratorCtx())).Data
                 ?.FirstOrDefault();
             if (price != null)
-                return new KeyValuePair<string, PriceDto>(tokenPair, new PriceDto
+                return new()
                 {
                     TokenPair = tokenPair,
                     Price = PriceConvertHelper.ConvertPrice(price.Price),
                     UpdateTime = DateTime.Now
-                });
+                };
 
             BaseLogger.LogWarning($"[OKX] Token {tokenPair} price returned is empty.");
             return new();

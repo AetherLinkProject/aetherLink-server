@@ -34,10 +34,10 @@ public class GateIoPriceSearchWorker : TokenPriceSearchWorkerBase
         BaseLogger.LogInformation("[GateIo] Search worker Start...");
 
         await PriceProvider.UpdatePricesAsync(SourceType.GateIo,
-            await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync)));
+            (await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync))).ToList());
     }
 
-    private async Task<KeyValuePair<string, PriceDto>> SearchTokenPriceAsync(string tokenPair)
+    private async Task<PriceDto> SearchTokenPriceAsync(string tokenPair)
     {
         try
         {
@@ -46,12 +46,12 @@ public class GateIoPriceSearchWorker : TokenPriceSearchWorkerBase
             if (currencyPair == null || currencyPair.Count == 0)
                 throw new UserFriendlyException("[GateIo] Get token {tokenPair} price error.");
 
-            return new KeyValuePair<string, PriceDto>(tokenPair, new PriceDto
+            return new()
             {
                 TokenPair = tokenPair,
                 Price = PriceConvertHelper.ConvertPrice(double.Parse(currencyPair[0].Last)),
                 UpdateTime = DateTime.Now
-            });
+            };
         }
         catch (ApiException ae)
         {

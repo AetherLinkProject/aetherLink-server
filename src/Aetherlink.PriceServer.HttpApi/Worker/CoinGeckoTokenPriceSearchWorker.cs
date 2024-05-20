@@ -45,12 +45,12 @@ public class CoinGeckoTokenPriceSearchWorker : TokenPriceSearchWorkerBase
         {
             await PriceProvider.UpdatePricesAsync(SourceType.CoinGecko,
                 (await _coinGeckoClient.SimpleClient.GetSimplePrice(_coinIds, new[] { FiatSymbol })).Select(kv =>
-                    new KeyValuePair<string, PriceDto>($"{_tokenDict[kv.Key]}-USDT", new PriceDto
+                    new PriceDto
                     {
-                        TokenPair = $"{_tokenDict[kv.Key]}-USDT",
+                        TokenPair = $"{_tokenDict[kv.Key]}-USD",
                         Price = PriceConvertHelper.ConvertPrice((double)kv.Value[FiatSymbol].Value),
                         UpdateTime = DateTime.Now
-                    })).ToArray());
+                    }).ToList());
         }
         catch (TaskCanceledException)
         {

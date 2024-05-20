@@ -21,16 +21,16 @@ namespace AetherlinkPriceServer.Worker;
 public class CoinMarketTokenPriceSearchWorker : TokenPriceSearchWorkerBase
 {
     private const string FiatSymbol = "USD";
-    private readonly IHttpService _http;
+    private readonly IHttpService _httpService;
     private readonly TokenPriceSourceOption _option;
     protected override SourceType SourceType => SourceType.CoinMarket;
 
     public CoinMarketTokenPriceSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IOptionsSnapshot<TokenPriceSourceOptions> options, ILogger<TokenPriceSearchWorkerBase> baseLogger,
-        IPriceProvider priceProvider, IHttpService http) : base(timer, serviceScopeFactory, options,
+        IPriceProvider priceProvider, IHttpService httpService) : base(timer, serviceScopeFactory, options,
         baseLogger, priceProvider)
     {
-        _http = http;
+        _httpService = httpService;
         _option = options.Value.GetSourceOption(SourceType);
     }
 
@@ -39,26 +39,26 @@ public class CoinMarketTokenPriceSearchWorker : TokenPriceSearchWorkerBase
         BaseLogger.LogInformation("[CoinMarket] Search worker Start...");
 
         await PriceProvider.UpdatePricesAsync(SourceType.CoinMarket,
-            await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync)));
+            (await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync))).ToList());
     }
 
-    private async Task<KeyValuePair<string, PriceDto>> SearchTokenPriceAsync(string tokenPair)
+    private async Task<PriceDto> SearchTokenPriceAsync(string tokenPair)
     {
         try
         {
             var tp = tokenPair.Split('-');
 
-            return new KeyValuePair<string, PriceDto>(tokenPair, new PriceDto
+            return new()
             {
                 TokenPair = tokenPair,
-                Price = PriceConvertHelper.ConvertPrice((await _http.GetAsync<CoinMarketResponseDto>(
+                Price = PriceConvertHelper.ConvertPrice((await _httpService.GetAsync<CoinMarketResponseDto>(
                     new Uri($"{_option.BaseUrl}?symbol={tp[0]}").ToString(), new Dictionary<string, string>
                     {
                         { "X-CMC_PRO_API_KEY", _option.ApiKey },
                         { "Accepts", "application/json" },
                     }, ContextHelper.GeneratorCtx())).Data[tp[0]].Quote[FiatSymbol].Price),
                 UpdateTime = DateTime.Now
-            });
+            };
         }
 
         catch (Exception ex)

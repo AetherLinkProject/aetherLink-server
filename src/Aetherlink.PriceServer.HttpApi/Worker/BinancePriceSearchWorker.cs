@@ -34,14 +34,14 @@ public class BinancePriceSearchWorker : TokenPriceSearchWorkerBase
         BaseLogger.LogInformation("[Binance] Search worker Start...");
 
         await PriceProvider.UpdatePricesAsync(SourceType.Binance,
-            await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync)));
+            (await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync))).ToList());
     }
 
-    private async Task<KeyValuePair<string, PriceDto>> SearchTokenPriceAsync(string tokenPair)
+    private async Task<PriceDto> SearchTokenPriceAsync(string tokenPair)
     {
         try
         {
-            return new(tokenPair, new PriceDto
+            return new()
             {
                 TokenPair = tokenPair,
                 Price = PriceConvertHelper.ConvertPrice(
@@ -49,7 +49,7 @@ public class BinancePriceSearchWorker : TokenPriceSearchWorkerBase
                         .DeserializeObject<BinancePriceDto>(
                             await new Market().SymbolPriceTicker(tokenPair.Replace("-", "").ToUpper())).Price)),
                 UpdateTime = DateTime.Now
-            });
+            };
         }
         catch (TaskCanceledException)
         {

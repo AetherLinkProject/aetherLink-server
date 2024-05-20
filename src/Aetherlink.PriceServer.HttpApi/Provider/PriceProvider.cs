@@ -16,7 +16,7 @@ namespace AetherlinkPriceServer.Provider;
 
 public interface IPriceProvider
 {
-    public Task UpdatePricesAsync(SourceType source, KeyValuePair<string, PriceDto>[] tokenPairs);
+    public Task UpdatePricesAsync(SourceType source, IEnumerable<PriceDto> tokenPairs);
     public Task UpdateHourlyPriceAsync(PriceDto data);
 
     public Task<PriceDto> GetPriceAsync(string tokenPair, SourceType source = SourceType.None);
@@ -51,20 +51,20 @@ public class PriceProvider : IPriceProvider, ITransientDependency
         await _storage.SetAsync(key, data, TimeSpan.FromHours(24));
     }
 
-    public async Task UpdatePricesAsync(SourceType source, KeyValuePair<string, PriceDto>[] tokenPairs)
+    public async Task UpdatePricesAsync(SourceType source, IEnumerable<PriceDto> tokenPairs)
     {
         _logger.LogDebug($"Start save {source} price list in storage.");
 
 
-        var datasList = new List<KeyValuePair<string, PriceDto>>();
+        var dataList = new List<KeyValuePair<string, PriceDto>>();
 
-        tokenPairs.Where(t => !string.IsNullOrEmpty(t.Key)).ForEach(t =>
+        tokenPairs.Where(t => !string.IsNullOrEmpty(t.TokenPair)).ForEach(t =>
         {
-            datasList.Add(new KeyValuePair<string, PriceDto>(GenerateKey(t.Key), t.Value));
-            datasList.Add(new KeyValuePair<string, PriceDto>(GenerateKey(source, t.Key), t.Value));
+            dataList.Add(new(GenerateKey(t.TokenPair), t));
+            dataList.Add(new(GenerateKey(source, t.TokenPair), t));
         });
 
-        await _storage.SetAsync(datasList.ToArray());
+        await _storage.SetAsync(dataList.ToArray());
     }
 
     public async Task<List<PriceDto>> GetPriceListAsync(List<string> tokenPairs) =>

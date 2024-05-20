@@ -15,5 +15,5 @@ public enum SourceType
     CoinMarket,
     GateIo,
     CoinBase,
-    None
+    None = 99
 }

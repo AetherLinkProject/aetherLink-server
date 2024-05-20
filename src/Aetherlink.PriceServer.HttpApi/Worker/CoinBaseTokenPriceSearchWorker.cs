@@ -37,21 +37,21 @@ public class CoinBaseTokenPriceSearchWorker : TokenPriceSearchWorkerBase
         BaseLogger.LogInformation("[Coinbase] Search worker Start...");
 
         await PriceProvider.UpdatePricesAsync(SourceType.CoinBase,
-            await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync)));
+            (await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync))).ToList());
     }
 
-    private async Task<KeyValuePair<string, PriceDto>> SearchTokenPriceAsync(string tokenPair)
+    private async Task<PriceDto> SearchTokenPriceAsync(string tokenPair)
     {
         try
         {
-            return new(tokenPair, new PriceDto
+            return new()
             {
                 TokenPair = tokenPair,
                 Price = PriceConvertHelper.ConvertPrice(double.Parse(
                     (await _http.GetAsync<CoinBaseResponseDto>(_option.BaseUrl + $"{tokenPair}/buy",
                         ContextHelper.GeneratorCtx())).Data["amount"])),
                 UpdateTime = DateTime.Now
-            });
+            };
         }
         catch (TaskCanceledException)
         {
