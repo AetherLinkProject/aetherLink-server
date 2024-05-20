@@ -17,8 +17,8 @@ namespace AetherlinkPriceServer.Provider;
 public interface IPriceProvider
 {
     public Task UpdatePricesAsync(SourceType source, KeyValuePair<string, PriceDto>[] tokenPairs);
-    public Task UpdateHourlyPriceAsync(DateTime time, PriceDto data);
-    
+    public Task UpdateHourlyPriceAsync(PriceDto data);
+
     public Task<PriceDto> GetPriceAsync(string tokenPair, SourceType source = SourceType.None);
     public Task<List<PriceDto>> GetPriceListAsync(List<string> tokenPairs);
     public Task<List<PriceDto>> GetPriceListAsync(SourceType source, List<string> tokenPairs);
@@ -40,10 +40,14 @@ public class PriceProvider : IPriceProvider, ITransientDependency
         _sourceOptions = sourceOptions.Value;
     }
 
-    public async Task UpdateHourlyPriceAsync(DateTime time, PriceDto data)
+    public async Task UpdateHourlyPriceAsync(PriceDto data)
     {
-        var key = GenerateKey(time, data.TokenPair);
+        var dateTime = DateTime.Now;
+        data.UpdateTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, 0, 0);
+        var key = GenerateKey(data.UpdateTime, data.TokenPair);
+
         _logger.LogInformation($"Hourly price updated: {key}");
+
         await _storage.SetAsync(key, data, TimeSpan.FromHours(24));
     }
 

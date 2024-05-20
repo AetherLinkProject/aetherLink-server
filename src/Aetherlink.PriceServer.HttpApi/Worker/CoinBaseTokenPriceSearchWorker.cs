@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Aetherlink.PriceServer.Common;
 using Aetherlink.PriceServer.Dtos;
@@ -51,6 +52,20 @@ public class CoinBaseTokenPriceSearchWorker : TokenPriceSearchWorkerBase
                         ContextHelper.GeneratorCtx())).Data["amount"])),
                 UpdateTime = DateTime.Now
             });
+        }
+        catch (TaskCanceledException)
+        {
+            BaseLogger.LogWarning("[Coinbase] Timeout of 100 seconds elapsing.");
+            return new();
+        }
+        catch (HttpRequestException he)
+        {
+            if (he.Message.Contains("Network is unreachable"))
+            {
+                BaseLogger.LogError($"[Coinbase] Please check the network.");
+            }
+
+            return new();
         }
         catch (Exception e)
         {

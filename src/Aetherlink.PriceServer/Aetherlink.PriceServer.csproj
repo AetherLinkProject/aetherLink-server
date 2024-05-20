@@ -4,7 +4,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <PackageId>AetherlinkPriceServer</PackageId>
-        <Version>1.0.0</Version>
+        <Version>1.0.1</Version>
         <Company>Aetherlink</Company>
         <Authors>Aetherlink.Soup</Authors>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>

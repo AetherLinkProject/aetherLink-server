@@ -51,6 +51,11 @@ public class BinancePriceSearchWorker : TokenPriceSearchWorkerBase
                 UpdateTime = DateTime.Now
             });
         }
+        catch (TaskCanceledException)
+        {
+            BaseLogger.LogWarning("[Binance] Timeout of 100 seconds elapsing.");
+            return new();
+        }
         catch (Exception e)
         {
             BaseLogger.LogError(e, $"[Binance] Can not get {tokenPair} current price.");

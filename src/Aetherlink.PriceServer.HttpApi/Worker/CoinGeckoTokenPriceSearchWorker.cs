@@ -52,6 +52,10 @@ public class CoinGeckoTokenPriceSearchWorker : TokenPriceSearchWorkerBase
                         UpdateTime = DateTime.Now
                     })).ToArray());
         }
+        catch (TaskCanceledException)
+        {
+            BaseLogger.LogWarning("[CoinGecko] Timeout of 100 seconds elapsing.");
+        }
         catch (HttpRequestException e)
         {
             if (e.StatusCode == HttpStatusCode.TooManyRequests)
