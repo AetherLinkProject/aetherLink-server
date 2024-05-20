@@ -12,7 +12,7 @@ jobs:
     runs-on: aetherlink-server-runner
     strategy:
       matrix:
-        servicename: [AetherLink.Worker] # This should be the app that needs to be deploy.
+        servicename: [AetherLink.Worker]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -30,7 +30,7 @@ jobs:
     runs-on: aetherlink-server-runner
     strategy:
       matrix:
-        servicename: [src/AetherLink.Worker] # This should be the list of app that needs to be deploy.
+        servicename: [AetherLink.Worker]
     permissions:
       contents: read
     outputs:
