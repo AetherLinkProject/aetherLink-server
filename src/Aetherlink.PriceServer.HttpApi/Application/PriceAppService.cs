@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Aetherlink.PriceServer.Dtos;
@@ -13,6 +14,7 @@ public interface IPriceAppService
     public Task<AggregatedPriceResponseDto> GetAggregatedTokenPriceAsync(GetAggregatedTokenPriceRequestDto input);
     public Task<PriceListResponseDto> GetTokenPriceListAsync(GetTokenPriceListRequestDto input);
     public Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(GetPriceForLast24HoursRequestDto input);
+    public Task<DailyPriceResponseDto> GetDailyPriceAsync(GetDailyPriceRequestDto input);
 }
 
 public class PriceAppService : IPriceAppService, ISingletonDependency
@@ -58,6 +60,14 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
 
         return new()
             { Prices = prices.ToList(), ChangeRate24Hours = changeRage };
+    }
+
+    public async Task<DailyPriceResponseDto> GetDailyPriceAsync(GetDailyPriceRequestDto input)
+    {
+        DateTime.TryParseExact(input.TimeStamp, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None,
+            out var targetTime);
+
+        return new() { Data = await _priceProvider.GetDailyPriceAsync(targetTime, input.TokenPair) };
     }
 
     private async Task<PriceDto> GetAggregatedPriceAsync(GetAggregatedTokenPriceRequestDto input)

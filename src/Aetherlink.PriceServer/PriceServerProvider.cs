@@ -12,6 +12,7 @@ public interface IPriceServerProvider
     public Task<AggregatedPriceResponseDto> GetAggregatedTokenPriceAsync(GetAggregatedTokenPriceRequestDto input);
     public Task<PriceListResponseDto> GetTokenPriceListAsync(GetTokenPriceListRequestDto input);
     public Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(GetPriceForLast24HoursRequestDto input);
+    public Task<DailyPriceResponseDto> GetDailyPriceAsync(GetDailyPriceRequestDto input);
 }
 
 public class PriceServerProvider : IPriceServerProvider, ITransientDependency
@@ -19,6 +20,7 @@ public class PriceServerProvider : IPriceServerProvider, ITransientDependency
     private const string V1 = "/api/v1/";
     private const string TOKEN_PRICE = V1 + "price";
     private const string TOKEN_PRICE_LIST = V1 + "prices";
+    private const string DAILY_PRICE = V1 + "price/daily";
     private const string LAST_24HOURS_PRICE = V1 + "prices/hours";
     private const string AGGREGATED_TOKEN_PRICE = V1 + "aggregatedPrice";
 
@@ -43,6 +45,9 @@ public class PriceServerProvider : IPriceServerProvider, ITransientDependency
     public async Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(
         GetPriceForLast24HoursRequestDto input) =>
         await QueryAsync<PriceForLast24HoursResponseDto>(LAST_24HOURS_PRICE, input, ContextHelper.GeneratorCtx());
+
+    public async Task<DailyPriceResponseDto> GetDailyPriceAsync(GetDailyPriceRequestDto input) =>
+        await QueryAsync<DailyPriceResponseDto>(DAILY_PRICE, input, ContextHelper.GeneratorCtx());
 
     private async Task<T> QueryAsync<T>(string uri, object? data, CancellationToken ctx)
         where T : class => data == null

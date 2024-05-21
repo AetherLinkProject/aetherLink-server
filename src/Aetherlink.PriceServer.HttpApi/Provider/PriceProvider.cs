@@ -24,6 +24,7 @@ public interface IPriceProvider
     public Task<List<PriceDto>> GetPriceListAsync(SourceType source, List<string> tokenPairs);
     public Task<List<PriceDto>> GetAllSourcePricesAsync(string tokenPair);
     public Task<List<PriceDto>> GetHourlyPriceAsync(string tokenPair);
+    public Task<PriceDto> GetDailyPriceAsync(DateTime time, string tokenPair);
 }
 
 public class PriceProvider : IPriceProvider, ITransientDependency
@@ -40,21 +41,13 @@ public class PriceProvider : IPriceProvider, ITransientDependency
         _sourceOptions = sourceOptions.Value;
     }
 
-    public async Task UpdateHourlyPriceAsync(PriceDto data)
-    {
-        var dateTime = DateTime.Now;
-        data.UpdateTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, 0, 0);
-        var key = GenerateKey(data.UpdateTime, data.TokenPair);
-
-        _logger.LogInformation($"Hourly price updated: {key}");
-
-        await _storage.SetAsync(key, data, TimeSpan.FromHours(24));
-    }
+    public async Task UpdateHourlyPriceAsync(PriceDto data) => await _storage.SetAsync(
+        GenerateKey(data.UpdateTime, data.TokenPair), data,
+        data.UpdateTime.Hour == 0 ? TimeSpan.FromDays(30) : TimeSpan.FromHours(24));
 
     public async Task UpdatePricesAsync(SourceType source, IEnumerable<PriceDto> tokenPairs)
     {
         _logger.LogDebug($"Start save {source} price list in storage.");
-
 
         var dataList = new List<KeyValuePair<string, PriceDto>>();
 
@@ -66,6 +59,9 @@ public class PriceProvider : IPriceProvider, ITransientDependency
 
         await _storage.SetAsync(dataList.ToArray());
     }
+
+    public async Task<PriceDto> GetDailyPriceAsync(DateTime time, string tokenPair)
+        => await _storage.GetAsync<PriceDto>(GenerateKey(time, tokenPair));
 
     public async Task<List<PriceDto>> GetPriceListAsync(List<string> tokenPairs) =>
         await _storage.GetAsync<PriceDto>(tokenPairs.Select(k => (RedisKey)GenerateKey(k)).ToArray());

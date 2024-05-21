@@ -41,6 +41,11 @@ public class CoinGeckoTokenPriceSearchWorker : TokenPriceSearchWorkerBase
     {
         BaseLogger.LogInformation("[CoinGecko] Search worker Start...");
 
+        await Task.WhenAll(CollectRealTimePricesAsync(), CollectDailyPricesAsync());
+    }
+
+    private async Task CollectRealTimePricesAsync()
+    {
         try
         {
             await PriceProvider.UpdatePricesAsync(SourceType.CoinGecko,
@@ -67,6 +72,54 @@ public class CoinGeckoTokenPriceSearchWorker : TokenPriceSearchWorkerBase
         catch (Exception e)
         {
             BaseLogger.LogError(e, "[CoinGecko] Query token price error.");
+        }
+    }
+
+    private async Task CollectDailyPricesAsync() => await Task.WhenAll(_coinIds.Select(GetDailyPriceByIdAsync));
+
+    private async Task GetDailyPriceByIdAsync(string coinId)
+    {
+        var tokenPair = $"{_tokenDict[coinId]}-USD";
+        try
+        {
+            for (var i = 0; i < 30; i++)
+            {
+                var tempDay = DateTime.Today.AddDays(-i);
+                var targetDay = new DateTime(tempDay.Year, tempDay.Month, tempDay.Day, 0, 0, 0);
+                var result = await PriceProvider.GetDailyPriceAsync(targetDay, tokenPair);
+
+                if (result != null) continue;
+
+                BaseLogger.LogInformation($"Ready to get {tempDay:dd-MM-yyyy} {tokenPair} price");
+
+                var fullData = await _coinGeckoClient.CoinsClient.GetHistoryByCoinId(coinId,
+                    tempDay.ToString("dd-MM-yyyy"), "false");
+
+                if (fullData.MarketData == null)
+                {
+                    BaseLogger.LogWarning($"Get {tempDay:dd-MM-yyyy} {tokenPair} price failed");
+                    continue;
+                }
+
+                await PriceProvider.UpdateHourlyPriceAsync(new()
+                {
+                    TokenPair = tokenPair,
+                    Price = PriceConvertHelper.ConvertPrice((double)fullData.MarketData.CurrentPrice[FiatSymbol].Value),
+                    UpdateTime = targetDay
+                });
+            }
+        }
+        catch (HttpRequestException e)
+        {
+            if (e.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                BaseLogger.LogWarning("[CoinGecko] Too Many Requests");
+                Thread.Sleep(10000);
+            }
+        }
+        catch (Exception e)
+        {
+            BaseLogger.LogError(e, $"[CoinGecko] Query {tokenPair} token price error.");
         }
     }
 }

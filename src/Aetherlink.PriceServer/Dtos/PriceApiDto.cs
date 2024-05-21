@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
+using System.Globalization;
 using Aetherlink.PriceServer.Common;
 
 namespace Aetherlink.PriceServer.Dtos;
@@ -66,6 +64,30 @@ public class GetAggregatedTokenPriceRequestDto : IValidatableObject
 public class GetPriceForLast24HoursRequestDto
 {
     [Required] public string TokenPair { get; set; }
+}
+
+public class GetDailyPriceRequestDto : IValidatableObject
+{
+    [Required] public string TokenPair { get; set; }
+    [Required] public string TimeStamp { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (!TokenPairHelper.IsValidTokenPair(TokenPair))
+        {
+            yield return new ValidationResult("Invalid TokenPair");
+        }
+
+        if (!DateTime.TryParseExact(TimeStamp, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+        {
+            yield return new ValidationResult("Invalid TimeStamp");
+        }
+    }
+}
+
+public class DailyPriceResponseDto
+{
+    public PriceDto Data { get; set; }
 }
 
 public class PriceForLast24HoursResponseDto

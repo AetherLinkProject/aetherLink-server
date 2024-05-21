@@ -36,4 +36,9 @@ public class PriceController : AetherlinkPriceServerController
     [Route("prices/hours")]
     public async Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(
         GetPriceForLast24HoursRequestDto input) => await _priceAppService.GetPriceForLast24HoursAsync(input);
+
+    [HttpGet]
+    [Route("price/daily")]
+    public async Task<DailyPriceResponseDto> GetDailyPriceAsync(GetDailyPriceRequestDto input) =>
+        await _priceAppService.GetDailyPriceAsync(input);
 }

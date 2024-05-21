@@ -1,4 +1,5 @@
-﻿using AetherlinkPriceServer.Provider;
+﻿using System;
+using AetherlinkPriceServer.Provider;
 using AetherlinkPriceServer.Worker;
 using CoinGecko.Clients;
 using CoinGecko.Interfaces;
@@ -21,6 +22,8 @@ public class AetherlinkPriceServerHttpApiModule : AbpModule
         context.Services.AddTransient<IPriceProvider, PriceProvider>();
         context.Services.AddTransient<IStorageProvider, StorageProvider>();
         context.Services.AddSingleton<ICoinGeckoClient, CoinGeckoClient>();
+
+        ConfigCoinGeckoApi(context);
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
@@ -33,5 +36,17 @@ public class AetherlinkPriceServerHttpApiModule : AbpModule
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<GateIoPriceSearchWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CoinBaseTokenPriceSearchWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<HourlyPriceWorker>());
+    }
+
+    private void ConfigCoinGeckoApi(ServiceConfigurationContext context)
+    {
+        var configuration = context.Services.GetConfiguration();
+        context.Services.AddHttpClient("CoinGeckoPro", client =>
+        {
+            client.BaseAddress = new Uri(configuration["TokenPriceSource:Sources:CoinGecko:BaseUrl"]);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            client.DefaultRequestHeaders.Add("x-cg-pro-api-key",
+                configuration["TokenPriceSource:Sources:CoinGecko:ApiKey"]);
+        });
     }
 }

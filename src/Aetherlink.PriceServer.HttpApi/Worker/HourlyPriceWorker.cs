@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Options;
 using AetherlinkPriceServer.Provider;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,13 +27,17 @@ public class HourlyPriceWorker : AsyncPeriodicBackgroundWorkerBase
         SetNextWholeHourTimer();
     }
 
-
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
         _logger.LogInformation("HourlyPriceWorker ...");
 
+        var time = DateTime.Now;
+
         await Task.WhenAll((await _priceProvider.GetPriceListAsync(_option.Tokens)).Select(p =>
-            _priceProvider.UpdateHourlyPriceAsync(p)));
+        {
+            p.UpdateTime = new DateTime(time.Year, time.Month, time.Day, time.Hour, 0, 0);
+            return _priceProvider.UpdateHourlyPriceAsync(p);
+        }));
 
         SetNextWholeHourTimer();
     }
