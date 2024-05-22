@@ -41,7 +41,7 @@ public class CoinGeckoTokenPriceSearchWorker : TokenPriceSearchWorkerBase
     {
         BaseLogger.LogInformation("[CoinGecko] Search worker Start...");
 
-        await Task.WhenAll(CollectRealTimePricesAsync(), CollectDailyPricesAsync());
+        await CollectRealTimePricesAsync();
     }
 
     private async Task CollectRealTimePricesAsync()
