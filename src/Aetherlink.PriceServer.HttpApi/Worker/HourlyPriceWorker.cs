@@ -45,7 +45,7 @@ public class HourlyPriceWorker : AsyncPeriodicBackgroundWorkerBase
     private void SetNextWholeHourTimer()
     {
         var now = DateTime.Now;
-        var nextHour = now.Hour == 0 ? now.Date.AddHours(1) : now.AddHours(1).Date.AddHours(now.Hour + 1);
+        var nextHour = now.Hour == 23 ? now.Date.AddDays(1) : now.AddHours(1).Date.AddHours(now.Hour + 1);
         var period = (int)(nextHour - now).TotalMilliseconds + 10000;
         _logger.LogInformation(
             $"Next whole hour time: {nextHour}, The millisecond time interval to the next whole hour {period}");
