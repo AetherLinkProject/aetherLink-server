@@ -113,7 +113,7 @@ public class CoinGeckoTokenPriceSearchWorker : TokenPriceSearchWorkerBase
         {
             if (e.StatusCode == HttpStatusCode.TooManyRequests)
             {
-                BaseLogger.LogWarning("[CoinGecko] Too Many Requests");
+                BaseLogger.LogWarning("[CoinGecko] Pro client too Many Requests");
                 Thread.Sleep(10000);
             }
         }

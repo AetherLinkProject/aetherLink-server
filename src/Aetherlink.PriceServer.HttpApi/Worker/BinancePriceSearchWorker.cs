@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Common;
@@ -54,6 +54,11 @@ public class BinancePriceSearchWorker : TokenPriceSearchWorkerBase
         catch (TaskCanceledException)
         {
             BaseLogger.LogWarning("[Binance] Timeout of 100 seconds elapsing.");
+            return new();
+        }
+        catch (HttpRequestException he)
+        {
+            if (he.Message.Contains("No route to host")) BaseLogger.LogWarning("[Binance] Network error please check.");
             return new();
         }
         catch (Exception e)

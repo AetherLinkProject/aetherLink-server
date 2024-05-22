@@ -66,10 +66,14 @@ public class CoinMarketTokenPriceSearchWorker : TokenPriceSearchWorkerBase
             switch (ex)
             {
                 case HttpRequestException { StatusCode: HttpStatusCode.TooManyRequests }:
-                    BaseLogger.LogError("[CoinMarket] Too Many Requests.");
+                    BaseLogger.LogWarning("[CoinMarket] Too Many Requests.");
+                    break;
+                case HttpRequestException:
+                    if (ex.Message.Contains("Resource temporarily unavailable"))
+                        BaseLogger.LogWarning("[CoinMarket] Resource temporarily unavailable.");
                     break;
                 case TaskCanceledException:
-                    BaseLogger.LogWarning("[CoinMarket] Operation canceled, need check the network.");
+                    BaseLogger.LogWarning("[CoinMarket] Operation timeout, need check the network.");
                     break;
                 default:
                     BaseLogger.LogError(ex, $"[CoinMarket] Can not get {tokenPair} current price.");
