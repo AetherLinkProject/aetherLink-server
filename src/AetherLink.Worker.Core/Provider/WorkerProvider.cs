@@ -25,9 +25,7 @@ public interface IWorkerProvider
     public Task HandleTransmittedLogEventAsync(TransmittedDto transmitted);
     public Task HandleRequestCancelledLogEventAsync(RequestCancelledDto requestCancelled);
     public Task<long> GetStartHeightAsync(string chainId);
-    public Task<long> GetUnconfirmedStartHeightAsync(string chainId);
     public Task SetLatestSearchHeightAsync(string chainId, long searchHeight);
-    public Task SetLatestUnconfirmedHeightAsync(string chainId, long unconfirmedHeight);
 }
 
 public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependency
@@ -87,20 +85,9 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
         return latestBlockHeight?.BlockHeight ?? 0;
     }
 
-    public async Task<long> GetUnconfirmedStartHeightAsync(string chainId)
-    {
-        var latestHeight = await _storageProvider.GetAsync<SearchHeightDto>(GetUnconfirmedHeightRedisKey(chainId));
-        return latestHeight?.BlockHeight ?? 0;
-    }
-
     public async Task SetLatestSearchHeightAsync(string chainId, long searchHeight)
         => await _storageProvider.SetAsync(GetSearchHeightRedisKey(chainId),
             new SearchHeightDto { BlockHeight = searchHeight });
-
-    public async Task SetLatestUnconfirmedHeightAsync(string chainId, long unconfirmedHeight)
-        => await _storageProvider.SetAsync(GetUnconfirmedHeightRedisKey(chainId),
-            new SearchHeightDto { BlockHeight = unconfirmedHeight });
-
 
     public async Task HandleTransmittedLogEventAsync(TransmittedDto transmitted)
         => await _backgroundJobManager.EnqueueAsync(
@@ -112,7 +99,4 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
 
     private static string GetSearchHeightRedisKey(string chainId)
         => IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, chainId);
-
-    private static string GetUnconfirmedHeightRedisKey(string chainId)
-        => IdGeneratorHelper.GenerateId(RedisKeyConstants.UnconfirmedSearchHeightKey, chainId);
 }

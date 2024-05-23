@@ -43,7 +43,7 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         var epoch = await _indexerProvider.GetOracleLatestEpochAsync(chainId, 0);
         if (epoch > 0)
         {
-            _logger.LogDebug("[OracleContractProvider] Get indexer Latest epoch: {epoch}", epoch);
+            _logger.LogDebug("[OracleContractProvider] Get indexer Latest epoch :{epoch}", epoch);
             return epoch;
         }
 

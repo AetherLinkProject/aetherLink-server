@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Options;
@@ -38,7 +37,6 @@ public class GraphQLHelper : IGraphQLHelper, ISingletonDependency
     private async Task<T> SendQueryAsync<T>(GraphQLRequest request)
     {
         var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_options.QueryTimeout));
-        var startTime = DateTime.Now;
 
         try
         {
@@ -54,8 +52,7 @@ public class GraphQLHelper : IGraphQLHelper, ISingletonDependency
         }
         catch (OperationCanceledException)
         {
-            _logger.LogError("[GraphQLHelper] Query graphQL timed out, Took {time} ms.",
-                DateTime.Now.Subtract(startTime).TotalMilliseconds);
+            _logger.LogError("[GraphQLHelper] Query graphQL timed out.");
             throw;
         }
         catch (Exception e)

@@ -8,6 +8,7 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
 {
     public AetherLinkServerWorkerAutoMapperProfile()
     {
+        CreateMap<OcrLogEventDto, VRFJobArgs>();
         CreateMap<OcrLogEventDto, DataFeedsProcessJobArgs>();
         CreateMap<TransmittedDto, TransmittedEventProcessJobArgs>();
         CreateMap<RequestCancelledDto, RequestCancelProcessJobArgs>();
@@ -30,11 +31,6 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
 
         CreateMap<GenerateMultiSignatureJobArgs, CommitTransmitResultRequest>();
 
-        // VRF
-        CreateMap<OcrLogEventDto, VRFJobArgs>();
-        CreateMap<VRFJobArgs, VrfTxResultCheckJobArgs>();
-        CreateMap<VrfTxResultCheckJobArgs, VRFJobArgs>();
-        CreateMap<VRFJobArgs, VrfJobDto>();
 
         CreateMap<JobDto, RequestStartProcessJobArgs>()
             .ForMember(t => t.StartTime, m => m.MapFrom(f => f.TransactionBlockTime));

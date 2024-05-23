@@ -44,7 +44,6 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                         requestTypeIndex,
                         transactionId,
                         blockHeight,
-                        blockHash,
                         startTime,
                         requestId
                 }
@@ -54,8 +53,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                     chainId = chainId, fromBlockHeight = from, toBlockHeight = to
                 }
             });
-            return indexerResult != null ? indexerResult.OcrJobEvents : new List<OcrLogEventDto>();
-            // return indexerResult.OcrJobEvents;
+            return indexerResult.OcrJobEvents;
         }
         catch (Exception e)
         {
@@ -85,8 +83,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                     chainId = chainId, fromBlockHeight = from, toBlockHeight = to
                 }
             });
-            return indexerResult != null ? indexerResult.Transmitted : new List<TransmittedDto>();
-            // return indexerResult?.Transmitted;
+            return indexerResult.Transmitted;
         }
         catch (Exception e)
         {
@@ -113,8 +110,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                     chainId = chainId, fromBlockHeight = from, toBlockHeight = to
                 }
             });
-            return indexerResult != null ? indexerResult.RequestCancelled : new List<RequestCancelledDto>();
-            // return indexerResult?.RequestCancelled;
+            return indexerResult.RequestCancelled;
         }
         catch (Exception e)
         {
