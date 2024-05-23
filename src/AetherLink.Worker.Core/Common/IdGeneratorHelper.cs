@@ -25,6 +25,9 @@ public static class IdGeneratorHelper
     public static string GenerateJobRequestRedisId(string chainId, string requestId)
         => GenerateId(RedisKeyConstants.JobRedisKey, chainId, requestId);
 
+    public static string GenerateVrfJobRedisId(string chainId, string requestId)
+        => GenerateId(RedisKeyConstants.VrfJobRedisKey, chainId, requestId);
+
     public static string GenerateReportRedisId(string chainId, string requestId, long epoch)
         => GenerateId(RedisKeyConstants.ReportRedisKey, chainId, requestId, epoch);
 
