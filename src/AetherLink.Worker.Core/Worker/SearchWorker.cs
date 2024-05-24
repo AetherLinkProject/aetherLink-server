@@ -82,10 +82,11 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         var chainId = info.ChainId;
         var startHeight = _unconfirmedHeightMap[chainId].Add(1);
 
-        if (_unconfirmedHeightMap[chainId] < _heightMap[chainId])
+        if (startHeight < _heightMap[chainId])
         {
             startHeight = _heightMap[chainId];
             _heightCompensationMap[chainId] = 0;
+            _logger.LogDebug("[UnconfirmedSearch]The unconfirm search start height lags behind the confirm start height");
         }
 
         var maxHeight = startHeight;
