@@ -1,6 +1,6 @@
 {
   "apollo": {
-    "UseApollo": true,
+    "UseApollo": false,
     "AppId": "AetherLink.Testnet",
     "MetaServer": "http://localhost:8080",
     "Namespaces": [
