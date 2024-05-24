@@ -106,8 +106,8 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         // If there are no new events in this interval, the starting position will not be updated, but the search length will be updated.
         _unconfirmedHeightMap[chainId] = maxHeight == startHeight ? maxHeight - 1 : maxHeight;
         _heightCompensationMap[chainId] = maxHeight == startHeight ? batchSize : 0;
-        _logger.LogDebug(
-            "[UnconfirmedSearch] {chain} height Compensation: {compensation}.", chainId,
+
+        _logger.LogDebug("[UnconfirmedSearch] {chain} height Compensation: {compensation}.", chainId,
             _heightCompensationMap[chainId]);
 
         await _provider.SetLatestUnconfirmedHeightAsync(chainId, _unconfirmedHeightMap[chainId]);
