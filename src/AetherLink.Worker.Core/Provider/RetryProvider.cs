@@ -45,8 +45,8 @@ public class RetryProvider : IRetryProvider, ISingletonDependency
     /// <param name="backOff"> backOff == true, delay time will be avoided exponentially.</param>
     /// <param name="delayDelta"> delayDelta is the basic time for each timeout, the default is 0.</param>
     public async Task RetryAsync<T>(T args, bool untilFailed, bool backOff, long delayDelta = 0)
-        where T : JobPipelineArgsBase
-        => await RetryWithIdAsync(args, GenerateRetryId(args), untilFailed, backOff, delayDelta);
+        where T : JobPipelineArgsBase =>
+        await RetryWithIdAsync(args, GenerateRetryId(args), untilFailed, backOff, delayDelta);
 
     public async Task RetryWithIdAsync<T>(T args, string id, bool untilFailed = false, bool backOff = false,
         long delayDelta = 0)

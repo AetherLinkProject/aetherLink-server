@@ -61,7 +61,7 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
 
         if (await CheckVrfJobConsumed(chainId, reqId))
         {
-            _logger.LogWarning("=================[VRF] {reqId} is a task that has already been consumed", reqId);
+            _logger.LogWarning("[VRF] {reqId} is a task that has already been consumed", reqId);
             return;
         }
 
