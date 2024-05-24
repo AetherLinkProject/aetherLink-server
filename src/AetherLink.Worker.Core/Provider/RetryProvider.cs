@@ -46,19 +46,7 @@ public class RetryProvider : IRetryProvider, ISingletonDependency
     /// <param name="delayDelta"> delayDelta is the basic time for each timeout, the default is 0.</param>
     public async Task RetryAsync<T>(T args, bool untilFailed, bool backOff, long delayDelta = 0)
         where T : JobPipelineArgsBase
-    {
-        // _retryCount.TryGetValue(id, out var time);
-        // if (!untilFailed && time > _processJobOptions.RetryCount) return;
-        //
-        // var delay = backOff ? Math.Pow(delayDelta.Add(time), 2) : delayDelta.Add(time);
-        // _retryCount[id] = time.Add(1);
-        // var hangfireId = await _backgroundJobManager.EnqueueAsync(args, delay: TimeSpan.FromSeconds(delay));
-        // _logger.LogInformation(
-        //     "Task {id} will be executed in {delay} seconds by {hangfireId}. The task has been executed {times} times.",
-        //     id, delay, hangfireId, _retryCount[id]);
-
-        await RetryWithIdAsync(args, GenerateRetryId(args), untilFailed, backOff, delayDelta);
-    }
+        => await RetryWithIdAsync(args, GenerateRetryId(args), untilFailed, backOff, delayDelta);
 
     public async Task RetryWithIdAsync<T>(T args, string id, bool untilFailed = false, bool backOff = false,
         long delayDelta = 0)

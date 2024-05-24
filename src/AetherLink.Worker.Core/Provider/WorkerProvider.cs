@@ -101,7 +101,6 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
         => await _storageProvider.SetAsync(GetUnconfirmedHeightRedisKey(chainId),
             new SearchHeightDto { BlockHeight = unconfirmedHeight });
 
-
     public async Task HandleTransmittedLogEventAsync(TransmittedDto transmitted)
         => await _backgroundJobManager.EnqueueAsync(
             _objectMapper.Map<TransmittedDto, TransmittedEventProcessJobArgs>(transmitted));
