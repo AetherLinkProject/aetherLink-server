@@ -35,8 +35,10 @@ public class Program
         {
             Log.Information("Starting web host.");
             var builder = WebApplication.CreateBuilder(args);
+            builder.Configuration.AddJsonFile("apollosettings.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
+                .UseApollo()
                 .UseSerilog();
             await builder.AddApplicationAsync<AetherlinkPriceServerHttpApiHostModule>();
             var app = builder.Build();
