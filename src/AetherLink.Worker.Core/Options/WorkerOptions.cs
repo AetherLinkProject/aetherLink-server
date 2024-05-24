@@ -6,7 +6,7 @@ public class WorkerOptions
 {
     public int SearchTimer { get; set; } = 30;
     public List<ChainInfo> Chains { get; set; }
-    public int UnconfirmedLogBatchSize { get; set; } = 100;
+    public int UnconfirmedLogBatchSize { get; set; } = 10;
 }
 
 public class ChainInfo

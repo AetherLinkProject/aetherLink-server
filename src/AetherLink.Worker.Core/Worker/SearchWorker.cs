@@ -81,6 +81,13 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
     {
         var chainId = info.ChainId;
         var startHeight = _unconfirmedHeightMap[chainId].Add(1);
+
+        if (_unconfirmedHeightMap[chainId] < _heightMap[chainId])
+        {
+            startHeight = _heightMap[chainId];
+            _heightCompensationMap[chainId] = 0;
+        }
+
         var maxHeight = startHeight;
         var batchSize = _options.UnconfirmedLogBatchSize.Add(_heightCompensationMap[chainId]);
 
