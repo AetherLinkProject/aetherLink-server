@@ -52,7 +52,8 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
     public async Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(
         GetPriceForLast24HoursRequestDto input)
     {
-        var prices = (await _priceProvider.GetLatest24HoursPriceAsync(input.TokenPair)).OrderBy(t => t.UpdateTime).ToList();
+        var prices = (await _priceProvider.GetLatest24HoursPriceAsync(input.TokenPair)).OrderBy(t => t.UpdateTime)
+            .ToList();
 
         var changeRage = prices.Count > 2
             ? Math.Round((double)(prices.Last().Price - prices.First().Price) / prices.First().Price, 5)
@@ -67,7 +68,10 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
         DateTime.TryParseExact(input.TimeStamp, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None,
             out var targetTime);
 
-        return new() { Data = await _priceProvider.GetDailyPriceAsync(targetTime, input.TokenPair) };
+        var result = await _priceProvider.GetDailyPriceAsync(targetTime, input.TokenPair) ??
+                     await _priceProvider.GetPriceAsync(input.TokenPair);
+
+        return new() { Data = result };
     }
 
     private async Task<PriceDto> GetAggregatedPriceAsync(GetAggregatedTokenPriceRequestDto input)
