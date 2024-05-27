@@ -52,7 +52,7 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
     public async Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(
         GetPriceForLast24HoursRequestDto input)
     {
-        var prices = (await _priceProvider.GetHourlyPriceAsync(input.TokenPair)).OrderBy(t => t.UpdateTime).ToList();
+        var prices = (await _priceProvider.GetLatest24HoursPriceAsync(input.TokenPair)).OrderBy(t => t.UpdateTime).ToList();
 
         var changeRage = prices.Count > 2
             ? Math.Round((double)(prices.Last().Price - prices.First().Price) / prices.First().Price, 5)

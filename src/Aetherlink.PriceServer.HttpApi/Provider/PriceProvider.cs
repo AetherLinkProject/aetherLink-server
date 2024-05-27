@@ -23,7 +23,7 @@ public interface IPriceProvider
     public Task<List<PriceDto>> GetPriceListAsync(List<string> tokenPairs);
     public Task<List<PriceDto>> GetPriceListAsync(SourceType source, List<string> tokenPairs);
     public Task<List<PriceDto>> GetAllSourcePricesAsync(string tokenPair);
-    public Task<List<PriceDto>> GetHourlyPriceAsync(string tokenPair);
+    public Task<List<PriceDto>> GetLatest24HoursPriceAsync(string tokenPair);
     public Task<PriceDto> GetDailyPriceAsync(DateTime time, string tokenPair);
 }
 
@@ -84,7 +84,7 @@ public class PriceProvider : IPriceProvider, ITransientDependency
         ? await _storage.GetAsync<PriceDto>(GenerateKey(tokenPair))
         : await _storage.GetAsync<PriceDto>(GenerateKey(source, tokenPair));
 
-    public async Task<List<PriceDto>> GetHourlyPriceAsync(string tokenPair) =>
+    public async Task<List<PriceDto>> GetLatest24HoursPriceAsync(string tokenPair) =>
         await _storage.GetAsync<PriceDto>(Enumerable.Range(0, 24)
             .Select(i => (RedisKey)GenerateKey(DateTime.Now.AddHours(-23 + i), tokenPair)).ToArray());
 

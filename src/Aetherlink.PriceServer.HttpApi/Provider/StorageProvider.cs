@@ -17,7 +17,6 @@ public interface IStorageProvider
     public Task SetAsync<T>(string key, T data) where T : class;
     public Task SetAsync<T>(string key, T data, TimeSpan? expiry) where T : class;
     public Task SetAsync<T>(KeyValuePair<string, T>[] values) where T : class;
-    public Task SetAsync<T>(KeyValuePair<string, T>[] values, TimeSpan? expiry) where T : class;
     public Task<T> GetAsync<T>(string key) where T : class, new();
     public Task<List<T>> GetAsync<T>(RedisKey[] keys) where T : class, new();
 }
@@ -50,9 +49,7 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
         }
     }
 
-    public async Task SetAsync<T>(KeyValuePair<string, T>[] values) where T : class => await SetAsync(values, null);
-
-    public async Task SetAsync<T>(KeyValuePair<string, T>[] values, TimeSpan? expiry) where T : class
+    public async Task SetAsync<T>(KeyValuePair<string, T>[] values) where T : class
     {
         try
         {
