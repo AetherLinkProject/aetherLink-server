@@ -21,6 +21,9 @@ public class AetherlinkPriceServerHttpApiModule : AbpModule
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<AetherlinkPriceServerHttpApiModule>(); });
         context.Services.AddTransient<IPriceProvider, PriceProvider>();
         context.Services.AddTransient<IStorageProvider, StorageProvider>();
+        context.Services.AddTransient<ICoinBaseProvider, CoinBaseProvider>();
+        context.Services.AddTransient<ICoinGeckoProvider, CoinGeckoProvider>();
+        context.Services.AddTransient<IHistoricPriceProvider, HistoricPriceProvider>();
         context.Services.AddSingleton<ICoinGeckoClient, CoinGeckoClient>();
 
         ConfigCoinGeckoApi(context);

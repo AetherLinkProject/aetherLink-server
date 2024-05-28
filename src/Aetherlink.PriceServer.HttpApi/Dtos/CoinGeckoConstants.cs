@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AetherlinkPriceServer.Worker.Dtos;
+namespace AetherlinkPriceServer.Dtos;
 
 public static class CoinGeckoConstants
 {

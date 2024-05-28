@@ -15,12 +15,14 @@ public class HistoricPriceProvider : IHistoricPriceProvider, ITransientDependenc
 {
     private readonly IPriceProvider _priceProvider;
     private readonly ICoinBaseProvider _coinbaseProvider;
+    private readonly ICoinGeckoProvider _coinGeckoProvider;
     private readonly ILogger<HistoricPriceProvider> _logger;
 
     public HistoricPriceProvider(ICoinBaseProvider coinbaseProvider, IPriceProvider priceProvider,
-        ILogger<HistoricPriceProvider> logger)
+        ILogger<HistoricPriceProvider> logger, ICoinGeckoProvider coinGeckoProvider)
     {
         _logger = logger;
+        _coinGeckoProvider = coinGeckoProvider;
         _priceProvider = priceProvider;
         _coinbaseProvider = coinbaseProvider;
     }
@@ -34,11 +36,9 @@ public class HistoricPriceProvider : IHistoricPriceProvider, ITransientDependenc
             if (result != null) return result;
 
             _logger.LogInformation(
-                $"Get {tokenPair} historic {time:yyyy-MM-dd} price not found, ready find in third party.");
+                $"Get {tokenPair} historic {time:yyyy-MM-dd} price not found, ready to find it by third party api.");
 
-            // todo: add coingecko price
-            var thirdPartyPrice = await _coinbaseProvider.GetHistoricPriceAsync(tokenPair, time);
-
+            var thirdPartyPrice = await GetHistoricTokenPriceAsync(tokenPair, time);
             if (thirdPartyPrice == 0) return null;
 
             // if not existing, query new price and save price
@@ -57,6 +57,27 @@ public class HistoricPriceProvider : IHistoricPriceProvider, ITransientDependenc
         {
             _logger.LogError(e, $"Get {tokenPair} historic {time:yyyy-MM-dd} failed.");
             return null;
+        }
+    }
+
+    private async Task<long> GetHistoricTokenPriceAsync(string tokenPair, DateTime time)
+    {
+        try
+        {
+            return await _coinbaseProvider.GetHistoricPriceAsync(tokenPair, time);
+        }
+        catch (Exception)
+        {
+            _logger.LogError("Get CoinBase historic price fail");
+            try
+            {
+                return await _coinGeckoProvider.GetHistoricPriceAsync(tokenPair, time);
+            }
+            catch (Exception)
+            {
+                _logger.LogError("Get CoinGecko historic price fail, will try it in CoinBase");
+                return 0;
+            }
         }
     }
 }
