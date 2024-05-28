@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using Aetherlink.PriceServer;
+using Aetherlink.PriceServer.Dtos;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
@@ -19,23 +21,23 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
     private readonly IPeerManager _peerManager;
     private readonly IJobProvider _jobProvider;
     private readonly IObjectMapper _objectMapper;
-    private readonly IPriceDataProvider _provider;
     private readonly IRetryProvider _retryProvider;
     private readonly ILogger<CollectObservationJob> _logger;
+    private readonly IPriceServerProvider _priceServerProvider;
     private readonly IDataMessageProvider _dataMessageProvider;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public CollectObservationJob(IPeerManager peerManager, ILogger<CollectObservationJob> logger,
-        IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper, IPriceDataProvider provider,
-        IRetryProvider retryProvider, IJobProvider jobProvider, IDataMessageProvider dataMessageProvider)
+        IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper, IRetryProvider retryProvider,
+        IJobProvider jobProvider, IDataMessageProvider dataMessageProvider, IPriceServerProvider priceServerProvider)
     {
         _logger = logger;
-        _provider = provider;
         _peerManager = peerManager;
         _jobProvider = jobProvider;
         _objectMapper = objectMapper;
         _retryProvider = retryProvider;
         _dataMessageProvider = dataMessageProvider;
+        _priceServerProvider = priceServerProvider;
         _backgroundJobManager = backgroundJobManager;
     }
 
@@ -134,27 +136,12 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
         }
     }
 
-    private async Task<long> GetPriceFeedsDataAsync(string currencyPair)
-    {
-        try
+    private async Task<long> GetPriceFeedsDataAsync(string currencyPair) =>
+        (await _priceServerProvider.GetAggregatedTokenPriceAsync(new()
         {
-            var parts = currencyPair.Split(new[] { "/" }, StringSplitOptions.None);
-            var symbol = parts[0];
-            var vsCurrency = parts[1];
-            _logger.LogInformation("[step2] PriceFeeds search {symbol}:{currency}", symbol, vsCurrency);
-
-            return await _provider.GetPriceAsync(new PriceDataDto
-            {
-                BaseCurrency = symbol.ToUpper(),
-                QuoteCurrency = vsCurrency.ToUpper()
-            });
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Step2] Get price feed data failed.");
-            throw;
-        }
-    }
+            TokenPair = currencyPair.Replace("/", "-").ToLower(),
+            AggregateType = AggregateType.Latest
+        })).Data.Price;
 
     private async Task ProcessObservationResultAsync(CollectObservationJobArgs args, long result)
     {
