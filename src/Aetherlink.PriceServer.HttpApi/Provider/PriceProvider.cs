@@ -41,17 +41,8 @@ public class PriceProvider : IPriceProvider, ITransientDependency
         _sourceOptions = sourceOptions.Value;
     }
 
-    public async Task UpdateHourlyPriceAsync(PriceDto data)
-    {
-        if (data.UpdateTime.Hour == 0)
-        {
-            await _storage.SetAsync(GenerateKey(data.UpdateTime, data.TokenPair), data);
-        }
-        else
-        {
-            await _storage.SetAsync(GenerateKey(data.UpdateTime, data.TokenPair), data, TimeSpan.FromHours(24));
-        }
-    }
+    public async Task UpdateHourlyPriceAsync(PriceDto data) =>
+        await _storage.SetAsync(GenerateKey(data.UpdateTime, data.TokenPair), data);
 
     public async Task UpdatePricesAsync(SourceType source, IEnumerable<PriceDto> tokenPairs)
     {

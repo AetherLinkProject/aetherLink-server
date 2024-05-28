@@ -20,10 +20,12 @@ public interface IPriceAppService
 public class PriceAppService : IPriceAppService, ISingletonDependency
 {
     private readonly IPriceProvider _priceProvider;
+    private readonly IHistoricPriceProvider _historicPriceProvider;
 
-    public PriceAppService(IPriceProvider priceProvider)
+    public PriceAppService(IPriceProvider priceProvider, IHistoricPriceProvider historicPriceProvider)
     {
         _priceProvider = priceProvider;
+        _historicPriceProvider = historicPriceProvider;
     }
 
     public async Task<PriceResponseDto> GetTokenPriceAsync(GetTokenPriceRequestDto input) => new()
@@ -68,10 +70,7 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
         DateTime.TryParseExact(input.TimeStamp, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None,
             out var targetTime);
 
-        var result = await _priceProvider.GetDailyPriceAsync(targetTime, input.TokenPair) ??
-                     await _priceProvider.GetPriceAsync(input.TokenPair);
-
-        return new() { Data = result };
+        return new() { Data = await _historicPriceProvider.GetHistoricPriceAsync(input.TokenPair, targetTime) };
     }
 
     private async Task<PriceDto> GetAggregatedPriceAsync(GetAggregatedTokenPriceRequestDto input)
