@@ -49,6 +49,7 @@ namespace AetherLink.Worker
             Configure<NetworkOptions>(configuration.GetSection("Network"));
             Configure<HangfireOptions>(configuration.GetSection("Hangfire"));
             Configure<SchedulerOptions>(configuration.GetSection("Scheduler"));
+            Configure<PriceFeedsOptions>(configuration.GetSection("PriceFeeds"));
             Configure<ProcessJobOptions>(configuration.GetSection("ProcessJob"));
             Configure<OracleInfoOptions>(configuration.GetSection("OracleChainInfo"));
             Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AetherLinkServer:"; });
