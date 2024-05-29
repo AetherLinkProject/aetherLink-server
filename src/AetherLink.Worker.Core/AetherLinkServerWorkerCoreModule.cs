@@ -16,11 +16,11 @@ public class AetherLinkServerWorkerCoreModule : AbpModule
     {
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<AetherLinkServerWorkerCoreModule>(); });
         context.Services.AddTransient<IStorageProvider, StorageProvider>();
-        context.Services.AddTransient<IPriceDataProvider, PriceDataProvider>();
         context.Services.AddTransient<IJobProvider, JobProvider>();
 
         context.Services.AddTransient<IObservationCollectSchedulerJob, ObservationCollectSchedulerJob>();
         context.Services.AddTransient<IResetRequestSchedulerJob, ResetRequestSchedulerJob>();
+        context.Services.AddTransient<IPriceFeedsProvider, PriceFeedsProvider>();
         context.Services.AddSingleton<ISchedulerService, SchedulerService>();
 
         // Reporter

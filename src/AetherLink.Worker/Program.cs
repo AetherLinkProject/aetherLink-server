@@ -36,8 +36,10 @@ namespace AetherLink.Worker
             {
                 Log.Information("Starting Worker.");
                 var builder = WebApplication.CreateBuilder(args);
+                builder.Configuration.AddJsonFile("apollosettings.json");
                 builder.Host.AddAppSettingsSecretsJson()
                     .UseAutofac()
+                    .UseApollo()
                     .UseSerilog();
                 await builder.AddApplicationAsync<AetherLinkServerWorkerModule>();
                 var app = builder.Build();

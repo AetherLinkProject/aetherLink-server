@@ -1,7 +1,5 @@
-﻿using System;
-using AElf.Client.Service;
-using CoinGecko.Clients;
-using CoinGecko.Interfaces;
+﻿using AElf.Client.Service;
+using Aetherlink.PriceServer;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -38,6 +36,7 @@ namespace AetherLink.Worker
         typeof(AbpAspNetCoreMvcUiMultiTenancyModule),
         typeof(AbpCachingStackExchangeRedisModule),
         typeof(AbpBackgroundJobsHangfireModule),
+        typeof(AetherlinkPriceServerModule),
         typeof(AbpBackgroundWorkersModule),
         typeof(AbpAutoMapperModule),
         typeof(AbpAutofacModule)
@@ -52,6 +51,7 @@ namespace AetherLink.Worker
             Configure<NetworkOptions>(configuration.GetSection("Network"));
             Configure<HangfireOptions>(configuration.GetSection("Hangfire"));
             Configure<SchedulerOptions>(configuration.GetSection("Scheduler"));
+            Configure<PriceFeedsOptions>(configuration.GetSection("PriceFeeds"));
             Configure<ProcessJobOptions>(configuration.GetSection("ProcessJob"));
             Configure<OracleInfoOptions>(configuration.GetSection("OracleChainInfo"));
             Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AetherLinkServer:"; });
@@ -92,10 +92,11 @@ namespace AetherLink.Worker
             app.UseGrpcMetrics();
             app.UseEndpoints(endpoints => { endpoints.MapMetrics(); });
 
-            if (hangfireOptions.UseDashboard)
-            {
-                app.UseHangfireDashboard("/hangfire",
-                    new DashboardOptions { Authorization = new[] { new CustomAuthorizeFilter() } });
+                var dashboardOptions = new DashboardOptions
+                {
+                    Authorization = new[] { new CustomAuthorizeFilter() }
+                };
+                app.UseHangfireDashboard("/hangfire", dashboardOptions);
             }
 
             context.AddBackgroundWorkerAsync<SearchWorker>();
@@ -128,7 +129,7 @@ namespace AetherLink.Worker
                     .UseDashboardMetric(DashboardMetrics.DeletedCount);
             });
 
-            // context.Services.AddHangfireServer();
+            context.Services.AddHangfireServer();
         }
 
         private void ConfigureGraphQl(ServiceConfigurationContext context, IConfiguration configuration)
@@ -143,20 +144,6 @@ namespace AetherLink.Worker
         {
             context.Services.AddSingleton<IRequestJob, VrfRequestJobHandler>();
             context.Services.AddSingleton<IRequestJob, DataFeedRequestJobHandler>();
-        }
-
-        private void ConfigureDataFeeds(ServiceConfigurationContext context, IConfiguration configuration)
-        {
-            Configure<PriceFeedsOptions>(configuration.GetSection("PriceFeeds"));
-            context.Services.AddSingleton<IPriceDataProvider, PriceDataProvider>();
-            context.Services.AddSingleton<ICoinGeckoClient, CoinGeckoClient>();
-
-            context.Services.AddHttpClient("CoinGeckoPro", client =>
-            {
-                client.BaseAddress = new Uri(configuration["PriceFeeds:CoinGecko:BaseUrl"]);
-                client.DefaultRequestHeaders.Add("Accept", "application/json");
-                client.DefaultRequestHeaders.Add("x-cg-pro-api-key", configuration["PriceFeeds:CoinGecko:ApiKey"]);
-            });
         }
     }
 }

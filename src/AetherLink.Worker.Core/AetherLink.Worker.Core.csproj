@@ -13,8 +13,6 @@
         <PackageReference Include="GraphQL.Client.Abstractions" Version="5.1.0" />
         <PackageReference Include="Grpc.Core" Version="2.46.6" />
         <PackageReference Include="Grpc.Net.Client" Version="2.60.0" />
-        <PackageReference Include="OKEx.Net" Version="5.3.4" />
-        <PackageReference Include="prometheus-net" Version="8.2.1" />
         <PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
         <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
         <PackageReference Include="Serilog.Sinks.RollingFile" Version="3.3.0" />
@@ -29,10 +27,9 @@
         <PackageReference Include="Grpc" Version="2.46.6" />
         <PackageReference Include="Grpc.Tools" Version="2.46.3" />
         <PackageReference Include="Contrib.Grpc.Core.M1" Version="2.41.0" />
-        <PackageReference Include="CoinGeckoAsyncApi" Version="1.6.0" />
+        <PackageReference Include="prometheus-net" Version="8.2.1" />
         <PackageReference Include="FluentScheduler" Version="5.4.0" />
-        <PackageReference Include="Io.Gate.GateApi" Version="4.60.1" />
-        <PackageReference Include="Binance.Spot" Version="4.0.1" />
+        <PackageReference Include="AetherlinkPriceServer" Version="1.0.3" />
     </ItemGroup>
 
     <Target Name="Gen_proto" BeforeTargets="BeforeBuild">
