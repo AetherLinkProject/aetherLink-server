@@ -1,7 +1,5 @@
-﻿using System;
-using AElf.Client.Service;
-using CoinGecko.Clients;
-using CoinGecko.Interfaces;
+﻿using AElf.Client.Service;
+using Aetherlink.PriceServer;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -36,6 +34,7 @@ namespace AetherLink.Worker
         typeof(AbpAspNetCoreMvcUiMultiTenancyModule),
         typeof(AbpCachingStackExchangeRedisModule),
         typeof(AbpBackgroundJobsHangfireModule),
+        typeof(AetherlinkPriceServerModule),
         typeof(AbpBackgroundWorkersModule),
         typeof(AbpAutoMapperModule),
         typeof(AbpAutofacModule)
@@ -69,7 +68,6 @@ namespace AetherLink.Worker
 
             ConfigureGraphQl(context, configuration);
             ConfigureHangfire(context, configuration);
-            ConfigureDataFeeds(context, configuration);
             ConfigureRequestJobs(context);
         }
 
@@ -134,20 +132,6 @@ namespace AetherLink.Worker
         {
             context.Services.AddSingleton<IRequestJob, VrfRequestJobHandler>();
             context.Services.AddSingleton<IRequestJob, DataFeedRequestJobHandler>();
-        }
-
-        private void ConfigureDataFeeds(ServiceConfigurationContext context, IConfiguration configuration)
-        {
-            Configure<PriceFeedsOptions>(configuration.GetSection("PriceFeeds"));
-            context.Services.AddSingleton<IPriceDataProvider, PriceDataProvider>();
-            context.Services.AddSingleton<ICoinGeckoClient, CoinGeckoClient>();
-
-            context.Services.AddHttpClient("CoinGeckoPro", client =>
-            {
-                client.BaseAddress = new Uri(configuration["PriceFeeds:CoinGecko:BaseUrl"]);
-                client.DefaultRequestHeaders.Add("Accept", "application/json");
-                client.DefaultRequestHeaders.Add("x-cg-pro-api-key", configuration["PriceFeeds:CoinGecko:ApiKey"]);
-            });
         }
     }
 }
