@@ -19,6 +19,7 @@ public class AetherLinkServerWorkerCoreModule : AbpModule
 
         context.Services.AddTransient<IObservationCollectSchedulerJob, ObservationCollectSchedulerJob>();
         context.Services.AddTransient<IResetRequestSchedulerJob, ResetRequestSchedulerJob>();
+        context.Services.AddTransient<IPriceFeedsProvider, PriceFeedsProvider>();
         context.Services.AddSingleton<ISchedulerService, SchedulerService>();
     }
 }
