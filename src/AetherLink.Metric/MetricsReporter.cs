@@ -1,6 +1,6 @@
 using Prometheus;
 
-namespace AetherLink.Worker.Core.Reporter;
+namespace AetherLink.Metric;
 
 public class MetricsReporter
 {

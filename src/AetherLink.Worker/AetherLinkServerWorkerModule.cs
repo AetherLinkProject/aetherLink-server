@@ -71,7 +71,6 @@ namespace AetherLink.Worker
 
             ConfigureGraphQl(context, configuration);
             ConfigureHangfire(context, configuration);
-            ConfigureDataFeeds(context, configuration);
             ConfigureMetrics(context, configuration);
             ConfigureRequestJobs(context);
         }
@@ -92,12 +91,8 @@ namespace AetherLink.Worker
             app.UseGrpcMetrics();
             app.UseEndpoints(endpoints => { endpoints.MapMetrics(); });
 
-                var dashboardOptions = new DashboardOptions
-                {
-                    Authorization = new[] { new CustomAuthorizeFilter() }
-                };
-                app.UseHangfireDashboard("/hangfire", dashboardOptions);
-            }
+            var dashboardOptions = new DashboardOptions { Authorization = new[] { new CustomAuthorizeFilter() } };
+            app.UseHangfireDashboard("/hangfire", dashboardOptions);
 
             context.AddBackgroundWorkerAsync<SearchWorker>();
             AsyncHelper.RunSync(async () => { await context.ServiceProvider.GetService<IServer>().StartAsync(); });

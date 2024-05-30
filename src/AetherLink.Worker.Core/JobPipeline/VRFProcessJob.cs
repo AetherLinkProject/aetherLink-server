@@ -36,15 +36,15 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
     private readonly IOracleContractProvider _oracleContractProvider;
 
     public VRFProcessJob(ILogger<VRFProcessJob> logger, IOptionsSnapshot<OracleInfoOptions> options,
-        IContractProvider contractProvider, IOracleContractProvider oracleContractProvider,
-        IRetryProvider retryProvider, IVrfProvider vrfProvider, IBackgroundJobManager backgroundJobManager,
-        IObjectMapper objectMapper, IOptionsSnapshot<ProcessJobOptions> processJobOptions, IVRFReporter vrfReporter)
+        IContractProvider contractProvider, IOracleContractProvider oracleContractProvider, IVrfProvider vrfProvider,
+        IRetryProvider retryProvider, IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper,
+        IOptionsSnapshot<ProcessJobOptions> processJobOptions, IVRFReporter vrfReporter)
     {
         _logger = logger;
         _options = options.Value;
         _vrfProvider = vrfProvider;
-        _objectMapper = objectMapper;
         _vrfReporter = vrfReporter;
+        _objectMapper = objectMapper;
         _retryProvider = retryProvider;
         _contractProvider = contractProvider;
         _processJobOptions = processJobOptions.Value;
@@ -108,14 +108,13 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
             _logger.LogInformation("[VRF] reqId {reqId} Transmit transaction: {txId}, ready to check result", reqId,
                 transactionId);
 
+            _vrfReporter.RecordVrfJob(chainId, reqId, DateTime.Now.Subtract(startTime).TotalSeconds);
+
             var vrfTransmitResult = _objectMapper.Map<VRFJobArgs, VrfTxResultCheckJobArgs>(args);
             vrfTransmitResult.TransmitTransactionId = transactionId;
             var vrfJob = _objectMapper.Map<VRFJobArgs, VrfJobDto>(vrfTransmitResult);
             vrfJob.Status = VrfJobState.CheckPending;
 
-            _vrfReporter.RecordVrfJob(chainId, reqId, specificData.KeyHash.ToHex(),
-                DateTime.Now.Subtract(startTime).TotalMilliseconds,
-                new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds() - args.StartTime);
             await _vrfProvider.SetAsync(vrfJob);
             await _backgroundJobManager.EnqueueAsync(vrfTransmitResult,
                 delay: TimeSpan.FromSeconds(_processJobOptions.TransactionResultDelay));

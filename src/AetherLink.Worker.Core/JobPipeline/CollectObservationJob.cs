@@ -26,16 +26,11 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
     private readonly IDataMessageProvider _dataMessageProvider;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
-    public CollectObservationJob(IPeerManager peerManager, ILogger<CollectObservationJob> logger,
-        IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper, IRetryProvider retryProvider,
-        IJobProvider jobProvider, IDataMessageProvider dataMessageProvider, IPriceFeedsProvider priceFeedsProvider)
-        IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper, IPriceDataProvider provider,
-        IRetryProvider retryProvider, IJobProvider jobProvider, IDataMessageProvider dataMessageProvider,
-        IDataFeedsReporter reporter)
+    public CollectObservationJob(IPeerManager peerManager, IJobProvider jobProvider, IObjectMapper objectMapper,
+        IRetryProvider retryProvider, ILogger<CollectObservationJob> logger, IPriceFeedsProvider priceFeedsProvider,
+        IDataMessageProvider dataMessageProvider, IBackgroundJobManager backgroundJobManager)
     {
         _logger = logger;
-        _reporter = reporter;
-        _provider = provider;
         _peerManager = peerManager;
         _jobProvider = jobProvider;
         _objectMapper = objectMapper;
@@ -127,8 +122,6 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
     {
         try
         {
-            // _reporter.RecordPrice(currencyPair, result);
-
             var dataFeedsDto = JsonConvert.DeserializeObject<DataFeedsDto>(spec);
             return dataFeedsDto.DataFeedsJobSpec.Type switch
             {

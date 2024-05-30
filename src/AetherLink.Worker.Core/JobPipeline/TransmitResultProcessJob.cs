@@ -68,6 +68,7 @@ public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcess
                         "[Step6] {ReqId}-{epoch}-{round} Transmitted validate successful, execute {time}s.", reqId,
                         epoch, roundId, executeTime);
                     _reporter.RecordDatafeedJob(chainId, reqId, epoch, roundId, executeTime);
+
                     _schedulerService.CancelAllSchedule(job);
                     break;
                 case TransactionState.Pending:

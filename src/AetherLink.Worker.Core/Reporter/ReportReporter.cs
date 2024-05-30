@@ -1,3 +1,4 @@
+using AetherLink.Metric;
 using AetherLink.Worker.Core.Reporter.MetricsDefinition;
 using Prometheus;
 using Volo.Abp.DependencyInjection;

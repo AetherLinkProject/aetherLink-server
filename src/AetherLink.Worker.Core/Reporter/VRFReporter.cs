@@ -1,3 +1,4 @@
+using AetherLink.Metric;
 using Prometheus;
 using Volo.Abp.DependencyInjection;
 using Definition = AetherLink.Worker.Core.Reporter.MetricsDefinition.VRFMetricsDefinition;
@@ -6,8 +7,7 @@ namespace AetherLink.Worker.Core.Reporter;
 
 public interface IVRFReporter
 {
-    void RecordVrfJob(string chainId, string requestId, string keyHash, double generationTime,
-        double executeTime);
+    void RecordVrfJob(string chainId, string requestId, double executeTime);
 }
 
 public class VRFReporter : IVRFReporter, ISingletonDependency
@@ -19,10 +19,6 @@ public class VRFReporter : IVRFReporter, ISingletonDependency
         _vrfCounter = MetricsReporter.RegistryCounters(Definition.VRFSumName, Definition.VRFSumLabels);
     }
 
-    public void RecordVrfJob(string chainId, string requestId, string keyHash, double generationTime,
-        double executeTime)
-    {
-        _vrfCounter.WithLabels(chainId, requestId, keyHash, Definition.ExecuteTimeTypeLabel).Inc(executeTime);
-        _vrfCounter.WithLabels(chainId, requestId, keyHash, Definition.GenerateTimeTypeLabel).Inc(generationTime);
-    }
+    public void RecordVrfJob(string chainId, string requestId, double executeTime) => _vrfCounter
+        .WithLabels(chainId, requestId, Definition.ExecuteTimeTypeLabel).Inc(executeTime);
 }

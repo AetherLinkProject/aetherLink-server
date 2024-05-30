@@ -1,4 +1,5 @@
-﻿using AetherLink.Worker.Core.Provider;
+﻿using AetherLink.Metric;
+using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Reporter;
 using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,7 +9,8 @@ using Volo.Abp.Modularity;
 namespace AetherLink.Worker.Core;
 
 [DependsOn(
-    typeof(AbpAutoMapperModule)
+    typeof(AbpAutoMapperModule),
+    typeof(AetherLinkMetricModule)
 )]
 public class AetherLinkServerWorkerCoreModule : AbpModule
 {
