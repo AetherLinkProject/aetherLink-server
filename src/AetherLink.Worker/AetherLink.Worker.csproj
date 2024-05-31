@@ -5,6 +5,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Com.Ctrip.Framework.Apollo.Configuration" Version="2.10.1" />
         <PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.60.0" />
         <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
