@@ -1,8 +1,6 @@
 using System;
 using System.Linq;
 using Aetherlink.PriceServer;
-using Aetherlink.PriceServer.Common;
-using AetherlinkPriceServer.Common;
 using AetherlinkPriceServer.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;

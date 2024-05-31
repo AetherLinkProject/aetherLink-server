@@ -34,7 +34,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Aetherlink.PriceServer\Aetherlink.PriceServer.csproj" />
         <ProjectReference Include="..\AetherLink.Worker.Core\AetherLink.Worker.Core.csproj" />
     </ItemGroup>
 </Project>

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Options;
 using AetherlinkPriceServer.Provider;
+using AetherlinkPriceServer.Reporter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,14 +17,17 @@ namespace AetherlinkPriceServer.Worker;
 public class CoinBaseTokenPriceSearchWorker : TokenPriceSearchWorkerBase
 {
     private readonly TokenPriceSourceOption _option;
+    private readonly IPriceCollectReporter _reporter;
     private readonly ICoinBaseProvider _coinbaseProvider;
     protected override SourceType SourceType => SourceType.CoinBase;
 
     public CoinBaseTokenPriceSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IOptionsSnapshot<TokenPriceSourceOptions> options, ILogger<TokenPriceSearchWorkerBase> baseLogger,
-        IPriceProvider priceProvider, ICoinBaseProvider coinbaseProvider) : base(timer, serviceScopeFactory, options,
+        IPriceProvider priceProvider, ICoinBaseProvider coinbaseProvider, IPriceCollectReporter reporter) : base(timer,
+        serviceScopeFactory, options,
         baseLogger, priceProvider)
     {
+        _reporter = reporter;
         _coinbaseProvider = coinbaseProvider;
         _option = options.Value.GetSourceOption(SourceType);
     }
@@ -40,10 +44,14 @@ public class CoinBaseTokenPriceSearchWorker : TokenPriceSearchWorkerBase
     {
         try
         {
+            var price = await _coinbaseProvider.GetTokenPriceAsync(tokenPair);
+
+            _reporter.RecordPriceCollected(SourceType, tokenPair, price);
+
             return new()
             {
                 TokenPair = tokenPair,
-                Price = await _coinbaseProvider.GetTokenPriceAsync(tokenPair),
+                Price = price,
                 UpdateTime = DateTime.Now
             };
         }

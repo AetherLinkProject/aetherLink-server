@@ -9,8 +9,8 @@ public class AetherLinkMetricModule : AbpModule
 {
     private void ConfigureMetrics(ServiceConfigurationContext context, IConfiguration configuration)
     {
-        // var metricsOption = configuration.GetSection("Metrics").Get<MetricsOption>();
-        // context.Services.AddMetricServer(options => { options.Port = metricsOption.Port; });
-        // context.Services.AddHealthChecks();
+        var metricsOption = configuration.GetSection("Metrics").Get<MetricsOption>();
+        context.Services.AddMetricServer(options => { options.Port = metricsOption.Port; });
+        context.Services.AddHealthChecks();
     }
 }
