@@ -67,3 +67,21 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+  dispatch:
+    runs-on: aetherlink-server-runner
+    needs: build-and-push-image
+    steps:
+      - name: Deploy
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.TOK }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'AetherLinkProject',
+              repo: 'devops',
+              workflow_id: 'deployment_testnet.yaml',
+              ref: 'main',
+              inputs: {
+                commit_sha: 'sha-${{ needs.build-and-push-image.outputs.short_sha }}',
+              }
+            })
