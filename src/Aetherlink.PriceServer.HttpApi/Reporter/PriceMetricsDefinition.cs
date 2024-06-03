@@ -8,12 +8,6 @@ public class PriceCollectMetricsDefinition
 
 public class PriceQueryMetricsDefinition
 {
-    public const string PriceQueryGaugeName = "price_query";
+    public const string PriceQueryCounterName = "price_query";
+    public static readonly string[] PriceQueryLabels = { "app_id", "method" };
 }
-
-// public class DataFeedsMetricsDefinition
-// {
-//     public const string DataFeedsGaugeName = "datafeeds";
-//     public const string DataFeedsSumName = "datafeeds_sum";
-//     public static readonly string[] DataFeedsJobSumLabels = { "chain_id", "request_id", "epoch", "round_id" };
-// }

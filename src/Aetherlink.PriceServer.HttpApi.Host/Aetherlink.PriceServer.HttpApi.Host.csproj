@@ -19,6 +19,7 @@
         <PackageReference Include="Volo.Abp.Swashbuckle" Version="7.0.0" />
     </ItemGroup>
     <ItemGroup>
+        <ProjectReference Include="..\AetherLink.Metric\AetherLink.Metric.csproj" />
         <ProjectReference Include="..\Aetherlink.PriceServer.HttpApi\Aetherlink.PriceServer.HttpApi.csproj" />
     </ItemGroup>
     <ItemGroup>

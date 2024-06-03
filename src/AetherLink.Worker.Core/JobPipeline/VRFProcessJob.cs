@@ -108,7 +108,6 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
             _logger.LogInformation("[VRF] reqId {reqId} Transmit transaction: {txId}, ready to check result", reqId,
                 transactionId);
 
-            _vrfReporter.RecordVrfJob(chainId, reqId, DateTime.Now.Subtract(startTime).TotalSeconds);
 
             var vrfTransmitResult = _objectMapper.Map<VRFJobArgs, VrfTxResultCheckJobArgs>(args);
             vrfTransmitResult.TransmitTransactionId = transactionId;
@@ -118,6 +117,8 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
             await _vrfProvider.SetAsync(vrfJob);
             await _backgroundJobManager.EnqueueAsync(vrfTransmitResult,
                 delay: TimeSpan.FromSeconds(_processJobOptions.TransactionResultDelay));
+
+            _vrfReporter.RecordVrfJob(chainId, reqId);
         }
         catch (Exception e)
         {

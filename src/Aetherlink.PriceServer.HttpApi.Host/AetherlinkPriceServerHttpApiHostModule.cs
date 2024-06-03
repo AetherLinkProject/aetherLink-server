@@ -1,18 +1,22 @@
 using System;
 using System.Linq;
+using AetherLink.Metric;
 using Aetherlink.PriceServer;
 using AetherlinkPriceServer.Options;
+using AetherlinkPriceServer.Worker;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using Prometheus;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
 using Volo.Abp.AutoMapper;
+using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
@@ -38,9 +42,10 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         ConfigureLocalization();
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
-
         Configure<TokenPriceSourceOptions>(configuration.GetSection("TokenPriceSource"));
         Configure<HourlyPriceOption>(configuration.GetSection("HourlyPrice"));
+        ConfigureMetrics(context, configuration);
+        ConfigCoinGeckoApi(context);
     }
 
     private void ConfigureConventionalControllers()
@@ -49,6 +54,13 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         {
             options.ConventionalControllers.Create(typeof(AetherlinkPriceServerHttpApiModule).Assembly);
         });
+    }
+
+    private void ConfigureMetrics(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        var metricsOption = configuration.GetSection("Metrics").Get<MetricsOption>();
+        context.Services.AddMetricServer(options => { options.Port = metricsOption.Port; });
+        context.Services.AddHealthChecks();
     }
 
     private void ConfigureCors(ServiceConfigurationContext context, IConfiguration configuration)
@@ -101,6 +113,20 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseConfiguredEndpoints();
+
+        ConfigureWorker(context);
+    }
+
+    private void ConfigureWorker(ApplicationInitializationContext context)
+    {
+        var backgroundWorkerManger = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CoinGeckoTokenPriceSearchWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<OkxTokenPriceSearchWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<BinancePriceSearchWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CoinMarketTokenPriceSearchWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<GateIoPriceSearchWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CoinBaseTokenPriceSearchWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<HourlyPriceWorker>());
     }
 
     private void ConfigureLocalization()
@@ -158,5 +184,17 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
                 });
             }
         );
+    }
+
+    private void ConfigCoinGeckoApi(ServiceConfigurationContext context)
+    {
+        var configuration = context.Services.GetConfiguration();
+        context.Services.AddHttpClient("CoinGeckoPro", client =>
+        {
+            client.BaseAddress = new Uri(configuration["TokenPriceSource:Sources:CoinGecko:BaseUrl"]);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            client.DefaultRequestHeaders.Add("x-cg-pro-api-key",
+                configuration["TokenPriceSource:Sources:CoinGecko:ApiKey"]);
+        });
     }
 }

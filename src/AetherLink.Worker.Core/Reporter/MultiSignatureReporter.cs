@@ -21,11 +21,10 @@ public class MultiSignatureReporter : IMultiSignatureReporter, ISingletonDepende
 
     public MultiSignatureReporter()
     {
-        _multiSignatureCounter =
-            MetricsReporter.RegistryCounters(Definition.MultiSignatureCounterName, BasicMetricDefinition.BasicLabels);
-        _multiSignatureResultCounter =
-            MetricsReporter.RegistryCounters(Definition.MultiSignatureResultCounterName,
-                Definition.MultiSignatureResultCounterLabels);
+        _multiSignatureCounter = MetricsReporter.RegistryCounters(Definition.MultiSignatureCounterName,
+            BasicMetricDefinition.BasicLabels);
+        _multiSignatureResultCounter = MetricsReporter.RegistryCounters(Definition.MultiSignatureResultCounterName,
+            Definition.MultiSignatureResultCounterLabels);
     }
 
     public void RecordMultiSignatureAsync(string chainId, string requestId, long epoch)

@@ -20,8 +20,8 @@ public class ReportReporter : IReportReporter, ISingletonDependency
     public ReportReporter()
     {
         _reportGauge = MetricsReporter.RegistryGauges(Definition.ReportGaugeName, BasicMetricDefinition.BasicLabels);
-        _reportCounter =
-            MetricsReporter.RegistryCounters(Definition.ObservationTotalCounterName, BasicMetricDefinition.BasicLabels);
+        _reportCounter = MetricsReporter.RegistryCounters(Definition.ObservationTotalCounterName,
+            BasicMetricDefinition.BasicLabels);
     }
 
     public void RecordReportAsync(string chainId, string reportId, long epoch, int count)

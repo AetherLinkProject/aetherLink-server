@@ -21,22 +21,5 @@ public class PriceCollectReporter : IPriceCollectReporter, ISingletonDependency
     }
 
     public void RecordPriceCollected(SourceType type, string tokenPair, long price)
-        => _priceCollectedGauge.WithLabels(type.ToString(), tokenPair).Set(price);
+        => _priceCollectedGauge.WithLabels(type.ToString(), tokenPair.ToUpper()).Set(price);
 }
-
-// public interface IPriceFeedsReporter
-// {
-//     public void RecordPrice(string tokenPair, double price);
-// }
-//
-// public class PriceFeedsReporter : IPriceFeedsReporter, ISingletonDependency
-// {
-//     private readonly Gauge _priceGauge;
-//
-//     public PriceFeedsReporter()
-//     {
-//         _priceGauge = MetricsReporter.RegistryGauges(Definition.PriceFeedsGaugeName, Definition.PriceLabels);
-//     }
-//
-//     public void RecordPrice(string tokenPair, double price) => _priceGauge.WithLabels(tokenPair).Set(price);
-// }

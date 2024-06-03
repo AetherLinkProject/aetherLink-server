@@ -7,7 +7,7 @@ namespace AetherLink.Worker.Core.Reporter;
 
 public interface IVRFReporter
 {
-    void RecordVrfJob(string chainId, string requestId, double executeTime);
+    void RecordVrfJob(string chainId, string requestId);
 }
 
 public class VRFReporter : IVRFReporter, ISingletonDependency
@@ -16,9 +16,8 @@ public class VRFReporter : IVRFReporter, ISingletonDependency
 
     public VRFReporter()
     {
-        _vrfCounter = MetricsReporter.RegistryCounters(Definition.VRFSumName, Definition.VRFSumLabels);
+        _vrfCounter = MetricsReporter.RegistryCounters(Definition.VRFName, Definition.VRFLabels);
     }
 
-    public void RecordVrfJob(string chainId, string requestId, double executeTime) => _vrfCounter
-        .WithLabels(chainId, requestId, Definition.ExecuteTimeTypeLabel).Inc(executeTime);
+    public void RecordVrfJob(string chainId, string requestId) => _vrfCounter.WithLabels(chainId, requestId).Inc();
 }
