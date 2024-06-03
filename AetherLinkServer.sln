@@ -17,6 +17,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherLink.Worker", "src\Ae
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherLink.MockServer", "src\AetherLink.MockServer\AetherLink.MockServer.csproj", "{7AB4D23D-0D10-4758-9AA4-CC2CC6B02F91}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aetherlink.PriceServer.HttpApi", "src\Aetherlink.PriceServer.HttpApi\Aetherlink.PriceServer.HttpApi.csproj", "{9FBCE2F0-2339-40E1-B2C3-0350812A8502}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aetherlink.PriceServer.HttpApi.Host", "src\Aetherlink.PriceServer.HttpApi.Host\Aetherlink.PriceServer.HttpApi.Host.csproj", "{BCD51552-CE41-4103-9D27-76530B5C6595}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aetherlink.PriceServer", "src\Aetherlink.PriceServer\Aetherlink.PriceServer.csproj", "{23946B10-264A-44A4-B0CD-DDD0DF53406C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aetherlink.PriceServer.Tests", "test\Aetherlink.PriceServer.Tests\Aetherlink.PriceServer.Tests.csproj", "{1F89558E-992E-459C-9C87-9CA026AA7DD6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aetherlink.TestBase", "test\Aetherlink.TestBase\Aetherlink.TestBase.csproj", "{B51EC479-D16B-41F7-A907-6EBAFD0FE2FD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +53,26 @@ Global
 		{7AB4D23D-0D10-4758-9AA4-CC2CC6B02F91}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7AB4D23D-0D10-4758-9AA4-CC2CC6B02F91}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7AB4D23D-0D10-4758-9AA4-CC2CC6B02F91}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FBCE2F0-2339-40E1-B2C3-0350812A8502}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FBCE2F0-2339-40E1-B2C3-0350812A8502}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FBCE2F0-2339-40E1-B2C3-0350812A8502}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FBCE2F0-2339-40E1-B2C3-0350812A8502}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCD51552-CE41-4103-9D27-76530B5C6595}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCD51552-CE41-4103-9D27-76530B5C6595}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCD51552-CE41-4103-9D27-76530B5C6595}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCD51552-CE41-4103-9D27-76530B5C6595}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23946B10-264A-44A4-B0CD-DDD0DF53406C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23946B10-264A-44A4-B0CD-DDD0DF53406C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23946B10-264A-44A4-B0CD-DDD0DF53406C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23946B10-264A-44A4-B0CD-DDD0DF53406C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F89558E-992E-459C-9C87-9CA026AA7DD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F89558E-992E-459C-9C87-9CA026AA7DD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F89558E-992E-459C-9C87-9CA026AA7DD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F89558E-992E-459C-9C87-9CA026AA7DD6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B51EC479-D16B-41F7-A907-6EBAFD0FE2FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B51EC479-D16B-41F7-A907-6EBAFD0FE2FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B51EC479-D16B-41F7-A907-6EBAFD0FE2FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B51EC479-D16B-41F7-A907-6EBAFD0FE2FD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -53,6 +83,11 @@ Global
 		{B00C9E2E-CD12-4640-AFD2-57A3E9CC6371} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{259527FA-F8A9-44BF-8447-B85771517BDA} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{7AB4D23D-0D10-4758-9AA4-CC2CC6B02F91} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{9FBCE2F0-2339-40E1-B2C3-0350812A8502} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{BCD51552-CE41-4103-9D27-76530B5C6595} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{23946B10-264A-44A4-B0CD-DDD0DF53406C} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{1F89558E-992E-459C-9C87-9CA026AA7DD6} = {04DBDB01-70F4-4E06-B468-8F87850B22BE}
+		{B51EC479-D16B-41F7-A907-6EBAFD0FE2FD} = {04DBDB01-70F4-4E06-B468-8F87850B22BE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28315BFD-90E7-4E14-A2EA-F3D23AF4126F}
