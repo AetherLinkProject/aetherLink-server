@@ -19,22 +19,22 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
     private readonly IPeerManager _peerManager;
     private readonly IJobProvider _jobProvider;
     private readonly IObjectMapper _objectMapper;
+    private readonly IPriceDataProvider _provider;
     private readonly IRetryProvider _retryProvider;
     private readonly ILogger<CollectObservationJob> _logger;
-    private readonly IPriceFeedsProvider _priceFeedsProvider;
     private readonly IDataMessageProvider _dataMessageProvider;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public CollectObservationJob(IPeerManager peerManager, ILogger<CollectObservationJob> logger,
-        IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper, IRetryProvider retryProvider,
-        IJobProvider jobProvider, IDataMessageProvider dataMessageProvider, IPriceFeedsProvider priceFeedsProvider)
+        IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper, IPriceDataProvider provider,
+        IRetryProvider retryProvider, IJobProvider jobProvider, IDataMessageProvider dataMessageProvider)
     {
         _logger = logger;
+        _provider = provider;
         _peerManager = peerManager;
         _jobProvider = jobProvider;
         _objectMapper = objectMapper;
         _retryProvider = retryProvider;
-        _priceFeedsProvider = priceFeedsProvider;
         _dataMessageProvider = dataMessageProvider;
         _backgroundJobManager = backgroundJobManager;
     }
@@ -59,7 +59,6 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
             }
 
             var data = await _dataMessageProvider.GetAsync(args);
-            // todo: change long to object type
             var observationResult = data == null ? await GetDataFeedsDataAsync(job.JobSpec) : data.Data;
 
             _logger.LogDebug("[step2] Get DataFeeds observation result: {result}", observationResult);
@@ -124,8 +123,7 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
             var dataFeedsDto = JsonConvert.DeserializeObject<DataFeedsDto>(spec);
             return dataFeedsDto.DataFeedsJobSpec.Type switch
             {
-                DataFeedsType.PriceFeeds => await _priceFeedsProvider.GetPriceFeedsDataAsync(dataFeedsDto
-                    .DataFeedsJobSpec.CurrencyPair),
+                DataFeedsType.PriceFeeds => await GetPriceFeedsDataAsync(dataFeedsDto.DataFeedsJobSpec.CurrencyPair),
                 _ => 0
             };
         }
@@ -136,11 +134,34 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
         }
     }
 
+    private async Task<long> GetPriceFeedsDataAsync(string currencyPair)
+    {
+        try
+        {
+            var parts = currencyPair.Split(new[] { "/" }, StringSplitOptions.None);
+            var symbol = parts[0];
+            var vsCurrency = parts[1];
+            _logger.LogInformation("[step2] PriceFeeds search {symbol}:{currency}", symbol, vsCurrency);
+
+            return await _provider.GetPriceAsync(new PriceDataDto
+            {
+                BaseCurrency = symbol.ToUpper(),
+                QuoteCurrency = vsCurrency.ToUpper()
+            });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Step2] Get price feed data failed.");
+            throw;
+        }
+    }
+
     private async Task ProcessObservationResultAsync(CollectObservationJobArgs args, long result)
     {
         if (_peerManager.IsLeader(args.Epoch, args.RoundId))
         {
-            var leaderReportJob = _objectMapper.Map<CollectObservationJobArgs, GenerateReportJobArgs>(args);
+            var leaderReportJob =
+                _objectMapper.Map<CollectObservationJobArgs, GenerateReportJobArgs>(args);
             leaderReportJob.Data = result;
             leaderReportJob.Index = _peerManager.GetOwnIndex();
             await _backgroundJobManager.EnqueueAsync(leaderReportJob, BackgroundJobPriority.High);

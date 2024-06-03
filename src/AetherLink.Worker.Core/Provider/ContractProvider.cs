@@ -1,8 +1,10 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
+using AElf.CSharp.Core;
 using AElf.Types;
 using AetherLink.Contracts.Oracle;
 using AetherLink.Worker.Core.Common.ContractHandler;
@@ -26,6 +28,10 @@ public interface IContractProvider
     public Task<Commitment> GetCommitmentAsync(string chainId, string transactionId);
     public Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId);
     public Transmitted ParseTransmitted(TransactionResultDto transaction);
+    public Task<bool> IsTransactionConfirmed(string chainId, long blockHeight, string blockHash);
+
+    public Task<string> SendTransmitWithRefHashAsync(string chainId, TransmitInput transmitInput,
+        long refBlockNumber, string refBlockHash);
 }
 
 public class ContractProvider : IContractProvider, ISingletonDependency
@@ -81,6 +87,38 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return "";
         var txRes = await SendTransactionAsync(chainId, await GenerateRawTransactionAsync(ContractConstants.Transmit,
             transmitInput, chainId, chainInfo.OracleContractAddress));
+        return txRes.TransactionId;
+    }
+
+    public async Task<bool> IsTransactionConfirmed(string chainId, long blockHeight, string blockHash)
+    {
+        return _options.ChainInfos.TryGetValue(chainId, out _) && blockHash ==
+            (await _blockchainClientFactory.GetClient(chainId).GetBlockByHeightAsync(blockHeight))?.BlockHash;
+    }
+
+    public async Task<string> SendTransmitWithRefHashAsync(string chainId, TransmitInput transmitInput,
+        long refBlockNumber, string refBlockHash)
+    {
+        var client = _blockchainClientFactory.GetClient(chainId);
+
+        if ((await client.GetBlockHeightAsync()).Sub(refBlockNumber) > 512)
+            return await SendTransmitAsync(chainId, transmitInput);
+
+        if (!_oracleOptions.ChainConfig.TryGetValue(chainId, out var oracleConfig) ||
+            !_options.ChainInfos.TryGetValue(chainId, out var chainInfo))
+            throw new Exception($"Send transmit with refHash Chain {chainId} not supported");
+
+        var rawTx = client.SignTransaction(oracleConfig.TransmitterSecret, new Transaction
+        {
+            From = Address.FromBase58(client.GetAddressFromPrivateKey(oracleConfig.TransmitterSecret)),
+            To = Address.FromBase58(chainInfo.OracleContractAddress),
+            MethodName = ContractConstants.Transmit,
+            Params = transmitInput.ToByteString(),
+            RefBlockNumber = refBlockNumber,
+            RefBlockPrefix = ByteString.CopyFrom(Hash.LoadFromHex(refBlockHash).Value.Take(4).ToArray())
+        }).ToByteArray().ToHex();
+
+        var txRes = await SendTransactionAsync(chainId, rawTx);
         return txRes.TransactionId;
     }
 

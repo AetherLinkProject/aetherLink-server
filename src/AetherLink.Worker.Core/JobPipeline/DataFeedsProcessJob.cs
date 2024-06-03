@@ -37,15 +37,13 @@ public class DataFeedsProcessJob : AsyncBackgroundJob<DataFeedsProcessJobArgs>, 
 
         try
         {
-            _logger.LogInformation("[DataFeeds] Get a new Datafeed job {name} at blockHeight:{blockHeight}.",
+            _logger.LogInformation("[DataFeedsProcessJob] Get a new Datafeed job {name} at blockHeight:{blockHeight}.",
                 argId, args.BlockHeight);
 
             var jobSpecStr = await GetSpecAsync(chainId, args.TransactionId, reqId);
-
-            var dataFeedsDto = JsonConvert.DeserializeObject<DataFeedsDto>(jobSpecStr);
-            if (dataFeedsDto == null)
+            if (!ValidateDataFeedFormat(jobSpecStr, out var dataFeedsDto))
             {
-                _logger.LogWarning("[DataFeeds] {name} Invalid Job spec: {spec}.", argId, jobSpecStr);
+                _logger.LogWarning("[DataFeedsProcessJob] {name} Invalid Job spec: {spec}.", argId, jobSpecStr);
                 return;
             }
 
@@ -53,23 +51,32 @@ public class DataFeedsProcessJob : AsyncBackgroundJob<DataFeedsProcessJobArgs>, 
             args.DataFeedsDto = dataFeedsDto;
             args.Epoch = await _oracleContractProvider.GetStartEpochAsync(args.ChainId, args.BlockHeight);
 
-            _logger.LogInformation("[DataFeeds] {name} Start a data feeds timer.", argId);
+            _logger.LogInformation("[DataFeedsProcessJob] {name} Start a data feeds timer.", argId);
             _recurringJobManager.AddOrUpdate<DataFeedsTimerProvider>(IdGeneratorHelper.GenerateId(chainId, reqId),
                 timer => timer.ExecuteAsync(args), () => dataFeedsDto.Cron);
         }
         catch (OperationCanceledException)
         {
-            _logger.LogError("[DataFeeds] Get Datafeed job info {name} timeout, retry later.", argId);
+            _logger.LogError("[DataFeedsProcessJob] Get Datafeed job info {name} timeout, retry later.", argId);
             await _retryProvider.RetryAsync(args, untilFailed: true, backOff: true);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "[DataFeeds] Get a new Datafeed job {name} failed.", argId);
+            _logger.LogError(e, "[DataFeedsProcessJob] Get a new Datafeed job {name} failed.", argId);
         }
     }
 
-    private async Task<string> GetSpecAsync(string chainId, string transactionId, string reqId) =>
-        SpecificData.Parser.ParseFrom(
-                (await _oracleContractProvider.GetRequestCommitmentAsync(chainId, transactionId, reqId)).SpecificData)
-            .Data.ToStringUtf8();
+    private async Task<string> GetSpecAsync(string chainId, string transactionId, string reqId)
+    {
+        var commitment =
+            await _oracleContractProvider.GetRequestCommitmentAsync(chainId, transactionId, reqId);
+        var specificData = SpecificData.Parser.ParseFrom(commitment.SpecificData);
+        return specificData.Data.ToStringUtf8();
+    }
+
+    private static bool ValidateDataFeedFormat(string spec, out DataFeedsDto dataFeed)
+    {
+        dataFeed = JsonConvert.DeserializeObject<DataFeedsDto>(spec);
+        return dataFeed != null;
+    }
 }
