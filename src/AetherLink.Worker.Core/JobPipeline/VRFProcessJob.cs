@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Cryptography;
 using AElf.Cryptography.ECDSA;
-using AElf.CSharp.Core;
 using AetherLink.Contracts.Oracle;
 using AetherLink.Contracts.VRF.Coordinator;
 using AetherLink.Worker.Core.Common;
@@ -66,7 +65,7 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
 
         if (await CheckVrfJobConsumed(chainId, reqId))
         {
-            _logger.LogWarning("=================[VRF] {reqId} is a task that has already been consumed", reqId);
+            _logger.LogWarning("[VRF] {reqId} is a task that has already been consumed", reqId);
             return;
         }
 
@@ -108,7 +107,6 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
             _logger.LogInformation("[VRF] reqId {reqId} Transmit transaction: {txId}, ready to check result", reqId,
                 transactionId);
 
-
             var vrfTransmitResult = _objectMapper.Map<VRFJobArgs, VrfTxResultCheckJobArgs>(args);
             vrfTransmitResult.TransmitTransactionId = transactionId;
             var vrfJob = _objectMapper.Map<VRFJobArgs, VrfJobDto>(vrfTransmitResult);
@@ -117,7 +115,7 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
             await _vrfProvider.SetAsync(vrfJob);
             await _backgroundJobManager.EnqueueAsync(vrfTransmitResult,
                 delay: TimeSpan.FromSeconds(_processJobOptions.TransactionResultDelay));
-
+            
             _vrfReporter.RecordVrfJob(chainId, reqId);
         }
         catch (Exception e)

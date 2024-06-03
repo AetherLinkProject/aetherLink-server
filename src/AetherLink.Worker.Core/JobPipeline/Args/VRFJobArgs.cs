@@ -7,5 +7,4 @@ public class VRFJobArgs
     public string TransactionId { get; set; }
     public long BlockHeight { get; set; }
     public string BlockHash { get; set; }
-    public long StartTime { get; set; }
 }

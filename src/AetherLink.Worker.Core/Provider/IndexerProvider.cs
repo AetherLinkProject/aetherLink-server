@@ -55,7 +55,6 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                 }
             });
             return indexerResult != null ? indexerResult.OcrJobEvents : new List<OcrLogEventDto>();
-            // return indexerResult.OcrJobEvents;
         }
         catch (Exception e)
         {
@@ -86,7 +85,6 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                 }
             });
             return indexerResult != null ? indexerResult.Transmitted : new List<TransmittedDto>();
-            // return indexerResult?.Transmitted;
         }
         catch (Exception e)
         {
@@ -114,7 +112,6 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                 }
             });
             return indexerResult != null ? indexerResult.RequestCancelled : new List<RequestCancelledDto>();
-            // return indexerResult?.RequestCancelled;
         }
         catch (Exception e)
         {

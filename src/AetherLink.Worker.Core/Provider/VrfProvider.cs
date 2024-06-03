@@ -14,13 +14,13 @@ public interface IVrfProvider
 
 public class VrfProvider : IVrfProvider, ITransientDependency
 {
-    private readonly IStorageProvider _storageProvider;
     private readonly ILogger<VrfProvider> _logger;
+    private readonly IStorageProvider _storageProvider;
 
     public VrfProvider(IStorageProvider storageProvider, ILogger<VrfProvider> logger)
     {
-        _storageProvider = storageProvider;
         _logger = logger;
+        _storageProvider = storageProvider;
     }
 
     public async Task SetAsync(VrfJobDto job)

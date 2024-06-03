@@ -89,7 +89,6 @@ public class VrfTxResultCheckProcessJob : AsyncBackgroundJob<VrfTxResultCheckJob
                 // for canceled request 
                 if (!string.IsNullOrEmpty(txResult.Error) && txResult.Error.Contains("Transaction expired"))
                 {
-                    // todo: check ref transaction is confirmed
                     if (!await _contractProvider.IsTransactionConfirmed(chainId, args.BlockHeight, args.BlockHash))
                     {
                         _logger.LogWarning(

@@ -87,11 +87,8 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
         return latestBlockHeight?.BlockHeight ?? 0;
     }
 
-    public async Task<long> GetUnconfirmedStartHeightAsync(string chainId)
-    {
-        var latestHeight = await _storageProvider.GetAsync<SearchHeightDto>(GetUnconfirmedHeightRedisKey(chainId));
-        return latestHeight?.BlockHeight ?? 0;
-    }
+    public async Task<long> GetUnconfirmedStartHeightAsync(string chainId) =>
+        (await _storageProvider.GetAsync<SearchHeightDto>(GetUnconfirmedHeightRedisKey(chainId)))?.BlockHeight ?? 0;
 
     public async Task SetLatestSearchHeightAsync(string chainId, long searchHeight)
         => await _storageProvider.SetAsync(GetSearchHeightRedisKey(chainId),
@@ -100,7 +97,6 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
     public async Task SetLatestUnconfirmedHeightAsync(string chainId, long unconfirmedHeight)
         => await _storageProvider.SetAsync(GetUnconfirmedHeightRedisKey(chainId),
             new SearchHeightDto { BlockHeight = unconfirmedHeight });
-
 
     public async Task HandleTransmittedLogEventAsync(TransmittedDto transmitted)
         => await _backgroundJobManager.EnqueueAsync(
