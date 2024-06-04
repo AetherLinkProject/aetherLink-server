@@ -1,4 +1,5 @@
 ﻿using AElf.Client.Service;
+using AetherLink.Metric;
 using Aetherlink.PriceServer;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
