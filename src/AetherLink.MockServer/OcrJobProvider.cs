@@ -6,6 +6,7 @@ namespace AetherLink.MockServer;
 public class OcrJobProvider : ISingletonDependency
 {
     private IOptionsMonitor<OcrJobOptions> _options;
+    private int _latestHeight = 1000;
 
     public OcrJobProvider(IOptionsMonitor<OcrJobOptions> options)
     {
@@ -14,6 +15,7 @@ public class OcrJobProvider : ISingletonDependency
 
     public long GetLastHeight()
     {
-        return _options.CurrentValue.LastHeight;
+        _latestHeight += 1000;
+        return _latestHeight;
     }
 }

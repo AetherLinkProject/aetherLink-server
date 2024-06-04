@@ -5,6 +5,7 @@ using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Reporter;
 using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,6 +17,7 @@ namespace AetherLink.Worker.Core.JobPipeline;
 public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcessJobArgs>, ITransientDependency
 {
     private readonly IJobProvider _jobProvider;
+    private readonly IDataFeedsReporter _reporter;
     private readonly IRetryProvider _retryProvider;
     private readonly IContractProvider _contractProvider;
     private readonly ISchedulerService _schedulerService;
@@ -24,9 +26,10 @@ public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcess
 
     public TransmitResultProcessJob(ILogger<TransmitResultProcessJob> logger, IContractProvider contractProvider,
         IOptionsSnapshot<ProcessJobOptions> processJobOptions, ISchedulerService schedulerService,
-        IRetryProvider retryProvider, IJobProvider jobProvider)
+        IRetryProvider retryProvider, IJobProvider jobProvider, IDataFeedsReporter reporter)
     {
         _logger = logger;
+        _reporter = reporter;
         _jobProvider = jobProvider;
         _retryProvider = retryProvider;
         _contractProvider = contractProvider;
@@ -60,9 +63,12 @@ public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcess
                         break;
                     }
 
+                    var executeTime = DateTime.Now.Subtract(job.RequestReceiveTime).TotalSeconds;
                     _logger.LogInformation(
                         "[Step6] {ReqId}-{epoch}-{round} Transmitted validate successful, execute {time}s.", reqId,
-                        epoch, roundId, DateTime.Now.Subtract(job.RequestReceiveTime).TotalSeconds);
+                        epoch, roundId, executeTime);
+                    
+                    _reporter.RecordDatafeedJob(chainId, reqId, epoch, roundId, executeTime);
 
                     _schedulerService.CancelAllSchedule(job);
                     break;

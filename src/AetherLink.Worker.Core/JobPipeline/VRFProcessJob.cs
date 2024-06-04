@@ -11,6 +11,7 @@ using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Reporter;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -22,6 +23,7 @@ namespace AetherLink.Worker.Core.JobPipeline;
 
 public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependency
 {
+    private readonly IVRFReporter _vrfReporter;
     private readonly IVrfProvider _vrfProvider;
     private readonly OracleInfoOptions _options;
     private readonly IObjectMapper _objectMapper;
@@ -33,13 +35,14 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
     private readonly IOracleContractProvider _oracleContractProvider;
 
     public VRFProcessJob(ILogger<VRFProcessJob> logger, IOptionsSnapshot<OracleInfoOptions> options,
-        IContractProvider contractProvider, IOracleContractProvider oracleContractProvider,
-        IRetryProvider retryProvider, IVrfProvider vrfProvider, IBackgroundJobManager backgroundJobManager,
-        IObjectMapper objectMapper, IOptionsSnapshot<ProcessJobOptions> processJobOptions)
+        IContractProvider contractProvider, IOracleContractProvider oracleContractProvider, IVrfProvider vrfProvider,
+        IRetryProvider retryProvider, IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper,
+        IOptionsSnapshot<ProcessJobOptions> processJobOptions, IVRFReporter vrfReporter)
     {
         _logger = logger;
         _options = options.Value;
         _vrfProvider = vrfProvider;
+        _vrfReporter = vrfReporter;
         _objectMapper = objectMapper;
         _retryProvider = retryProvider;
         _contractProvider = contractProvider;
@@ -52,6 +55,7 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
     {
         var chainId = args.ChainId;
         var reqId = args.RequestId;
+        if (args.StartTime == 0) args.StartTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds();
 
         if (!_options.ChainConfig.TryGetValue(chainId, out var vrfInfo))
         {
@@ -99,6 +103,9 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
 
             var transactionId = await _contractProvider.SendTransmitWithRefHashAsync(chainId, transmitInput,
                 refBlockHeight, regBlockHash);
+
+            _vrfReporter.RecordVrfExecuteTime(chainId, reqId,
+                new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds() - args.StartTime);
 
             _logger.LogInformation("[VRF] reqId {reqId} Transmit transaction: {txId}, ready to check result", reqId,
                 transactionId);

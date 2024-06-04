@@ -6,6 +6,7 @@ using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Reporter;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
@@ -25,9 +26,9 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
     private readonly IDataMessageProvider _dataMessageProvider;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
-    public CollectObservationJob(IPeerManager peerManager, ILogger<CollectObservationJob> logger,
-        IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper, IRetryProvider retryProvider,
-        IJobProvider jobProvider, IDataMessageProvider dataMessageProvider, IPriceFeedsProvider priceFeedsProvider)
+    public CollectObservationJob(IPeerManager peerManager, IJobProvider jobProvider, IObjectMapper objectMapper,
+        IRetryProvider retryProvider, ILogger<CollectObservationJob> logger, IPriceFeedsProvider priceFeedsProvider,
+        IDataMessageProvider dataMessageProvider, IBackgroundJobManager backgroundJobManager)
     {
         _logger = logger;
         _peerManager = peerManager;

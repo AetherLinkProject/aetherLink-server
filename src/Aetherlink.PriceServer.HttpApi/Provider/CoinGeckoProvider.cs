@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Common;
 using AetherlinkPriceServer.Dtos;
+using AetherlinkPriceServer.Reporter;
 using CoinGecko.Interfaces;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
@@ -21,11 +22,13 @@ public interface ICoinGeckoProvider
 public class CoinGeckoProvider : ICoinGeckoProvider, ITransientDependency
 {
     private const string FiatSymbol = "usd";
+    private readonly IPriceCollectReporter _reporter;
     private readonly ICoinGeckoClient _coinGeckoClient;
     private readonly Dictionary<string, string> _tokenDict;
 
-    public CoinGeckoProvider(ICoinGeckoClient coinGeckoClient)
+    public CoinGeckoProvider(ICoinGeckoClient coinGeckoClient, IPriceCollectReporter reporter)
     {
+        _reporter = reporter;
         _coinGeckoClient = coinGeckoClient;
         _tokenDict = CoinGeckoConstants.IdMap.ToDictionary(x => x.Value, x => x.Key);
     }
@@ -36,15 +39,26 @@ public class CoinGeckoProvider : ICoinGeckoProvider, ITransientDependency
         return result.Count != 0 ? result.First() : null;
     }
 
-    public async Task<List<PriceDto>> GetTokenPricesAsync(List<string> tokenPairs) =>
-        (await _coinGeckoClient.SimpleClient.GetSimplePrice(
-            tokenPairs.Select(GenerateCoinId).Where(c => !string.IsNullOrEmpty(c)).ToArray(), new[] { FiatSymbol }))
-        .Select(kv => new PriceDto
+    public async Task<List<PriceDto>> GetTokenPricesAsync(List<string> tokenPairs)
+    {
+        var priceList = await _coinGeckoClient.SimpleClient.GetSimplePrice(
+            tokenPairs.Select(GenerateCoinId).Where(c => !string.IsNullOrEmpty(c)).ToArray(), new[] { FiatSymbol });
+
+        return priceList.Select(kv =>
         {
-            TokenPair = $"{_tokenDict[kv.Key]}-USD",
-            Price = PriceConvertHelper.ConvertPrice((double)kv.Value[FiatSymbol].Value),
-            UpdateTime = DateTime.Now
+            var tempPair = $"{_tokenDict[kv.Key]}-USD";
+            var tempPrice = PriceConvertHelper.ConvertPrice((double)kv.Value[FiatSymbol].Value);
+
+            _reporter.RecordPriceCollected(SourceType.CoinGecko, tempPair, tempPrice);
+
+            return new PriceDto
+            {
+                TokenPair = tempPair,
+                Price = tempPrice,
+                UpdateTime = DateTime.Now
+            };
         }).ToList();
+    }
 
     public async Task<long> GetHistoricPriceAsync(string tokenPair, DateTime time)
     {

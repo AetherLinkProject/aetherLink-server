@@ -7,11 +7,13 @@ namespace AetherLink.MockServer.GraphQL;
 public class Query
 {
     private static long latestRound = 4;
+    private  int latestHeight = 100;
 
     [Name("syncState")]
     public static SyncStateDto SyncState([FromServices] OcrJobProvider provider, SyncStateInput input)
     {
-        return new SyncStateDto()
+        
+        return new SyncStateDto
         {
             ConfirmedBlockHeight = provider.GetLastHeight()
         };

@@ -4,7 +4,7 @@ using Aetherlink.PriceServer.Common;
 
 namespace Aetherlink.PriceServer.Dtos;
 
-public class GetTokenPriceRequestDto : IValidatableObject
+public class GetTokenPriceRequestDto : AuthDto, IValidatableObject
 {
     [Required] public string TokenPair { get; set; }
     public SourceType Source { get; set; }
@@ -23,7 +23,7 @@ public class GetTokenPriceRequestDto : IValidatableObject
     }
 }
 
-public class GetTokenPriceListRequestDto : IValidatableObject
+public class GetTokenPriceListRequestDto : AuthDto, IValidatableObject
 {
     [Required] public List<string> TokenPairs { get; set; }
     public SourceType Source { get; set; }
@@ -42,7 +42,7 @@ public class GetTokenPriceListRequestDto : IValidatableObject
     }
 }
 
-public class GetAggregatedTokenPriceRequestDto : IValidatableObject
+public class GetAggregatedTokenPriceRequestDto : AuthDto, IValidatableObject
 {
     [Required] public string TokenPair { get; set; }
     public AggregateType AggregateType { get; set; }
@@ -61,12 +61,12 @@ public class GetAggregatedTokenPriceRequestDto : IValidatableObject
     }
 }
 
-public class GetPriceForLast24HoursRequestDto
+public class GetPriceForLast24HoursRequestDto : AuthDto
 {
     [Required] public string TokenPair { get; set; }
 }
 
-public class GetDailyPriceRequestDto : IValidatableObject
+public class GetDailyPriceRequestDto : AuthDto, IValidatableObject
 {
     [Required] public string TokenPair { get; set; }
     [Required] public string TimeStamp { get; set; }

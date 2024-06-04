@@ -6,6 +6,7 @@ using AElf.CSharp.Core;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Reporter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -18,15 +19,18 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly WorkerOptions _options;
     private readonly IWorkerProvider _provider;
+    private readonly IWorkerReporter _reporter;
     private readonly ILogger<SearchWorker> _logger;
     private readonly ConcurrentDictionary<string, long> _heightMap = new();
     private readonly ConcurrentDictionary<string, long> _unconfirmedHeightMap = new();
     private readonly ConcurrentDictionary<string, int> _heightCompensationMap = new();
 
     public SearchWorker(AbpAsyncTimer timer, IOptionsSnapshot<WorkerOptions> workerOptions, IWorkerProvider provider,
-        IServiceScopeFactory serviceScopeFactory, ILogger<SearchWorker> logger) : base(timer, serviceScopeFactory)
+        IServiceScopeFactory serviceScopeFactory, ILogger<SearchWorker> logger, IWorkerReporter reporter) : base(timer,
+        serviceScopeFactory)
     {
         _logger = logger;
+        _reporter = reporter;
         _provider = provider;
         _options = workerOptions.Value;
         Timer.Period = 1000 * _options.SearchTimer;
@@ -74,6 +78,7 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
             DateTime.Now.Subtract(startTime).TotalMilliseconds);
 
         _heightMap[chainId] = blockLatestHeight;
+        _reporter.RecordConfirmBlockHeight(chainId, startHeight, blockLatestHeight);
         await _provider.SetLatestSearchHeightAsync(chainId, blockLatestHeight);
     }
 
@@ -107,6 +112,7 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         _logger.LogDebug("[UnconfirmedSearch] {chain} found {count} vrf jobs took {time} ms.", chainId, jobsCount,
             DateTime.Now.Subtract(startTime).TotalMilliseconds);
+        _reporter.RecordUnconfirmedBlockHeight(chainId, startHeight, startHeight.Add(batchSize));
 
         // If there are no new events in this interval, the starting position will not be updated, but the search length will be updated.
         _unconfirmedHeightMap[chainId] = maxHeight == startHeight ? maxHeight - 1 : maxHeight;
@@ -150,6 +156,7 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
     {
         var jobs = await _provider.SearchJobsAsync(chainId, to, from);
         var tasks = jobs.Select(job => _provider.HandleJobAsync(job));
+        _reporter.RecordOracleJobAsync(chainId, jobs.Count);
 
         _logger.LogDebug("[Search] {chain} found a total of {count} jobs.", chainId, jobs.Count);
 
@@ -163,6 +170,7 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         var transmittedTasks =
             transmits.Select(transmitted => _provider.HandleTransmittedLogEventAsync(transmitted));
 
+        _reporter.RecordTransmittedAsync(chainId, transmits.Count);
         _logger.LogDebug("[Search] {chain} found a total of {count} transmitted.", chainId, transmits.Count);
 
         await Task.WhenAll(transmittedTasks);
@@ -174,6 +182,7 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         var cancels = await _provider.SearchRequestCanceledAsync(chainId, to, from);
         var requestCancelsTasks = cancels.Select(requestCancelled =>
             _provider.HandleRequestCancelledLogEventAsync(requestCancelled));
+        _reporter.RecordCanceledAsync(chainId, cancels.Count);
 
         _logger.LogDebug("[Search] {chain} found a total of {count} canceled.", chainId, cancels.Count);
 

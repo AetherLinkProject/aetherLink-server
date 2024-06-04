@@ -9,6 +9,7 @@ using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Reporter;
 using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,6 +27,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
     private readonly OracleInfoOptions _options;
     private readonly IObjectMapper _objectMapper;
     private readonly IStateProvider _stateProvider;
+    private readonly IReportReporter _reporter;
     private readonly IReportProvider _reportProvider;
     private readonly ILogger<GenerateReportJob> _logger;
     private readonly ISchedulerService _schedulerService;
@@ -34,9 +36,10 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
     public GenerateReportJob(ILogger<GenerateReportJob> logger, ISchedulerService schedulerService,
         IObjectMapper objectMapper, IStateProvider stateProvider, IOptionsSnapshot<OracleInfoOptions> options,
         IJobProvider jobProvider, IReportProvider reportProvider, IPeerManager peerManager,
-        IBackgroundJobManager backgroundJobManager)
+        IBackgroundJobManager backgroundJobManager, IReportReporter reporter)
     {
         _logger = logger;
+        _reporter = reporter;
         _options = options.Value;
         _peerManager = peerManager;
         _jobProvider = jobProvider;
@@ -130,6 +133,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
                 _logger.LogInformation("[step3][Leader] Init {id}, start observation collection scheduler",
                     reportId);
                 _stateProvider.SetObservations(reportId, new List<ObservationDto> { observation });
+                _reporter.RecordReportAsync(args.ChainId, args.RequestId, args.Epoch);
                 _schedulerService.StartScheduler(job, SchedulerType.ObservationCollectWaitingScheduler);
                 return;
             }
@@ -137,6 +141,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
             if (observations.Any(o => o.Index == observation.Index)) return;
             observations.Add(observation);
             _stateProvider.SetObservations(reportId, observations);
+            _reporter.RecordReportAsync(args.ChainId, args.RequestId, args.Epoch);
         }
     }
 
@@ -167,5 +172,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
             Epoch = job.Epoch,
             ObservationResults = { observations }
         }));
+
+        _reporter.RecordReportAsync(job.ChainId, job.RequestId, job.Epoch, observations.Count);
     }
 }
