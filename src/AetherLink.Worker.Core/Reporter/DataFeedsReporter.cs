@@ -13,12 +13,17 @@ public interface IDataFeedsReporter
 public class DataFeedsReporter : IDataFeedsReporter, ISingletonDependency
 {
     private readonly Counter _jobCounter;
+    private readonly Gauge _executeGauge;
 
     public DataFeedsReporter()
     {
-        _jobCounter = MetricsReporter.RegistryCounters(Definition.JobCounterName, Definition.JobCounterLabels);
+        _jobCounter = MetricsReporter.RegistryCounters(Definition.JobCounterName, Definition.JobLabels);
+        _executeGauge = MetricsReporter.RegistryGauges(Definition.ExecuteTimeGaugeName, Definition.JobLabels);
     }
 
     public void RecordDatafeedJob(string chainId, string requestId, long epoch, int roundId, double executeTime)
-        => _jobCounter.WithLabels(chainId, requestId, epoch.ToString(), roundId.ToString()).Inc(executeTime);
+    {
+        _jobCounter.WithLabels(chainId, requestId, epoch.ToString(), roundId.ToString()).Inc();
+        _executeGauge.WithLabels(chainId, requestId, epoch.ToString(), roundId.ToString()).Set(executeTime);
+    }
 }
