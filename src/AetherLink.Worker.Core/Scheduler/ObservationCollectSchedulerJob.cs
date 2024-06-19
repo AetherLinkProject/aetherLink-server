@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AetherLink.Contracts.Consumer;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
@@ -9,9 +10,10 @@ using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
-using Google.Protobuf.WellKnownTypes;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -25,26 +27,26 @@ public interface IObservationCollectSchedulerJob
 
 public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, ITransientDependency
 {
-    private readonly IJobProvider _jobProvider;
     private readonly IPeerManager _peerManager;
     private readonly OracleInfoOptions _options;
     private readonly IObjectMapper _objectMapper;
     private readonly IStateProvider _stateProvider;
     private readonly IReportProvider _reportProvider;
+    private readonly IDataMessageProvider _dataMessageProvider;
     private readonly ILogger<ResetRequestSchedulerJob> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public ObservationCollectSchedulerJob(IObjectMapper objectMapper, ILogger<ResetRequestSchedulerJob> logger,
-        IOptionsSnapshot<OracleInfoOptions> options, IStateProvider stateProvider, IJobProvider jobProvider,
-        IReportProvider reportProvider, IPeerManager peerManager, IBackgroundJobManager backgroundJobManager)
+        IOptionsSnapshot<OracleInfoOptions> options, IStateProvider stateProvider, IReportProvider reportProvider,
+        IPeerManager peerManager, IBackgroundJobManager backgroundJobManager, IDataMessageProvider dataMessageProvider)
     {
         _logger = logger;
         _options = options.Value;
-        _jobProvider = jobProvider;
         _peerManager = peerManager;
         _objectMapper = objectMapper;
         _stateProvider = stateProvider;
         _reportProvider = reportProvider;
+        _dataMessageProvider = dataMessageProvider;
         _backgroundJobManager = backgroundJobManager;
     }
 
@@ -71,23 +73,35 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
                 return;
             }
 
-            var collectResult = Enumerable.Repeat(0L, _peerManager.GetPeersCount()).ToList();
-            _stateProvider.GetObservations(reportId).ForEach(o => collectResult[o.Index] = o.ObservationResult);
-            _logger.LogDebug("[Step3][Leader] {requestId} report:{results} count:{count}", job.RequestId,
-                collectResult.JoinAsString(","), collectResult.Count);
-
-            await _reportProvider.SetAsync(new ReportDto
+            ByteString observation;
+            var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
+            var report = new ReportDto
             {
                 ChainId = chainId,
                 RequestId = reqId,
                 RoundId = roundId,
-                Epoch = epoch,
-                Observations = collectResult
-            });
+                Epoch = epoch
+            };
 
-            var reportStartSignTime = Timestamp.FromDateTime(DateTime.UtcNow);
+            if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
+            {
+                var authData = await _dataMessageProvider.GetAuthFeedsDataAsync(chainId, reqId);
+                observation = ByteString.FromBase64(authData.NewData);
+            }
+            else
+            {
+                var collectResult = Enumerable.Repeat(0L, _peerManager.GetPeersCount()).ToList();
+                _stateProvider.GetObservations(reportId).ForEach(o => collectResult[o.Index] = o.ObservationResult);
+                _logger.LogDebug("[ObservationCollectScheduler] {requestId} report:{results} count:{count}",
+                    job.RequestId, collectResult.JoinAsString(","), collectResult.Count);
+                report.Observations = collectResult;
+                observation = new LongList { Data = { collectResult } }.ToByteString();
+            }
+
+            await _reportProvider.SetAsync(report);
+
             var args = _objectMapper.Map<JobDto, GeneratePartialSignatureJobArgs>(job);
-            args.Observations = collectResult;
+            args.Observations = observation;
 
             await _backgroundJobManager.EnqueueAsync(args);
 
@@ -97,8 +111,8 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
                 ChainId = job.ChainId,
                 RoundId = job.RoundId,
                 Epoch = job.Epoch,
-                ObservationResults = { collectResult },
-                StartTime = reportStartSignTime
+                Type = jobSpec.Type == DataFeedsType.PlainDataFeeds ? ObservationType.Single : ObservationType.Multi,
+                ObservationResults = observation
             }));
 
             _stateProvider.SetFinishedFlag(reportId);

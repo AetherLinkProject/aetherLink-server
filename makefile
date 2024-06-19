@@ -78,6 +78,7 @@ define init
     $(eval name := ${1})
     $(eval des := ${NODE_DIR}/${name})
     $(eval cf := ${SRC_DIR}/${name}.json)
+    $(eval apcf := ${SRC_DIR}/apollosettings.json)
     $(eval ds := ${des}/build)
     $(eval log := /tmp/${name})
     
@@ -85,6 +86,7 @@ define init
     mkdir -p ${des}
     cp -r /tmp/build ${des}
     cp ${cf} ${ds}/appsettings.json
+    cp ${apcf} ${ds}/apollosettings.json
     cd ${ds} && dotnet ${FOLDER}.dll &
     mkdir -p ${log}
     ln -s ${ds}/Logs ${log} 
@@ -99,12 +101,14 @@ define restart
     $(eval name := ${1})
     $(eval des := ${NODE_DIR}/${name})
     $(eval cf := ${SRC_DIR}/${name}.json)
+    $(eval apcf := ${SRC_DIR}/apollosettings.json)
     $(eval ds := ${des}/build)
     
     rm -rf ${des}
     mkdir -p ${des}
     cp -r /tmp/build ${des}
     cp ${cf} ${ds}/appsettings.json
+    cp ${apcf} ${ds}/apollosettings.json
     cd ${ds} && dotnet ${FOLDER}.dll &
 endef
 

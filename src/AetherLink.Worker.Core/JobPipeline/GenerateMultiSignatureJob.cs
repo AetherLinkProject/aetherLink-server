@@ -8,12 +8,14 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using AetherLink.Multisignature;
 using AetherLink.Worker.Core.Common;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Reporter;
+using Newtonsoft.Json;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -31,6 +33,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
     private readonly IReportProvider _reportProvider;
     private readonly IMultiSignatureReporter _reporter;
     private readonly IContractProvider _contractProvider;
+    private readonly IDataMessageProvider _dataMessageProvider;
     private readonly ILogger<GenerateMultiSignatureJob> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
     private readonly IOracleContractProvider _oracleContractProvider;
@@ -39,7 +42,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
         IOptionsSnapshot<OracleInfoOptions> oracleChainInfoOptions, IContractProvider contractProvider,
         IOracleContractProvider oracleContractProvider, IObjectMapper objectMapper, IJobProvider jobProvider,
         IReportProvider reportProvider, IPeerManager peerManager, IBackgroundJobManager backgroundJobManager,
-        IMultiSignatureReporter reporter)
+        IMultiSignatureReporter reporter, IDataMessageProvider dataMessageProvider)
     {
         _logger = logger;
         _reporter = reporter;
@@ -50,6 +53,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
         _reportProvider = reportProvider;
         _contractProvider = contractProvider;
         _options = oracleChainInfoOptions.Value;
+        _dataMessageProvider = dataMessageProvider;
         _backgroundJobManager = backgroundJobManager;
         _oracleContractProvider = oracleContractProvider;
     }
@@ -70,15 +74,35 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
             var multiSignId = IdGeneratorHelper.GenerateMultiSignatureId(args);
             if (_stateProvider.IsFinished(multiSignId)) return;
 
-            var observations = await _reportProvider.GetAsync(args);
-            if (observations == null)
+
+            var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
+            ByteString result;
+
+            if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
             {
-                _logger.LogError("[Step5][Leader] {name} Report is null.", argId);
-                return;
+                var authData = await _dataMessageProvider.GetAuthFeedsDataAsync(args);
+                if (authData == null)
+                {
+                    _logger.LogError("[Step5][Leader] {name} Report is null.", argId);
+                    return;
+                }
+
+                result = ByteString.FromBase64(authData.NewData);
+            }
+            else
+            {
+                var observations = await _reportProvider.GetAsync(args);
+                if (observations == null)
+                {
+                    _logger.LogError("[Step5][Leader] {name} Report is null.", argId);
+                    return;
+                }
+
+                result = new LongList { Data = { observations.Observations } }.ToByteString();
             }
 
             var transmitData = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, reqId,
-                job.TransactionId, epoch, new LongList { Data = { observations.Observations } }.ToByteString());
+                job.TransactionId, epoch, result);
 
             var msg = HashHelper.ConcatAndCompute(HashHelper.ComputeFrom(transmitData.Report.ToByteArray()),
                 HashHelper.ComputeFrom(transmitData.ReportContext.ToString())).ToByteArray();

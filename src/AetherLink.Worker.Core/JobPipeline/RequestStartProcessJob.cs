@@ -73,14 +73,13 @@ public class RequestStartProcessJob : AsyncBackgroundJob<RequestStartProcessJobA
                     _objectMapper.Map<RequestStartProcessJobArgs, CollectObservationJobArgs>(args),
                     BackgroundJobPriority.High);
 
-                await _peerManager.BroadcastAsync(p => p.QueryObservationAsync(
-                    new QueryObservationRequest
-                    {
-                        RequestId = args.RequestId,
-                        ChainId = args.ChainId,
-                        RoundId = args.RoundId,
-                        Epoch = args.Epoch
-                    }));
+                await _peerManager.BroadcastAsync(p => p.QueryObservationAsync(new QueryObservationRequest
+                {
+                    RequestId = args.RequestId,
+                    ChainId = args.ChainId,
+                    RoundId = args.RoundId,
+                    Epoch = args.Epoch
+                }));
             }
 
             _schedulerService.StartScheduler(job, SchedulerType.CheckRequestEndScheduler);

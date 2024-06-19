@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using AetherLink.Multisignature;
 using AetherLink.Worker.Core.JobPipeline.Args;
@@ -65,7 +64,7 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
             ChainId = request.ChainId,
             RoundId = request.RoundId,
             RequestId = request.RequestId,
-            Observations = request.ObservationResults.ToList(),
+            Observations = request.ObservationResults
         });
     }
 

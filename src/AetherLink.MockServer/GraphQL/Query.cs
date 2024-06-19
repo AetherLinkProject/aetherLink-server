@@ -1,57 +1,59 @@
+using AetherLink.MockServer.Common;
 using AetherLink.MockServer.GraphQL.Dtos;
 using AetherLink.MockServer.GraphQL.Input;
+using AetherLink.MockServer.Provider;
 using GraphQL;
 
 namespace AetherLink.MockServer.GraphQL;
 
 public class Query
 {
-    private static long latestRound = 4;
-    private  int latestHeight = 100;
-
     [Name("syncState")]
-    public static SyncStateDto SyncState([FromServices] OcrJobProvider provider, SyncStateInput input)
+    public static async Task<SyncStateDto> SyncState(SyncStateInput input)
     {
-        
-        return new SyncStateDto
+        var defaultTime = BlockHelper.GetMockBlockHeight();
+        return input.ChainId switch
         {
-            ConfirmedBlockHeight = provider.GetLastHeight()
+            "AELF" => new() { ConfirmedBlockHeight = defaultTime + 111111 },
+            _ => new() { ConfirmedBlockHeight = defaultTime }
         };
     }
 
     [Name("ocrJobEvents")]
-    public static List<OcrJobEventDto> OcrJobEventsQueryAsync(OcrLogEventInput input)
+    public static async Task<List<OcrJobEventDto>> JobsQueryAsync([FromServices] ITransactionProvider provider,
+        OcrLogEventInput input)
     {
-        switch (input.ToBlockHeight)
-        {
-            default:
-                return new List<OcrJobEventDto> { };
-        }
+       return await provider.GetJobEventsByBlockHeightAsync(input.FromBlockHeight,input.ToBlockHeight);
     }
 
-    [Name("commitments")]
-    public static List<CommitmentDto> CommitmentsQueryAsync(CommitmentsInput input)
+    [Name("transmitted")]
+    public static async Task<List<TransmittedDto>> TransmittedQueryAsync(TransmittedInput input)
     {
-        return new List<CommitmentDto>();
+        return new();
     }
 
-
-    [Name("latestRounds")]
-    public static List<LatestRoundDto> LatestRoundQueryAsync(LatestRoundInput input)
+    [Name("requestCancelled")]
+    public static async Task<List<RequestCancelledDto>> RequestCancelledQueryAsync(RequestCancelledInput input)
     {
-        return new List<LatestRoundDto>();
+        return new();
     }
 
 
-    [Name("configSets")]
-    public static List<ConfigDigestDto> ConfigDigestQueryAsync(ConfigDigestInput input)
+    [Name("requestCommitment")]
+    public static async Task<CommitmentDto> RequestCommitmentQueryAsync(RequestCommitmentInput input)
     {
-        return new List<ConfigDigestDto>();
+        return new();
     }
 
-    [Name("requests")]
-    public static List<OcrJobEventDto> RequestsQueryAsync(RequestInput input)
+    [Name("oracleConfigDigest")]
+    public static async Task<ConfigDigestDto> OracleConfigDigestQueryAsync(OracleConfigDigestInput input)
     {
-        return new List<OcrJobEventDto>();
+        return new();
+    }
+
+    [Name("oracleLatestEpoch")]
+    public static async Task<RequestStartEpochDto> OracleLatestEpochQueryAsync(RequestStartEpochQueryInput input)
+    {
+        return new();
     }
 }
