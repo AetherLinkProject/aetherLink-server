@@ -5,7 +5,7 @@ public class DataMessageDto : OracleRequestBase
     public long Data { get; set; }
 }
 
-public class AuthFeedDataDto
+public class PlainDataFeedsDto
 {
     public string ChainId { get; set; }
     public string RequestId { get; set; }

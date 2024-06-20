@@ -36,7 +36,7 @@ message CommitReportRequest {
   string chain_id = 2;
   int32 round_id = 3;
   int64 epoch = 4;
-  bytes observation_results = 5;
+  string observation_results = 5;
   ObservationType type = 6;
 }
 

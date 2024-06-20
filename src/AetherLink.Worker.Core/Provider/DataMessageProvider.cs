@@ -11,10 +11,10 @@ namespace AetherLink.Worker.Core.Provider;
 public interface IDataMessageProvider
 {
     public Task SetAsync(DataMessageDto request);
-    public Task SetAsync(AuthFeedDataDto msg);
+    public Task SetAsync(PlainDataFeedsDto msg);
     public Task<DataMessageDto> GetAsync<T>(T arg) where T : JobPipelineArgsBase;
-    public Task<AuthFeedDataDto> GetAuthFeedsDataAsync<T>(T arg) where T : JobPipelineArgsBase;
-    public Task<AuthFeedDataDto> GetAuthFeedsDataAsync(string chainId, string requestId);
+    public Task<PlainDataFeedsDto> GetAuthFeedsDataAsync<T>(T arg) where T : JobPipelineArgsBase;
+    public Task<PlainDataFeedsDto> GetAuthFeedsDataAsync(string chainId, string requestId);
 }
 
 public class DataMessageProvider : IDataMessageProvider, ITransientDependency
@@ -37,21 +37,21 @@ public class DataMessageProvider : IDataMessageProvider, ITransientDependency
         await _storageProvider.SetAsync(key, msg);
     }
 
-    public async Task SetAsync(AuthFeedDataDto msg) =>
-        await _storageProvider.SetAsync(GenerateAuthFeedsDataId(msg.ChainId, msg.RequestId), msg);
+    public async Task SetAsync(PlainDataFeedsDto msg) =>
+        await _storageProvider.SetAsync(GeneratePlainDataFeedsId(msg.ChainId, msg.RequestId), msg);
 
     public async Task<DataMessageDto> GetAsync<T>(T arg) where T : JobPipelineArgsBase =>
         await _storageProvider.GetAsync<DataMessageDto>(GenerateDataMessageId(arg.ChainId, arg.RequestId, arg.Epoch));
 
-    public async Task<AuthFeedDataDto> GetAuthFeedsDataAsync<T>(T arg) where T : JobPipelineArgsBase
+    public async Task<PlainDataFeedsDto> GetAuthFeedsDataAsync<T>(T arg) where T : JobPipelineArgsBase
         => await GetAuthFeedsDataAsync(arg.ChainId, arg.RequestId);
 
-    public async Task<AuthFeedDataDto> GetAuthFeedsDataAsync(string chainId, string requestId)
-        => await _storageProvider.GetAsync<AuthFeedDataDto>(GenerateAuthFeedsDataId(chainId, requestId));
+    public async Task<PlainDataFeedsDto> GetAuthFeedsDataAsync(string chainId, string requestId)
+        => await _storageProvider.GetAsync<PlainDataFeedsDto>(GeneratePlainDataFeedsId(chainId, requestId));
 
     private static string GenerateDataMessageId(string chainId, string requestId, long epoch)
         => IdGeneratorHelper.GenerateId(RedisKeyConstants.DataMessageKey, chainId, requestId, epoch);
 
-    private static string GenerateAuthFeedsDataId(string chainId, string requestId)
-        => IdGeneratorHelper.GenerateId(RedisKeyConstants.AuthFeedsDataKey, chainId, requestId);
+    private static string GeneratePlainDataFeedsId(string chainId, string requestId)
+        => IdGeneratorHelper.GenerateId(RedisKeyConstants.PlainDataFeedsKey, chainId, requestId);
 }

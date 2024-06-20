@@ -136,6 +136,7 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
             switch (dataSpec.Type)
             {
                 case DataFeedsType.PriceFeeds:
+                    _logger.LogInformation("[Step2] Starting execute PriceFeeds collect job.");
                     var priceData = await _dataMessageProvider.GetAsync(args);
                     if (priceData != null) return priceData.Data.ToString();
 
@@ -145,11 +146,18 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
                     await _dataMessageProvider.SetAsync(dataMsg);
                     return amount.ToString();
                 case DataFeedsType.PlainDataFeeds:
+                    _logger.LogInformation("[Step2] Starting execute PlainDataFeedsDto collect job.");
                     var resp = await _plainDataFeedsProvider.RequestPlainDataAsync(dataSpec.Url);
                     if (string.IsNullOrEmpty(resp)) return "";
 
                     var authData = await _dataMessageProvider.GetAuthFeedsDataAsync(args);
-                    if (resp == authData.OldData) return "";
+
+                    if (authData == null)
+                    {
+                        authData = _objectMapper.Map<CollectObservationJobArgs, PlainDataFeedsDto>(args);
+                        authData.OldData = "";
+                    }
+                    else if (authData.OldData != null && resp == authData.OldData) return "";
 
                     authData.NewData = resp;
                     await _dataMessageProvider.SetAsync(authData);

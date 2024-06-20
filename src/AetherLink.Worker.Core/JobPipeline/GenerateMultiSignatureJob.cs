@@ -1,6 +1,7 @@
 using AElf;
 using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Consumer;
 using Google.Protobuf;
@@ -25,6 +26,7 @@ namespace AetherLink.Worker.Core.JobPipeline;
 public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatureJobArgs>, ISingletonDependency
 {
     private readonly object _lock = new();
+    private readonly object _finishLock = new();
     private readonly IPeerManager _peerManager;
     private readonly IJobProvider _jobProvider;
     private readonly OracleInfoOptions _options;
@@ -74,7 +76,6 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
             var multiSignId = IdGeneratorHelper.GenerateMultiSignatureId(args);
             if (_stateProvider.IsFinished(multiSignId)) return;
 
-
             var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
             ByteString result;
 
@@ -87,7 +88,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
                     return;
                 }
 
-                result = ByteString.FromBase64(authData.NewData);
+                result = ByteString.CopyFrom(Encoding.UTF8.GetBytes(authData.NewData));
             }
             else
             {
@@ -115,13 +116,19 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
                 return;
             }
 
-            if (_stateProvider.IsFinished(multiSignId))
+            if (!TryProcessFinishedFlag(multiSignId))
             {
                 _logger.LogDebug("[Step5][Leader] {name} signature is finished.", argId);
                 return;
             }
 
-            _stateProvider.SetFinishedFlag(multiSignId);
+            // if (_stateProvider.IsFinished(multiSignId))
+            // {
+            //     _logger.LogDebug("[Step5][Leader] {name} signature is finished.", argId);
+            //     return;
+            // }
+            //
+            // _stateProvider.SetFinishedFlag(multiSignId);
             _logger.LogInformation("[Step5][Leader] {name} MultiSignature generate success.", argId);
 
             var multiSignature = _stateProvider.GetMultiSignature(multiSignId);
@@ -145,6 +152,16 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
     {
         var sign = _stateProvider.GetMultiSignature(IdGeneratorHelper.GenerateMultiSignatureId(args));
         return sign != null && sign.IsEnoughPartialSig();
+    }
+
+    private bool TryProcessFinishedFlag(string signatureId)
+    {
+        lock (_finishLock)
+        {
+            if (_stateProvider.IsFinished(signatureId)) return false;
+            _stateProvider.SetFinishedFlag(signatureId);
+            return true;
+        }
     }
 
     private void TryProcessMultiSignature(GenerateMultiSignatureJobArgs args, byte[] msg)

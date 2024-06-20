@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Consumer;
 using AetherLink.Worker.Core.Common;
@@ -106,7 +107,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
             if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
             {
                 var authData = await _dataMessageProvider.GetAuthFeedsDataAsync(args);
-                observation = ByteString.FromBase64(authData.NewData);
+                observation = ByteString.CopyFrom(Encoding.UTF8.GetBytes(authData.NewData));
             }
             else
             {
@@ -120,7 +121,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
             _schedulerService.CancelScheduler(job, SchedulerType.ObservationCollectWaitingScheduler);
 
             var procJob = _objectMapper.Map<JobDto, GeneratePartialSignatureJobArgs>(job);
-            procJob.Observations = observation;
+            procJob.Observations = observation.ToBase64();
             await _backgroundJobManager.EnqueueAsync(procJob);
 
             await _peerManager.BroadcastAsync(p => p.CommitReportAsync(new CommitReportRequest
@@ -130,7 +131,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
                 RoundId = job.RoundId,
                 Epoch = job.Epoch,
                 Type = jobSpec.Type == DataFeedsType.PlainDataFeeds ? ObservationType.Single : ObservationType.Multi,
-                ObservationResults = observation
+                ObservationResults = procJob.Observations
             }));
         }
         catch (Exception e)

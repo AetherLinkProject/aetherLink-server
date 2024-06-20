@@ -59,6 +59,8 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
         var argId = IdGeneratorHelper.GenerateId(chainId, reqId, epoch, roundId);
         _logger.LogInformation("[step4] {name} Start to validate report", argId);
 
+
+        var observation = ByteString.FromBase64(args.Observations);
         try
         {
             // Check Request State
@@ -68,7 +70,7 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
 
             if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
             {
-                var pendingConfirmData = Encoding.UTF8.GetString(args.Observations.ToByteArray());
+                var pendingConfirmData = Encoding.UTF8.GetString(observation.ToByteArray());
                 var authData = (await _dataMessageProvider.GetAuthFeedsDataAsync(args)).NewData;
                 if (pendingConfirmData != authData)
                 {
@@ -79,7 +81,7 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
             }
             else
             {
-                var observations = LongList.Parser.ParseFrom(args.Observations).Data;
+                var observations = LongList.Parser.ParseFrom(observation).Data;
                 _logger.LogDebug("[step4] {name} Leader report: {result}", argId, observations.JoinAsString(","));
                 if (observations.Count < _peerManager.GetPeersCount())
                 {
@@ -98,8 +100,8 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
                 }
             }
 
-            await ProcessReportValidateResultAsync(args,
-                await GeneratedPartialSignatureAsync(chainId, job.TransactionId, reqId, args.Observations, epoch));
+            await ProcessReportValidateResultAsync(args, await GeneratedPartialSignatureAsync(chainId,
+                job.TransactionId, reqId, ByteString.FromBase64(args.Observations), epoch));
         }
         catch (Exception e)
         {

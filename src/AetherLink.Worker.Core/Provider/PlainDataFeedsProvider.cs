@@ -27,6 +27,7 @@ public class PlainDataFeedsProvider : IPlainDataFeedsProvider, ITransientDepende
     {
         try
         {
+            _logger.LogDebug("Starting to request {url}", url);
             var resp = await _httpClientFactory.CreateClient().SendAsync(new()
             {
                 Method = HttpMethod.Get,

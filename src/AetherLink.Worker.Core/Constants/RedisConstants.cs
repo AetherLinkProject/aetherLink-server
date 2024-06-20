@@ -7,6 +7,6 @@ public static class RedisKeyConstants
     public const string ReportKey = "Report";
     public const string DataMessageKey = "DataMessage";
     public const string SearchHeightKey = "SearchHeight";
-    public const string AuthFeedsDataKey = "PlainDataFeeds";
+    public const string PlainDataFeedsKey = "PlainDataFeeds";
     public const string UnconfirmedSearchHeightKey = "UnconfirmedSearchHeight";
 }

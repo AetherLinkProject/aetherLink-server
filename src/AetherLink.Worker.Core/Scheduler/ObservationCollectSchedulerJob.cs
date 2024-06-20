@@ -101,7 +101,7 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
             await _reportProvider.SetAsync(report);
 
             var args = _objectMapper.Map<JobDto, GeneratePartialSignatureJobArgs>(job);
-            args.Observations = observation;
+            args.Observations = observation.ToBase64();
 
             await _backgroundJobManager.EnqueueAsync(args);
 
@@ -112,7 +112,7 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
                 RoundId = job.RoundId,
                 Epoch = job.Epoch,
                 Type = jobSpec.Type == DataFeedsType.PlainDataFeeds ? ObservationType.Single : ObservationType.Multi,
-                ObservationResults = observation
+                ObservationResults = args.Observations
             }));
 
             _stateProvider.SetFinishedFlag(reportId);
