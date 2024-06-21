@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Consumer;
 using AetherLink.Worker.Core.Common;
@@ -86,7 +87,7 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
             if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
             {
                 var authData = await _dataMessageProvider.GetPlainDataFeedsAsync(chainId, reqId);
-                observation = ByteString.FromBase64(authData.NewData);
+                observation = ByteString.CopyFrom(Encoding.UTF8.GetBytes(authData.NewData));
             }
             else
             {
