@@ -71,13 +71,16 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
             if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
             {
                 var pendingConfirmData = Encoding.UTF8.GetString(observation.ToByteArray());
-                var authData = (await _dataMessageProvider.GetAuthFeedsDataAsync(args)).NewData;
-                if (pendingConfirmData != authData)
+                var plainData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
+                if (pendingConfirmData != plainData.NewData)
                 {
-                    _logger.LogError("[step4] Local data {ld} is inconsistent with the leader's data {pd}.", authData,
-                        pendingConfirmData);
+                    _logger.LogError("[step4] Local data {ld} is inconsistent with the leader's data {pd}.",
+                        plainData.NewData, pendingConfirmData);
                     return;
                 }
+
+                plainData.OldData = plainData.NewData;
+                await _dataMessageProvider.SetAsync(plainData);
             }
             else
             {

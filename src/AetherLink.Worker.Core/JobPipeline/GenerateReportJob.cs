@@ -106,7 +106,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
 
             if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
             {
-                var authData = await _dataMessageProvider.GetAuthFeedsDataAsync(args);
+                var authData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
                 observation = ByteString.CopyFrom(Encoding.UTF8.GetBytes(authData.NewData));
             }
             else

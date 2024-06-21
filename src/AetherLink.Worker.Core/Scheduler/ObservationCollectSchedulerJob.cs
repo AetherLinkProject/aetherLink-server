@@ -85,7 +85,7 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
 
             if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
             {
-                var authData = await _dataMessageProvider.GetAuthFeedsDataAsync(chainId, reqId);
+                var authData = await _dataMessageProvider.GetPlainDataFeedsAsync(chainId, reqId);
                 observation = ByteString.FromBase64(authData.NewData);
             }
             else

@@ -150,7 +150,7 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
                     var resp = await _plainDataFeedsProvider.RequestPlainDataAsync(dataSpec.Url);
                     if (string.IsNullOrEmpty(resp)) return "";
 
-                    var authData = await _dataMessageProvider.GetAuthFeedsDataAsync(args);
+                    var authData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
 
                     if (authData == null)
                     {

@@ -81,7 +81,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
 
             if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
             {
-                var authData = await _dataMessageProvider.GetAuthFeedsDataAsync(args);
+                var authData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
                 if (authData == null)
                 {
                     _logger.LogError("[Step5][Leader] {name} Report is null.", argId);

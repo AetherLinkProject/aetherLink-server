@@ -13,8 +13,8 @@ public interface IDataMessageProvider
     public Task SetAsync(DataMessageDto request);
     public Task SetAsync(PlainDataFeedsDto msg);
     public Task<DataMessageDto> GetAsync<T>(T arg) where T : JobPipelineArgsBase;
-    public Task<PlainDataFeedsDto> GetAuthFeedsDataAsync<T>(T arg) where T : JobPipelineArgsBase;
-    public Task<PlainDataFeedsDto> GetAuthFeedsDataAsync(string chainId, string requestId);
+    public Task<PlainDataFeedsDto> GetPlainDataFeedsAsync<T>(T arg) where T : JobPipelineArgsBase;
+    public Task<PlainDataFeedsDto> GetPlainDataFeedsAsync(string chainId, string requestId);
 }
 
 public class DataMessageProvider : IDataMessageProvider, ITransientDependency
@@ -43,10 +43,10 @@ public class DataMessageProvider : IDataMessageProvider, ITransientDependency
     public async Task<DataMessageDto> GetAsync<T>(T arg) where T : JobPipelineArgsBase =>
         await _storageProvider.GetAsync<DataMessageDto>(GenerateDataMessageId(arg.ChainId, arg.RequestId, arg.Epoch));
 
-    public async Task<PlainDataFeedsDto> GetAuthFeedsDataAsync<T>(T arg) where T : JobPipelineArgsBase
-        => await GetAuthFeedsDataAsync(arg.ChainId, arg.RequestId);
+    public async Task<PlainDataFeedsDto> GetPlainDataFeedsAsync<T>(T arg) where T : JobPipelineArgsBase
+        => await GetPlainDataFeedsAsync(arg.ChainId, arg.RequestId);
 
-    public async Task<PlainDataFeedsDto> GetAuthFeedsDataAsync(string chainId, string requestId)
+    public async Task<PlainDataFeedsDto> GetPlainDataFeedsAsync(string chainId, string requestId)
         => await _storageProvider.GetAsync<PlainDataFeedsDto>(GeneratePlainDataFeedsId(chainId, requestId));
 
     private static string GenerateDataMessageId(string chainId, string requestId, long epoch)
