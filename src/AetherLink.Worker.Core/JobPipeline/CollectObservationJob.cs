@@ -157,7 +157,11 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
                         authData = _objectMapper.Map<CollectObservationJobArgs, PlainDataFeedsDto>(args);
                         authData.OldData = "";
                     }
-                    else if (authData.OldData != null && resp == authData.OldData) return "";
+                    else if (authData.OldData != null && resp == authData.OldData)
+                    {
+                        _logger.LogDebug("[Step2] New collect result is same as old data {data}", resp);
+                        return "";
+                    }
 
                     authData.NewData = resp;
                     await _dataMessageProvider.SetAsync(authData);
