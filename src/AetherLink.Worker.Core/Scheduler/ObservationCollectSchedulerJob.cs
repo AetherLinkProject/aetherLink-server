@@ -112,7 +112,6 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
                 ChainId = job.ChainId,
                 RoundId = job.RoundId,
                 Epoch = job.Epoch,
-                Type = jobSpec.Type == DataFeedsType.PlainDataFeeds ? ObservationType.Single : ObservationType.Multi,
                 ObservationResults = args.Observations
             }));
 

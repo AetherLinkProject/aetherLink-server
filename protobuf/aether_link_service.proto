@@ -37,12 +37,6 @@ message CommitReportRequest {
   int32 round_id = 3;
   int64 epoch = 4;
   string observation_results = 5;
-  ObservationType type = 6;
-}
-
-enum ObservationType {
-    Single = 0;
-    Multi = 1;
 }
 
 message CommitSignatureRequest {

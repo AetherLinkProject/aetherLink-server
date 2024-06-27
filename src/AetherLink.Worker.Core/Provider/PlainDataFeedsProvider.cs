@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Grpc.Net.Client.Balancer;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -32,6 +31,7 @@ public class PlainDataFeedsProvider : IPlainDataFeedsProvider, ITransientDepende
         try
         {
             _logger.LogDebug("Starting to request {url}", url);
+
             var resp = await _httpClientFactory.CreateClient().SendAsync(new()
             {
                 Method = HttpMethod.Get,
@@ -39,13 +39,16 @@ public class PlainDataFeedsProvider : IPlainDataFeedsProvider, ITransientDepende
                 Headers = { { "accept", "text/plain" }, { "X-Requested-With", "XMLHttpRequest" } }
             });
 
-            if (resp.StatusCode != HttpStatusCode.OK) return "";
+            if (resp.StatusCode == HttpStatusCode.OK) return await GetSortedResponseContentAsStringAsync(resp);
 
-            return await GetSortedResponseContentAsStringAsync(resp);
+            _logger.LogWarning("Request {url} failed, StatusCode:{code}", url, resp.StatusCode);
+
+            return "";
         }
         catch (Exception e)
         {
             _logger.LogError(e, $"Query auth url {url} failed");
+
             return "";
         }
     }
@@ -80,7 +83,6 @@ public class PlainDataFeedsProvider : IPlainDataFeedsProvider, ITransientDepende
             case JTokenType.Array:
                 var array = new JArray();
                 foreach (var item in token) array.Add(SortJToken(item));
-
                 return array;
             case JTokenType.String:
                 return token.ToString();
@@ -92,7 +94,6 @@ public class PlainDataFeedsProvider : IPlainDataFeedsProvider, ITransientDepende
                 return token.ToObject<bool>();
             case JTokenType.Null:
                 return null;
-
             default:
                 throw new NotSupportedException($"Unsupported JSON token: {token.Type}");
         }

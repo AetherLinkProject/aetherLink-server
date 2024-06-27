@@ -130,7 +130,6 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
                 ChainId = job.ChainId,
                 RoundId = job.RoundId,
                 Epoch = job.Epoch,
-                Type = jobSpec.Type == DataFeedsType.PlainDataFeeds ? ObservationType.Single : ObservationType.Multi,
                 ObservationResults = procJob.Observations
             }));
         }

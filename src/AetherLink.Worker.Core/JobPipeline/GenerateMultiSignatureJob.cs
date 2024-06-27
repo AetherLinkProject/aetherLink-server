@@ -122,13 +122,6 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
                 return;
             }
 
-            // if (_stateProvider.IsFinished(multiSignId))
-            // {
-            //     _logger.LogDebug("[Step5][Leader] {name} signature is finished.", argId);
-            //     return;
-            // }
-            //
-            // _stateProvider.SetFinishedFlag(multiSignId);
             _logger.LogInformation("[Step5][Leader] {name} MultiSignature generate success.", argId);
 
             var multiSignature = _stateProvider.GetMultiSignature(multiSignId);

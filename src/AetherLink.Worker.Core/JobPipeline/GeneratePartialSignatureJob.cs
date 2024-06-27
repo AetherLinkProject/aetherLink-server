@@ -55,10 +55,8 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
         var reqId = args.RequestId;
         var epoch = args.Epoch;
         var roundId = args.RoundId;
-        // var observations = args.Observations;
         var argId = IdGeneratorHelper.GenerateId(chainId, reqId, epoch, roundId);
         _logger.LogInformation("[step4] {name} Start to validate report", argId);
-
 
         var observation = ByteString.FromBase64(args.Observations);
         try
