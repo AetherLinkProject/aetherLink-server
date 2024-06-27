@@ -54,3 +54,16 @@ public class VrfRequestJobHandler : RequestJobHandler, ISingletonDependency
     public override async Task EnqueueAsync(OcrLogEventDto job)
         => await BackgroundJobManager.EnqueueAsync(ObjectMapper.Map<OcrLogEventDto, VRFJobArgs>(job));
 }
+
+public class AutomationRequestJobHandler : RequestJobHandler, ISingletonDependency
+{
+    public override int RequestTypeIndex => RequestTypeConst.Automation;
+
+    public AutomationRequestJobHandler(IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper) : base(
+        backgroundJobManager, objectMapper)
+    {
+    }
+
+    public override async Task EnqueueAsync(OcrLogEventDto job)
+        => await BackgroundJobManager.EnqueueAsync(ObjectMapper.Map<OcrLogEventDto, VRFJobArgs>(job));
+}

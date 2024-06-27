@@ -12,6 +12,11 @@ service AetherLinkServer {
   rpc CommitReportAsync(CommitReportRequest) returns (VoidReply);
   rpc CommitSignatureAsync(CommitSignatureRequest) returns (VoidReply);
   rpc CommitTransmitResultAsync(CommitTransmitResultRequest) returns (VoidReply);
+  
+  // Automation
+  rpc QueryReportSignatureAsync(QueryReportSignatureRequest) returns (VoidReply);
+  rpc CommitPartialSignatureAsync(CommitPartialSignatureRequest) returns (VoidReply);
+  rpc BroadcastTransmitResultAsync(BroadcastTransmitResult) returns (VoidReply); 
 }
 
 message QueryObservationRequest {
@@ -55,6 +60,29 @@ message CommitTransmitResultRequest {
   int32 round_id = 3;
   int64 epoch = 4;
   string transmit_transaction_id = 5;
+}
+
+message QueryReportSignatureRequest {
+  OCRContext context = 1;
+  bytes check_data = 2;
+}
+
+message CommitPartialSignatureRequest {
+  OCRContext context = 1;
+  bytes signature = 2;
+  int32 index = 3;
+}
+
+message BroadcastTransmitResult {
+  OCRContext context = 1;
+  string transaction_id = 2;
+}
+
+message OCRContext {
+  string request_id = 1;
+  string chain_id = 2;
+  int32 round_id = 3;
+  int64 epoch = 4;
 }
 
 // **** No reply *****

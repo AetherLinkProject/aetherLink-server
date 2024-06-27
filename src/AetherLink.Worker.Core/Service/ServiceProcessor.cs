@@ -19,20 +19,23 @@ public interface IServiceProcessor
     Task ProcessReportAsync(CommitReportRequest request, ServerCallContext context);
     Task ProcessProcessedReportAsync(CommitSignatureRequest request, ServerCallContext context);
     Task ProcessTransmittedResultAsync(CommitTransmitResultRequest request, ServerCallContext context);
+    Task ProcessReportSignatureAsync(QueryReportSignatureRequest request, ServerCallContext context);
+    Task ProcessPartialSignatureAsync(CommitPartialSignatureRequest request, ServerCallContext context);
+    Task ProcessTransmitResultAsync(BroadcastTransmitResult request, ServerCallContext context);
 }
 
 public class ServiceProcessor : IServiceProcessor, ISingletonDependency
 {
     private readonly ProcessJobOptions _option;
     private readonly IObjectMapper _objectMapper;
-    private readonly IBackgroundJobManager _backgroundJobManager;
+    private readonly IBackgroundJobManager _jobManager;
 
-    public ServiceProcessor(IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper,
+    public ServiceProcessor(IBackgroundJobManager jobManager, IObjectMapper objectMapper,
         IOptionsSnapshot<ProcessJobOptions> option)
     {
         _option = option.Value;
+        _jobManager = jobManager;
         _objectMapper = objectMapper;
-        _backgroundJobManager = backgroundJobManager;
     }
 
     public async Task ProcessQueryAsync(QueryObservationRequest request, ServerCallContext context)
@@ -89,9 +92,30 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
         await EnqueueAsync(_objectMapper.Map<CommitTransmitResultRequest, TransmitResultProcessJobArgs>(request));
     }
 
+    public async Task ProcessReportSignatureAsync(QueryReportSignatureRequest request, ServerCallContext context)
+    {
+        if (!ValidateRequest(context)) return;
+
+        await EnqueueAsync(request);
+    }
+
+    public async Task ProcessPartialSignatureAsync(CommitPartialSignatureRequest request, ServerCallContext context)
+    {
+        if (!ValidateRequest(context)) return;
+
+        await EnqueueAsync(request);
+    }
+
+    public async Task ProcessTransmitResultAsync(BroadcastTransmitResult request, ServerCallContext context)
+    {
+        if (!ValidateRequest(context)) return;
+
+        await EnqueueAsync(request);
+    }
+
     // todo: add metadata validate
     private bool ValidateRequest(ServerCallContext context) => true;
 
-    private async Task EnqueueAsync<T>(T arg) where T : JobPipelineArgsBase
-        => await _backgroundJobManager.EnqueueAsync(arg, delay: TimeSpan.FromSeconds(_option.DefaultEnqueueDelay));
+    private async Task EnqueueAsync(object arg) =>
+        await _jobManager.EnqueueAsync(arg, delay: TimeSpan.FromSeconds(_option.DefaultEnqueueDelay));
 }

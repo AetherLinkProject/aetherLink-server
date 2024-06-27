@@ -97,7 +97,7 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
         }
 
         var transmitData = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, requestId,
-            transactionId, epoch, new LongList { Data = { observations } }.ToByteString());
+            epoch, new LongList { Data = { observations } }.ToByteString());
 
         var msg = HashHelper.ConcatAndCompute(HashHelper.ComputeFrom(transmitData.Report.ToByteArray()),
             HashHelper.ComputeFrom(transmitData.ReportContext.ToString())).ToByteArray();
