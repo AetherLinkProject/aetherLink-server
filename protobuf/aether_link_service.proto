@@ -27,7 +27,7 @@ message CommitObservationRequest {
   string chain_id = 2;
   int32 round_id = 3;
   int64 epoch = 4;
-  int64 data = 5;
+  string data = 5;
   int32 index = 6;
 }
 
@@ -36,8 +36,7 @@ message CommitReportRequest {
   string chain_id = 2;
   int32 round_id = 3;
   int64 epoch = 4;
-  repeated int64 observation_results = 5;
-  google.protobuf.Timestamp start_time = 6;
+  string observation_results = 5;
 }
 
 message CommitSignatureRequest {

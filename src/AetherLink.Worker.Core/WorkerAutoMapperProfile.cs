@@ -18,6 +18,7 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
         CreateMap<GenerateMultiSignatureJobArgs, TransmitResultProcessJobArgs>();
 
         CreateMap<CollectObservationJobArgs, DataMessageDto>();
+        CreateMap<CollectObservationJobArgs, PlainDataFeedsDto>();
         CreateMap<CollectObservationJobArgs, GenerateReportJobArgs>();
         CreateMap<CollectObservationJobArgs, CommitObservationRequest>();
 

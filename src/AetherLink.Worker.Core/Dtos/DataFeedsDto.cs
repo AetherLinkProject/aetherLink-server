@@ -12,4 +12,5 @@ public class DataFeedsJobSpec
 {
     public DataFeedsType Type { get; set; }
     public string CurrencyPair { get; set; }
+    public string Url { get; set; }
 }
