@@ -1,3 +1,4 @@
+using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AutoMapper;
@@ -40,6 +41,12 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
             .ForMember(t => t.StartTime, m => m.MapFrom(f => f.TransactionBlockTime));
         CreateMap<JobDto, TransmitResultProcessJobArgs>();
         CreateMap<JobDto, GeneratePartialSignatureJobArgs>();
+
+        // Automation
+        CreateMap<OcrLogEventDto, AutomationJobArgs>();
+        CreateMap<AutomationJobArgs, AutomationStartJobArgs>();
+        CreateMap<AutomationStartJobArgs, JobDto>();
+        CreateMap<QueryReportSignatureRequest, ReportSignatureRequestArgs>();
 
         // grpc request
         CreateMap<CommitTransmitResultRequest, TransmitResultProcessJobArgs>()

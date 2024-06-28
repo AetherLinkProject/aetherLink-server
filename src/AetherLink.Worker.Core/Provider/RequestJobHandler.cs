@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
@@ -65,5 +66,5 @@ public class AutomationRequestJobHandler : RequestJobHandler, ISingletonDependen
     }
 
     public override async Task EnqueueAsync(OcrLogEventDto job)
-        => await BackgroundJobManager.EnqueueAsync(ObjectMapper.Map<OcrLogEventDto, VRFJobArgs>(job));
+        => await BackgroundJobManager.EnqueueAsync(ObjectMapper.Map<OcrLogEventDto, AutomationJobArgs>(job));
 }

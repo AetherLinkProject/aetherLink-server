@@ -37,7 +37,7 @@ public class AutomationJobInit : AsyncBackgroundJob<AutomationJobArgs>, ITransie
 
         try
         {
-            _logger.LogInformation($"[DataFeeds] Get a new Datafeed job {argId} at blockHeight:{args.BlockHeight}.");
+            _logger.LogInformation($"[Automation] Get a new upkeep {argId} at blockHeight:{args.BlockHeight}.");
 
             var triggerDataStr = RegisterUpkeepInput.Parser.ParseFrom(
                     (await _oracleContractProvider.GetRequestCommitmentAsync(chainId, requestId)).SpecificData)

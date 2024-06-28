@@ -1,9 +1,9 @@
 using System;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Automation;
+using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
-using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Logging;
@@ -12,7 +12,7 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Automation;
 
-public class AutomationTransmit : AsyncBackgroundJob<CommitPartialSignatureRequest>, ITransientDependency
+public class AutomationTransmit : AsyncBackgroundJob<PartialSignatureRequestArgs>, ITransientDependency
 {
     private readonly IPeerManager _peerManager;
     private readonly IJobProvider _jobProvider;
@@ -37,7 +37,7 @@ public class AutomationTransmit : AsyncBackgroundJob<CommitPartialSignatureReque
         _oracleContractProvider = oracleContractProvider;
     }
 
-    public override async Task ExecuteAsync(CommitPartialSignatureRequest req)
+    public override async Task ExecuteAsync(PartialSignatureRequestArgs req)
     {
         var reqId = req.Context.RequestId;
         var chainId = req.Context.ChainId;
@@ -52,7 +52,7 @@ public class AutomationTransmit : AsyncBackgroundJob<CommitPartialSignatureReque
             var multiSignId = IdGeneratorHelper.GenerateMultiSignatureId(chainId, reqId, epoch, roundId);
             if (_stateProvider.IsFinished(multiSignId)) return;
 
-            if (!_signatureProvider.ProcessMultiSignAsync(req.Context, req.Index, req.Signature.ToByteArray()))
+            if (!_signatureProvider.ProcessMultiSignAsync(req.Context, req.Index, req.Signature))
             {
                 _logger.LogError($"[Automation] {reqId}-{epoch} process {req.Index} failed.");
                 return;
@@ -84,13 +84,10 @@ public class AutomationTransmit : AsyncBackgroundJob<CommitPartialSignatureReque
             var transactionId = await _contractProvider.SendTransmitAsync(chainId, transmitData);
             _logger.LogInformation($"[Automation] {reqId}-{epoch} Transmit transaction {transactionId}");
 
-            await _backgroundJobManager.EnqueueAsync(new TransmitResultProcessJobArgs
+            await _backgroundJobManager.EnqueueAsync(new BroadcastTransmitResultArgs
             {
-                ChainId = chainId,
-                RequestId = reqId,
-                Epoch = epoch,
-                TransactionId = transactionId,
-                RoundId = roundId,
+                Context = req.Context,
+                TransactionId = transactionId
             });
 
             await _peerManager.BroadcastAsync(p => p.BroadcastTransmitResultAsync(new()

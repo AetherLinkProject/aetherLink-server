@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Common.ContractHandler;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
@@ -11,7 +12,7 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Automation;
 
-public class AutomationTransmitted : AsyncBackgroundJob<BroadcastTransmitResult>, ITransientDependency
+public class AutomationTransmitted : AsyncBackgroundJob<BroadcastTransmitResultArgs>, ITransientDependency
 {
     private readonly IJobProvider _jobProvider;
     private readonly IRetryProvider _retryProvider;
@@ -29,7 +30,7 @@ public class AutomationTransmitted : AsyncBackgroundJob<BroadcastTransmitResult>
         _schedulerService = schedulerService;
     }
 
-    public override async Task ExecuteAsync(BroadcastTransmitResult result)
+    public override async Task ExecuteAsync(BroadcastTransmitResultArgs result)
     {
         var chainId = result.Context.ChainId;
         var reqId = result.Context.RequestId;

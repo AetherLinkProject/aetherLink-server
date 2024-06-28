@@ -21,7 +21,7 @@ public interface IRetryProvider
     public Task RetryWithIdAsync<T>(T args, string id, bool untilFailed = false, bool backOff = false,
         long delayDelta = 0);
 
-    Task RetryAsync(OCRContext context, object args, bool untilFailed = false, bool backOff = false, long delay = 0);
+    Task RetryAsync<T>(OCRContext context, T args, bool untilFailed = false, bool backOff = false, long delay = 0);
 }
 
 public class RetryProvider : IRetryProvider, ISingletonDependency
@@ -65,7 +65,7 @@ public class RetryProvider : IRetryProvider, ISingletonDependency
             id, delay, hangfireId, _retryCount[id]);
     }
 
-    public async Task RetryAsync(OCRContext context, object obj, bool untilFailed = false, bool backOff = false,
+    public async Task RetryAsync<T>(OCRContext context, T obj, bool untilFailed = false, bool backOff = false,
         long delay = 0) => await RetryWithIdAsync(obj, GenerateRetryId(context), untilFailed, backOff, delay);
 
     private string GenerateRetryId<T>(T args) where T : JobPipelineArgsBase

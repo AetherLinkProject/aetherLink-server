@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Common;
-using AetherLink.Worker.Core.JobPipeline.Args;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
@@ -32,14 +31,14 @@ public class AutomationTimerProvider : ISingletonDependency
         var reqId = args.RequestId;
         var chainId = args.ChainId;
         var argId = IdGeneratorHelper.GenerateId(chainId, reqId);
-        _logger.LogInformation("[DataFeedsTimer] {name} Execute checking.", argId);
+        _logger.LogInformation("[AutomationTimer] {name} Execute checking.", argId);
 
         var request = await _jobProvider.GetAsync(args);
         if (request == null)
         {
             // only new request will update epochDict from args Epoch, others will updated epoch by request epoch from transmitted logevent
             _epochDict[argId] = args.Epoch;
-            await _jobManager.EnqueueAsync(_objectMapper.Map<AutomationJobArgs, RequestStartProcessJobArgs>(args));
+            await _jobManager.EnqueueAsync(_objectMapper.Map<AutomationJobArgs, AutomationStartJobArgs>(args));
             return;
         }
 
@@ -56,7 +55,7 @@ public class AutomationTimerProvider : ISingletonDependency
         _logger.LogInformation("[AutomationTimer] {reqId} Local epoch will updated, {oldEpoch} => {newEpoch}", reqId,
             epoch, request.Epoch);
 
-        var requestStartArgs = _objectMapper.Map<AutomationJobArgs, RequestStartProcessJobArgs>(args);
+        var requestStartArgs = _objectMapper.Map<AutomationJobArgs, AutomationStartJobArgs>(args);
         requestStartArgs.Epoch = request.Epoch;
         await _jobManager.EnqueueAsync(requestStartArgs);
 

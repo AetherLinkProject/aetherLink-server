@@ -8,12 +8,14 @@ using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Automation;
 
 public interface ISignatureProvider
 {
+    public Hash GenerateMsg(TransmitInput input);
     public void LeaderInitMultiSign(OCRContext context, byte[] report);
     public bool ProcessMultiSignAsync(OCRContext context, int index, byte[] signature);
     public Task<PartialSignatureDto> GeneratePartialSignAsync(OCRContext context, ByteString result);
@@ -27,12 +29,13 @@ public class SignatureProvider : ISignatureProvider, ISingletonDependency
     private readonly ILogger<SignatureProvider> _logger;
     private readonly IOracleContractProvider _oracleProvider;
 
-    public SignatureProvider(IStateProvider stateProvider, OracleInfoOptions options, ILogger<SignatureProvider> logger,
+    public SignatureProvider(IStateProvider stateProvider, IOptionsSnapshot<OracleInfoOptions> options,
+        ILogger<SignatureProvider> logger,
         IOracleContractProvider oracleProvider)
     {
         _logger = logger;
+        _options = options.Value;
         _oracleProvider = oracleProvider;
-        _options = options;
         _stateProvider = stateProvider;
     }
 
@@ -53,6 +56,8 @@ public class SignatureProvider : ISignatureProvider, ISingletonDependency
             var newMultiSignature = InitMultiSignature(context.ChainId, report);
             newMultiSignature.GeneratePartialSignature();
             _stateProvider.SetMultiSignature(id, newMultiSignature);
+
+            _logger.LogDebug("{id}'s signature init successful", id);
         }
     }
 
@@ -77,15 +82,16 @@ public class SignatureProvider : ISignatureProvider, ISingletonDependency
         => InitMultiSignature(context.ChainId, GenerateMsg(await _oracleProvider.GenerateTransmitDataAsync(
             context.ChainId, context.RequestId, context.Epoch, result)).ToByteArray()).GeneratePartialSignature();
 
-    private Hash GenerateMsg(TransmitInput input) => HashHelper.ConcatAndCompute(
+    public Hash GenerateMsg(TransmitInput input) => HashHelper.ConcatAndCompute(
         HashHelper.ComputeFrom(input.Report.ToByteArray()), HashHelper.ComputeFrom(input.ReportContext.ToString()));
 
     private MultiSignature InitMultiSignature(string chainId, byte[] msg)
     {
-        if (!_options.ChainConfig.TryGetValue(chainId, out var config))
+        if (_options.ChainConfig.TryGetValue(chainId, out var config))
             return new(ByteArrayHelper.HexStringToByteArray(config.SignerSecret), msg,
                 config.DistPublicKey, config.PartialSignaturesThreshold);
-        _logger.LogWarning("Not support chain {c}.", chainId);
+
+        _logger.LogError("Not support chain {c}.", chainId);
         return null;
     }
 }
