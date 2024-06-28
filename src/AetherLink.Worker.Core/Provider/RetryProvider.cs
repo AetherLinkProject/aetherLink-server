@@ -15,12 +15,10 @@ namespace AetherLink.Worker.Core.Provider;
 
 public interface IRetryProvider
 {
-    public Task RetryAsync<T>(T args, bool untilFailed = false, bool backOff = false, long delayDelta = 0)
+    Task RetryAsync<T>(T args, bool untilFailed = false, bool backOff = false, long delayDelta = 0)
         where T : JobPipelineArgsBase;
 
-    public Task RetryWithIdAsync<T>(T args, string id, bool untilFailed = false, bool backOff = false,
-        long delayDelta = 0);
-
+    Task RetryWithIdAsync<T>(T args, string id, bool untilFailed = false, bool backOff = false, long delayDelta = 0);
     Task RetryAsync<T>(OCRContext context, T args, bool untilFailed = false, bool backOff = false, long delay = 0);
 }
 
