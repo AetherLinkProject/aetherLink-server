@@ -1,7 +1,7 @@
 namespace AetherLink.MockServer.GraphQL.Dtos;
 
-public class ConfigDigestDto
+public class OracleLatestEpochDto
 {
     public string ChainId { get; set; }
-    public string ConfigDigest { get; set; }
+    public long EpochAndRound { get; set; }
 }

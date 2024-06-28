@@ -10,7 +10,7 @@ public static class RequestTypeConst
 public enum DataFeedsType
 {
     PriceFeeds,
-    NftFeeds
+    PlainDataFeeds
 }
 
 public enum SchedulerType

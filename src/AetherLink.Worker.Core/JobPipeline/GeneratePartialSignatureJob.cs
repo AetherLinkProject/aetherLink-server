@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using AElf;
 using AetherLink.Contracts.Consumer;
@@ -9,11 +10,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using AetherLink.Multisignature;
 using AetherLink.Worker.Core.Common;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
+using Newtonsoft.Json;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -52,35 +55,54 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
         var reqId = args.RequestId;
         var epoch = args.Epoch;
         var roundId = args.RoundId;
-        var observations = args.Observations;
         var argId = IdGeneratorHelper.GenerateId(chainId, reqId, epoch, roundId);
         _logger.LogInformation("[step4] {name} Start to validate report", argId);
 
+        var observation = ByteString.FromBase64(args.Observations);
         try
         {
             // Check Request State
             var job = await _jobProvider.GetAsync(args);
             if (job == null || job.State is RequestState.RequestCanceled) return;
+            var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
 
-            _logger.LogDebug("[step4] {name} Leader report: {result}", argId, observations.JoinAsString(","));
-            if (observations.Count < _peerManager.GetPeersCount())
+            if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
             {
-                _logger.LogWarning("[step4] {name} observations {count} count not enough", argId,
-                    observations.Count);
-                return;
+                var pendingConfirmData = Encoding.UTF8.GetString(observation.ToByteArray());
+                var plainData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
+                if (pendingConfirmData != plainData.NewData)
+                {
+                    _logger.LogError("[step4] Local data {ld} is inconsistent with the leader's data {pd}.",
+                        plainData.NewData, pendingConfirmData);
+                    return;
+                }
+
+                plainData.OldData = plainData.NewData;
+                await _dataMessageProvider.SetAsync(plainData);
+            }
+            else
+            {
+                var observations = LongList.Parser.ParseFrom(observation).Data;
+                _logger.LogDebug("[step4] {name} Leader report: {result}", argId, observations.JoinAsString(","));
+                if (observations.Count < _peerManager.GetPeersCount())
+                {
+                    _logger.LogWarning("[step4] {name} observations {count} count not enough", argId,
+                        observations.Count);
+                    return;
+                }
+
+                // Check Data In Report
+                var dataMessage = await _dataMessageProvider.GetAsync(args);
+                if ((dataMessage != null && observations[_peerManager.GetOwnIndex()] != dataMessage.Data) ||
+                    (dataMessage == null && observations[_peerManager.GetOwnIndex()] != 0))
+                {
+                    _logger.LogWarning("[step4] {name} Check data fail", argId);
+                    return;
+                }
             }
 
-            // Check Data In Report
-            var dataMessage = await _dataMessageProvider.GetAsync(args);
-            if ((dataMessage != null && observations[_peerManager.GetOwnIndex()] != dataMessage.Data) ||
-                (dataMessage == null && observations[_peerManager.GetOwnIndex()] != 0))
-            {
-                _logger.LogWarning("[step4] {name} Check data fail", argId);
-                return;
-            }
-
-            await ProcessReportValidateResultAsync(args,
-                await GeneratedPartialSignatureAsync(chainId, job.TransactionId, reqId, observations, epoch));
+            await ProcessReportValidateResultAsync(args, await GeneratedPartialSignatureAsync(chainId,
+                job.TransactionId, reqId, ByteString.FromBase64(args.Observations), epoch));
         }
         catch (Exception e)
         {
@@ -89,7 +111,7 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
     }
 
     private async Task<PartialSignatureDto> GeneratedPartialSignatureAsync(string chainId, string transactionId,
-        string requestId, IEnumerable<long> observations, long epoch)
+        string requestId, ByteString observations, long epoch)
     {
         if (!_infoOptions.ChainConfig.TryGetValue(chainId, out var chainConfig))
         {
@@ -97,7 +119,7 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
         }
 
         var transmitData = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, requestId,
-            epoch, new LongList { Data = { observations } }.ToByteString());
+            transactionId, epoch, observations);
 
         var msg = HashHelper.ConcatAndCompute(HashHelper.ComputeFrom(transmitData.Report.ToByteArray()),
             HashHelper.ComputeFrom(transmitData.ReportContext.ToString())).ToByteArray();
