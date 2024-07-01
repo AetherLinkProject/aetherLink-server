@@ -75,8 +75,7 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
             var vrfKp = CryptoHelper.FromPrivateKey(ByteArrayHelper.HexStringToByteArray(vrfInfo.VRFSecret));
 
             // check vrf request transaction exist.
-            var commitment =
-                await _oracleContractProvider.GetRequestCommitmentAsync(args.ChainId, args.TransactionId, reqId);
+            var commitment = await _oracleContractProvider.GetRequestCommitmentByTxAsync(chainId, args.TransactionId);
             var specificData = SpecificData.Parser.ParseFrom(commitment.SpecificData);
 
             // validate keyHash
@@ -88,7 +87,7 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
 
             // generate vrf prove in report
             var transmitInput = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, reqId,
-                args.TransactionId, await _oracleContractProvider.GetOracleLatestEpochAndRoundAsync(chainId),
+                await _oracleContractProvider.GetOracleLatestEpochAndRoundAsync(chainId),
                 ByteString.CopyFrom(await GenerateVrf(chainId, vrfKp, specificData)));
             transmitInput.Signatures.AddRange(new List<ByteString>
                 { GenerateSignature(vrfKp.PrivateKey, transmitInput) });

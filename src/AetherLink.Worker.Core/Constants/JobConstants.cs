@@ -4,6 +4,7 @@ public static class RequestTypeConst
 {
     public const int Datafeeds = 1;
     public const int Vrf = 2;
+    public const int Automation = 3;
 }
 
 public enum DataFeedsType

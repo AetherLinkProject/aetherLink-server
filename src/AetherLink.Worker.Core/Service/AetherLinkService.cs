@@ -42,4 +42,24 @@ public class AetherLinkService : AetherLinkServer.AetherLinkServerBase
         _requestProcessor.ProcessTransmittedResultAsync(request, context);
         return Task.FromResult(new VoidReply());
     }
+
+    public override Task<VoidReply> QueryReportSignatureAsync(QueryReportSignatureRequest request,
+        ServerCallContext context)
+    {
+        _requestProcessor.ProcessReportSignatureAsync(request, context);
+        return Task.FromResult(new VoidReply());
+    }
+
+    public override Task<VoidReply> CommitPartialSignatureAsync(CommitPartialSignatureRequest request,
+        ServerCallContext context)
+    {
+        _requestProcessor.ProcessPartialSignatureAsync(request, context);
+        return Task.FromResult(new VoidReply());
+    }
+
+    public override Task<VoidReply> BroadcastTransmitResultAsync(BroadcastTransmitResult request, ServerCallContext context)
+    {
+        _requestProcessor.ProcessTransmitResultAsync(request, context);
+        return Task.FromResult(new VoidReply());
+    }
 }

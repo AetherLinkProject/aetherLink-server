@@ -140,6 +140,7 @@ namespace AetherLink.Worker
         {
             context.Services.AddSingleton<IRequestJob, VrfRequestJobHandler>();
             context.Services.AddSingleton<IRequestJob, DataFeedRequestJobHandler>();
+            context.Services.AddSingleton<IRequestJob, AutomationRequestJobHandler>();
         }
     }
 }

@@ -11,6 +11,7 @@ public interface IJobProvider
 {
     public Task SetAsync(JobDto job);
     Task<JobDto> GetAsync<T>(T arg) where T : JobPipelineArgsBase;
+    Task<JobDto> GetAsync(OCRContext context);
 }
 
 public class JobProvider : IJobProvider, ITransientDependency
@@ -36,4 +37,7 @@ public class JobProvider : IJobProvider, ITransientDependency
     public async Task<JobDto> GetAsync<T>(T arg) where T : JobPipelineArgsBase
         => await _storageProvider.GetAsync<JobDto>(
             IdGeneratorHelper.GenerateJobRequestRedisId(arg.ChainId, arg.RequestId));
+
+    public async Task<JobDto> GetAsync(OCRContext context) => await _storageProvider.GetAsync<JobDto>(
+        IdGeneratorHelper.GenerateJobRequestRedisId(context.ChainId, context.RequestId));
 }
