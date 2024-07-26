@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
@@ -7,31 +9,40 @@ using Volo.Abp.DependencyInjection;
 using FluentScheduler;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NUglify.Helpers;
 
 namespace AetherLink.Worker.Core.Scheduler;
 
 public interface ISchedulerService
 {
     public void StartScheduler(JobDto job, SchedulerType type);
+    public void StartScheduler(LogTriggerDto upkeep);
     public void CancelScheduler(JobDto job, SchedulerType type);
+    public void CancelLogUpkeep(LogTriggerDto upkeep);
     public void CancelAllSchedule(JobDto job);
+    public void CancelLogUpkeepAllSchedule(LogUpkeepInfoDto upkeep);
     public DateTime UpdateBlockTime(DateTime blockStartTime);
 }
 
 public class SchedulerService : ISchedulerService, ISingletonDependency
 {
     private readonly SchedulerOptions _options;
+    private readonly object _upkeepSchedulesLock = new();
     private readonly ILogger<SchedulerService> _logger;
     private readonly IResetRequestSchedulerJob _resetRequestScheduler;
     private readonly IObservationCollectSchedulerJob _observationScheduler;
+    private readonly IResetLogTriggerSchedulerJob _resetLogTriggerScheduler;
+    private readonly ConcurrentDictionary<string, HashSet<string>> _upkeepSchedules = new();
 
     public SchedulerService(IResetRequestSchedulerJob resetRequestScheduler, ILogger<SchedulerService> logger,
-        IOptionsSnapshot<SchedulerOptions> schedulerOptions, IObservationCollectSchedulerJob observationScheduler)
+        IOptionsSnapshot<SchedulerOptions> schedulerOptions, IObservationCollectSchedulerJob observationScheduler,
+        IResetLogTriggerSchedulerJob resetLogTriggerScheduler)
     {
         _logger = logger;
         _options = schedulerOptions.Value;
         _observationScheduler = observationScheduler;
         _resetRequestScheduler = resetRequestScheduler;
+        _resetLogTriggerScheduler = resetLogTriggerScheduler;
         ListenForStart();
         ListenForEnd();
     }
@@ -66,14 +77,77 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         JobManager.Initialize(registry);
     }
 
+    public void StartScheduler(LogTriggerDto upkeep)
+    {
+        JobManager.UseUtcTime();
+        var registry = new Registry();
+        AddOrUpdateUpkeepSchedulers(upkeep);
+
+        var schedulerName = GenerateScheduleName(upkeep);
+        CancelSchedulerByName(schedulerName);
+
+        var overTime = upkeep.ReceiveTime.AddMinutes(_options.CheckRequestEndTimeoutWindow);
+        registry.Schedule(() => _resetLogTriggerScheduler.Execute(upkeep)).WithName(schedulerName)
+            .NonReentrant().ToRunOnceAt(overTime);
+
+        if (DateTime.UtcNow > overTime) return;
+        _logger.LogDebug("[SchedulerService] Registry scheduler {name} OverTime:{overTime}", schedulerName, overTime);
+        JobManager.Initialize(registry);
+    }
+
+    private void AddOrUpdateUpkeepSchedulers(LogTriggerDto upkeep)
+    {
+        lock (_upkeepSchedulesLock)
+        {
+            var id = IdGeneratorHelper.GenerateId(upkeep.Context.ChainId, upkeep.Context.RequestId);
+            var schedulerId = GenerateScheduleName(upkeep);
+            if (!_upkeepSchedules.TryGetValue(id, out var scheduleSet))
+            {
+                _upkeepSchedules[id] = new() { schedulerId };
+                return;
+            }
+
+            scheduleSet.Add(schedulerId);
+            _upkeepSchedules[id] = scheduleSet;
+        }
+    }
+
     public void CancelScheduler(JobDto job, SchedulerType type)
         => CancelSchedulerByName(GenerateScheduleName(job.ChainId, job.RequestId, type));
+
+    public void CancelLogUpkeep(LogTriggerDto upkeep)
+    {
+        lock (_upkeepSchedulesLock)
+        {
+            var id = IdGeneratorHelper.GenerateId(upkeep.Context.ChainId, upkeep.Context.RequestId);
+            var schedulerId = GenerateScheduleName(upkeep);
+            if (_upkeepSchedules.TryGetValue(id, out var scheduleSet))
+            {
+                scheduleSet.Remove(schedulerId);
+                _upkeepSchedules[id] = scheduleSet;
+            }
+
+            CancelSchedulerByName(GenerateScheduleName(upkeep));
+        }
+    }
 
     public void CancelAllSchedule(JobDto job)
     {
         foreach (SchedulerType schedulerType in Enum.GetValues(typeof(SchedulerType)))
         {
             CancelSchedulerByName(GenerateScheduleName(job.ChainId, job.RequestId, schedulerType));
+        }
+    }
+
+    public void CancelLogUpkeepAllSchedule(LogUpkeepInfoDto upkeep)
+    {
+        lock (_upkeepSchedulesLock)
+        {
+            var id = IdGeneratorHelper.GenerateId(upkeep.ChainId, upkeep.UpkeepId);
+            if (!_upkeepSchedules.TryGetValue(id, out var scheduleSet)) return;
+
+            scheduleSet.ForEach(CancelSchedulerByName);
+            _upkeepSchedules[id] = new();
         }
     }
 
@@ -131,7 +205,9 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
     }
 
     private static string GenerateScheduleName(string chainId, string requestId, SchedulerType scheduleType)
-    {
-        return IdGeneratorHelper.GenerateId(chainId, requestId, scheduleType);
-    }
+        => IdGeneratorHelper.GenerateId(chainId, requestId, scheduleType);
+
+    private static string GenerateScheduleName(LogTriggerDto trigger)
+        => IdGeneratorHelper.GenerateId(trigger.Context.ChainId, trigger.Context.RequestId,
+            trigger.TransactionEventStorageId, trigger.LogUpkeepStorageId);
 }

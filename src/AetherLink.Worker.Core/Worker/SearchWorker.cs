@@ -97,8 +97,8 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         var maxHeight = startHeight;
         var batchSize = _options.UnconfirmedLogBatchSize.Add(_heightCompensationMap[chainId]);
 
-        _logger.LogDebug("[UnconfirmedSearch] {chain} start:{s}, target:{t}.", chainId, startHeight,
-            startHeight + batchSize);
+        // _logger.LogDebug("[UnconfirmedSearch] {chain} start:{s}, target:{t}.", chainId, startHeight,
+        //     startHeight + batchSize);
 
         var startTime = DateTime.Now;
         var jobsCount = 0;
@@ -110,16 +110,16 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
             await _provider.HandleJobAsync(job);
         }
 
-        _logger.LogDebug("[UnconfirmedSearch] {chain} found {count} vrf jobs took {time} ms.", chainId, jobsCount,
-            DateTime.Now.Subtract(startTime).TotalMilliseconds);
+        // _logger.LogDebug("[UnconfirmedSearch] {chain} found {count} vrf jobs took {time} ms.", chainId, jobsCount,
+        //     DateTime.Now.Subtract(startTime).TotalMilliseconds);
         _reporter.RecordUnconfirmedBlockHeight(chainId, startHeight, startHeight.Add(batchSize));
 
         // If there are no new events in this interval, the starting position will not be updated, but the search length will be updated.
         _unconfirmedHeightMap[chainId] = maxHeight == startHeight ? maxHeight - 1 : maxHeight;
         _heightCompensationMap[chainId] = maxHeight == startHeight ? batchSize : 0;
 
-        _logger.LogDebug("[UnconfirmedSearch] {chain} height Compensation: {compensation}.", chainId,
-            _heightCompensationMap[chainId]);
+        // _logger.LogDebug("[UnconfirmedSearch] {chain} height Compensation: {compensation}.", chainId,
+        //     _heightCompensationMap[chainId]);
 
         await _provider.SetLatestUnconfirmedHeightAsync(chainId, _unconfirmedHeightMap[chainId]);
     }

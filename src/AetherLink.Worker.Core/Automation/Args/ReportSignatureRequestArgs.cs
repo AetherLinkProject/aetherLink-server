@@ -4,5 +4,5 @@ namespace AetherLink.Worker.Core.Automation.Args;
 
 public class ReportSignatureRequestArgs : OCRBasicDto
 {
-    public byte[] CheckData { get; set; }
+    public byte[] Payload { get; set; }
 }

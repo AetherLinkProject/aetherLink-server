@@ -46,8 +46,9 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
         // Automation
         CreateMap<OcrLogEventDto, AutomationJobArgs>();
         CreateMap<AutomationJobArgs, AutomationStartJobArgs>();
-        CreateMap<AutomationStartJobArgs, JobDto>();
         CreateMap<QueryReportSignatureRequest, ReportSignatureRequestArgs>();
+        CreateMap<AutomationStartJobArgs, JobDto>();
+        CreateMap<AutomationJobArgs, JobDto>();
 
         // grpc request
         CreateMap<CommitTransmitResultRequest, TransmitResultProcessJobArgs>()

@@ -3,7 +3,6 @@ using AElf;
 using AElf.Types;
 using AetherLink.Contracts.Oracle;
 using AetherLink.Multisignature;
-using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using Google.Protobuf;
@@ -11,13 +10,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
-namespace AetherLink.Worker.Core.Automation;
+namespace AetherLink.Worker.Core.Automation.Providers;
 
 public interface ISignatureProvider
 {
     public Hash GenerateMsg(TransmitInput input);
-    public void LeaderInitMultiSign(OCRContext context, byte[] report);
-    public bool ProcessMultiSignAsync(OCRContext context, int index, byte[] signature);
+    public void LeaderInitMultiSign(string chainId, string id, byte[] report);
+    public bool ProcessMultiSignAsync(string id, int index, byte[] signature);
     public Task<PartialSignatureDto> GeneratePartialSignAsync(OCRContext context, ByteString result);
 }
 
@@ -30,30 +29,26 @@ public class SignatureProvider : ISignatureProvider, ISingletonDependency
     private readonly IOracleContractProvider _oracleProvider;
 
     public SignatureProvider(IStateProvider stateProvider, IOptionsSnapshot<OracleInfoOptions> options,
-        ILogger<SignatureProvider> logger,
-        IOracleContractProvider oracleProvider)
+        ILogger<SignatureProvider> logger, IOracleContractProvider oracleProvider)
     {
         _logger = logger;
         _options = options.Value;
-        _oracleProvider = oracleProvider;
         _stateProvider = stateProvider;
+        _oracleProvider = oracleProvider;
     }
 
-    public void LeaderInitMultiSign(OCRContext context, byte[] report)
+    public void LeaderInitMultiSign(string chainId, string id, byte[] report)
     {
         lock (_lock)
         {
-            var id = IdGeneratorHelper.GenerateMultiSignatureId(context.ChainId, context.RequestId, context.Epoch,
-                context.RoundId);
             var sign = _stateProvider.GetMultiSignature(id);
-
             if (sign != null)
             {
                 _logger.LogWarning("{id}'s signature is initialed", id);
                 return;
             }
 
-            var newMultiSignature = InitMultiSignature(context.ChainId, report);
+            var newMultiSignature = InitMultiSignature(chainId, report);
             newMultiSignature.GeneratePartialSignature();
             _stateProvider.SetMultiSignature(id, newMultiSignature);
 
@@ -61,12 +56,10 @@ public class SignatureProvider : ISignatureProvider, ISingletonDependency
         }
     }
 
-    public bool ProcessMultiSignAsync(OCRContext context, int index, byte[] signature)
+    public bool ProcessMultiSignAsync(string id, int index, byte[] signature)
     {
         lock (_lock)
         {
-            var id = IdGeneratorHelper.GenerateMultiSignatureId(context.ChainId, context.RequestId, context.Epoch,
-                context.RoundId);
             var sign = _stateProvider.GetMultiSignature(id);
 
             if (sign == null) return false;

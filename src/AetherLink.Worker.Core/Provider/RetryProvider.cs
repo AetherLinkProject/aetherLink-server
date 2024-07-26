@@ -48,7 +48,6 @@ public class RetryProvider : IRetryProvider, ISingletonDependency
         where T : JobPipelineArgsBase =>
         await RetryWithIdAsync(args, GenerateRetryId(args), untilFailed, backOff, delayDelta);
 
-
     public async Task RetryWithIdAsync<T>(T args, string id, bool untilFailed = false, bool backOff = false,
         long delayDelta = 0)
     {

@@ -63,13 +63,14 @@ message CommitTransmitResultRequest {
 
 message QueryReportSignatureRequest {
   OCRContext context = 1;
-  bytes check_data = 2;
+  bytes payload = 2;
 }
 
 message CommitPartialSignatureRequest {
   OCRContext context = 1;
   bytes signature = 2;
   int32 index = 3;
+  bytes payload = 4;
 }
 
 message BroadcastTransmitResult {

@@ -5,8 +5,10 @@ using AElf.Types;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Oracle;
 using AetherLink.Worker.Core.Common;
+using AetherLink.Worker.Core.Dtos;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Oracle;
 using Volo.Abp.DependencyInjection;
 
@@ -18,6 +20,8 @@ public interface IOracleContractProvider
     public Task<Commitment> GetRequestCommitmentAsync(string chainId, string requestId);
     public Task<Commitment> GetRequestCommitmentByTxAsync(string chainId, string transactionId);
     public Task<long> GetStartEpochAsync(string chainId, long blockHeight);
+    // public Task<TransmitInputDto> GetTransmitInputByTransactionIdAsync(string chainId, string transactionId);
+    public Task<Report> GetTransmitReportByTransactionIdAsync(string chainId, string transactionId);
 
     public Task<TransmitInput> GenerateTransmitDataAsync(string chainId, string requestId, long epoch,
         ByteString result);
@@ -58,11 +62,9 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         if (_commitmentsCache.TryGetValue(commitmentId, out var commitmentCache)) return commitmentCache;
 
         var commitmentStr = await _indexerProvider.GetRequestCommitmentAsync(chainId, requestId);
-        if (string.IsNullOrEmpty(commitmentStr)) return _commitmentsCache[commitmentId];
-
         _logger.LogDebug("[OracleContract] Get indexer Commitment:{commitment}", commitmentStr);
-        _commitmentsCache[commitmentId] = Commitment.Parser.ParseFrom(ByteString.FromBase64(commitmentStr));
 
+        _commitmentsCache[commitmentId] = Commitment.Parser.ParseFrom(ByteString.FromBase64(commitmentStr));
         return _commitmentsCache[commitmentId];
     }
 
@@ -81,16 +83,10 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         {
             var epoch = await _indexerProvider.GetOracleLatestEpochAsync(chainId, blockHeight);
 
-            if (epoch > 0)
-            {
-                _logger.LogDebug(
-                    "[OracleContract] Get indexer request start epoch:{epoch} before blockHeight:{height}",
-                    epoch, blockHeight);
-                return epoch;
-            }
-
-            var latestR = await _contractProvider.GetLatestRoundAsync(chainId);
-            return latestR.Value;
+            if (epoch <= 0) return (await _contractProvider.GetLatestRoundAsync(chainId)).Value;
+            _logger.LogDebug("[OracleContract] Get indexer request start epoch:{epoch} before :{height}", epoch,
+                blockHeight);
+            return epoch;
         }
         catch (OperationCanceledException)
         {
@@ -107,13 +103,12 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
     public async Task<TransmitInput> GenerateTransmitDataAsync(string chainId, string requestId, long epoch,
         ByteString result)
     {
-        var commitment = await GetRequestCommitmentAsync(chainId, requestId);
         var transmitData = new TransmitInput
         {
             Report = new Report
             {
                 Result = result,
-                OnChainMetadata = commitment.ToByteString(),
+                OnChainMetadata = (await GetRequestCommitmentAsync(chainId, requestId)).ToByteString(),
                 Error = ByteString.Empty,
                 OffChainMetadata = ByteString.Empty
             }.ToByteString()
@@ -123,6 +118,17 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         transmitData.ReportContext.Add(HashHelper.ComputeFrom(epoch));
         transmitData.ReportContext.Add(HashHelper.ComputeFrom(0));
         return transmitData;
+    }
+
+    public async Task<TransmitInputDto> GetTransmitInputByTransactionIdAsync(string chainId, string transactionId)
+        => JsonConvert.DeserializeObject<TransmitInputDto>(
+            (await _contractProvider.GetTxResultAsync(chainId, transactionId)).Transaction.Params);
+
+    public async Task<Report> GetTransmitReportByTransactionIdAsync(string chainId, string transactionId)
+    {
+        var txResult = await _contractProvider.GetTxResultAsync(chainId, transactionId);
+        var input = JsonConvert.DeserializeObject<TransmitInputDto>(txResult.Transaction.Params);
+        return Report.Parser.ParseFrom(ByteString.FromBase64(input.Report));
     }
 
     private async Task<Hash> GetOracleConfigAsync(string chainId)

@@ -2,17 +2,19 @@ using System;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Automation;
 using AetherLink.Worker.Core.Automation.Args;
+using AetherLink.Worker.Core.Automation.Providers;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Automation;
 
-public class AutomationTransmit : AsyncBackgroundJob<PartialSignatureRequestArgs>, ITransientDependency
+public class AutomationTransmit : AsyncBackgroundJob<PartialSignatureResponseArgs>, ITransientDependency
 {
     private readonly IPeerManager _peerManager;
     private readonly IJobProvider _jobProvider;
@@ -24,12 +26,12 @@ public class AutomationTransmit : AsyncBackgroundJob<PartialSignatureRequestArgs
     private readonly IOracleContractProvider _oracleContractProvider;
 
     public AutomationTransmit(ILogger<AutomationTransmit> logger, IStateProvider stateProvider,
-        IContractProvider contractProvider, IOracleContractProvider oracleContractProvider, IJobProvider jobProvider,
-        IPeerManager peerManager, IBackgroundJobManager backgroundJobManager, ISignatureProvider signatureProvider)
+        IContractProvider contractProvider, IOracleContractProvider oracleContractProvider, IPeerManager peerManager,
+        IBackgroundJobManager backgroundJobManager, ISignatureProvider signatureProvider, IJobProvider jobProvider)
     {
         _logger = logger;
-        _jobProvider = jobProvider;
         _peerManager = peerManager;
+        _jobProvider = jobProvider;
         _stateProvider = stateProvider;
         _contractProvider = contractProvider;
         _signatureProvider = signatureProvider;
@@ -37,68 +39,84 @@ public class AutomationTransmit : AsyncBackgroundJob<PartialSignatureRequestArgs
         _oracleContractProvider = oracleContractProvider;
     }
 
-    public override async Task ExecuteAsync(PartialSignatureRequestArgs req)
+    public override async Task ExecuteAsync(PartialSignatureResponseArgs args)
     {
-        var reqId = req.Context.RequestId;
-        var chainId = req.Context.ChainId;
-        var roundId = req.Context.RoundId;
-        var epoch = req.Context.Epoch;
+        var chainId = args.Context.ChainId;
+        var upkeepId = args.Context.RequestId;
+        var epoch = args.Context.Epoch;
 
+        _logger.LogDebug($"[Automation] Get {upkeepId} partial signature response.");
         try
         {
-            var job = await _jobProvider.GetAsync(req.Context);
-            if (job == null || job.State == RequestState.RequestCanceled) return;
+            // var job = await _jobProvider.GetAsync(args.Context);
+            // if (job == null || job.State == RequestState.RequestCanceled) return;
 
-            var multiSignId = IdGeneratorHelper.GenerateMultiSignatureId(chainId, reqId, epoch, roundId);
-            if (_stateProvider.IsFinished(multiSignId)) return;
-
-            if (!_signatureProvider.ProcessMultiSignAsync(req.Context, req.Index, req.Signature))
+            var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, upkeepId);
+            var multiSignId = AutomationHelper.GetTriggerType(commitment) switch
             {
-                _logger.LogError($"[Automation] {reqId}-{epoch} process {req.Index} failed.");
+                TriggerType.Cron => AutomationHelper.GenerateCronUpkeepId(args.Context),
+                TriggerType.Log => AutomationHelper.GenerateLogTriggerId(
+                    AutomationHelper.GenerateTransactionEventKeyByPayload(args.Payload),
+                    IdGeneratorHelper.GenerateUpkeepInfoId(chainId, upkeepId)),
+                _ => throw new ArgumentOutOfRangeException()
+            };
+
+            _logger.LogDebug($"[Automation] Received {multiSignId} upkeep trigger response.");
+
+            if (_stateProvider.IsFinished(multiSignId)) return;
+            if (!_signatureProvider.ProcessMultiSignAsync(multiSignId, args.Index, args.Signature))
+            {
+                _logger.LogError($"[Automation] {multiSignId} process {args.Index} failed.");
                 return;
             }
 
             if (!_stateProvider.GetMultiSignature(multiSignId).IsEnoughPartialSig())
             {
-                _logger.LogDebug($"[Automation] {reqId}-{epoch} is not enough, no need to generate signature.");
+                _logger.LogDebug($"[Automation] {multiSignId} is not enough, no need to generate signature.");
                 return;
             }
 
             if (_stateProvider.IsFinished(multiSignId))
             {
-                _logger.LogDebug($"[Automation] {reqId}-{epoch} signature is finished.");
+                _logger.LogDebug($"[Automation] {multiSignId} signature is finished.");
                 return;
             }
 
             _stateProvider.SetFinishedFlag(multiSignId);
-            _logger.LogInformation($"[Automation] {reqId}-{epoch} MultiSignature pre generate success.");
+            _logger.LogInformation($"[Automation] {multiSignId} MultiSignature pre generate success.");
 
-            var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, reqId);
-            var originInput = RegisterUpkeepInput.Parser.ParseFrom(commitment.SpecificData);
-            var transmitData =
-                await _oracleContractProvider.GenerateTransmitDataAsync(chainId, reqId, epoch, originInput.PerformData);
+            // todo: generate signature by payload
+            var report = AutomationHelper.GetTriggerType(commitment) switch
+            {
+                TriggerType.Cron => AutomationHelper.GetUpkeepPerformData(commitment),
+                TriggerType.Log => LogTriggerCheckData.Parser.ParseFrom(args.Payload).ToByteString(),
+                _ => throw new ArgumentOutOfRangeException()
+            };
+
+            var transmitData = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, upkeepId, epoch,
+                report);
             var multiSignature = _stateProvider.GetMultiSignature(multiSignId);
             multiSignature.TryGetSignatures(out var signature);
             transmitData.Signatures.AddRange(signature);
 
             var transactionId = await _contractProvider.SendTransmitAsync(chainId, transmitData);
-            _logger.LogInformation($"[Automation] {reqId}-{epoch} Transmit transaction {transactionId}");
+            _logger.LogInformation($"[Automation] {multiSignId} Transmit transaction {transactionId}");
 
             await _backgroundJobManager.EnqueueAsync(new BroadcastTransmitResultArgs
             {
-                Context = req.Context,
+                Context = args.Context,
                 TransactionId = transactionId
             });
 
             await _peerManager.BroadcastAsync(p => p.BroadcastTransmitResultAsync(new()
             {
-                Context = req.Context,
+                Context = args.Context,
                 TransactionId = transactionId
             }));
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"[Automation] {reqId}-{epoch} send transaction Failed.");
+            _logger.LogError(e, $"[Automation] {upkeepId}-{epoch} send transaction Failed.");
         }
     }
 }

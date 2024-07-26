@@ -22,8 +22,8 @@ public static class IdGeneratorHelper
     public static string GenerateMultiSignatureId(GenerateMultiSignatureJobArgs args)
         => GenerateId(MemoryConstants.MultiSignaturePrefix, args.ChainId, args.RequestId, args.Epoch, args.RoundId);
 
-    public static string GenerateMultiSignatureId(string chainId, string requestId, long epoch, int roundId)
-        => GenerateId(MemoryConstants.MultiSignaturePrefix, chainId, requestId, epoch, roundId);
+    // public static string GenerateMultiSignatureId(string chainId, string requestId, long epoch, int roundId)
+    //     => GenerateId(MemoryConstants.MultiSignaturePrefix, chainId, requestId, epoch, roundId);
 
     public static string GenerateJobRequestRedisId(string chainId, string requestId)
         => GenerateId(RedisKeyConstants.JobKey, chainId, requestId);
@@ -33,6 +33,9 @@ public static class IdGeneratorHelper
 
     public static string GenerateReportRedisId(string chainId, string requestId, long epoch)
         => GenerateId(RedisKeyConstants.ReportKey, chainId, requestId, epoch);
+
+    public static string GenerateUpkeepInfoId(string chainId, string upkeepId)
+        => GenerateId(RedisKeyConstants.UpkeepInfoKey, chainId, upkeepId);
 
     public static string GenerateId(params object[] ids) => ids.JoinAsString("-");
 }

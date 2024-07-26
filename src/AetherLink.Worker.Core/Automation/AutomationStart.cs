@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Automation;
 using AetherLink.Worker.Core.Automation.Args;
+using AetherLink.Worker.Core.Automation.Providers;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
@@ -40,56 +41,55 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
 
     public override async Task ExecuteAsync(AutomationStartJobArgs args)
     {
-        var argId = IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch, args.RoundId);
+        var chainId = args.ChainId;
+        var upkeepId = args.RequestId;
+        var epoch = args.Epoch;
+        var roundId = args.RoundId;
         var blockTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
+        var context = new OCRContext
+        {
+            RequestId = upkeepId,
+            ChainId = chainId,
+            RoundId = roundId,
+            Epoch = epoch
+        };
+        var id = AutomationHelper.GenerateCronUpkeepId(context);
 
         try
         {
             var job = await _jobProvider.GetAsync(args);
             if (job == null) job = _mapper.Map<AutomationStartJobArgs, JobDto>(args);
-            else if (job.State == RequestState.RequestCanceled || args.Epoch < job.Epoch) return;
+            else if (job.State == RequestState.RequestCanceled || epoch < job.Epoch) return;
             else if (job.RoundId == 0 && job.State == RequestState.RequestEnd)
                 blockTime = DateTimeOffset.FromUnixTimeMilliseconds(job.TransactionBlockTime).DateTime;
 
             job.RequestReceiveTime = _schedulerService.UpdateBlockTime(blockTime);
-            job.RoundId = args.RoundId;
+            job.RoundId = roundId;
             job.State = RequestState.RequestStart;
             await _jobProvider.SetAsync(job);
 
-            _logger.LogDebug("[Automation] {name} start startTime {time}, blockTime {blockTime}", argId, args.StartTime,
-                job.TransactionBlockTime);
+            _logger.LogDebug($"[Automation] {id} startTime {args.StartTime}, blockTime {job.TransactionBlockTime}");
 
-            var commitment = await _contractProvider.GetRequestCommitmentAsync(args.ChainId, args.RequestId);
-            var originInput = RegisterUpkeepInput.Parser.ParseFrom(commitment.SpecificData);
+            var commitment = await _contractProvider.GetRequestCommitmentAsync(chainId, upkeepId);
+            var payload = AutomationHelper.GetUpkeepPerformData(commitment);
 
-            if (_peerManager.IsLeader(args.Epoch, args.RoundId))
+            if (_peerManager.IsLeader(epoch, roundId))
             {
-                _logger.LogInformation("[Automation][Leader] {name} Is Leader.", argId);
-                var request = new QueryReportSignatureRequest
-                {
-                    Context = new()
-                    {
-                        RequestId = args.RequestId,
-                        ChainId = args.ChainId,
-                        RoundId = args.RoundId,
-                        Epoch = args.Epoch
-                    },
-                    CheckData = originInput.PerformData
-                };
-
-                _signatureProvider.LeaderInitMultiSign(request.Context, _signatureProvider
-                    .GenerateMsg(await _contractProvider.GenerateTransmitDataAsync(args.ChainId, args.RequestId,
-                        args.Epoch, originInput.PerformData)).ToByteArray());
+                _logger.LogInformation($"[Automation][Leader] {id} Is Leader.");
+                var request = new QueryReportSignatureRequest { Context = context, Payload = payload };
+                _signatureProvider.LeaderInitMultiSign(chainId, id, _signatureProvider.GenerateMsg(
+                        await _contractProvider.GenerateTransmitDataAsync(chainId, upkeepId, epoch, payload))
+                    .ToByteArray());
                 await _peerManager.BroadcastAsync(p => p.QueryReportSignatureAsync(request));
             }
 
             _schedulerService.StartScheduler(job, SchedulerType.CheckRequestEndScheduler);
 
-            _logger.LogInformation("[Automation] {name} Waiting for request end.", argId);
+            _logger.LogInformation($"[Automation] {id} Waiting for request end.");
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "[Automation] {name} Start process failed.", argId);
+            _logger.LogError(e, $"[Automation] {id} Start process failed.");
         }
     }
 }

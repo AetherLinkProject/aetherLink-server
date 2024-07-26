@@ -52,6 +52,24 @@ namespace AetherLink.Contracts.Automation {
     }
   }
 
+  public partial class SubscriptionIdSet : aelf::IEvent<SubscriptionIdSet>
+  {
+    public global::System.Collections.Generic.IEnumerable<SubscriptionIdSet> GetIndexed()
+    {
+      return new List<SubscriptionIdSet>
+      {
+      };
+    }
+
+    public SubscriptionIdSet GetNonIndexed()
+    {
+      return new SubscriptionIdSet
+      {
+        SubscriptionId = SubscriptionId,
+      };
+    }
+  }
+
   public partial class UpkeepRemoved : aelf::IEvent<UpkeepRemoved>
   {
     public global::System.Collections.Generic.IEnumerable<UpkeepRemoved> GetIndexed()
@@ -100,6 +118,7 @@ namespace AetherLink.Contracts.Automation {
     static readonly aelf::Marshaller<global::AetherLink.Contracts.Automation.RegisterUpkeepInput> __Marshaller_automation_RegisterUpkeepInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Automation.RegisterUpkeepInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Google.Protobuf.WellKnownTypes.Empty> __Marshaller_google_protobuf_Empty = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Google.Protobuf.WellKnownTypes.Empty.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AElf.Types.Hash> __Marshaller_aelf_Hash = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AElf.Types.Hash.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::AetherLink.Contracts.Automation.UpkeepInfo> __Marshaller_automation_UpkeepInfo = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Automation.UpkeepInfo.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AetherLink.Contracts.Automation.InitializeInput> __Marshaller_automation_InitializeInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Automation.InitializeInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AElf.Types.Address> __Marshaller_aelf_Address = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AElf.Types.Address.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Google.Protobuf.WellKnownTypes.Int32Value> __Marshaller_google_protobuf_Int32Value = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Google.Protobuf.WellKnownTypes.Int32Value.Parser.ParseFrom);
@@ -121,6 +140,13 @@ namespace AetherLink.Contracts.Automation {
         "DeregisterUpkeep",
         __Marshaller_aelf_Hash,
         __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::AElf.Types.Hash, global::AetherLink.Contracts.Automation.UpkeepInfo> __Method_GetUpkeepInfo = new aelf::Method<global::AElf.Types.Hash, global::AetherLink.Contracts.Automation.UpkeepInfo>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetUpkeepInfo",
+        __Marshaller_aelf_Hash,
+        __Marshaller_automation_UpkeepInfo);
 
     static readonly aelf::Method<global::AetherLink.Contracts.Automation.InitializeInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_Initialize = new aelf::Method<global::AetherLink.Contracts.Automation.InitializeInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
@@ -154,6 +180,13 @@ namespace AetherLink.Contracts.Automation {
         aelf::MethodType.Action,
         __ServiceName,
         "SetRequestTypeIndex",
+        __Marshaller_google_protobuf_Int32Value,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Int32Value, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetSubscriptionId = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Int32Value, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "SetSubscriptionId",
         __Marshaller_google_protobuf_Int32Value,
         __Marshaller_google_protobuf_Empty);
 
@@ -240,6 +273,11 @@ namespace AetherLink.Contracts.Automation {
     //     throw new global::System.NotImplementedException();
     //   }
     //
+    //   public virtual global::AetherLink.Contracts.Automation.UpkeepInfo GetUpkeepInfo(global::AElf.Types.Hash input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
     //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Initialize(global::AetherLink.Contracts.Automation.InitializeInput input)
     //   {
     //     throw new global::System.NotImplementedException();
@@ -261,6 +299,11 @@ namespace AetherLink.Contracts.Automation {
     //   }
     //
     //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetRequestTypeIndex(global::Google.Protobuf.WellKnownTypes.Int32Value input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetSubscriptionId(global::Google.Protobuf.WellKnownTypes.Int32Value input)
     //   {
     //     throw new global::System.NotImplementedException();
     //   }
@@ -308,11 +351,13 @@ namespace AetherLink.Contracts.Automation {
     //       .AddDescriptors(Descriptors)
     //       .AddMethod(__Method_RegisterUpkeep, serviceImpl.RegisterUpkeep)
     //       .AddMethod(__Method_DeregisterUpkeep, serviceImpl.DeregisterUpkeep)
+    //       .AddMethod(__Method_GetUpkeepInfo, serviceImpl.GetUpkeepInfo)
     //       .AddMethod(__Method_Initialize, serviceImpl.Initialize)
     //       .AddMethod(__Method_Pause, serviceImpl.Pause)
     //       .AddMethod(__Method_Unpause, serviceImpl.Unpause)
     //       .AddMethod(__Method_SetOracleContractAddress, serviceImpl.SetOracleContractAddress)
     //       .AddMethod(__Method_SetRequestTypeIndex, serviceImpl.SetRequestTypeIndex)
+    //       .AddMethod(__Method_SetSubscriptionId, serviceImpl.SetSubscriptionId)
     //       .AddMethod(__Method_Report, serviceImpl.Report)
     //       .AddMethod(__Method_DeleteCommitment, serviceImpl.DeleteCommitment)
     //       .AddMethod(__Method_GetAdmin, serviceImpl.GetAdmin)

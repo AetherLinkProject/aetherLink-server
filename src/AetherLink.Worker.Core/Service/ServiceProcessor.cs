@@ -104,7 +104,7 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
         await _jobManager.EnqueueAsync(new ReportSignatureRequestArgs
         {
             Context = request.Context,
-            CheckData = request.CheckData.ToByteArray()
+            Payload = request.Payload.ToByteArray()
         });
     }
 
@@ -112,11 +112,12 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
     {
         if (!ValidateRequest(context)) return;
 
-        await _jobManager.EnqueueAsync(new PartialSignatureRequestArgs
+        await _jobManager.EnqueueAsync(new PartialSignatureResponseArgs
         {
             Context = request.Context,
             Signature = request.Signature.ToByteArray(),
-            Index = request.Index
+            Index = request.Index,
+            Payload = request.Payload.ToByteArray()
         });
     }
 

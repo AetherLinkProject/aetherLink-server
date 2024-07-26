@@ -2,12 +2,13 @@ using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Common;
+using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
-namespace AetherLink.Worker.Core.Provider;
+namespace AetherLink.Worker.Core.Automation.Providers;
 
 public class AutomationTimerProvider : ISingletonDependency
 {

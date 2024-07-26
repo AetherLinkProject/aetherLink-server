@@ -1,7 +1,10 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Automation;
 using AetherLink.Worker.Core.Automation.Args;
+using AetherLink.Worker.Core.Automation.Providers;
+using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline;
 using AetherLink.Worker.Core.PeerManager;
@@ -18,67 +21,89 @@ public class AutomationPartSign : AsyncBackgroundJob<ReportSignatureRequestArgs>
     private readonly IJobProvider _jobProvider;
     private readonly IPeerManager _peerManager;
     private readonly IRetryProvider _retryProvider;
+    private readonly IStorageProvider _storageProvider;
+    private readonly IContractProvider _contractProvider;
     private readonly ISignatureProvider _signatureProvider;
     private readonly ILogger<GeneratePartialSignatureJob> _logger;
     private readonly IOracleContractProvider _oracleContractProvider;
 
     public AutomationPartSign(IPeerManager peerManager, ILogger<GeneratePartialSignatureJob> logger,
         IJobProvider jobProvider, IOracleContractProvider oracleContractProvider, ISignatureProvider signatureProvider,
-        IRetryProvider retryProvider)
+        IRetryProvider retryProvider, IContractProvider contractProvider, IStorageProvider storageProvider)
     {
         _logger = logger;
         _jobProvider = jobProvider;
         _peerManager = peerManager;
         _retryProvider = retryProvider;
+        _storageProvider = storageProvider;
+        _contractProvider = contractProvider;
         _signatureProvider = signatureProvider;
         _oracleContractProvider = oracleContractProvider;
     }
 
-    public override async Task ExecuteAsync(ReportSignatureRequestArgs req)
+    public override async Task ExecuteAsync(ReportSignatureRequestArgs args)
     {
-        var chainId = req.Context.ChainId;
-        var reqId = req.Context.RequestId;
-        var epoch = req.Context.Epoch;
-        var roundId = req.Context.RoundId;
+        var chainId = args.Context.ChainId;
+        var upkeepId = args.Context.RequestId;
+        var epoch = args.Context.Epoch;
 
-        _logger.LogDebug($"[Automation] Get leader {reqId} partial signature request.");
+        _logger.LogDebug($"[Automation] Get leader {upkeepId} partial signature request.");
         try
         {
-            var job = await _jobProvider.GetAsync(req.Context);
-            if (!await IsJobNeedExecuteAsync(req, job)) return;
-
-            var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, reqId);
-            var originInput = RegisterUpkeepInput.Parser.ParseFrom(commitment.SpecificData);
-
-            if (ByteString.CopyFrom(req.CheckData) != originInput.PerformData)
+            var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, upkeepId);
+            switch (AutomationHelper.GetTriggerType(commitment))
             {
-                _logger.LogError("[Automation] Is different with leader check data.");
-                return;
+                case TriggerType.Cron:
+                    if (!await IsJobNeedExecuteAsync(args)) return;
+                    if (ByteString.CopyFrom(args.Payload) != AutomationHelper.GetUpkeepPerformData(commitment))
+                    {
+                        _logger.LogError("[Automation] Is different with leader check data.");
+                        return;
+                    }
+
+                    break;
+                case TriggerType.Log:
+                    var logUpkeepInfoId = IdGeneratorHelper.GenerateUpkeepInfoId(chainId, upkeepId);
+                    var logUpkeepInfo = await _storageProvider.GetAsync<LogUpkeepInfoDto>(logUpkeepInfoId);
+                    if (logUpkeepInfo == null) return;
+                    if (!await ValidateLeaderUpkeepTriggerAsync(args)) return;
+
+                    break;
+                default:
+                    throw new NotImplementedException();
             }
 
-            var partialSig = await _signatureProvider.GeneratePartialSignAsync(req.Context, originInput.PerformData);
-            await _peerManager.CommitToLeaderAsync(p => p.CommitPartialSignatureAsync(new CommitPartialSignatureRequest
-            {
-                Context = req.Context,
-                Signature = ByteString.CopyFrom(partialSig.Signature),
-                Index = partialSig.Index
-            }), epoch, roundId);
+            await CommitToLeaderAsync(args.Context, args.Payload);
 
-            _logger.LogInformation("[Automation] {reqId}-{epoch} Send signature to leader, Waiting for transmitted.",
-                reqId, epoch);
+            _logger.LogInformation(
+                $"[Automation] Send {upkeepId}-{epoch} signature to leader, Waiting for transmitted.");
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "[Automation]{req} Sign report failed", reqId);
+            _logger.LogError(e, $"[Automation] {upkeepId}-{epoch} Sign report failed");
         }
     }
 
-    private async Task<bool> IsJobNeedExecuteAsync(ReportSignatureRequestArgs args, JobDto job)
+    private async Task CommitToLeaderAsync(OCRContext context, byte[] payload)
+    {
+        var partialSig = await _signatureProvider.GeneratePartialSignAsync(context,
+            LogTriggerCheckData.Parser.ParseFrom(payload).ToByteString());
+
+        await _peerManager.CommitToLeaderAsync(p => p.CommitPartialSignatureAsync(new CommitPartialSignatureRequest
+        {
+            Context = context,
+            Signature = ByteString.CopyFrom(partialSig.Signature),
+            Index = partialSig.Index,
+            Payload = ByteString.CopyFrom(payload)
+        }), context);
+    }
+
+    private async Task<bool> IsJobNeedExecuteAsync(ReportSignatureRequestArgs args)
     {
         var argRequestId = args.Context.RequestId;
         var argRoundId = args.Context.RoundId;
         var argEpoch = args.Context.Epoch;
-
+        var job = await _jobProvider.GetAsync(args.Context);
         if (job == null)
         {
             _logger.LogInformation("[Automation] {reqId}-{epoch} is not exist yet.", argRequestId, argEpoch);
@@ -110,5 +135,50 @@ public class AutomationPartSign : AsyncBackgroundJob<ReportSignatureRequestArgs>
         }
 
         return true;
+    }
+
+    private async Task<bool> ValidateLeaderUpkeepTriggerAsync(ReportSignatureRequestArgs args)
+    {
+        var logUpkeepInfoId = IdGeneratorHelper.GenerateUpkeepInfoId(args.Context.ChainId, args.Context.RequestId);
+        var logUpkeepInfo = await _storageProvider.GetAsync<LogUpkeepInfoDto>(logUpkeepInfoId);
+        if (logUpkeepInfo == null)
+        {
+            _logger.LogWarning($"[Automation] Received a non-existent {logUpkeepInfoId} upkeep from leader.");
+            return false;
+        }
+
+        // check ocr context 
+        var checkData = LogTriggerCheckData.Parser.ParseFrom(args.Payload);
+        var latestEpoch = await _oracleContractProvider.GetStartEpochAsync(checkData.ChainId, checkData.BlockHeight);
+        if (args.Context.Epoch != latestEpoch)
+        {
+            _logger.LogError("[Automation] OCR context does not match.");
+            return false;
+        }
+
+        // check transaction info
+        var result = await _contractProvider.GetTxResultAsync(checkData.ChainId, checkData.TransactionId);
+        if (result.BlockHash != checkData.BlockHash || result.BlockNumber != checkData.BlockHeight)
+        {
+            _logger.LogError("[Automation] Block information does not match.");
+            return false;
+        }
+
+        // check event info
+        if (!result.Logs.Any() || result.Logs.Length < checkData.Index) return false;
+        var logEvent = result.Logs[checkData.Index];
+        if (logEvent.Address != checkData.ContractAddress || logEvent.Name != checkData.EventName)
+        {
+            _logger.LogError("[Automation] Event information does not match.");
+            return false;
+        }
+
+        if (logUpkeepInfo.TriggerChainId == checkData.ChainId &&
+            logUpkeepInfo.TriggerEventName == checkData.EventName &&
+            logUpkeepInfo.TriggerContractAddress == checkData.ContractAddress) return true;
+
+        _logger.LogError("[Automation] Upkeep information does not match.");
+
+        return false;
     }
 }

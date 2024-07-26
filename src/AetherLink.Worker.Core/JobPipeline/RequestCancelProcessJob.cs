@@ -1,6 +1,9 @@
 using System;
 using System.Threading.Tasks;
+using AetherLink.Contracts.Automation;
+using AetherLink.Worker.Core.Automation.Providers;
 using AetherLink.Worker.Core.Common;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Provider;
@@ -15,47 +18,66 @@ namespace AetherLink.Worker.Core.JobPipeline;
 public class RequestCancelProcessJob : AsyncBackgroundJob<RequestCancelProcessJobArgs>, ITransientDependency
 {
     private readonly IJobProvider _jobProvider;
+    private readonly IFilterStorage _filterStorage;
+    private readonly IStorageProvider _storageProvider;
     private readonly ISchedulerService _schedulerService;
     private readonly ILogger<RequestCancelProcessJob> _logger;
     private readonly IRecurringJobManager _recurringJobManager;
+    private readonly IOracleContractProvider _oracleContractProvider;
 
     public RequestCancelProcessJob(IRecurringJobManager recurringJobManager, ILogger<RequestCancelProcessJob> logger,
-        ISchedulerService schedulerService, IJobProvider jobProvider)
+        ISchedulerService schedulerService, IJobProvider jobProvider, IOracleContractProvider oracleContractProvider,
+        IFilterStorage filterStorage, IStorageProvider storageProvider)
     {
         _logger = logger;
         _jobProvider = jobProvider;
+        _filterStorage = filterStorage;
+        _storageProvider = storageProvider;
         _schedulerService = schedulerService;
         _recurringJobManager = recurringJobManager;
+        _oracleContractProvider = oracleContractProvider;
     }
 
     public override async Task ExecuteAsync(RequestCancelProcessJobArgs args)
     {
-        var reqId = args.RequestId;
         var chainId = args.ChainId;
-        var argId = IdGeneratorHelper.GenerateId(chainId, reqId);
+        var requestId = args.RequestId;
         try
         {
-            _logger.LogInformation("[RequestCancelProcess] {name} Start cancel job timer.", argId);
-            _recurringJobManager.RemoveIfExists(IdGeneratorHelper.GenerateId(chainId, reqId));
+            _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} Start cancel job timer.");
 
-            var job = await _jobProvider.GetAsync(args);
-            if (job == null)
+            var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, requestId);
+            if (commitment.RequestTypeIndex == RequestTypeConst.Automation ||
+                AutomationHelper.GetTriggerType(commitment) == TriggerType.Log)
             {
-                _logger.LogInformation("[RequestCancelProcess] {name} not exist", args);
-                return;
+                var logUpkeepInfoId = IdGeneratorHelper.GenerateUpkeepInfoId(chainId, requestId);
+                var logUpkeepInfo = await _storageProvider.GetAsync<LogUpkeepInfoDto>(logUpkeepInfoId);
+                _schedulerService.CancelLogUpkeepAllSchedule(logUpkeepInfo);
+
+                await _filterStorage.DeleteFilterAsync(logUpkeepInfo);
+                await _storageProvider.RemoveAsync(logUpkeepInfoId);
+            }
+            else
+            {
+                _recurringJobManager.RemoveIfExists(IdGeneratorHelper.GenerateId(chainId, requestId));
+                var job = await _jobProvider.GetAsync(args);
+                if (job == null)
+                {
+                    _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} not exist");
+                    return;
+                }
+
+                job.State = RequestState.RequestCanceled;
+                await _jobProvider.SetAsync(job);
+                _schedulerService.CancelAllSchedule(job);
             }
 
-            job.State = RequestState.RequestCanceled;
-            await _jobProvider.SetAsync(job);
-
-            _schedulerService.CancelAllSchedule(job);
-
             // todo: add state cleanup
-            _logger.LogInformation("[RequestCancelProcess] {name} Cancel job timer finished.", argId);
+            _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} Cancel job timer finished.");
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "[RequestCancelProcess] {name} Cancel job failed.", argId);
+            _logger.LogError(e, $"[RequestCancelProcess] {chainId} {requestId} Cancel job failed.");
         }
     }
 }
