@@ -1,19 +1,15 @@
 using System;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Automation;
-using Aetherlink.PriceServer.Common;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Automation.Providers;
-using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
-using AetherLink.Worker.Core.OCR;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Scheduler;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundJobs;
-using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Automation;
@@ -75,7 +71,7 @@ public class AutomationLogTrigger : AsyncBackgroundJob<AutomationLogTriggerArgs>
                 return;
             }
 
-            await _storageProvider.SetAsync(logTriggerKey, logTriggerInfo);
+            await _storageProvider.SetAsync(logTriggerKey, logTriggerInfo, TimeSpan.FromMinutes(30));
 
             _logger.LogDebug($"[Automation] Log trigger {logTriggerId} startTime {logTriggerInfo.ReceiveTime}");
 
@@ -96,8 +92,7 @@ public class AutomationLogTrigger : AsyncBackgroundJob<AutomationLogTriggerArgs>
                         Index = transactionEvent.Index
                     }.ToByteString()
                 };
-                
-                
+
 
                 _signatureProvider.LeaderInitMultiSign(chainId, logTriggerId, _signatureProvider.GenerateMsg(
                         await _contractProvider.GenerateTransmitDataAsync(chainId, upkeepId, epoch, request.Payload))

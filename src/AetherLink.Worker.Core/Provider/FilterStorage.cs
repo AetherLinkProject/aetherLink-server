@@ -13,7 +13,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NUglify.Helpers;
 using Volo.Abp.BackgroundJobs;
-using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Provider;
@@ -68,7 +67,7 @@ public class FilterStorage : IFilterStorage, ISingletonDependency
         var eventKey =
             AutomationHelper.GenerateTransactionEventKey(chainId, contractAddress, eventName, blockHeight,
                 logEvent.Index);
-        await _storageProvider.SetAsync(eventKey, logEvent, TimeSpan.FromMinutes(30));
+        await _storageProvider.SetAsync(eventKey, logEvent, TimeSpan.FromDays(1));
 
         var epoch = await _oracleContractProvider.GetStartEpochAsync(logEvent.ChainId, logEvent.BlockHeight);
         var logUpkeepInfos = await _storageProvider.GetAsync<LogUpkeepInfoDto>(filters);

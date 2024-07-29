@@ -5,7 +5,6 @@ using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Provider;
-using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Worker.Providers;
@@ -23,13 +22,11 @@ public class LogPollerProvider : ILogPollerProvider, ISingletonDependency
 {
     private readonly IStorageProvider _storageProvider;
     private readonly IIndexerProvider _indexerProvider;
-    private readonly ILogger<LogPollerProvider> _logger;
     private readonly Dictionary<string, IEventFilter> _filter;
 
     public LogPollerProvider(IStorageProvider storageProvider, IIndexerProvider indexerProvider,
-        IEnumerable<IEventFilter> filters, ILogger<LogPollerProvider> logger)
+        IEnumerable<IEventFilter> filters)
     {
-        _logger = logger;
         _storageProvider = storageProvider;
         _indexerProvider = indexerProvider;
         _filter = filters.ToDictionary(x => x.EventName, y => y);

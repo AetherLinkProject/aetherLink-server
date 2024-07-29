@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Automation;
-using AetherLink.Contracts.Oracle;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Automation.Providers;
 using AetherLink.Worker.Core.Common.ContractHandler;
@@ -12,8 +10,6 @@ using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Scheduler;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Oracle;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 

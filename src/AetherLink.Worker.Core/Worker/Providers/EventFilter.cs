@@ -16,17 +16,9 @@ public abstract class EventFilter : IEventFilter
 {
     public abstract string EventName { get; }
 
-    // protected readonly IObjectMapper ObjectMapper;
-    // protected readonly IBackgroundJobManager BackgroundJobManager;
     protected EventFilter()
     {
     }
-
-    // protected EventFilter(IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper)
-    // {
-    //     BackgroundJobManager = backgroundJobManager;
-    //     ObjectMapper = objectMapper;
-    // }
 
     public abstract Task ProcessAsync(TransactionEventDto logEvent);
 }
