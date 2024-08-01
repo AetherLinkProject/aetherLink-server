@@ -8,6 +8,7 @@ using AetherLink.Worker.Core.Dtos;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Provider;
@@ -60,13 +61,12 @@ public class PlainDataFeedsProvider : IPlainDataFeedsProvider, ITransientDepende
         var content = await response.Content.ReadAsStringAsync();
         var authResponse = JsonConvert.DeserializeObject<AuthResponseDto>(content);
         authResponse.Keys = authResponse.Keys.OrderBy(a => a.Kid).ToList();
-        return JsonConvert.SerializeObject(authResponse, Formatting.Indented);
+        return JsonConvert.SerializeObject(authResponse,
+            new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
         // var jsonObject = JsonConvert.DeserializeObject<JObject>(content);
         // var sortedObject = SortJToken(jsonObject);
-        // var sortedJson = JsonConvert.SerializeObject(sortedObject, Formatting.Indented);
-        //
-        // return sortedJson;
+        // return JsonConvert.SerializeObject(sortedObject, Formatting.Indented);
     }
 
     private JObject SortJToken(JObject jObject)
