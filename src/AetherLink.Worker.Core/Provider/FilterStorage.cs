@@ -147,7 +147,7 @@ public class FilterStorage : IFilterStorage, ISingletonDependency
         var chainFilters = new Dictionary<string, List<string>>();
         _eventFilters[chainId].ToList().ForEach(kvp => chainFilters[kvp.Key] = kvp.Value);
 
-        _logger.LogDebug($"[FilterStorage] Start init {chainId} filters");
+        _logger.LogDebug($"[FilterStorage] Update {chainId} filters");
         await _storageProvider.SetAsync<EventFiltersStorageDto>(GenerateFiltersStorageId(chainId),
             new() { Filters = chainFilters });
     }

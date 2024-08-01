@@ -44,7 +44,7 @@ public class RequestCancelProcessJob : AsyncBackgroundJob<RequestCancelProcessJo
         var requestId = args.RequestId;
         try
         {
-            _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} Start cancel job timer.");
+            _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} Start cancel job.");
 
             var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, requestId);
             if (commitment.RequestTypeIndex == RequestTypeConst.Automation ||
@@ -73,7 +73,7 @@ public class RequestCancelProcessJob : AsyncBackgroundJob<RequestCancelProcessJo
             }
 
             // todo: add state cleanup
-            _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} Cancel job timer finished.");
+            _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} Cancel job finished.");
         }
         catch (Exception e)
         {
