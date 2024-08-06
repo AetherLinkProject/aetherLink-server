@@ -44,6 +44,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                         requestTypeIndex,
                         transactionId,
                         blockHeight,
+                        blockHash,
                         startTime,
                         requestId
                 }
