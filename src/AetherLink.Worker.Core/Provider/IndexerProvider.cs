@@ -18,6 +18,7 @@ public interface IIndexerProvider
     public Task<string> GetOracleConfigAsync(string chainId);
     public Task<long> GetOracleLatestEpochAsync(string chainId, long blockHeight);
     public Task<string> GetRequestCommitmentAsync(string chainId, string requestId);
+    public Task<List<TransactionEventDto>> GetTransactionLogEventsAsync(string chainId, long to, long from);
 }
 
 public class IndexerProvider : IIndexerProvider, ISingletonDependency
@@ -74,6 +75,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
                     @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
                     transmitted(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
                         chainId,
+                        transactionId,
                         startTime,
                         epoch,
                         requestId
@@ -143,7 +145,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
         catch (Exception e)
         {
             _logger.LogError(e, "[Indexer] GetIndexBlockHeight failed.");
-            return 0;
+            throw;
         }
     }
 
@@ -227,6 +229,40 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
         {
             _logger.LogError(e, "[Indexer] GetRequestCommitment failed.");
             return "";
+        }
+    }
+
+    public async Task<List<TransactionEventDto>> GetTransactionLogEventsAsync(string chainId, long to, long from)
+    {
+        try
+        {
+            var indexerResult = await _graphQlHelper.QueryAsync<IndexerTransactionEventListDto>(new GraphQLRequest
+            {
+                Query =
+                    @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
+                    transactionEvents(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
+                            chainId,
+                            blockHash,
+                            transactionId,
+                            blockHeight,
+                            methodName,
+                            contractAddress,
+                            eventName,
+                            index,
+                            startTime
+                    }
+                }",
+                Variables = new
+                {
+                    chainId = chainId, fromBlockHeight = from, toBlockHeight = to
+                }
+            });
+            return indexerResult.TransactionEvents;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Indexer] SubscribeLogs failed.");
+            throw;
         }
     }
 }

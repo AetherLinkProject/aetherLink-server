@@ -40,8 +40,7 @@ public class DataFeedsProcessJob : AsyncBackgroundJob<DataFeedsProcessJobArgs>, 
             _logger.LogInformation("[DataFeeds] Get a new Datafeed job {name} at blockHeight:{blockHeight}.",
                 argId, args.BlockHeight);
 
-            var jobSpecStr = await GetSpecAsync(chainId, args.TransactionId, reqId);
-
+            var jobSpecStr = await GetSpecAsync(chainId, args.TransactionId);
             var dataFeedsDto = JsonConvert.DeserializeObject<DataFeedsDto>(jobSpecStr);
             if (dataFeedsDto == null)
             {
@@ -68,8 +67,7 @@ public class DataFeedsProcessJob : AsyncBackgroundJob<DataFeedsProcessJobArgs>, 
         }
     }
 
-    private async Task<string> GetSpecAsync(string chainId, string transactionId, string reqId) =>
-        SpecificData.Parser.ParseFrom(
-                (await _oracleContractProvider.GetRequestCommitmentAsync(chainId, transactionId, reqId)).SpecificData)
-            .Data.ToStringUtf8();
+    private async Task<string> GetSpecAsync(string chainId, string transactionId) => SpecificData.Parser.ParseFrom(
+            (await _oracleContractProvider.GetRequestCommitmentByTxAsync(chainId, transactionId)).SpecificData)
+        .Data.ToStringUtf8();
 }

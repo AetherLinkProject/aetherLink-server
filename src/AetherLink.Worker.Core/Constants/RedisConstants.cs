@@ -9,4 +9,15 @@ public static class RedisKeyConstants
     public const string SearchHeightKey = "SearchHeight";
     public const string PlainDataFeedsKey = "PlainDataFeeds";
     public const string UnconfirmedSearchHeightKey = "UnconfirmedSearchHeight";
+
+    // poller
+    public const string LookBackBlocksKey = "LookBackBlocks";
+
+    // filter
+    public const string EventFiltersKey = "EventFilters";
+    public const string TransactionEventKey = "TransactionEvent";
+
+    // automation
+    public const string UpkeepInfoKey = "UpkeepInfo";
+    public const string UpkeepLogTriggerInfoKey = "UpkeepLogTriggerInfo";
 }

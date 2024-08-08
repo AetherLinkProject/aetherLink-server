@@ -15,8 +15,10 @@ public interface IPeerManager
     public int GetOwnIndex();
     public int GetPeersCount();
     public bool IsLeader(long epoch, int roundId);
+    public bool IsLeader(OCRContext context);
     public Task BroadcastAsync<TResponse>(Func<AetherlinkClient, TResponse> func);
     public Task CommitToLeaderAsync<TResponse>(Func<AetherlinkClient, TResponse> func, long epoch, int roundId);
+    public Task CommitToLeaderAsync<TResponse>(Func<AetherlinkClient, TResponse> func, OCRContext context);
 }
 
 public class PeerManager : IPeerManager, ISingletonDependency
@@ -39,6 +41,7 @@ public class PeerManager : IPeerManager, ISingletonDependency
     public int GetOwnIndex() => _ownerIndex;
     public int GetPeersCount() => _peersCount;
     public bool IsLeader(long epoch, int roundId) => LeaderElection(epoch, roundId) == _ownerIndex;
+    public bool IsLeader(OCRContext context) => LeaderElection(context.Epoch, context.RoundId) == _ownerIndex;
 
     public async Task BroadcastAsync<TResponse>(Func<AetherlinkClient, TResponse> func)
     {
@@ -71,6 +74,20 @@ public class PeerManager : IPeerManager, ISingletonDependency
         int roundId)
     {
         var leader = _option.Domains[LeaderElection(epoch, roundId)];
+        try
+        {
+            _logger.LogDebug("[PeerManager] Send to leader {peer}", leader);
+            await Task.FromResult(_peers[leader].CallAsync(func));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[PeerManager] Send to leader {peer} failed.", leader);
+        }
+    }
+
+    public async Task CommitToLeaderAsync<TResponse>(Func<AetherlinkClient, TResponse> func, OCRContext context)
+    {
+        var leader = _option.Domains[LeaderElection(context.Epoch, context.RoundId)];
         try
         {
             _logger.LogDebug("[PeerManager] Send to leader {peer}", leader);
