@@ -17,6 +17,7 @@ public interface ISchedulerService
 {
     public void StartScheduler(JobDto job, SchedulerType type);
     public void StartScheduler(LogTriggerDto upkeep);
+    public void StartCronUpkeepScheduler(JobDto job);
     public void CancelScheduler(JobDto job, SchedulerType type);
     public void CancelLogUpkeep(LogTriggerDto upkeep);
     public void CancelAllSchedule(JobDto job);
@@ -32,17 +33,19 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
     private readonly IResetRequestSchedulerJob _resetRequestScheduler;
     private readonly IObservationCollectSchedulerJob _observationScheduler;
     private readonly IResetLogTriggerSchedulerJob _resetLogTriggerScheduler;
+    private readonly IResetCronUpkeepSchedulerJob _resetCronUpkeepScheduler;
     private readonly ConcurrentDictionary<string, HashSet<string>> _upkeepSchedules = new();
 
     public SchedulerService(IResetRequestSchedulerJob resetRequestScheduler, ILogger<SchedulerService> logger,
         IOptionsSnapshot<SchedulerOptions> schedulerOptions, IObservationCollectSchedulerJob observationScheduler,
-        IResetLogTriggerSchedulerJob resetLogTriggerScheduler)
+        IResetLogTriggerSchedulerJob resetLogTriggerScheduler, IResetCronUpkeepSchedulerJob resetCronUpkeepScheduler)
     {
         _logger = logger;
         _options = schedulerOptions.Value;
         _observationScheduler = observationScheduler;
         _resetRequestScheduler = resetRequestScheduler;
         _resetLogTriggerScheduler = resetLogTriggerScheduler;
+        _resetCronUpkeepScheduler = resetCronUpkeepScheduler;
         ListenForStart();
         ListenForEnd();
     }
@@ -88,6 +91,22 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
 
         var overTime = upkeep.ReceiveTime.AddMinutes(_options.CheckRequestEndTimeoutWindow);
         registry.Schedule(() => _resetLogTriggerScheduler.Execute(upkeep)).WithName(schedulerName)
+            .NonReentrant().ToRunOnceAt(overTime);
+
+        if (DateTime.UtcNow > overTime) return;
+        _logger.LogDebug("[SchedulerService] Registry scheduler {name} OverTime:{overTime}", schedulerName, overTime);
+        JobManager.Initialize(registry);
+    }
+
+    public void StartCronUpkeepScheduler(JobDto job)
+    {
+        JobManager.UseUtcTime();
+        var registry = new Registry();
+        var schedulerName = GenerateScheduleName(job.ChainId, job.RequestId,
+            UpkeepSchedulerType.CheckCronUpkeepEndScheduler);
+        CancelSchedulerByName(schedulerName);
+        var overTime = job.RequestReceiveTime.AddMinutes(_options.CheckRequestEndTimeoutWindow);
+        registry.Schedule(() => _resetCronUpkeepScheduler.Execute(job)).WithName(schedulerName)
             .NonReentrant().ToRunOnceAt(overTime);
 
         if (DateTime.UtcNow > overTime) return;
@@ -206,6 +225,9 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
 
     private static string GenerateScheduleName(string chainId, string requestId, SchedulerType scheduleType)
         => IdGeneratorHelper.GenerateId(chainId, requestId, scheduleType);
+
+    private static string GenerateScheduleName(string chainId, string requestId, UpkeepSchedulerType type)
+        => IdGeneratorHelper.GenerateId(chainId, requestId, type);
 
     private static string GenerateScheduleName(LogTriggerDto trigger)
         => IdGeneratorHelper.GenerateId(trigger.Context.ChainId, trigger.Context.RequestId,

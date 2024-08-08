@@ -49,6 +49,7 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
         CreateMap<QueryReportSignatureRequest, ReportSignatureRequestArgs>();
         CreateMap<AutomationStartJobArgs, JobDto>();
         CreateMap<AutomationJobArgs, JobDto>();
+        CreateMap<JobDto, AutomationStartJobArgs>();
 
         // grpc request
         CreateMap<CommitTransmitResultRequest, TransmitResultProcessJobArgs>()

@@ -86,15 +86,15 @@ public class AutomationPartSign : AsyncBackgroundJob<ReportSignatureRequestArgs>
 
     private async Task CommitToLeaderAsync(OCRContext context, byte[] payload)
     {
-        var partialSig = await _signatureProvider.GeneratePartialSignAsync(context,
-            LogTriggerCheckData.Parser.ParseFrom(payload).ToByteString());
+        var result = ByteString.CopyFrom(payload);
+        var partialSig = await _signatureProvider.GeneratePartialSignAsync(context, result);
 
         await _peerManager.CommitToLeaderAsync(p => p.CommitPartialSignatureAsync(new CommitPartialSignatureRequest
         {
             Context = context,
             Signature = ByteString.CopyFrom(partialSig.Signature),
             Index = partialSig.Index,
-            Payload = ByteString.CopyFrom(payload)
+            Payload = result
         }), context);
     }
 

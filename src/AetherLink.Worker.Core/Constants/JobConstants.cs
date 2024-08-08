@@ -18,3 +18,8 @@ public enum SchedulerType
     CheckRequestEndScheduler,
     ObservationCollectWaitingScheduler
 }
+
+public enum UpkeepSchedulerType
+{
+    CheckCronUpkeepEndScheduler
+}
