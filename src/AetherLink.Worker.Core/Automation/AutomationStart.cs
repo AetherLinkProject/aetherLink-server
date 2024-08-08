@@ -81,7 +81,7 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
                 await _peerManager.BroadcastAsync(p => p.QueryReportSignatureAsync(request));
             }
 
-            _schedulerService.StartScheduler(job, SchedulerType.CheckRequestEndScheduler);
+            _schedulerService.StartCronUpkeepScheduler(job);
 
             _logger.LogInformation($"[Automation] {id} Waiting for request end.");
         }
