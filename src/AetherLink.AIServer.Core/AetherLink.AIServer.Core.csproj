@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AElf.Client" Version="1.1.0" />
+        <PackageReference Include="AElf.Indexing.Elasticsearch" Version="0.0.16" />
+        <PackageReference Include="AElf.CSharp.Core" Version="1.6.0" />
+        <PackageReference Include="AElf.Sdk.CSharp" Version="1.6.0" />
+        <PackageReference Include="AutoMapper" Version="12.0.0" />
+        <PackageReference Include="GraphQL" Version="7.0.0" />
+        <PackageReference Include="GraphQL.Client.Abstractions" Version="5.1.0" />
+        <PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
+        <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
+        <PackageReference Include="Serilog.Sinks.RollingFile" Version="3.3.0" />
+        <PackageReference Include="Volo.Abp.AspNetCore.Serilog" Version="7.0.0" />
+        <PackageReference Include="Volo.Abp.AutoMapper" Version="7.0.0" />
+        <PackageReference Include="Volo.Abp.BackgroundJobs.Abstractions" Version="7.0.0" />
+        <PackageReference Include="Volo.Abp.Caching" Version="7.0.2" />
+        <PackageReference Include="Volo.Abp.Caching.StackExchangeRedis" Version="7.0.0" />
+        <PackageReference Include="Volo.Abp.BackgroundJobs.HangFire" Version="7.0.0" />
+        <PackageReference Include="Hangfire.Core" Version="1.8.6" />
+        <PackageReference Include="Hangfire.Redis.StackExchange" Version="1.9.3" />
+    </ItemGroup>
+
+</Project>
