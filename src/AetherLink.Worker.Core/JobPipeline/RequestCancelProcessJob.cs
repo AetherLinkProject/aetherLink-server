@@ -47,7 +47,7 @@ public class RequestCancelProcessJob : AsyncBackgroundJob<RequestCancelProcessJo
             _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} Start cancel job.");
 
             var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, requestId);
-            if (commitment.RequestTypeIndex == RequestTypeConst.Automation ||
+            if (commitment.RequestTypeIndex == RequestTypeConst.Automation &&
                 AutomationHelper.GetTriggerType(commitment) == TriggerType.Log)
             {
                 var logUpkeepInfoId = IdGeneratorHelper.GenerateUpkeepInfoId(chainId, requestId);
@@ -56,28 +56,31 @@ public class RequestCancelProcessJob : AsyncBackgroundJob<RequestCancelProcessJo
 
                 await _filterStorage.DeleteFilterAsync(logUpkeepInfo);
                 await _storageProvider.RemoveAsync(logUpkeepInfoId);
+                return;
             }
-            else
+
+            _recurringJobManager.RemoveIfExists(IdGeneratorHelper.GenerateId(chainId, requestId));
+            var job = await _jobProvider.GetAsync(args);
+            if (job == null)
             {
-                _recurringJobManager.RemoveIfExists(IdGeneratorHelper.GenerateId(chainId, requestId));
-                var job = await _jobProvider.GetAsync(args);
-                if (job == null)
-                {
-                    _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} not exist");
-                    return;
-                }
-
-                job.State = RequestState.RequestCanceled;
-                await _jobProvider.SetAsync(job);
-                _schedulerService.CancelAllSchedule(job);
+                _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} not exist");
+                return;
             }
 
-            // todo: add state cleanup
-            _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} Cancel job finished.");
+            if (commitment.RequestTypeIndex == RequestTypeConst.Automation) _schedulerService.CancelCronUpkeep(job);
+
+            job.State = RequestState.RequestCanceled;
+            await _jobProvider.SetAsync(job);
+            _schedulerService.CancelAllSchedule(job);
         }
         catch (Exception e)
         {
             _logger.LogError(e, $"[RequestCancelProcess] {chainId} {requestId} Cancel job failed.");
+        }
+        finally
+        {
+            // todo: add state cleanup
+            _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} Cancel job finished.");
         }
     }
 }

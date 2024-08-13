@@ -46,6 +46,8 @@ public class AutomationJobInit : AsyncBackgroundJob<AutomationJobArgs>, ITransie
             _logger.LogInformation($"[Automation] Get a new upkeep {jobId} at blockHeight:{args.BlockHeight}.");
             var commitment = await _oracleContractProvider.GetRequestCommitmentByTxAsync(chainId, args.TransactionId);
             var triggerDataStr = AutomationHelper.GetTriggerData(commitment);
+            
+            _logger.LogDebug($"Get automation job spec: {triggerDataStr}");
             switch (AutomationHelper.GetTriggerType(commitment))
             {
                 case TriggerType.Cron:
@@ -56,7 +58,6 @@ public class AutomationJobInit : AsyncBackgroundJob<AutomationJobArgs>, ITransie
                     _logger.LogInformation($"[Automation] {jobId} Start a automation log trigger.");
                     var upkeepAddress = AutomationHelper.GetUpkeepAddress(commitment);
                     await AddLogUpkeepAsync(chainId, upkeepId, upkeepAddress, triggerDataStr);
-                    // await _jobProvider.SetAsync(_mapper.Map<AutomationJobArgs, JobDto>(args));
                     break;
                 default:
                     throw new NotImplementedException();

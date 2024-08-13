@@ -20,6 +20,7 @@ public interface ISchedulerService
     public void StartCronUpkeepScheduler(JobDto job);
     public void CancelScheduler(JobDto job, SchedulerType type);
     public void CancelLogUpkeep(LogTriggerDto upkeep);
+    public void CancelCronUpkeep(JobDto job);
     public void CancelAllSchedule(JobDto job);
     public void CancelLogUpkeepAllSchedule(LogUpkeepInfoDto upkeep);
     public DateTime UpdateBlockTime(DateTime blockStartTime);
@@ -149,6 +150,9 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
             CancelSchedulerByName(GenerateScheduleName(upkeep));
         }
     }
+
+    public void CancelCronUpkeep(JobDto job) => CancelSchedulerByName(GenerateScheduleName(job.ChainId, job.RequestId,
+        UpkeepSchedulerType.CheckCronUpkeepEndScheduler));
 
     public void CancelAllSchedule(JobDto job)
     {

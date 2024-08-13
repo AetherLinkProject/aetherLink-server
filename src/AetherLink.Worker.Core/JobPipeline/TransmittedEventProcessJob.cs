@@ -41,16 +41,20 @@ public class TransmittedEventProcessJob : AsyncBackgroundJob<TransmittedEventPro
         try
         {
             var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, requestId);
-            if (commitment.RequestTypeIndex == RequestTypeConst.Automation ||
-                AutomationHelper.GetTriggerType(commitment) == TriggerType.Log)
+            if (commitment.RequestTypeIndex == RequestTypeConst.Automation)
             {
-                var report =
-                    await _oracleContractProvider.GetTransmitReportByTransactionIdAsync(chainId, args.TransactionId);
-                var payload = LogTriggerCheckData.Parser.ParseFrom(report.Result);
-                var triggerKey = AutomationHelper.GetLogTriggerKeyByPayload(chainId, requestId, payload.ToByteArray());
-                var logTriggerInfo = await _storageProvider.GetAsync<LogTriggerDto>(triggerKey);
-                if (logTriggerInfo != null) _schedulerService.CancelLogUpkeep(logTriggerInfo);
-                return;
+                if (AutomationHelper.GetTriggerType(commitment) == TriggerType.Log)
+                {
+                    var report =
+                        await _oracleContractProvider.GetTransmitReportByTransactionIdAsync(chainId,
+                            args.TransactionId);
+                    var payload = LogTriggerCheckData.Parser.ParseFrom(report.Result);
+                    var triggerKey =
+                        AutomationHelper.GetLogTriggerKeyByPayload(chainId, requestId, payload.ToByteArray());
+                    var logTriggerInfo = await _storageProvider.GetAsync<LogTriggerDto>(triggerKey);
+                    if (logTriggerInfo != null) _schedulerService.CancelLogUpkeep(logTriggerInfo);
+                    return;
+                }
             }
 
             var job = await _jobProvider.GetAsync(args);
@@ -60,7 +64,9 @@ public class TransmittedEventProcessJob : AsyncBackgroundJob<TransmittedEventPro
                 return;
             }
 
-            _schedulerService.CancelAllSchedule(job);
+            if (commitment.RequestTypeIndex == RequestTypeConst.Automation) _schedulerService.CancelCronUpkeep(job);
+            else _schedulerService.CancelAllSchedule(job);
+
             _logger.LogInformation("[Transmitted] {name} epoch:{epoch} end", argId, job.Epoch);
 
             job.TransactionBlockTime = args.StartTime;

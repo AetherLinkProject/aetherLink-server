@@ -53,37 +53,44 @@ public class AutomationTransmitted : AsyncBackgroundJob<BroadcastTransmitResultA
             switch (txResult.Status)
             {
                 case TransactionState.Mined:
-                    var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, upkeepId);
-                    switch (AutomationHelper.GetTriggerType(commitment))
+                    try
                     {
-                        case TriggerType.Cron:
-                            var transmitted = _contractProvider.ParseTransmitted(txResult);
-                            var job = await _jobProvider.GetAsync(args.Context);
-                            if (job == null || job.State is RequestState.RequestCanceled) return;
-                            if (upkeepId != transmitted.RequestId.ToHex() ||
-                                transmitted.EpochAndRound < job.Epoch) break;
+                        var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, upkeepId);
 
-                            _schedulerService.CancelAllSchedule(job);
+                        switch (AutomationHelper.GetTriggerType(commitment))
+                        {
+                            case TriggerType.Cron:
+                                var transmitted = _contractProvider.ParseTransmitted(txResult);
+                                var job = await _jobProvider.GetAsync(args.Context);
+                                if (job == null || job.State is RequestState.RequestCanceled) return;
+                                if (upkeepId != transmitted.RequestId.ToHex() ||
+                                    transmitted.EpochAndRound < job.Epoch) break;
 
-                            break;
-                        case TriggerType.Log:
-                            var report = await _oracleContractProvider.GetTransmitReportByTransactionIdAsync(chainId,
-                                args.TransactionId);
-                            var payload = LogTriggerCheckData.Parser.ParseFrom(report.Result);
-                            var id = AutomationHelper.GetLogTriggerKeyByPayload(chainId, upkeepId,
-                                payload.ToByteArray());
-                            var logTriggerInfo = await _storageProvider.GetAsync<LogTriggerDto>(id);
-                            if (logTriggerInfo == null)
-                            {
-                                _logger.LogError($"Get non-exist trigger {id} from leader");
-                                return;
-                            }
+                                _schedulerService.CancelCronUpkeep(job);
 
-                            _schedulerService.CancelLogUpkeep(logTriggerInfo);
+                                break;
+                            case TriggerType.Log:
+                                var report = await _oracleContractProvider.GetTransmitReportByTransactionIdAsync(
+                                    chainId,
+                                    args.TransactionId);
+                                var payload = LogTriggerCheckData.Parser.ParseFrom(report.Result);
+                                var id = AutomationHelper.GetLogTriggerKeyByPayload(chainId, upkeepId,
+                                    payload.ToByteArray());
+                                var logTriggerInfo = await _storageProvider.GetAsync<LogTriggerDto>(id);
+                                if (logTriggerInfo == null)
+                                {
+                                    _logger.LogError($"Get non-exist trigger {id} from leader");
+                                    return;
+                                }
 
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
+                                _schedulerService.CancelLogUpkeep(logTriggerInfo);
+
+                                break;
+                        }
+                    }
+                    finally
+                    {
+                        _logger.LogInformation($"Check transaction {transactionId} result succeeded.");
                     }
 
                     break;
@@ -92,10 +99,12 @@ public class AutomationTransmitted : AsyncBackgroundJob<BroadcastTransmitResultA
 
                     break;
                 case TransactionState.NotExisted:
+                    _logger.LogDebug($"Transaction {transactionId} not exist.");
                     await _retryProvider.RetryAsync(args.Context, args, backOff: true);
 
                     break;
                 default:
+                    _logger.LogError($"Get transaction error: {txResult.Error}");
                     if (txResult.Error.Contains("Invalid request id"))
                         _logger.LogInformation($"upkeep: {upkeepId} cancelled");
                     // _schedulerService.CancelAllSchedule(job);
