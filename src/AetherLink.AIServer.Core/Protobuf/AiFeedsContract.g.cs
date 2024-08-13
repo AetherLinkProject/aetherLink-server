@@ -37,36 +37,36 @@ namespace AetherLink.Contracts.AIFeeds {
             "c2gSJAoLZGVzY3JpcHRpb24YBSABKAsyDy5haS5EZXNjcmlwdGlvbiJmChZB",
             "SVJlcXVlc3RUcmFuc21pdElucHV0EikKDm9yYWNsZV9jb250ZXh0GAEgASgL",
             "MhEuYWkuT3JhY2xlQ29udGV4dBIOCgZyZXBvcnQYAiABKAwSEQoJc2lnbmF0",
-            "dXJlGAMgASgMIi8KDU9yYWNsZUNvbnRleHQSHgoKcmVxdWVzdF9pZBgBIAEo",
-            "CzIKLmFlbGYuSGFzaCLcAQoJQUlSZXF1ZXN0EhwKBW1vZGVsGAEgASgOMg0u",
-            "YWkuTW9kZWxUeXBlEhwKBWFkbWluGAIgASgLMg0uYWVsZi5BZGRyZXNzEiYK",
-            "D2Z1bGZpbGxfYWRkcmVzcxgDIAEoCzINLmFlbGYuQWRkcmVzcxIcCgh0cmFj",
-            "ZV9pZBgEIAEoCzIKLmFlbGYuSGFzaBIkCgtkZXNjcmlwdGlvbhgFIAEoCzIP",
-            "LmFpLkRlc2NyaXB0aW9uEicKBnN0YXR1cxgGIAEoDjIXLmFpLkFJUmVxdWVz",
-            "dFN0YXR1c1R5cGUiQAoLRGVzY3JpcHRpb24SIQoEdHlwZRgBIAEoDjITLmFp",
-            "LkRlc2NyaXB0aW9uVHlwZRIOCgZkZXRhaWwYAiABKAwiSgoOUmVxdWVzdFN0",
-            "YXJ0ZWQSHgoKcmVxdWVzdF9pZBgBIAEoCzIKLmFlbGYuSGFzaBISCgpjb21t",
-            "aXRtZW50GAIgASgMOgSguxgBIn8KE0FJUmVwb3J0VHJhbnNtaXR0ZWQSHgoK",
-            "cmVxdWVzdF9pZBgBIAEoCzIKLmFlbGYuSGFzaBIiCgt0cmFuc21pdHRlchgC",
-            "IAEoCzINLmFlbGYuQWRkcmVzcxIeCgdlbmNsYXZlGAMgASgLMg0uYWVsZi5B",
-            "ZGRyZXNzOgSguxgBIj0KEUFJT3JhY2xlQ29uZmlnU2V0EiIKBmNvbmZpZxgB",
-            "IAEoCzISLmFpLkFJT3JhY2xlQ29uZmlnOgSguxgBKhgKCU1vZGVsVHlwZRIL",
-            "CgdDaGF0R3B0EAAqHQoPRGVzY3JpcHRpb25UeXBlEgoKBlN0cmluZxAAKkAK",
-            "E0FJUmVxdWVzdFN0YXR1c1R5cGUSCwoHU3RhcnRlZBAAEg4KClByb2Nlc3Np",
-            "bmcQARIMCghGaW5pc2hlZBACMo0ECg9BSUZlZWRzQ29udHJhY3QSOwoKSW5p",
-            "dGlhbGl6ZRITLmFpLkluaXRpYWxpemVJbnB1dBoWLmdvb2dsZS5wcm90b2J1",
-            "Zi5FbXB0eSIAEjgKCEdldEFkbWluEhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5",
-            "Gg0uYWVsZi5BZGRyZXNzIgWIifcBARI5CglTZXRDb25maWcSEi5haS5BSU9y",
-            "YWNsZUNvbmZpZxoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEj4KCUdldENv",
-            "bmZpZxIWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRoSLmFpLkFJT3JhY2xlQ29u",
-            "ZmlnIgWIifcBARJDCg5TdGFydEFJUmVxdWVzdBIXLmFpLlN0YXJ0QUlSZXF1",
-            "ZXN0SW5wdXQaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiABIwCgxHZXRBSVJl",
-            "cXVlc3QSCi5hZWxmLkhhc2gaDS5haS5BSVJlcXVlc3QiBYiJ9wEBEkkKEUFJ",
-            "UmVxdWVzdFRyYW5zbWl0EhouYWkuQUlSZXF1ZXN0VHJhbnNtaXRJbnB1dBoW",
-            "Lmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAGkbKyvYBC2FjczEyLnByb3Rvssz2",
-            "ATFBZXRoZXJMaW5rLkNvbnRyYWN0cy5BSUZlZWRzLkFJRmVlZHNDb250cmFj",
-            "dFN0YXRlQh+qAhxBZXRoZXJMaW5rLkNvbnRyYWN0cy5BSUZlZWRzYgZwcm90",
-            "bzM="));
+            "dXJlGAMgASgMIkEKDU9yYWNsZUNvbnRleHQSEAoIY2hhaW5faWQYASABKAUS",
+            "HgoKcmVxdWVzdF9pZBgCIAEoCzIKLmFlbGYuSGFzaCLcAQoJQUlSZXF1ZXN0",
+            "EhwKBW1vZGVsGAEgASgOMg0uYWkuTW9kZWxUeXBlEhwKBWFkbWluGAIgASgL",
+            "Mg0uYWVsZi5BZGRyZXNzEiYKD2Z1bGZpbGxfYWRkcmVzcxgDIAEoCzINLmFl",
+            "bGYuQWRkcmVzcxIcCgh0cmFjZV9pZBgEIAEoCzIKLmFlbGYuSGFzaBIkCgtk",
+            "ZXNjcmlwdGlvbhgFIAEoCzIPLmFpLkRlc2NyaXB0aW9uEicKBnN0YXR1cxgG",
+            "IAEoDjIXLmFpLkFJUmVxdWVzdFN0YXR1c1R5cGUiQAoLRGVzY3JpcHRpb24S",
+            "IQoEdHlwZRgBIAEoDjITLmFpLkRlc2NyaXB0aW9uVHlwZRIOCgZkZXRhaWwY",
+            "AiABKAwiSgoOUmVxdWVzdFN0YXJ0ZWQSHgoKcmVxdWVzdF9pZBgBIAEoCzIK",
+            "LmFlbGYuSGFzaBISCgpjb21taXRtZW50GAIgASgMOgSguxgBIn8KE0FJUmVw",
+            "b3J0VHJhbnNtaXR0ZWQSHgoKcmVxdWVzdF9pZBgBIAEoCzIKLmFlbGYuSGFz",
+            "aBIiCgt0cmFuc21pdHRlchgCIAEoCzINLmFlbGYuQWRkcmVzcxIeCgdlbmNs",
+            "YXZlGAMgASgLMg0uYWVsZi5BZGRyZXNzOgSguxgBIj0KEUFJT3JhY2xlQ29u",
+            "ZmlnU2V0EiIKBmNvbmZpZxgBIAEoCzISLmFpLkFJT3JhY2xlQ29uZmlnOgSg",
+            "uxgBKhgKCU1vZGVsVHlwZRILCgdDaGF0R3B0EAAqHQoPRGVzY3JpcHRpb25U",
+            "eXBlEgoKBlN0cmluZxAAKkAKE0FJUmVxdWVzdFN0YXR1c1R5cGUSCwoHU3Rh",
+            "cnRlZBAAEg4KClByb2Nlc3NpbmcQARIMCghGaW5pc2hlZBACMo0ECg9BSUZl",
+            "ZWRzQ29udHJhY3QSOwoKSW5pdGlhbGl6ZRITLmFpLkluaXRpYWxpemVJbnB1",
+            "dBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEjgKCEdldEFkbWluEhYuZ29v",
+            "Z2xlLnByb3RvYnVmLkVtcHR5Gg0uYWVsZi5BZGRyZXNzIgWIifcBARI5CglT",
+            "ZXRDb25maWcSEi5haS5BSU9yYWNsZUNvbmZpZxoWLmdvb2dsZS5wcm90b2J1",
+            "Zi5FbXB0eSIAEj4KCUdldENvbmZpZxIWLmdvb2dsZS5wcm90b2J1Zi5FbXB0",
+            "eRoSLmFpLkFJT3JhY2xlQ29uZmlnIgWIifcBARJDCg5TdGFydEFJUmVxdWVz",
+            "dBIXLmFpLlN0YXJ0QUlSZXF1ZXN0SW5wdXQaFi5nb29nbGUucHJvdG9idWYu",
+            "RW1wdHkiABIwCgxHZXRBSVJlcXVlc3QSCi5hZWxmLkhhc2gaDS5haS5BSVJl",
+            "cXVlc3QiBYiJ9wEBEkkKEUFJUmVxdWVzdFRyYW5zbWl0EhouYWkuQUlSZXF1",
+            "ZXN0VHJhbnNtaXRJbnB1dBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAGkbK",
+            "yvYBC2FjczEyLnByb3Rvssz2ATFBZXRoZXJMaW5rLkNvbnRyYWN0cy5BSUZl",
+            "ZWRzLkFJRmVlZHNDb250cmFjdFN0YXRlQh+qAhxBZXRoZXJMaW5rLkNvbnRy",
+            "YWN0cy5BSUZlZWRzYgZwcm90bzM="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::AElf.Types.CoreReflection.Descriptor, global::AElf.OptionsReflection.Descriptor, global::AElf.Standards.ACS12.Acs12Reflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.WrappersReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.TimestampReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(new[] {typeof(global::AetherLink.Contracts.AIFeeds.ModelType), typeof(global::AetherLink.Contracts.AIFeeds.DescriptionType), typeof(global::AetherLink.Contracts.AIFeeds.AIRequestStatusType), }, null, new pbr::GeneratedClrTypeInfo[] {
@@ -74,7 +74,7 @@ namespace AetherLink.Contracts.AIFeeds {
             new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.AIFeeds.AIOracleConfig), global::AetherLink.Contracts.AIFeeds.AIOracleConfig.Parser, new[]{ "Enclaves", "AiRequestFees" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.AIFeeds.StartAIRequestInput), global::AetherLink.Contracts.AIFeeds.StartAIRequestInput.Parser, new[]{ "Model", "Admin", "FulfillAddress", "TraceId", "Description" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.AIFeeds.AIRequestTransmitInput), global::AetherLink.Contracts.AIFeeds.AIRequestTransmitInput.Parser, new[]{ "OracleContext", "Report", "Signature" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.AIFeeds.OracleContext), global::AetherLink.Contracts.AIFeeds.OracleContext.Parser, new[]{ "RequestId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.AIFeeds.OracleContext), global::AetherLink.Contracts.AIFeeds.OracleContext.Parser, new[]{ "ChainId", "RequestId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.AIFeeds.AIRequest), global::AetherLink.Contracts.AIFeeds.AIRequest.Parser, new[]{ "Model", "Admin", "FulfillAddress", "TraceId", "Description", "Status" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.AIFeeds.Description), global::AetherLink.Contracts.AIFeeds.Description.Parser, new[]{ "Type", "Detail" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.AIFeeds.RequestStarted), global::AetherLink.Contracts.AIFeeds.RequestStarted.Parser, new[]{ "RequestId", "Commitment" }, null, null, null, null),
@@ -1195,6 +1195,7 @@ namespace AetherLink.Contracts.AIFeeds {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public OracleContext(OracleContext other) : this() {
+      chainId_ = other.chainId_;
       requestId_ = other.requestId_ != null ? other.requestId_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
@@ -1205,8 +1206,20 @@ namespace AetherLink.Contracts.AIFeeds {
       return new OracleContext(this);
     }
 
+    /// <summary>Field number for the "chain_id" field.</summary>
+    public const int ChainIdFieldNumber = 1;
+    private int chainId_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int ChainId {
+      get { return chainId_; }
+      set {
+        chainId_ = value;
+      }
+    }
+
     /// <summary>Field number for the "request_id" field.</summary>
-    public const int RequestIdFieldNumber = 1;
+    public const int RequestIdFieldNumber = 2;
     private global::AElf.Types.Hash requestId_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -1232,6 +1245,7 @@ namespace AetherLink.Contracts.AIFeeds {
       if (ReferenceEquals(other, this)) {
         return true;
       }
+      if (ChainId != other.ChainId) return false;
       if (!object.Equals(RequestId, other.RequestId)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
@@ -1240,6 +1254,7 @@ namespace AetherLink.Contracts.AIFeeds {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
+      if (ChainId != 0) hash ^= ChainId.GetHashCode();
       if (requestId_ != null) hash ^= RequestId.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
@@ -1259,8 +1274,12 @@ namespace AetherLink.Contracts.AIFeeds {
     #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       output.WriteRawMessage(this);
     #else
+      if (ChainId != 0) {
+        output.WriteRawTag(8);
+        output.WriteInt32(ChainId);
+      }
       if (requestId_ != null) {
-        output.WriteRawTag(10);
+        output.WriteRawTag(18);
         output.WriteMessage(RequestId);
       }
       if (_unknownFields != null) {
@@ -1273,8 +1292,12 @@ namespace AetherLink.Contracts.AIFeeds {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (ChainId != 0) {
+        output.WriteRawTag(8);
+        output.WriteInt32(ChainId);
+      }
       if (requestId_ != null) {
-        output.WriteRawTag(10);
+        output.WriteRawTag(18);
         output.WriteMessage(RequestId);
       }
       if (_unknownFields != null) {
@@ -1287,6 +1310,9 @@ namespace AetherLink.Contracts.AIFeeds {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
+      if (ChainId != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeInt32Size(ChainId);
+      }
       if (requestId_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(RequestId);
       }
@@ -1301,6 +1327,9 @@ namespace AetherLink.Contracts.AIFeeds {
     public void MergeFrom(OracleContext other) {
       if (other == null) {
         return;
+      }
+      if (other.ChainId != 0) {
+        ChainId = other.ChainId;
       }
       if (other.requestId_ != null) {
         if (requestId_ == null) {
@@ -1323,7 +1352,11 @@ namespace AetherLink.Contracts.AIFeeds {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
-          case 10: {
+          case 8: {
+            ChainId = input.ReadInt32();
+            break;
+          }
+          case 18: {
             if (requestId_ == null) {
               RequestId = new global::AElf.Types.Hash();
             }
@@ -1345,7 +1378,11 @@ namespace AetherLink.Contracts.AIFeeds {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
-          case 10: {
+          case 8: {
+            ChainId = input.ReadInt32();
+            break;
+          }
+          case 18: {
             if (requestId_ == null) {
               RequestId = new global::AElf.Types.Hash();
             }

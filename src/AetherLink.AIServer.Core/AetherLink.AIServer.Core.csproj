@@ -12,6 +12,7 @@
         <PackageReference Include="AutoMapper" Version="12.0.0" />
         <PackageReference Include="GraphQL" Version="7.0.0" />
         <PackageReference Include="GraphQL.Client.Abstractions" Version="5.1.0" />
+        <PackageReference Include="OpenAI" Version="2.0.0-beta.8" />
         <PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
         <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
         <PackageReference Include="Serilog.Sinks.RollingFile" Version="3.3.0" />
