@@ -12,7 +12,7 @@ using scg = global::System.Collections.Generic;
 namespace AetherLink.Contracts.Oracle {
 
   /// <summary>Holder for reflection information generated from oracle_contract.proto</summary>
-  internal static partial class OracleContractReflection {
+  public static partial class OracleContractReflection {
 
     #region Descriptor
     /// <summary>File descriptor for oracle_contract.proto</summary>
@@ -266,7 +266,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
   #region Enums
-  internal enum Role {
+  public enum Role {
     [pbr::OriginalName("Unset")] Unset = 0,
     [pbr::OriginalName("Signer")] Signer = 1,
     [pbr::OriginalName("Transmitter")] Transmitter = 2,
@@ -278,7 +278,7 @@ namespace AetherLink.Contracts.Oracle {
   /// <summary>
   /// Data structure
   /// </summary>
-  internal sealed partial class InitializeInput : pb::IMessage<InitializeInput>
+  public sealed partial class InitializeInput : pb::IMessage<InitializeInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -476,7 +476,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class Coordinator : pb::IMessage<Coordinator>
+  public sealed partial class Coordinator : pb::IMessage<Coordinator>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -748,7 +748,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class CoordinatorList : pb::IMessage<CoordinatorList>
+  public sealed partial class CoordinatorList : pb::IMessage<CoordinatorList>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -926,7 +926,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class SetCoordinatorStatusInput : pb::IMessage<SetCoordinatorStatusInput>
+  public sealed partial class SetCoordinatorStatusInput : pb::IMessage<SetCoordinatorStatusInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -1152,7 +1152,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class Config : pb::IMessage<Config>
+  public sealed partial class Config : pb::IMessage<Config>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -1430,7 +1430,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class SetConfigInput : pb::IMessage<SetConfigInput>
+  public sealed partial class SetConfigInput : pb::IMessage<SetConfigInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -1754,7 +1754,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class ConfigData : pb::IMessage<ConfigData>
+  public sealed partial class ConfigData : pb::IMessage<ConfigData>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -2192,7 +2192,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class Oracle : pb::IMessage<Oracle>
+  public sealed partial class Oracle : pb::IMessage<Oracle>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -2421,7 +2421,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class AddressList : pb::IMessage<AddressList>
+  public sealed partial class AddressList : pb::IMessage<AddressList>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -2599,7 +2599,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class GetLatestConfigDetailsOutput : pb::IMessage<GetLatestConfigDetailsOutput>
+  public sealed partial class GetLatestConfigDetailsOutput : pb::IMessage<GetLatestConfigDetailsOutput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -2877,7 +2877,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class SendRequestInput : pb::IMessage<SendRequestInput>
+  public sealed partial class SendRequestInput : pb::IMessage<SendRequestInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -3186,7 +3186,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class StartRequestInput : pb::IMessage<StartRequestInput>
+  public sealed partial class StartRequestInput : pb::IMessage<StartRequestInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -3587,7 +3587,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class FulfillInput : pb::IMessage<FulfillInput>
+  public sealed partial class FulfillInput : pb::IMessage<FulfillInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -4146,7 +4146,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class CancelRequestInput : pb::IMessage<CancelRequestInput>
+  public sealed partial class CancelRequestInput : pb::IMessage<CancelRequestInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -4464,7 +4464,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class RegisterProvingKeyInput : pb::IMessage<RegisterProvingKeyInput>
+  public sealed partial class RegisterProvingKeyInput : pb::IMessage<RegisterProvingKeyInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -4699,7 +4699,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class DeregisterProvingKeyInput : pb::IMessage<DeregisterProvingKeyInput>
+  public sealed partial class DeregisterProvingKeyInput : pb::IMessage<DeregisterProvingKeyInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -4888,7 +4888,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class SubscriptionConfig : pb::IMessage<SubscriptionConfig>
+  public sealed partial class SubscriptionConfig : pb::IMessage<SubscriptionConfig>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -5077,7 +5077,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class Subscription : pb::IMessage<Subscription>
+  public sealed partial class Subscription : pb::IMessage<Subscription>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -5421,7 +5421,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class Consumer : pb::IMessage<Consumer>
+  public sealed partial class Consumer : pb::IMessage<Consumer>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -5684,7 +5684,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class ProposeSubscriptionOwnerTransferInput : pb::IMessage<ProposeSubscriptionOwnerTransferInput>
+  public sealed partial class ProposeSubscriptionOwnerTransferInput : pb::IMessage<ProposeSubscriptionOwnerTransferInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -5919,7 +5919,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class CancelSubscriptionInput : pb::IMessage<CancelSubscriptionInput>
+  public sealed partial class CancelSubscriptionInput : pb::IMessage<CancelSubscriptionInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -6154,7 +6154,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class AddConsumerInput : pb::IMessage<AddConsumerInput>
+  public sealed partial class AddConsumerInput : pb::IMessage<AddConsumerInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -6389,7 +6389,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class RemoveConsumerInput : pb::IMessage<RemoveConsumerInput>
+  public sealed partial class RemoveConsumerInput : pb::IMessage<RemoveConsumerInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -6624,7 +6624,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class GetConsumerInput : pb::IMessage<GetConsumerInput>
+  public sealed partial class GetConsumerInput : pb::IMessage<GetConsumerInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -6859,7 +6859,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class HashList : pb::IMessage<HashList>
+  public sealed partial class HashList : pb::IMessage<HashList>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -7290,7 +7290,7 @@ namespace AetherLink.Contracts.Oracle {
   /// <summary>
   /// Log event
   /// </summary>
-  internal sealed partial class AdminTransferRequested : pb::IMessage<AdminTransferRequested>
+  public sealed partial class AdminTransferRequested : pb::IMessage<AdminTransferRequested>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -7534,7 +7534,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class AdminTransferred : pb::IMessage<AdminTransferred>
+  public sealed partial class AdminTransferred : pb::IMessage<AdminTransferred>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -7778,7 +7778,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class ConfigSet : pb::IMessage<ConfigSet>
+  public sealed partial class ConfigSet : pb::IMessage<ConfigSet>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -8253,7 +8253,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class ProvingKeyRegistered : pb::IMessage<ProvingKeyRegistered>
+  public sealed partial class ProvingKeyRegistered : pb::IMessage<ProvingKeyRegistered>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -8497,7 +8497,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class ProvingKeyDeregistered : pb::IMessage<ProvingKeyDeregistered>
+  public sealed partial class ProvingKeyDeregistered : pb::IMessage<ProvingKeyDeregistered>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -8741,7 +8741,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class OracleRequestSent : pb::IMessage<OracleRequestSent>
+  public sealed partial class OracleRequestSent : pb::IMessage<OracleRequestSent>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -9105,7 +9105,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class RequestStarted : pb::IMessage<RequestStarted>
+  public sealed partial class RequestStarted : pb::IMessage<RequestStarted>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -9561,7 +9561,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class RequestProcessed : pb::IMessage<RequestProcessed>
+  public sealed partial class RequestProcessed : pb::IMessage<RequestProcessed>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -10243,7 +10243,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class CoordinatorSet : pb::IMessage<CoordinatorSet>
+  public sealed partial class CoordinatorSet : pb::IMessage<CoordinatorSet>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -10515,7 +10515,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class SubscriptionCreated : pb::IMessage<SubscriptionCreated>
+  public sealed partial class SubscriptionCreated : pb::IMessage<SubscriptionCreated>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -10750,7 +10750,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class SubscriptionConsumerAdded : pb::IMessage<SubscriptionConsumerAdded>
+  public sealed partial class SubscriptionConsumerAdded : pb::IMessage<SubscriptionConsumerAdded>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -10985,7 +10985,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class SubscriptionCanceled : pb::IMessage<SubscriptionCanceled>
+  public sealed partial class SubscriptionCanceled : pb::IMessage<SubscriptionCanceled>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -11257,7 +11257,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class SubscriptionOwnerTransferRequested : pb::IMessage<SubscriptionOwnerTransferRequested>
+  public sealed partial class SubscriptionOwnerTransferRequested : pb::IMessage<SubscriptionOwnerTransferRequested>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -11538,7 +11538,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class SubscriptionOwnerTransferred : pb::IMessage<SubscriptionOwnerTransferred>
+  public sealed partial class SubscriptionOwnerTransferred : pb::IMessage<SubscriptionOwnerTransferred>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -11819,7 +11819,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class SubscriptionConsumerRemoved : pb::IMessage<SubscriptionConsumerRemoved>
+  public sealed partial class SubscriptionConsumerRemoved : pb::IMessage<SubscriptionConsumerRemoved>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -12054,7 +12054,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class SubscriptionConfigSet : pb::IMessage<SubscriptionConfigSet>
+  public sealed partial class SubscriptionConfigSet : pb::IMessage<SubscriptionConfigSet>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -12252,7 +12252,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class Paused : pb::IMessage<Paused>
+  public sealed partial class Paused : pb::IMessage<Paused>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -12453,7 +12453,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class Unpaused : pb::IMessage<Unpaused>
+  public sealed partial class Unpaused : pb::IMessage<Unpaused>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -12654,7 +12654,7 @@ namespace AetherLink.Contracts.Oracle {
 
   }
 
-  internal sealed partial class RequestCancelled : pb::IMessage<RequestCancelled>
+  public sealed partial class RequestCancelled : pb::IMessage<RequestCancelled>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
