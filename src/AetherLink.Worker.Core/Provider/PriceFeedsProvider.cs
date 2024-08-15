@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Aetherlink.PriceServer;
 using Aetherlink.PriceServer.Dtos;
 using AetherLink.Worker.Core.Options;
+using AetherLink.Worker.Core.Reporter;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
@@ -17,13 +18,15 @@ public interface IPriceFeedsProvider
 public class PriceFeedsProvider : IPriceFeedsProvider, ITransientDependency
 {
     private readonly PriceFeedsOptions _options;
+    private readonly IPriceFeedsReporter _reporter;
     private readonly ILogger<PriceFeedsProvider> _logger;
     private readonly IPriceServerProvider _priceServerProvider;
 
     public PriceFeedsProvider(IOptionsSnapshot<PriceFeedsOptions> priceFeedsOptions,
-        IPriceServerProvider priceServerProvider, ILogger<PriceFeedsProvider> logger)
+        IPriceServerProvider priceServerProvider, ILogger<PriceFeedsProvider> logger, IPriceFeedsReporter reporter)
     {
         _logger = logger;
+        _reporter = reporter;
         _options = priceFeedsOptions.Value;
         _priceServerProvider = priceServerProvider;
     }
@@ -54,6 +57,9 @@ public class PriceFeedsProvider : IPriceFeedsProvider, ITransientDependency
             }
 
             _logger.LogInformation($"[PriceFeeds] Get {tokenPair} price: {price}");
+            
+            _reporter.RecordPrice(currencyPair, price);
+            
             return price;
         }
         catch (Exception e)

@@ -23,13 +23,13 @@ public static class IdGeneratorHelper
         => GenerateId(MemoryConstants.MultiSignaturePrefix, args.ChainId, args.RequestId, args.Epoch, args.RoundId);
 
     public static string GenerateJobRequestRedisId(string chainId, string requestId)
-        => GenerateId(RedisKeyConstants.JobRedisKey, chainId, requestId);
+        => GenerateId(RedisKeyConstants.JobKey, chainId, requestId);
+
+    public static string GenerateVrfJobRedisId(string chainId, string requestId)
+        => GenerateId(RedisKeyConstants.VrfJobKey, chainId, requestId);
 
     public static string GenerateReportRedisId(string chainId, string requestId, long epoch)
-        => GenerateId(RedisKeyConstants.ReportRedisKey, chainId, requestId, epoch);
-
-    public static string GenerateDataMessageRedisId(string chainId, string requestId, long epoch)
-        => GenerateId(RedisKeyConstants.DataMessageRedisKey, chainId, requestId, epoch);
+        => GenerateId(RedisKeyConstants.ReportKey, chainId, requestId, epoch);
 
     public static string GenerateId(params object[] ids) => ids.JoinAsString("-");
 }

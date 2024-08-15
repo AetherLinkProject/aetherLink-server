@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Provider;
+using AetherlinkPriceServer.Reporter;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherlinkPriceServer.Application;
@@ -20,28 +21,43 @@ public interface IPriceAppService
 public class PriceAppService : IPriceAppService, ISingletonDependency
 {
     private readonly IPriceProvider _priceProvider;
+    private readonly IPriceQueryReporter _reporter;
     private readonly IHistoricPriceProvider _historicPriceProvider;
 
-    public PriceAppService(IPriceProvider priceProvider, IHistoricPriceProvider historicPriceProvider)
+    public PriceAppService(IPriceProvider priceProvider, IHistoricPriceProvider historicPriceProvider,
+        IPriceQueryReporter reporter)
     {
+        _reporter = reporter;
         _priceProvider = priceProvider;
         _historicPriceProvider = historicPriceProvider;
     }
 
-    public async Task<PriceResponseDto> GetTokenPriceAsync(GetTokenPriceRequestDto input) => new()
+    public async Task<PriceResponseDto> GetTokenPriceAsync(GetTokenPriceRequestDto input)
     {
-        Source = input.Source.ToString(),
-        Data = await _priceProvider.GetPriceAsync(input.TokenPair, input.Source)
-    };
+        _reporter.RecordPriceQueried(input.AppId, nameof(GetTokenPriceAsync));
 
-    public async Task<PriceListResponseDto> GetTokenPriceListAsync(GetTokenPriceListRequestDto input) => new()
+        return new()
+        {
+            Source = input.Source.ToString(),
+            Data = await _priceProvider.GetPriceAsync(input.TokenPair, input.Source)
+        };
+    }
+
+    public async Task<PriceListResponseDto> GetTokenPriceListAsync(GetTokenPriceListRequestDto input)
     {
-        Source = input.Source.ToString(),
-        Prices = await _priceProvider.GetPriceListAsync(input.Source, input.TokenPairs)
-    };
+        _reporter.RecordPriceQueried(input.AppId, nameof(GetTokenPriceListAsync));
+
+        return new()
+        {
+            Source = input.Source.ToString(),
+            Prices = await _priceProvider.GetPriceListAsync(input.Source, input.TokenPairs)
+        };
+    }
 
     public async Task<AggregatedPriceResponseDto> GetAggregatedTokenPriceAsync(GetAggregatedTokenPriceRequestDto input)
     {
+        _reporter.RecordPriceQueried(input.AppId, nameof(GetAggregatedTokenPriceAsync));
+
         var price = input.AggregateType == AggregateType.Latest
             ? await _priceProvider.GetPriceAsync(input.TokenPair)
             : await GetAggregatedPriceAsync(input);
@@ -54,6 +70,8 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
     public async Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(
         GetPriceForLast24HoursRequestDto input)
     {
+        _reporter.RecordPriceQueried(input.AppId, nameof(GetPriceForLast24HoursAsync));
+
         var prices = (await _priceProvider.GetLatest24HoursPriceAsync(input.TokenPair)).OrderBy(t => t.UpdateTime)
             .ToList();
 
@@ -67,6 +85,8 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
 
     public async Task<DailyPriceResponseDto> GetDailyPriceAsync(GetDailyPriceRequestDto input)
     {
+        _reporter.RecordPriceQueried(input.AppId, nameof(GetDailyPriceAsync));
+
         DateTime.TryParseExact(input.TimeStamp, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None,
             out var targetTime);
 

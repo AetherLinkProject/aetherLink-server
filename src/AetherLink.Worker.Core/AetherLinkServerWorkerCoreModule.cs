@@ -1,4 +1,6 @@
-﻿using AetherLink.Worker.Core.Provider;
+﻿using AetherLink.Metric;
+using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Reporter;
 using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;
@@ -7,7 +9,8 @@ using Volo.Abp.Modularity;
 namespace AetherLink.Worker.Core;
 
 [DependsOn(
-    typeof(AbpAutoMapperModule)
+    typeof(AbpAutoMapperModule),
+    typeof(AetherLinkMetricModule)
 )]
 public class AetherLinkServerWorkerCoreModule : AbpModule
 {
@@ -21,5 +24,12 @@ public class AetherLinkServerWorkerCoreModule : AbpModule
         context.Services.AddTransient<IResetRequestSchedulerJob, ResetRequestSchedulerJob>();
         context.Services.AddTransient<IPriceFeedsProvider, PriceFeedsProvider>();
         context.Services.AddSingleton<ISchedulerService, SchedulerService>();
+
+        // Reporter
+        context.Services.AddSingleton<IWorkerReporter, WorkerReporter>();
+        context.Services.AddSingleton<IVRFReporter, VRFReporter>();
+        context.Services.AddSingleton<IDataFeedsReporter, DataFeedsReporter>();
+        context.Services.AddSingleton<IReportReporter, ReportReporter>();
+        context.Services.AddSingleton<IMultiSignatureReporter, MultiSignatureReporter>();
     }
 }

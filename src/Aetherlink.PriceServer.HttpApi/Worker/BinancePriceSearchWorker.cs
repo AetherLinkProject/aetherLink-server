@@ -3,16 +3,12 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Aetherlink.PriceServer.Dtos;
-using AetherlinkPriceServer.Common;
 using AetherlinkPriceServer.Options;
 using AetherlinkPriceServer.Provider;
-using AetherlinkPriceServer.Worker.Dtos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
-using Binance.Spot;
-using Newtonsoft.Json;
 using Volo.Abp.Threading;
 
 namespace AetherlinkPriceServer.Worker;
@@ -20,12 +16,15 @@ namespace AetherlinkPriceServer.Worker;
 public class BinancePriceSearchWorker : TokenPriceSearchWorkerBase
 {
     private readonly TokenPriceSourceOption _option;
+    private readonly IBinanceProvider _binanceProvider;
     protected override SourceType SourceType => SourceType.Binance;
 
     public BinancePriceSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IOptionsSnapshot<TokenPriceSourceOptions> options, ILogger<TokenPriceSearchWorkerBase> baseLogger,
-        IPriceProvider priceProvider) : base(timer, serviceScopeFactory, options, baseLogger, priceProvider)
+        IPriceProvider priceProvider, IBinanceProvider binanceProvider) : base(timer, serviceScopeFactory, options,
+        baseLogger, priceProvider)
     {
+        _binanceProvider = binanceProvider;
         _option = options.Value.GetSourceOption(SourceType);
     }
 
@@ -44,10 +43,7 @@ public class BinancePriceSearchWorker : TokenPriceSearchWorkerBase
             return new()
             {
                 TokenPair = tokenPair,
-                Price = PriceConvertHelper.ConvertPrice(
-                    double.Parse(JsonConvert
-                        .DeserializeObject<BinancePriceDto>(
-                            await new Market().SymbolPriceTicker(tokenPair.Replace("-", "").ToUpper())).Price)),
+                Price = await _binanceProvider.GetTokenPriceAsync(tokenPair),
                 UpdateTime = DateTime.Now
             };
         }

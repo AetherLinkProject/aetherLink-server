@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Aetherlink.PriceServer.Dtos;
-using AetherlinkPriceServer.Common;
 using AetherlinkPriceServer.Options;
 using AetherlinkPriceServer.Provider;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,21 +9,22 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
-using Io.Gate.GateApi.Api;
 using Io.Gate.GateApi.Client;
-using Volo.Abp;
 
 namespace AetherlinkPriceServer.Worker;
 
 public class GateIoPriceSearchWorker : TokenPriceSearchWorkerBase
 {
     private readonly TokenPriceSourceOption _option;
+    private readonly IGateIoProvider _gateIoProvider;
     protected override SourceType SourceType => SourceType.GateIo;
 
     public GateIoPriceSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IOptionsSnapshot<TokenPriceSourceOptions> options, ILogger<TokenPriceSearchWorkerBase> baseLogger,
-        IPriceProvider priceProvider) : base(timer, serviceScopeFactory, options, baseLogger, priceProvider)
+        IPriceProvider priceProvider, IGateIoProvider gateIoProvider) : base(timer, serviceScopeFactory, options,
+        baseLogger, priceProvider)
     {
+        _gateIoProvider = gateIoProvider;
         _option = options.Value.GetSourceOption(SourceType);
     }
 
@@ -41,15 +40,10 @@ public class GateIoPriceSearchWorker : TokenPriceSearchWorkerBase
     {
         try
         {
-            var currencyPair = await new SpotApi().ListTickersAsync(tokenPair.Replace("-", "_"));
-
-            if (currencyPair == null || currencyPair.Count == 0)
-                throw new UserFriendlyException("[GateIo] Get token {tokenPair} price error.");
-
             return new()
             {
                 TokenPair = tokenPair,
-                Price = PriceConvertHelper.ConvertPrice(double.Parse(currencyPair[0].Last)),
+                Price = await _gateIoProvider.GetTokenPriceAsync(tokenPair),
                 UpdateTime = DateTime.Now
             };
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using AElf.CSharp.Core;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
@@ -16,6 +17,9 @@ public interface IRetryProvider
 {
     public Task RetryAsync<T>(T args, bool untilFailed = false, bool backOff = false, long delayDelta = 0)
         where T : JobPipelineArgsBase;
+
+    public Task RetryWithIdAsync<T>(T args, string id, bool untilFailed = false, bool backOff = false,
+        long delayDelta = 0);
 }
 
 public class RetryProvider : IRetryProvider, ISingletonDependency
@@ -41,14 +45,17 @@ public class RetryProvider : IRetryProvider, ISingletonDependency
     /// <param name="backOff"> backOff == true, delay time will be avoided exponentially.</param>
     /// <param name="delayDelta"> delayDelta is the basic time for each timeout, the default is 0.</param>
     public async Task RetryAsync<T>(T args, bool untilFailed, bool backOff, long delayDelta = 0)
-        where T : JobPipelineArgsBase
+        where T : JobPipelineArgsBase =>
+        await RetryWithIdAsync(args, GenerateRetryId(args), untilFailed, backOff, delayDelta);
+
+    public async Task RetryWithIdAsync<T>(T args, string id, bool untilFailed = false, bool backOff = false,
+        long delayDelta = 0)
     {
-        var id = GenerateRetryId(args);
         _retryCount.TryGetValue(id, out var time);
         if (!untilFailed && time > _processJobOptions.RetryCount) return;
 
-        var delay = backOff ? Math.Pow(time + delayDelta, 2) : time + delayDelta;
-        _retryCount[id] = time + 1;
+        var delay = backOff ? Math.Pow(delayDelta.Add(time), 2) : delayDelta.Add(time);
+        _retryCount[id] = time.Add(1);
         var hangfireId = await _backgroundJobManager.EnqueueAsync(args, delay: TimeSpan.FromSeconds(delay));
         _logger.LogInformation(
             "Task {id} will be executed in {delay} seconds by {hangfireId}. The task has been executed {times} times.",
@@ -56,7 +63,5 @@ public class RetryProvider : IRetryProvider, ISingletonDependency
     }
 
     private string GenerateRetryId<T>(T args) where T : JobPipelineArgsBase
-    {
-        return IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch, args.RoundId);
-    }
+        => IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch, args.RoundId);
 }

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using AetherLink.Contracts.Consumer;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
@@ -9,9 +11,12 @@ using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Reporter;
 using AetherLink.Worker.Core.Scheduler;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -23,20 +28,23 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
     private readonly object _lock = new();
     private readonly IPeerManager _peerManager;
     private readonly IJobProvider _jobProvider;
+    private readonly IReportReporter _reporter;
     private readonly OracleInfoOptions _options;
     private readonly IObjectMapper _objectMapper;
     private readonly IStateProvider _stateProvider;
     private readonly IReportProvider _reportProvider;
     private readonly ILogger<GenerateReportJob> _logger;
     private readonly ISchedulerService _schedulerService;
+    private readonly IDataMessageProvider _dataMessageProvider;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public GenerateReportJob(ILogger<GenerateReportJob> logger, ISchedulerService schedulerService,
         IObjectMapper objectMapper, IStateProvider stateProvider, IOptionsSnapshot<OracleInfoOptions> options,
         IJobProvider jobProvider, IReportProvider reportProvider, IPeerManager peerManager,
-        IBackgroundJobManager backgroundJobManager)
+        IBackgroundJobManager backgroundJobManager, IReportReporter reporter, IDataMessageProvider dataMessageProvider)
     {
         _logger = logger;
+        _reporter = reporter;
         _options = options.Value;
         _peerManager = peerManager;
         _jobProvider = jobProvider;
@@ -44,6 +52,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
         _stateProvider = stateProvider;
         _reportProvider = reportProvider;
         _schedulerService = schedulerService;
+        _dataMessageProvider = dataMessageProvider;
         _backgroundJobManager = backgroundJobManager;
     }
 
@@ -67,7 +76,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
 
             _logger.LogInformation("[Step3][Leader] {name} Start process {index} request.", argId, index);
 
-            TryProcessObservationAsync(args, job);
+            TryProcessObservation(args, job);
 
             if (!IsReportEnough(args))
             {
@@ -85,17 +94,44 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
 
             _logger.LogInformation("[Step3][Leader] {name} Generate report, index:{index}", argId, index);
 
-            var observations = GenerateObservations(args);
-            await _reportProvider.SetAsync(new ReportDto
+            var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
+            var report = new ReportDto
             {
                 ChainId = chainId,
                 RequestId = reqId,
                 RoundId = roundId,
-                Epoch = epoch,
-                Observations = observations
-            });
+                Epoch = epoch
+            };
+            ByteString observation;
 
-            await ProcessReportGeneratedResultAsync(job, observations);
+            if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
+            {
+                var authData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
+                observation = ByteString.CopyFrom(Encoding.UTF8.GetBytes(authData.NewData));
+            }
+            else
+            {
+                var multiObservations = GenerateMultiObservations(args);
+                report.Observations = multiObservations;
+                observation = new LongList { Data = { multiObservations } }.ToByteString();
+            }
+
+            await _reportProvider.SetAsync(report);
+
+            _schedulerService.CancelScheduler(job, SchedulerType.ObservationCollectWaitingScheduler);
+
+            var procJob = _objectMapper.Map<JobDto, GeneratePartialSignatureJobArgs>(job);
+            procJob.Observations = observation.ToBase64();
+            await _backgroundJobManager.EnqueueAsync(procJob);
+
+            await _peerManager.BroadcastAsync(p => p.CommitReportAsync(new CommitReportRequest
+            {
+                RequestId = job.RequestId,
+                ChainId = job.ChainId,
+                RoundId = job.RoundId,
+                Epoch = job.Epoch,
+                ObservationResults = procJob.Observations
+            }));
         }
         catch (Exception e)
         {
@@ -113,15 +149,12 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
         return observations.Count >= chainConfig.ObservationsThreshold;
     }
 
-    private void TryProcessObservationAsync(GenerateReportJobArgs args, JobDto job)
+    private void TryProcessObservation(GenerateReportJobArgs args, JobDto job)
     {
         lock (_lock)
         {
-            var observation = new ObservationDto
-            {
-                Index = args.Index,
-                ObservationResult = args.Data
-            };
+            var observation = new ObservationDto { Index = args.Index };
+            if (!string.IsNullOrEmpty(args.Data)) observation.ObservationResult = long.Parse(args.Data);
 
             var reportId = IdGeneratorHelper.GenerateReportId(args);
             var observations = _stateProvider.GetObservations(reportId);
@@ -130,6 +163,7 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
                 _logger.LogInformation("[step3][Leader] Init {id}, start observation collection scheduler",
                     reportId);
                 _stateProvider.SetObservations(reportId, new List<ObservationDto> { observation });
+                _reporter.RecordReportAsync(args.ChainId, args.RequestId, args.Epoch);
                 _schedulerService.StartScheduler(job, SchedulerType.ObservationCollectWaitingScheduler);
                 return;
             }
@@ -137,10 +171,11 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
             if (observations.Any(o => o.Index == observation.Index)) return;
             observations.Add(observation);
             _stateProvider.SetObservations(reportId, observations);
+            _reporter.RecordReportAsync(args.ChainId, args.RequestId, args.Epoch);
         }
     }
 
-    private List<long> GenerateObservations(GenerateReportJobArgs args)
+    private List<long> GenerateMultiObservations(GenerateReportJobArgs args)
     {
         var aggregationResults = Enumerable.Repeat(0L, _peerManager.GetPeersCount()).ToList();
         _stateProvider.GetObservations(IdGeneratorHelper.GenerateReportId(args))
@@ -148,24 +183,5 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
         _logger.LogDebug("[Step3][Leader] {requestId} report:{results} count:{count}", args.RequestId,
             aggregationResults.JoinAsString(","), aggregationResults.Count);
         return aggregationResults;
-    }
-
-    private async Task ProcessReportGeneratedResultAsync(JobDto job, List<long> observations)
-    {
-        // cancel ObservationCollectWaiting scheduler if observations collection is enough
-        _schedulerService.CancelScheduler(job, SchedulerType.ObservationCollectWaitingScheduler);
-
-        var procJob = _objectMapper.Map<JobDto, GeneratePartialSignatureJobArgs>(job);
-        procJob.Observations = observations;
-        await _backgroundJobManager.EnqueueAsync(procJob);
-
-        await _peerManager.BroadcastAsync(p => p.CommitReportAsync(new CommitReportRequest
-        {
-            RequestId = job.RequestId,
-            ChainId = job.ChainId,
-            RoundId = job.RoundId,
-            Epoch = job.Epoch,
-            ObservationResults = { observations }
-        }));
     }
 }
