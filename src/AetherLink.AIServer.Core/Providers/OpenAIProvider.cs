@@ -1,6 +1,5 @@
 using System;
 using System.ClientModel;
-using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,12 +10,14 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using OpenAI.Chat;
+using OpenAI.Images;
 
 namespace AetherLink.AIServer.Core.Providers;
 
 public interface IOpenAIProvider
 {
     Task<OpenAIResponse> GetCompletionAsync(OpenAIRequest request);
+    Task<string> GetDallEAsync(string prompt);
 }
 
 public class OpenAIProvider : IOpenAIProvider, ISingletonDependency
@@ -57,6 +58,30 @@ public class OpenAIProvider : IOpenAIProvider, ISingletonDependency
         finally
         {
             _semaphore.Release();
+        }
+    }
+
+    public async Task<string> GetDallEAsync(string prompt)
+    {
+        try
+        {
+            var client = new ImageClient("dall-e-3", _openAiOption.Secret);
+            GeneratedImage image = await client.GenerateImageAsync(prompt, new()
+            {
+                // Quality = GeneratedImageQuality.Standard,
+                // Style = GeneratedImageStyle.Vivid,
+                Size = GeneratedImageSize.W1024xH1024,
+                ResponseFormat = GeneratedImageFormat.Bytes
+            });
+
+            var result = Convert.ToBase64String(image.ImageBytes);
+            _logger.LogDebug($"Get Picture result: {result}");
+            return result;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
         }
     }
 }

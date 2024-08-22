@@ -51,22 +51,22 @@ namespace AetherLink.Contracts.AIFeeds {
             "aBIiCgt0cmFuc21pdHRlchgCIAEoCzINLmFlbGYuQWRkcmVzcxIeCgdlbmNs",
             "YXZlGAMgASgLMg0uYWVsZi5BZGRyZXNzOgSguxgBIj0KEUFJT3JhY2xlQ29u",
             "ZmlnU2V0EiIKBmNvbmZpZxgBIAEoCzISLmFpLkFJT3JhY2xlQ29uZmlnOgSg",
-            "uxgBKhgKCU1vZGVsVHlwZRILCgdDaGF0R3B0EAAqHQoPRGVzY3JpcHRpb25U",
-            "eXBlEgoKBlN0cmluZxAAKkAKE0FJUmVxdWVzdFN0YXR1c1R5cGUSCwoHU3Rh",
-            "cnRlZBAAEg4KClByb2Nlc3NpbmcQARIMCghGaW5pc2hlZBACMo0ECg9BSUZl",
-            "ZWRzQ29udHJhY3QSOwoKSW5pdGlhbGl6ZRITLmFpLkluaXRpYWxpemVJbnB1",
-            "dBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEjgKCEdldEFkbWluEhYuZ29v",
-            "Z2xlLnByb3RvYnVmLkVtcHR5Gg0uYWVsZi5BZGRyZXNzIgWIifcBARI5CglT",
-            "ZXRDb25maWcSEi5haS5BSU9yYWNsZUNvbmZpZxoWLmdvb2dsZS5wcm90b2J1",
-            "Zi5FbXB0eSIAEj4KCUdldENvbmZpZxIWLmdvb2dsZS5wcm90b2J1Zi5FbXB0",
-            "eRoSLmFpLkFJT3JhY2xlQ29uZmlnIgWIifcBARJDCg5TdGFydEFJUmVxdWVz",
-            "dBIXLmFpLlN0YXJ0QUlSZXF1ZXN0SW5wdXQaFi5nb29nbGUucHJvdG9idWYu",
-            "RW1wdHkiABIwCgxHZXRBSVJlcXVlc3QSCi5hZWxmLkhhc2gaDS5haS5BSVJl",
-            "cXVlc3QiBYiJ9wEBEkkKEUFJUmVxdWVzdFRyYW5zbWl0EhouYWkuQUlSZXF1",
-            "ZXN0VHJhbnNtaXRJbnB1dBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAGkbK",
-            "yvYBC2FjczEyLnByb3Rvssz2ATFBZXRoZXJMaW5rLkNvbnRyYWN0cy5BSUZl",
-            "ZWRzLkFJRmVlZHNDb250cmFjdFN0YXRlQh+qAhxBZXRoZXJMaW5rLkNvbnRy",
-            "YWN0cy5BSUZlZWRzYgZwcm90bzM="));
+            "uxgBKiIKCU1vZGVsVHlwZRILCgdDaGF0R3B0EAASCAoERGFsbBABKh0KD0Rl",
+            "c2NyaXB0aW9uVHlwZRIKCgZTdHJpbmcQACpAChNBSVJlcXVlc3RTdGF0dXNU",
+            "eXBlEgsKB1N0YXJ0ZWQQABIOCgpQcm9jZXNzaW5nEAESDAoIRmluaXNoZWQQ",
+            "AjKNBAoPQUlGZWVkc0NvbnRyYWN0EjsKCkluaXRpYWxpemUSEy5haS5Jbml0",
+            "aWFsaXplSW5wdXQaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiABI4CghHZXRB",
+            "ZG1pbhIWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRoNLmFlbGYuQWRkcmVzcyIF",
+            "iIn3AQESOQoJU2V0Q29uZmlnEhIuYWkuQUlPcmFjbGVDb25maWcaFi5nb29n",
+            "bGUucHJvdG9idWYuRW1wdHkiABI+CglHZXRDb25maWcSFi5nb29nbGUucHJv",
+            "dG9idWYuRW1wdHkaEi5haS5BSU9yYWNsZUNvbmZpZyIFiIn3AQESQwoOU3Rh",
+            "cnRBSVJlcXVlc3QSFy5haS5TdGFydEFJUmVxdWVzdElucHV0GhYuZ29vZ2xl",
+            "LnByb3RvYnVmLkVtcHR5IgASMAoMR2V0QUlSZXF1ZXN0EgouYWVsZi5IYXNo",
+            "Gg0uYWkuQUlSZXF1ZXN0IgWIifcBARJJChFBSVJlcXVlc3RUcmFuc21pdBIa",
+            "LmFpLkFJUmVxdWVzdFRyYW5zbWl0SW5wdXQaFi5nb29nbGUucHJvdG9idWYu",
+            "RW1wdHkiABpGysr2AQthY3MxMi5wcm90b7LM9gExQWV0aGVyTGluay5Db250",
+            "cmFjdHMuQUlGZWVkcy5BSUZlZWRzQ29udHJhY3RTdGF0ZUIfqgIcQWV0aGVy",
+            "TGluay5Db250cmFjdHMuQUlGZWVkc2IGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::AElf.Types.CoreReflection.Descriptor, global::AElf.OptionsReflection.Descriptor, global::AElf.Standards.ACS12.Acs12Reflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.WrappersReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.TimestampReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(new[] {typeof(global::AetherLink.Contracts.AIFeeds.ModelType), typeof(global::AetherLink.Contracts.AIFeeds.DescriptionType), typeof(global::AetherLink.Contracts.AIFeeds.AIRequestStatusType), }, null, new pbr::GeneratedClrTypeInfo[] {
@@ -88,6 +88,7 @@ namespace AetherLink.Contracts.AIFeeds {
   #region Enums
   public enum ModelType {
     [pbr::OriginalName("ChatGpt")] ChatGpt = 0,
+    [pbr::OriginalName("Dall")] Dall = 1,
   }
 
   public enum DescriptionType {
