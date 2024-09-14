@@ -43,6 +43,7 @@ public class FilterStorage : IFilterStorage, ISingletonDependency
         _chainOptions = chainInfoOptions.Value;
         _backgroundJobManager = backgroundJobManager;
         _oracleContractProvider = oracleContractProvider;
+        Initialize().GetAwaiter().GetResult();
     }
 
     public async Task ProcessEventAsync(TransactionEventDto logEvent)
@@ -54,10 +55,8 @@ public class FilterStorage : IFilterStorage, ISingletonDependency
 
         _logger.LogInformation("[FilterStorage] {event} found at {chain} {height}", eventName, chainId, blockHeight);
 
-        if (_eventFilters.Keys.Count == 0)
-            await Task.WhenAll(_chainOptions.ChainInfos.Keys.Select(InitialFiltersAsync));
-
-        if (!_eventFilters[chainId].TryGetValue(GenerateEventId(contractAddress, eventName), out var filters) ||
+        if (!_eventFilters.TryGetValue(chainId, out _) || !_eventFilters[chainId]
+                .TryGetValue(GenerateEventId(contractAddress, eventName), out var filters) ||
             filters.Count == 0)
         {
             _logger.LogDebug("[FilterStorage] There no upkeep for {event}", eventName);
@@ -158,20 +157,24 @@ public class FilterStorage : IFilterStorage, ISingletonDependency
     private string GenerateFiltersStorageId(string chainId)
         => IdGeneratorHelper.GenerateId(RedisKeyConstants.EventFiltersKey, chainId);
 
-    private async Task InitialFiltersAsync(string chainId)
+    private async Task Initialize()
     {
-        var result = await _storageProvider.GetAsync<EventFiltersStorageDto>(GenerateFiltersStorageId(chainId));
-        if (result == null || !result.Filters.Any())
+        foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
-            _logger.LogDebug("[FilterStorage] There is no filter in storage on {chain} yet.", chainId);
-            _eventFilters[chainId] = new();
-        }
-        else
-        {
-            _logger.LogInformation("[FilterStorage] Init {count} Filters on {chain}", result.Filters.Count, chainId);
-            result.Filters.ForEach(f => _eventFilters[chainId][f.Key] = f.Value);
-        }
+            var result = await _storageProvider.GetAsync<EventFiltersStorageDto>(GenerateFiltersStorageId(chainId));
+            if (result == null || !result.Filters.Any())
+            {
+                _logger.LogDebug("[FilterStorage] There is no filter in storage on {chain} yet.", chainId);
+                _eventFilters[chainId] = new();
+            }
+            else
+            {
+                _logger.LogInformation("[FilterStorage] Init {count} Filters on {chain}", result.Filters.Count,
+                    chainId);
+                result.Filters.ForEach(f => _eventFilters[chainId][f.Key] = f.Value);
+            }
 
-        _logger.LogInformation("[FilterStorage] Finished FiltersStorage initialization.");
+            _logger.LogInformation("[FilterStorage] Finished FiltersStorage initialization.");
+        }
     }
 }

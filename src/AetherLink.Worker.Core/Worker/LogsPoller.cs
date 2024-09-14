@@ -19,7 +19,6 @@ public class LogsPoller : AsyncPeriodicBackgroundWorkerBase
     private readonly ILogger<LogsPoller> _logger;
     private readonly ILogPollerProvider _provider;
     private readonly IAeFinderProvider _aeFinderProvider;
-
     private readonly ConcurrentDictionary<string, long> _lastLookBackBlockHeightMap = new();
 
     public LogsPoller(AbpAsyncTimer timer, ILogPollerProvider provider, IOptions<WorkerOptions> workerOptions,
@@ -41,13 +40,10 @@ public class LogsPoller : AsyncPeriodicBackgroundWorkerBase
     private async Task ProcessAsync(string chainId, long confirmedHeight)
     {
         var lastLookBackBlockHeight = _lastLookBackBlockHeightMap[chainId];
-        if (confirmedHeight <= lastLookBackBlockHeight)
-        {
-            _logger.LogDebug("[LogsPoller] {chain} {latest} <= {last}, will try to pull the log later.",
-                chainId, lastLookBackBlockHeight, confirmedHeight);
-            return;
-        }
+        if (confirmedHeight <= lastLookBackBlockHeight) return;
 
+        _logger.LogDebug("[LogsPoller] {chainId} startHeight: {s}, targetHeight:{t}.", chainId, lastLookBackBlockHeight,
+            confirmedHeight);
         var startTime = DateTime.Now;
         var jobs = await _provider.PollLogEventsAsync(chainId, confirmedHeight,
             lastLookBackBlockHeight.Add(1));
@@ -69,10 +65,9 @@ public class LogsPoller : AsyncPeriodicBackgroundWorkerBase
         foreach (var chain in chainStates)
         {
             var chainId = chain.ChainId;
+            _logger.LogDebug($"[LogsPoller] Chain {chainId} initializing");
             var redisHeight = await _provider.GetLookBackBlockHeightAsync(chainId);
-            _lastLookBackBlockHeightMap[chainId] = redisHeight.BlockHeight != 0
-                ? redisHeight.BlockHeight
-                : chain.LastIrreversibleBlockHeight;
+            _lastLookBackBlockHeightMap[chainId] = redisHeight?.BlockHeight ?? chain.LastIrreversibleBlockHeight;
         }
     }
 }

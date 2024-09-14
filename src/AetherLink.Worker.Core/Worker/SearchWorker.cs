@@ -43,13 +43,7 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task ExecuteSearchAsync(string chainId, long blockLatestHeight)
     {
         var startHeight = _heightMap[chainId];
-        if (blockLatestHeight <= startHeight)
-        {
-            _logger.LogDebug(
-                "[Search] {chain} startHeight is {latest} confirmed height is {latest}, height hasn't been updated yet, will try later.",
-                chainId, startHeight, blockLatestHeight);
-            return;
-        }
+        if (blockLatestHeight <= startHeight) return;
 
         startHeight = startHeight.Add(1);
 
