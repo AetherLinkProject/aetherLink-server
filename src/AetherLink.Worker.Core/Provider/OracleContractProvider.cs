@@ -30,22 +30,22 @@ public interface IOracleContractProvider
 // If there is request-related data loss in Indexer, the transaction results and contract view method will be used as a backup.
 public class OracleContractProvider : IOracleContractProvider, ISingletonDependency
 {
-    private readonly IIndexerProvider _indexerProvider;
+    private readonly IAeFinderProvider _aeFinderProvider;
     private readonly IContractProvider _contractProvider;
     private readonly ILogger<OracleContractProvider> _logger;
     private readonly ConcurrentDictionary<string, Commitment> _commitmentsCache = new();
 
-    public OracleContractProvider(IIndexerProvider indexerProvider, IContractProvider contractProvider,
+    public OracleContractProvider(AeFinderProvider aeFinderProvider, IContractProvider contractProvider,
         ILogger<OracleContractProvider> logger)
     {
         _logger = logger;
-        _indexerProvider = indexerProvider;
+        _aeFinderProvider = aeFinderProvider;
         _contractProvider = contractProvider;
     }
 
     public async Task<long> GetOracleLatestEpochAndRoundAsync(string chainId)
     {
-        var epoch = await _indexerProvider.GetOracleLatestEpochAsync(chainId, 0);
+        var epoch = await _aeFinderProvider.GetOracleLatestEpochAsync(chainId, 0);
         if (epoch > 0)
         {
             _logger.LogDebug("[OracleContract] Get indexer Latest epoch: {epoch}", epoch);
@@ -61,7 +61,7 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         var commitmentId = IdGeneratorHelper.GenerateId(chainId, requestId);
         if (_commitmentsCache.TryGetValue(commitmentId, out var commitmentCache)) return commitmentCache;
 
-        var commitmentStr = await _indexerProvider.GetRequestCommitmentAsync(chainId, requestId);
+        var commitmentStr = await _aeFinderProvider.GetRequestCommitmentAsync(chainId, requestId);
         _logger.LogDebug("[OracleContract] Get indexer Commitment:{commitment}", commitmentStr);
 
         _commitmentsCache[commitmentId] = Commitment.Parser.ParseFrom(ByteString.FromBase64(commitmentStr));
@@ -81,7 +81,7 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
     {
         try
         {
-            var epoch = await _indexerProvider.GetOracleLatestEpochAsync(chainId, blockHeight);
+            var epoch = await _aeFinderProvider.GetOracleLatestEpochAsync(chainId, blockHeight);
 
             if (epoch <= 0) return (await _contractProvider.GetLatestRoundAsync(chainId)).Value;
             _logger.LogDebug("[OracleContract] Get indexer request start epoch:{epoch} before :{height}", epoch,
@@ -133,7 +133,7 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
 
     private async Task<Hash> GetOracleConfigAsync(string chainId)
     {
-        var configStr = await _indexerProvider.GetOracleConfigAsync(chainId);
+        var configStr = await _aeFinderProvider.GetOracleConfigAsync(chainId);
         if (!string.IsNullOrEmpty(configStr))
         {
             _logger.LogDebug("[OracleContractProvider] Get indexer Oracle config :{config}", configStr);

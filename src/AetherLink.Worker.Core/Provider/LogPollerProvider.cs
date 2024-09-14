@@ -4,16 +4,14 @@ using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
-using AetherLink.Worker.Core.Provider;
 using Volo.Abp.DependencyInjection;
 
-namespace AetherLink.Worker.Core.Worker.Providers;
+namespace AetherLink.Worker.Core.Provider;
 
 public interface ILogPollerProvider
 {
     Task<LookBackBlockHeightDto> GetLookBackBlockHeightAsync(string chainId);
     Task SetLookBackBlockHeightAsync(string chainId, long blockHeight);
-    Task<long> GetConfirmedBlockHeightAsync(string chainId);
     Task<List<TransactionEventDto>> PollLogEventsAsync(string chainId, long to, long from);
     Task HandlerEventAsync(TransactionEventDto logEvent);
 }
@@ -21,14 +19,14 @@ public interface ILogPollerProvider
 public class LogPollerProvider : ILogPollerProvider, ISingletonDependency
 {
     private readonly IStorageProvider _storageProvider;
-    private readonly IIndexerProvider _indexerProvider;
+    private readonly IAeFinderProvider _aeFinderProvider;
     private readonly Dictionary<string, IEventFilter> _filter;
 
-    public LogPollerProvider(IStorageProvider storageProvider, IIndexerProvider indexerProvider,
+    public LogPollerProvider(IStorageProvider storageProvider, AeFinderProvider aeFinderProvider,
         IEnumerable<IEventFilter> filters)
     {
         _storageProvider = storageProvider;
-        _indexerProvider = indexerProvider;
+        _aeFinderProvider = aeFinderProvider;
         _filter = filters.ToDictionary(x => x.EventName, y => y);
     }
 
@@ -39,11 +37,8 @@ public class LogPollerProvider : ILogPollerProvider, ISingletonDependency
         => await _storageProvider.SetAsync(GenerateStorageKey(chainId),
             new LookBackBlockHeightDto { BlockHeight = blockHeight });
 
-    public async Task<long> GetConfirmedBlockHeightAsync(string chainId)
-        => await _indexerProvider.GetIndexBlockHeightAsync(chainId);
-
     public async Task<List<TransactionEventDto>> PollLogEventsAsync(string chainId, long to, long from)
-        => await _indexerProvider.GetTransactionLogEventsAsync(chainId, to, from);
+        => await _aeFinderProvider.GetTransactionLogEventsAsync(chainId, to, from);
 
     public async Task HandlerEventAsync(TransactionEventDto logEvent)
     {

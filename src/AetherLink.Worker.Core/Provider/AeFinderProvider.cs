@@ -1,55 +1,63 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
-using GraphQL;
+using AetherLink.Worker.Core.Options;
+using GraphQL.Client.Abstractions;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Provider;
 
-public interface IIndexerProvider
+public interface IAeFinderProvider
 {
     public Task<List<OcrLogEventDto>> SubscribeLogsAsync(string chainId, long to, long from);
     public Task<List<TransmittedDto>> SubscribeTransmittedAsync(string chainId, long to, long from);
     public Task<List<RequestCancelledDto>> SubscribeRequestCancelledAsync(string chainId, long to, long from);
-    public Task<long> GetIndexBlockHeightAsync(string chainId);
+    public Task<List<ChainItemDto>> GetChainSyncStateAsync();
     public Task<string> GetOracleConfigAsync(string chainId);
     public Task<long> GetOracleLatestEpochAsync(string chainId, long blockHeight);
     public Task<string> GetRequestCommitmentAsync(string chainId, string requestId);
     public Task<List<TransactionEventDto>> GetTransactionLogEventsAsync(string chainId, long to, long from);
 }
 
-public class IndexerProvider : IIndexerProvider, ISingletonDependency
+public class AeFinderProvider : IAeFinderProvider, ITransientDependency
 {
-    private readonly IGraphQLHelper _graphQlHelper;
-    private readonly ILogger<IndexerProvider> _logger;
+    private readonly AeFinderOptions _options;
+    private readonly IHttpClientService _httpClient;
+    private readonly ILogger<AeFinderProvider> _logger;
 
-    public IndexerProvider(IGraphQLHelper graphQlHelper, ILogger<IndexerProvider> logger)
+    public AeFinderProvider(ILogger<AeFinderProvider> logger, IOptions<AeFinderOptions> options,
+        IHttpClientService httpClient)
     {
-        _graphQlHelper = graphQlHelper;
         _logger = logger;
+        _options = options.Value;
+        _httpClient = httpClient;
     }
 
     public async Task<List<OcrLogEventDto>> SubscribeLogsAsync(string chainId, long to, long from)
     {
         try
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<IndexerLogEventListDto>(new GraphQLRequest
+            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerLogEventListDto>(GetClient(), new()
             {
                 Query =
                     @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
-                    ocrJobEvents(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
-                        chainId,
-                        requestTypeIndex,
-                        transactionId,
-                        blockHeight,
-                        blockHash,
-                        startTime,
-                        requestId
-                }
-            }",
+                     ocrJobEvents(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
+                         chainId,
+                         requestTypeIndex,
+                         transactionId,
+                         blockHeight,
+                         blockHash,
+                         startTime,
+                         requestId
+                 }
+             }",
                 Variables = new
                 {
                     chainId = chainId, fromBlockHeight = from, toBlockHeight = to
@@ -59,17 +67,16 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "[Indexer] SubscribeLogs failed.");
+            _logger.LogError(e, "[Indexer] Subscribe Logs failed.");
             return new List<OcrLogEventDto>();
         }
     }
-
 
     public async Task<List<TransmittedDto>> SubscribeTransmittedAsync(string chainId, long to, long from)
     {
         try
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<IndexerTransmittedListDto>(new GraphQLRequest
+            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerTransmittedListDto>(GetClient(), new()
             {
                 Query =
                     @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
@@ -99,7 +106,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
     {
         try
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<IndexerRequestCancelledListDto>(new GraphQLRequest
+            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerRequestCancelledListDto>(GetClient(), new()
             {
                 Query =
                     @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
@@ -122,38 +129,17 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
         }
     }
 
-    public async Task<long> GetIndexBlockHeightAsync(string chainId)
+    public async Task<List<ChainItemDto>> GetChainSyncStateAsync()
     {
-        try
-        {
-            var res = await _graphQlHelper.QueryAsync<ConfirmedBlockHeightRecord>(new GraphQLRequest
-            {
-                Query = @"
-			    query($chainId:String!,$filterType:BlockFilterType!) {
-                    syncState(input: {chainId:$chainId,filterType:$filterType}){
-                        confirmedBlockHeight
-                }
-            }",
-                Variables = new
-                {
-                    chainId, filterType = BlockFilterType.LOG_EVENT
-                }
-            });
-
-            return res.SyncState?.ConfirmedBlockHeight ?? 0;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Indexer] GetIndexBlockHeight failed.");
-            throw;
-        }
+        var result = await _httpClient.GetAsync<AeFinderSyncStateDto>(_options.BaseUrl + _options.SyncStateUri, new());
+        return result.CurrentVersion.Items;
     }
 
     public async Task<string> GetOracleConfigAsync(string chainId)
     {
         try
         {
-            var res = await _graphQlHelper.QueryAsync<OracleConfigDigestRecord>(new GraphQLRequest
+            var res = await GraphQLHelper.SendQueryAsync<OracleConfigDigestRecord>(GetClient(), new()
             {
                 Query = @"
 			        query($chainId:String!){
@@ -180,7 +166,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
     {
         try
         {
-            var res = await _graphQlHelper.QueryAsync<OracleLatestEpochRecord>(new GraphQLRequest
+            var res = await GraphQLHelper.SendQueryAsync<OracleLatestEpochRecord>(GetClient(), new()
             {
                 Query = @"
 			        query($chainId:String!,$blockHeight:Long!){
@@ -207,7 +193,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
     {
         try
         {
-            var res = await _graphQlHelper.QueryAsync<RequestCommitmentRecord>(new GraphQLRequest
+            var res = await GraphQLHelper.SendQueryAsync<RequestCommitmentRecord>(GetClient(), new()
             {
                 Query = @"
                     query($chainId:String!,$requestId:String!){
@@ -236,7 +222,7 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
     {
         try
         {
-            var indexerResult = await _graphQlHelper.QueryAsync<IndexerTransactionEventListDto>(new GraphQLRequest
+            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerTransactionEventListDto>(GetClient(), new()
             {
                 Query =
                     @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
@@ -265,4 +251,8 @@ public class IndexerProvider : IIndexerProvider, ISingletonDependency
             throw;
         }
     }
+
+    private IGraphQLClient GetClient() => new GraphQLHttpClient(
+        new GraphQLHttpClientOptions { EndPoint = new Uri(_options.BaseUrl + _options.GraphQlUri) },
+        new NewtonsoftJsonSerializer());
 }

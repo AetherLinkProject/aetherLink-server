@@ -1,9 +1,6 @@
 ﻿using AElf.Client.Service;
 using AetherLink.Metric;
 using Aetherlink.PriceServer;
-using GraphQL.Client.Abstractions;
-using GraphQL.Client.Http;
-using GraphQL.Client.Serializer.Newtonsoft;
 using Hangfire;
 using Hangfire.Redis.StackExchange;
 using Microsoft.Extensions.Configuration;
@@ -16,7 +13,6 @@ using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Service;
 using AetherLink.Worker.Core.Worker;
-using AetherLink.Worker.Core.Worker.Providers;
 using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Builder;
 using Prometheus;
@@ -69,7 +65,6 @@ namespace AetherLink.Worker
             context.Services.AddHttpClient();
             context.Services.AddScoped<IHttpClientService, HttpClientService>();
 
-            ConfigureGraphQl(context, configuration);
             ConfigureHangfire(context, configuration);
             ConfigureMetrics(context, configuration);
             ConfigureRequestJobs(context);
@@ -79,9 +74,9 @@ namespace AetherLink.Worker
         private void ConfigureOptions(IConfiguration configuration)
         {
             Configure<WorkerOptions>(configuration.GetSection("Worker"));
-            Configure<LogPollerOptions>(configuration.GetSection("LogPoller"));
             Configure<ContractOptions>(configuration.GetSection("Chains"));
             Configure<NetworkOptions>(configuration.GetSection("Network"));
+            Configure<AeFinderOptions>(configuration.GetSection("AeFinder"));
             Configure<HangfireOptions>(configuration.GetSection("Hangfire"));
             Configure<SchedulerOptions>(configuration.GetSection("Scheduler"));
             Configure<PriceFeedsOptions>(configuration.GetSection("PriceFeeds"));
@@ -115,7 +110,8 @@ namespace AetherLink.Worker
         private void ConfigureBackgroundWorker(ApplicationInitializationContext context)
         {
             context.AddBackgroundWorkerAsync<SearchWorker>();
-            context.AddBackgroundWorkerAsync<LogPoller>();
+            context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
+            context.AddBackgroundWorkerAsync<LogsPoller>();
         }
 
         private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
@@ -145,14 +141,6 @@ namespace AetherLink.Worker
             });
 
             context.Services.AddHangfireServer();
-        }
-
-        private void ConfigureGraphQl(ServiceConfigurationContext context, IConfiguration configuration)
-        {
-            Configure<GraphqlOptions>(configuration.GetSection("GraphQL"));
-            context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
-                new NewtonsoftJsonSerializer()));
-            context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
         }
 
         private void ConfigureRequestJobs(ServiceConfigurationContext context)
