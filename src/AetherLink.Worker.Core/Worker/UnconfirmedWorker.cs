@@ -61,7 +61,7 @@ public class UnconfirmedWorker : AsyncPeriodicBackgroundWorkerBase
         await _provider.SetLatestUnconfirmedHeightAsync(chainId, _unconfirmedHeightMap[chainId]);
 
         _logger.LogInformation(
-            $"[Unconfirmed] The unconfirmed worker has processed up to block height {bestChainHeight}, and LIB is at block height {libHeight}.");
+            $"[Unconfirmed] {chainId} has processed up to block height {bestChainHeight}, and LIB is at block height {libHeight}.");
     }
 
     private async Task Initialize()
