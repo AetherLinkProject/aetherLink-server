@@ -102,9 +102,7 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
                 result = new LongList { Data = { observations.Observations } }.ToByteString();
             }
 
-            var transmitData = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, reqId,
-                job.TransactionId, epoch, result);
-
+            var transmitData = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, reqId, epoch, result);
             var msg = HashHelper.ConcatAndCompute(HashHelper.ComputeFrom(transmitData.Report.ToByteArray()),
                 HashHelper.ComputeFrom(transmitData.ReportContext.ToString())).ToByteArray();
 
