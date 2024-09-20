@@ -102,7 +102,8 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
             }
 
             await ProcessReportValidateResultAsync(args,
-                await GeneratedPartialSignatureAsync(chainId, reqId, ByteString.FromBase64(args.Observations), epoch));
+                await GeneratedPartialSignatureAsync(chainId, job.TransactionId,
+                    ByteString.FromBase64(args.Observations), epoch));
         }
         catch (Exception e)
         {
@@ -119,7 +120,8 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
         }
 
         var transmitData =
-            await _oracleContractProvider.GenerateTransmitDataAsync(chainId, requestId, epoch, observations);
+            await _oracleContractProvider.GenerateTransmitDataByTransactionIdAsync(chainId, requestId, epoch,
+                observations);
 
         var msg = HashHelper.ConcatAndCompute(HashHelper.ComputeFrom(transmitData.Report.ToByteArray()),
             HashHelper.ComputeFrom(transmitData.ReportContext.ToString())).ToByteArray();
