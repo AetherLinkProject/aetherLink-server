@@ -163,16 +163,13 @@ public class FilterStorage : IFilterStorage, ISingletonDependency
         {
             _eventFilters[chainId] = new();
             var result = await _storageProvider.GetAsync<EventFiltersStorageDto>(GenerateFiltersStorageId(chainId));
-            if (result == null || !result.Filters.Any())
-            {
-                _logger.LogDebug("[FilterStorage] There is no filter in storage on {chain} yet.", chainId);
-            }
-            else
-            {
-                _logger.LogInformation("[FilterStorage] Init {count} Filters on {chain}", result.Filters.Count,
-                    chainId);
-                result.Filters.ForEach(f => _eventFilters[chainId][f.Key] = f.Value);
-            }
+            if (result == null || !result.Filters.Any()) return;
+
+            _logger.LogInformation("[FilterStorage] Init {count} Filters on {chain}", result.Filters.Count,
+                chainId);
+            var chainFilter = new ConcurrentDictionary<string, List<string>>();
+            foreach (var filter in result.Filters) chainFilter[filter.Key] = filter.Value;
+            _eventFilters[chainId] = chainFilter;
 
             _logger.LogInformation("[FilterStorage] Finished FiltersStorage initialization.");
         }
