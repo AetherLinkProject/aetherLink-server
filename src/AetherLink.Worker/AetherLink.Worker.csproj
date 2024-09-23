@@ -15,9 +15,6 @@
         <PackageReference Include="Volo.Abp.Caching.StackExchangeRedis" Version="7.0.0" />
         <PackageReference Include="Volo.Abp.Swashbuckle" Version="7.0.0" />
         <PackageReference Include="Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy" Version="7.0.0" />
-        <PackageReference Include="GraphQL.Client" Version="5.1.0" />
-        <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="5.1.0" />
-        <PackageReference Include="GraphQL.Primitives" Version="5.1.0" />
     </ItemGroup>
 
     <ItemGroup>

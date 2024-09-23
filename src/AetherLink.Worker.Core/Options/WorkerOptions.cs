@@ -1,16 +1,8 @@
-using System.Collections.Generic;
-
 namespace AetherLink.Worker.Core.Options;
 
 public class WorkerOptions
 {
-    public int SearchTimer { get; set; } = 30;
-    public List<ChainInfo> Chains { get; set; }
-    public int UnconfirmedLogBatchSize { get; set; } = 100;
-}
-
-public class ChainInfo
-{
-    public string ChainId { get; set; }
-    public long LatestHeight { get; set; } = -1;
+    public int SearchTimer { get; set; } = 3000;
+    public int UnconfirmedTimer { get; set; } = 1000;
+    public int PollerTimer { get; set; } = 3000;
 }
