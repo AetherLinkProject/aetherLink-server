@@ -33,6 +33,7 @@
         <PackageReference Include="Contrib.Grpc.Core.M1" Version="2.41.0" />
         <PackageReference Include="FluentScheduler" Version="5.4.0" />
         <PackageReference Include="AetherlinkPriceServer" Version="1.0.3" />
+        <PackageReference Include="Volo.Abp.Ddd.Domain" Version="7.0.0" />
     </ItemGroup>
 
     <Target Name="Gen_proto" BeforeTargets="BeforeBuild">

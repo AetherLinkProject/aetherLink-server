@@ -2,8 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Text;
 using System.Threading.Tasks;
 using AElf.Client.Dto;
+using AetherLink.Worker.Core.Constants;
+using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
@@ -26,14 +29,15 @@ public  class TonHelper: ISingletonDependency
 {
     private readonly TonConfigOptions _tonConfigOptions;
     private readonly TonSdk.Core.Crypto.KeyPair _keyPair ;
+    private readonly string _transmitterFee;
     private readonly ILogger<TonHelper> _logger;
-    private const int _operateCode = 3;
     
     public TonHelper(IOptionsSnapshot<IConfiguration> snapshotConfig, ILogger<TonHelper> logger)
     {
         _tonConfigOptions = snapshotConfig.Value.GetSection("Chains:ChainInfos:Ton").Get<TonConfigOptions>();
         var secretKeyStr = snapshotConfig.Value.GetSection("OracleChainInfo:Ton:TransmitterSecretKey").Value;
         var publicKeyStr = snapshotConfig.Value.GetSection("OracleChainInfo:Ton:TransmitterPublicKey").Value;
+        _transmitterFee = snapshotConfig.Value.GetSection("OracleChainInfo:Ton:TransmitterFee").Value;
         
         var secretKey = Hex.Decode(secretKeyStr);
         var publicKey = Hex.Decode(publicKeyStr);
@@ -42,8 +46,11 @@ public  class TonHelper: ISingletonDependency
 
         _logger = logger;
     }
+
+    public string TonOracleContractAddress => _tonConfigOptions.ContractAddress;
     
-    public async Task<string> SendTransaction(string businessContractAddress, byte[] transmissionData, Dictionary<int, byte[]> consensusInfo)
+    [ItemCanBeNull]
+    public async Task<string> SendTransaction(CrossChainForwardMessageDto crossChainForwardMessageDto , Dictionary<int, byte[]> consensusInfo)
     {
         var walletV4 = new WalletV4(new WalletV4Options(){PublicKey = _keyPair.PrivateKey});
         
@@ -54,14 +61,18 @@ public  class TonHelper: ISingletonDependency
         };
 
         using var tonClient = new TonClient(TonClientType.HTTP_TONCENTERAPIV2, tonClientParams);
+        var receiverAddress = Encoding.UTF8.GetString(Base64.Decode(crossChainForwardMessageDto.Receiver));
         
         var seqno = await tonClient.Wallet.GetSeqno(walletV4.Address);
         var bodyCell = new CellBuilder()
-            .StoreUInt(_operateCode, 32)
-            .StoreAddress(new Address(businessContractAddress))
-            .StoreRef(new CellBuilder().StoreBytes(transmissionData).Build())
-            .StoreRef(
-                new CellBuilder().StoreBytes(ConsensusSign(businessContractAddress, transmissionData)).Build())
+            .StoreUInt(TonOpCodeConstants.ForwardTx, 32)
+            .StoreBytes(Base64.Decode(crossChainForwardMessageDto.MessageId))
+            .StoreAddress(new Address(receiverAddress))
+            .StoreRef(BuildMessageBody( crossChainForwardMessageDto.SourceChainId, 
+                    crossChainForwardMessageDto.TargetChainId, 
+                Base64.Decode(crossChainForwardMessageDto.Sender),
+                      receiverAddress,
+                Base64.Decode(crossChainForwardMessageDto.Message)))
             .StoreRef(new CellBuilder().StoreDict<int, byte[]>(BuildConsensusSignInfo(consensusInfo)).Build())
             .Build();
             
@@ -75,7 +86,7 @@ public  class TonHelper: ISingletonDependency
                     {
                         Src = walletV4.Address,
                         Dest = new Address(_tonConfigOptions.ContractAddress),
-                        Value = new Coins(0.015)
+                        Value = new Coins(_transmitterFee)
                     }),
                     Body = bodyCell,
                     StateInit = null,
@@ -85,22 +96,45 @@ public  class TonHelper: ISingletonDependency
         }, seqno ?? 0).Sign(_keyPair.PrivateKey);
             
         var result = await tonClient.SendBoc(msg.Cell);
-        _logger.LogInformation("");
+        if (result != null)
+        {
+            _logger.LogInformation($"Cross to Ton: sourceChainId:{crossChainForwardMessageDto.SourceChainId} targetChainId:{crossChainForwardMessageDto.TargetChainId} messageId:{crossChainForwardMessageDto.Message} Transaction hash:{result.Value.Hash}");
+        }
         
-        return result.Value.Hash;
+        return result?.Hash;
+    }
+
+    public CrossChainToTonTransactionDto AnalysisForwardTransaction(string inMessageBodyStr)
+    {
+        
     }
     
-    public byte[] ConsensusSign(string tonContractAddress, byte[] transmissionData)
+    public 
+    
+    public byte[] ConsensusSign(byte[] messageId, Int64 sourceChainId, Int64 targetChainId, byte[] sender, string receiverAddress, byte[] message)
     {
-        var cellBuilder = new CellBuilder().StoreBytes(transmissionData).Build();
+        var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message);
         
-        var builder = new CellBuilder();
-        var unsignCell = builder.StoreInt(_operateCode, 32) // operate code
-            .StoreAddress(new Address(tonContractAddress))
-            .StoreCellSlice(new CellSlice(cellBuilder))
+        var unsignCell = new CellBuilder()
+            .StoreBytes(messageId)
+            .StoreAddress(new Address(receiverAddress))
+            .StoreRef(body)
             .Build();
 
         return KeyPair.Sign(unsignCell, this._keyPair.PrivateKey);
+    }
+
+    private Cell BuildMessageBody(Int64 sourceChainId, Int64 targetChainId, byte[] sender, string receiverAddress,
+        byte[] message)
+    {
+        
+        return new CellBuilder()
+            .StoreUInt(sourceChainId, 64)
+            .StoreUInt(targetChainId, 64)
+            .StoreRef(new CellBuilder().StoreBytes(sender).Build())
+            .StoreRef(new CellBuilder().StoreAddress(new Address(receiverAddress)).Build())
+            .StoreRef(new CellBuilder().StoreBytes(message).Build())
+            .Build();
     }
 
     private HashmapE<int, byte[]> BuildConsensusSignInfo(Dictionary<int, byte[]> consensusInfo)
