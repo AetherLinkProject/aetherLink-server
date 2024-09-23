@@ -161,11 +161,11 @@ public class FilterStorage : IFilterStorage, ISingletonDependency
     {
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
+            _eventFilters[chainId] = new();
             var result = await _storageProvider.GetAsync<EventFiltersStorageDto>(GenerateFiltersStorageId(chainId));
             if (result == null || !result.Filters.Any())
             {
                 _logger.LogDebug("[FilterStorage] There is no filter in storage on {chain} yet.", chainId);
-                _eventFilters[chainId] = new();
             }
             else
             {
