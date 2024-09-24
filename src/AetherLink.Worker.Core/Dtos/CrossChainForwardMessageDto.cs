@@ -43,14 +43,19 @@ public class TransactionAnalysisDto<TX, TLatestTx>
     public TLatestTx LatestTransactions { get; set; }
 }
 
-public class CrossChainForwardResendStorageDto
+public class CrossChainForwardResendDto
 {
-    public string MessageId;
-    public Int64 TargetBlockHeight;
-    public string Hash;
-    public Int64 TargetBlockGeneratorTime;
-    public Int64 CheckCommitTime;
-    public ResendStatus Status;
+    public string MessageId { get; set; }
+    
+    public Int64 TargetBlockHeight { get; set; }
+    
+    public string Hash { get; set; }
+    
+    public Int64 TargetBlockGeneratorTime { get; set; }
+    
+    public Int64 CheckCommitTime { get; set; }
+    
+    public ResendStatus Status { get; set; }
 }
 
 public enum ResendStatus

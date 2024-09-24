@@ -104,12 +104,78 @@ public  class TonHelper: ISingletonDependency
         return result?.Hash;
     }
 
-    public CrossChainToTonTransactionDto AnalysisForwardTransaction(string inMessageBodyStr)
+    public CrossChainForwardResendDto AnalysisResendTransaction(CrossChainToTonTransactionDto tonTransactionDto)
     {
+        var body = Cell.From(tonTransactionDto.Body);
+        var bodySlice = body.Parse();
+        var opCode = bodySlice.LoadInt(32);
+        if (opCode != TonOpCodeConstants.ResendTx)
+        {
+            _logger.LogError("AnalysisReceiveTransaction OpCode Error");
+            return null;
+        }
+
+        var messageId = bodySlice.LoadBytes(64);
+        var messageIdStr = Base64.ToBase64String(messageId);
+
+        var result = new CrossChainForwardResendDto { };
+        result.MessageId = messageIdStr;
+        result.TargetBlockHeight = tonTransactionDto.SeqNo;
+        result.Hash = tonTransactionDto.Hash;
+        result.TargetBlockGeneratorTime = tonTransactionDto.BlockTime;
+        result.Status = ResendStatus.WaitConsensus;
         
+        var resendType = bodySlice.LoadUInt(8);
+        if (resendType == TonResendTypeConstants.IntervalSeconds)
+        {
+            var intervalSeconds = bodySlice.LoadUInt(32);
+            
+            // next check tx time
+            result.CheckCommitTime = (long)intervalSeconds + tonTransactionDto.BlockTime +
+                                     TonEnvConstants.ResendMaxWaitSeconds;
+        }
+
+        return result;
     }
     
-    public 
+    public CrossChainForwardMessageDto AnalysisForwardTransaction(CrossChainToTonTransactionDto tonTransactionDto)
+    {
+        var inMessageBody = Cell.From(tonTransactionDto.Body);
+        var inMessageBodySlice = inMessageBody.Parse();
+        var opCode = inMessageBodySlice.LoadUInt(32);
+        if (opCode != TonOpCodeConstants.ForwardTx)
+        {
+            _logger.LogError("AnalysisForwardTransaction OpCode Error");
+            return null;
+        }
+        var messageId = inMessageBodySlice.LoadBytes(64);
+        var messageIdStr = Base64.ToBase64String(messageId);
+        var targetAddr = inMessageBodySlice.LoadAddress();
+        var targetAddrStr = targetAddr?.ToString();
+
+        var proxyBody = inMessageBodySlice.LoadRef();
+        var proxyBodySlice = proxyBody.Parse();
+
+        var sourceChainId = proxyBodySlice.LoadUInt(64);
+        var targetChainId = proxyBodySlice.LoadUInt(64);
+        var sender = proxyBodySlice.LoadRef();
+        var senderStr = Base64.ToBase64String(sender.Parse().Bits.ToBytes());
+        var receive = proxyBodySlice.LoadRef();
+        var receiveStr = Base64.ToBase64String(receive.Parse().Bits.ToBytes());
+        var proxyMessage = proxyBodySlice.LoadRef();
+        var proxyMessageStr = Base64.ToBase64String(proxyMessage.Parse().Bits.ToBytes());
+
+        return new CrossChainForwardMessageDto
+        {
+            MessageId = messageIdStr,
+            SourceChainId = (Int64) sourceChainId,
+            TargetChainId = (Int64) targetChainId,
+            TargetContractAddress = targetAddrStr,
+            Sender = senderStr,
+            Receiver = receiveStr,
+            Message = proxyMessageStr
+        };
+    }
     
     public byte[] ConsensusSign(byte[] messageId, Int64 sourceChainId, Int64 targetChainId, byte[] sender, string receiverAddress, byte[] message)
     {
