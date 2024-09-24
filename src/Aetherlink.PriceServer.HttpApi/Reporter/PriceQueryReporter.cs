@@ -1,3 +1,4 @@
+using System.Timers;
 using AetherLink.Metric;
 using Prometheus;
 using Volo.Abp.DependencyInjection;
@@ -34,7 +35,7 @@ public class PriceQueryReporter : IPriceQueryReporter, ISingletonDependency
     public void RecordPriceQueriedTotal(string appId, string router)
     {
         _priceQueriedRequestsTotal.WithLabels(appId, router).Inc();
-        _priceQueriedRequests.WithLabels(appId, router).Inc();
+        _priceQueriedRequests.WithLabels(appId, router).Set(1);
     }
 
     public ITimer GetPriceRequestLatencyTimer(string appId, string router)
