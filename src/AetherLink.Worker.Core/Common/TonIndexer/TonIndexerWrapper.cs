@@ -9,21 +9,21 @@ namespace AetherLink.Worker.Core.Common.TonIndexer;
 
 public class TonIndexerWrapper
 {
-        private Object _lock = new object();
+        private readonly Object _lock = new object();
 
-        private bool _isAvailiable = true;
+        private bool _isAvailable = true;
         
         private DateTime _nextCheckTime;
         
-        private TonIndexerBase _indexerBase;
+        private readonly TonIndexerBase _indexerBase;
         
-        public bool IsAvailable => _isAvailiable;
+        public bool IsAvailable => _isAvailable;
 
         public TonIndexerBase IndexerBase => _indexerBase;
 
         public DateTime NextCheckTime => _nextCheckTime;
 
-        private int _checkTurn = 0; 
+        private int _checkTurn; 
         
         public TonIndexerWrapper(TonIndexerBase indexerBase)
         {
@@ -36,7 +36,7 @@ public class TonIndexerWrapper
             try
             {
                 return (true, await _indexerBase.GetSubsequentTransaction(tonIndexerDto));
-            }catch(HttpRequestException ex)
+            }catch(HttpRequestException)
             {
                 SetDisable();
             }
@@ -49,7 +49,7 @@ public class TonIndexerWrapper
             try
             {
                 return (true, await _indexerBase.GetTransactionInfo(txId));
-            }catch(HttpRequestException ex)
+            }catch(HttpRequestException)
             {
                 SetDisable();
             }
@@ -59,7 +59,7 @@ public class TonIndexerWrapper
 
         public bool CanCheckAvailable()
         {
-            return !_isAvailiable && DateTime.UtcNow >= _nextCheckTime;
+            return !_isAvailable && DateTime.UtcNow >= _nextCheckTime;
         }
         
         public async Task<bool> CheckAvailable()
@@ -67,7 +67,7 @@ public class TonIndexerWrapper
             try
             {
                 var isAvailable = await _indexerBase.CheckAvailable();
-                if (isAvailable && !_isAvailiable)
+                if (isAvailable && !_isAvailable)
                 {
                     SetAvailable();
                 }
@@ -77,12 +77,12 @@ public class TonIndexerWrapper
                     SetDisable();
                 }
             }
-            catch (HttpRequestException ex)
+            catch (HttpRequestException)
             {
                 SetDisable();
             }
 
-            return _isAvailiable;
+            return _isAvailable;
         }
 
         public async Task<bool> TryGetRequestAccess()
@@ -93,7 +93,7 @@ public class TonIndexerWrapper
                 
                 return isRateLimiting;
             }
-            catch (HttpSysException ex)
+            catch (HttpSysException)
             {
                 SetDisable();
             }
@@ -110,24 +110,24 @@ public class TonIndexerWrapper
                     return;
                 }
 
-                if (_isAvailiable)
+                if (_isAvailable)
                 {
                     _checkTurn = 0;
                 }
 
                 _checkTurn += 1;
                 _nextCheckTime = DateTime.UtcNow.AddSeconds(Math.Pow(2, _checkTurn) * 10);
-                _isAvailiable = false;
+                _isAvailable = false;
             }
         }
 
-        public void SetAvailable()
+        private void SetAvailable()
         {
             lock (_lock)
             {
-                if (!_isAvailiable)
+                if (!_isAvailable)
                 {
-                    _isAvailiable = true;
+                    _isAvailable = true;
                     _checkTurn = 0;
                 }
             }

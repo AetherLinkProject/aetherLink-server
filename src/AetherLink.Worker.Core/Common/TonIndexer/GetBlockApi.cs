@@ -1,12 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using AetherLink.Worker.Core.Constants;
-using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Provider;
-using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
@@ -19,8 +15,6 @@ public sealed class GetBlockApi:TonIndexerBase,ISingletonDependency
     private readonly IHttpClientFactory _clientFactory;
     private readonly RequestLimit _requestLimit;
     
-    public int ApiWeight { get; }
-
     public GetBlockApi(IOptionsSnapshot<IConfiguration> snapshotConfig, TonHelper tonHelper,
         IHttpClientFactory clientFactory, IStorageProvider storageProvider):base(tonHelper)
     {
@@ -28,6 +22,7 @@ public sealed class GetBlockApi:TonIndexerBase,ISingletonDependency
         _clientFactory = clientFactory;
         _requestLimit = new RequestLimit(_apiConfig.ApiKeyPerSecondRequestLimit, _apiConfig.ApiKeyPerDayRequestLimit,
             _apiConfig.ApiKeyPerMonthRequestLimit, storageProvider);
+        ApiWeight = _apiConfig.Weight;
     }
 
     public override async Task<bool> TryGetRequestAccess()
@@ -51,7 +46,7 @@ public class RequestLimit
 {
     private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
     private readonly IStorageProvider _storageProvider;
-    private const string _storageKey = "GetBlockRequestedDetail"; 
+    private const string StorageKey = "GetBlockRequestedDetail"; 
     
     private readonly int _perSecondRequestLimit;
     private readonly int _perDayRequestLimit;
@@ -77,7 +72,7 @@ public class RequestLimit
             // init requested detail
             if (_requestedDetail == null)
             {
-                _requestedDetail = await _storageProvider.GetAsync<RequestedDetail>(_storageKey);
+                _requestedDetail = await _storageProvider.GetAsync<RequestedDetail>(StorageKey);
                 if (_requestedDetail == null)
                 {
                     _requestedDetail = new RequestedDetail();
@@ -166,7 +161,7 @@ public class RequestLimit
             _requestCount += 1;
             if (_requestCount >= 100)
             {
-                await _storageProvider.SetAsync(_storageKey, _requestedDetail);
+                await _storageProvider.SetAsync(StorageKey, _requestedDetail);
                 _requestCount = 0;
             }
         }

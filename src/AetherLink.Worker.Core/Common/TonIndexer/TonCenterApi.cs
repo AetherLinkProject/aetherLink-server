@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using AetherLink.Worker.Core.Constants;
-using AetherLink.Worker.Core.Dtos;
-using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Nest;
@@ -29,7 +25,7 @@ public sealed class TonCenterApi:TonIndexerBase,ISingletonDependency
 
          _requestLimit = new TonCenterRequestLimit(limitCount);
          
-        _apiWeight = _apiConfig.Weight;
+        ApiWeight = _apiConfig.Weight;
     }
 
 

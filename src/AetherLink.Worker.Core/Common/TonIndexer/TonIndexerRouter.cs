@@ -21,7 +21,7 @@ public class TonIndexerRouter:ISingletonDependency
             tonIndexerList.Add(new TonIndexerWrapper(item));
         }
     
-        tonIndexerList.Sort((s1,s2)=> s1.IndexerBase.ApiWeight.CompareTo(s2.IndexerBase.ApiWeight));
+        tonIndexerList.Sort((s1,s2)=> s1.IndexerBase.Weight.CompareTo(s2.IndexerBase.Weight));
 
         _indexerList = tonIndexerList;
     }

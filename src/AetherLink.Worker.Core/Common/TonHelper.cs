@@ -1,10 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using AElf.Client.Dto;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
@@ -12,23 +10,21 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Utilities.Encoders;
 using TonSdk.Client;
 using TonSdk.Core;
 using TonSdk.Core.Boc;
 using TonSdk.Core.Crypto;
-using TonSdk.Client.Stack;
 using TonSdk.Contracts.Wallet;
 using TonSdk.Core.Block;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Common;
 
-public  class TonHelper: ISingletonDependency
+public sealed class TonHelper: ISingletonDependency
 {
     private readonly TonConfigOptions _tonConfigOptions;
-    private readonly TonSdk.Core.Crypto.KeyPair _keyPair ;
+    private readonly KeyPair _keyPair ;
     private readonly string _transmitterFee;
     private readonly ILogger<TonHelper> _logger;
     
@@ -73,7 +69,7 @@ public  class TonHelper: ISingletonDependency
                 Base64.Decode(crossChainForwardMessageDto.Sender),
                       receiverAddress,
                 Base64.Decode(crossChainForwardMessageDto.Message)))
-            .StoreRef(new CellBuilder().StoreDict<int, byte[]>(BuildConsensusSignInfo(consensusInfo)).Build())
+            .StoreRef(new CellBuilder().StoreDict(BuildConsensusSignInfo(consensusInfo)).Build())
             .Build();
             
         var msg = walletV4.CreateTransferMessage(new[]
@@ -118,13 +114,15 @@ public  class TonHelper: ISingletonDependency
         var messageId = bodySlice.LoadBytes(64);
         var messageIdStr = Base64.ToBase64String(messageId);
 
-        var result = new CrossChainForwardResendDto { };
-        result.MessageId = messageIdStr;
-        result.TargetBlockHeight = tonTransactionDto.SeqNo;
-        result.Hash = tonTransactionDto.Hash;
-        result.TargetBlockGeneratorTime = tonTransactionDto.BlockTime;
-        result.Status = ResendStatus.WaitConsensus;
-        
+        var result = new CrossChainForwardResendDto
+        {
+            MessageId = messageIdStr,
+            TargetBlockHeight = tonTransactionDto.SeqNo,
+            Hash = tonTransactionDto.Hash,
+            TargetBlockGeneratorTime = tonTransactionDto.BlockTime,
+            Status = ResendStatus.WaitConsensus
+        };
+
         var resendType = bodySlice.LoadUInt(8);
         if (resendType == TonResendTypeConstants.IntervalSeconds)
         {

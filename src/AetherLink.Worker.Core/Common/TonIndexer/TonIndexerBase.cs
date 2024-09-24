@@ -10,8 +10,8 @@ namespace AetherLink.Worker.Core.Common.TonIndexer;
 public abstract class TonIndexerBase
 {
     private readonly TonHelper _tonHelper;
-    protected int _apiWeight { get; set; }
-    public int ApiWeight => _apiWeight;
+    protected int ApiWeight { get; init; }
+    public int Weight => ApiWeight;
 
     protected TonIndexerBase(TonHelper tonHelper)
     {
@@ -38,7 +38,6 @@ public abstract class TonIndexerBase
         var path = $"transactions?account={_tonHelper.TonOracleContractAddress}&start_lt={tonIndexerDto.LatestTransactionLt}&limit=30&offset={tonIndexerDto.SkipCount}&sort=asc";
         var transactionResp = await GetDeserializeRequest<TransactionsResponse>(path);
         
-        var preHash = tonIndexerDto.LatestTransactionHash;
         Transaction preTx = null;
 
         var result = new List<CrossChainToTonTransactionDto>();
@@ -61,6 +60,7 @@ public abstract class TonIndexerBase
             }
             else
             {
+                latestTransactionLt = originalTx.Lt;
                 skipCount = 0;
             }
             
