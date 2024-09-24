@@ -14,6 +14,7 @@ public interface IPriceQueryReporter
 
 public class PriceQueryReporter : IPriceQueryReporter, ISingletonDependency
 {
+    private readonly Gauge _priceQueriedRequests;
     private readonly Histogram _priceRequestLatency;
     private readonly Counter _priceQueriedRequestsTotal;
     private readonly Counter _aggregatedPriceRequestsTotal;
@@ -22,6 +23,8 @@ public class PriceQueryReporter : IPriceQueryReporter, ISingletonDependency
     {
         _priceQueriedRequestsTotal = MetricsReporter.RegistryCounters(Definition.PriceQueryRequestsTotalName,
             Definition.PriceQueryRequestsTotalLabels);
+        _priceQueriedRequests = MetricsReporter.RegistryGauges(Definition.PriceQueryRequestsName,
+            Definition.PriceQueryRequestsLabels);
         _priceRequestLatency = MetricsReporter.RegistryHistograms(Definition.PriceRequestLatencyName,
             Definition.PriceRequestLatencyLabels);
         _aggregatedPriceRequestsTotal = MetricsReporter.RegistryCounters(Definition.AggregatedPriceRequestsTotalName,
@@ -29,7 +32,10 @@ public class PriceQueryReporter : IPriceQueryReporter, ISingletonDependency
     }
 
     public void RecordPriceQueriedTotal(string appId, string router)
-        => _priceQueriedRequestsTotal.WithLabels(appId, router).Inc();
+    {
+        _priceQueriedRequestsTotal.WithLabels(appId, router).Inc();
+        _priceQueriedRequests.WithLabels(appId, router).Inc();
+    }
 
     public ITimer GetPriceRequestLatencyTimer(string appId, string router)
         => _priceRequestLatency.WithLabels(appId, router).NewTimer();

@@ -10,13 +10,13 @@ public class PriceCollectMetricsDefinition
 
 public class PriceQueryMetricsDefinition
 {
+    public const string PriceQueryRequestsName = "price_query_requests";
     public const string PriceRequestLatencyName = "price_request_latency_seconds";
     public const string PriceQueryRequestsTotalName = "price_query_requests_total";
     public const string AggregatedPriceRequestsTotalName = "aggregated_price_requests_total";
-    public const string PriceRequestsCacheHitsTotalName = "price_query_requests_cache_hits_total";
 
+    public static readonly string[] PriceQueryRequestsLabels = { "app_id", "router" };
     public static readonly string[] PriceRequestLatencyLabels = { "app_id", "router" };
     public static readonly string[] PriceQueryRequestsTotalLabels = { "app_id", "router" };
-    public static readonly string[] PriceRequestsCacheHitsTotalLabels = { "app_id", "token_pair" };
     public static readonly string[] AggregatedPriceRequestsTotalLabels = { "app_id", "token_pair", "aggregated_type" };
 }
