@@ -11,7 +11,7 @@ public class TonIndexerRouter:ISingletonDependency
     private readonly List<TonIndexerWrapper> _indexerList;
     private readonly ILogger<TonIndexerRouter> _logger;
 
-    public TonIndexerRouter(IEnumerable<ITonIndexer> tonIndexers, ILogger<TonIndexerRouter> logger)
+    public TonIndexerRouter(IEnumerable<TonIndexerBase> tonIndexers, ILogger<TonIndexerRouter> logger)
     {
         _logger = logger;
         
@@ -21,12 +21,12 @@ public class TonIndexerRouter:ISingletonDependency
             tonIndexerList.Add(new TonIndexerWrapper(item));
         }
     
-        tonIndexerList.Sort((s1,s2)=> s1.Indexer.ApiWeight.CompareTo(s2.Indexer.ApiWeight));
+        tonIndexerList.Sort((s1,s2)=> s1.IndexerBase.ApiWeight.CompareTo(s2.IndexerBase.ApiWeight));
 
         _indexerList = tonIndexerList;
     }
 
-    public async Task<TransactionAnalysisDto<CrossChainToTonTransactionDto, TonIndexerDto>> GetSubsequentTransaction(TonIndexerDto tonIndexerDto)
+    public async Task<(List<CrossChainToTonTransactionDto>, TonIndexerDto)> GetSubsequentTransaction(TonIndexerDto tonIndexerDto)
     {
         foreach (var item in _indexerList)
         {
@@ -41,7 +41,7 @@ public class TonIndexerRouter:ISingletonDependency
         }    
         
         _logger.LogError($"All ton indexer are disabled");
-        return null;
+        return (null,null);
     }
 
     public async Task<CrossChainToTonTransactionDto> GetTransactionInfo(string txId)

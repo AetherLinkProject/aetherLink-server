@@ -8,7 +8,9 @@ public class TonIndexerDto
 
     public string LatestTransactionHash;
 
-    public int LatestTransactionTime;
+    public string LatestTransactionLt;
+
+    public int SkipCount;
 }
 
 
@@ -32,5 +34,4 @@ public class CrossChainToTonTransactionDto
     public bool Aborted { get; set; }
     public bool Bounce { get; set; }
     public bool Bounced { get; set; }
-    
 }

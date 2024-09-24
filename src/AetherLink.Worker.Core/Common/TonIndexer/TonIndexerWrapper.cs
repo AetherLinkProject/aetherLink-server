@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Dtos;
@@ -14,40 +15,40 @@ public class TonIndexerWrapper
         
         private DateTime _nextCheckTime;
         
-        private ITonIndexer _indexer;
+        private TonIndexerBase _indexerBase;
         
         public bool IsAvailable => _isAvailiable;
 
-        public ITonIndexer Indexer => _indexer;
+        public TonIndexerBase IndexerBase => _indexerBase;
 
         public DateTime NextCheckTime => _nextCheckTime;
 
         private int _checkTurn = 0; 
         
-        public TonIndexerWrapper(ITonIndexer indexer)
+        public TonIndexerWrapper(TonIndexerBase indexerBase)
         {
-            _indexer = indexer;
+            _indexerBase = indexerBase;
         }
 
-        public async Task<(bool, TransactionAnalysisDto<CrossChainToTonTransactionDto, TonIndexerDto>)>
+        public async Task<(bool, (List<CrossChainToTonTransactionDto>, TonIndexerDto))>
             GetSubsequentTransaction(TonIndexerDto tonIndexerDto)
         {
             try
             {
-                return (true, await _indexer.GetSubsequentTransaction(tonIndexerDto));
+                return (true, await _indexerBase.GetSubsequentTransaction(tonIndexerDto));
             }catch(HttpRequestException ex)
             {
                 SetDisable();
             }
 
-            return (false, null);
+            return (false, (null,null));
         }
 
         public async Task<(bool, CrossChainToTonTransactionDto)> GetTransactionInfo(string txId)
         {
             try
             {
-                return (true, await _indexer.GetTransactionInfo(txId));
+                return (true, await _indexerBase.GetTransactionInfo(txId));
             }catch(HttpRequestException ex)
             {
                 SetDisable();
@@ -65,7 +66,7 @@ public class TonIndexerWrapper
         {
             try
             {
-                var isAvailable = await _indexer.CheckAvailable();
+                var isAvailable = await _indexerBase.CheckAvailable();
                 if (isAvailable && !_isAvailiable)
                 {
                     SetAvailable();
@@ -88,7 +89,7 @@ public class TonIndexerWrapper
         {
             try
             {
-                var isRateLimiting = await _indexer.TryGetRequestAccess();
+                var isRateLimiting = await _indexerBase.TryGetRequestAccess();
                 
                 return isRateLimiting;
             }
