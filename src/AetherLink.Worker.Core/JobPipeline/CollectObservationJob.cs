@@ -150,21 +150,21 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
                     var resp = await _plainDataFeedsProvider.RequestPlainDataAsync(dataSpec.Url);
                     if (string.IsNullOrEmpty(resp)) return "";
 
-                    var authData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
+                    var plainData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
 
-                    if (authData == null)
+                    if (plainData == null)
                     {
-                        authData = _objectMapper.Map<CollectObservationJobArgs, PlainDataFeedsDto>(args);
-                        authData.OldData = "";
+                        plainData = _objectMapper.Map<CollectObservationJobArgs, PlainDataFeedsDto>(args);
+                        plainData.OldData = "";
                     }
-                    else if (authData.OldData != null && resp == authData.OldData)
+                    else if (plainData.OldData != null && resp == plainData.OldData)
                     {
                         _logger.LogDebug("[Step2] New collect result is same as old data {data}", resp);
                         return "";
                     }
 
-                    authData.NewData = resp;
-                    await _dataMessageProvider.SetAsync(authData);
+                    plainData.NewData = resp;
+                    await _dataMessageProvider.SetAsync(plainData);
                     return resp;
                 default:
                     return "";
