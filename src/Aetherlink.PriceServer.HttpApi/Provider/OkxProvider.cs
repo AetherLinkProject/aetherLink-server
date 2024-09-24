@@ -26,15 +26,23 @@ public class OkxProvider : IOkxProvider, ITransientDependency
 
     public async Task<long> GetTokenPriceAsync(string tokenPair)
     {
-        var okexTrade = (await new OkexClient().GetTradesAsync(tokenPair, 1, ContextHelper.GeneratorCtx())).Data
-            ?.FirstOrDefault();
+        var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.Okx, tokenPair);
+        try
+        {
+            var okexTrade = (await new OkexClient().GetTradesAsync(tokenPair, 1, ContextHelper.GeneratorCtx())).Data
+                ?.FirstOrDefault();
 
-        if (okexTrade == null) throw new UserFriendlyException($"Get Okex {tokenPair} price failed.");
+            if (okexTrade == null) throw new UserFriendlyException($"Get Okex {tokenPair} price failed.");
 
-        var price = PriceConvertHelper.ConvertPrice(okexTrade.Price);
+            var price = PriceConvertHelper.ConvertPrice(okexTrade.Price);
 
-        _reporter.RecordPriceCollected(SourceType.Okx, tokenPair, price);
+            _reporter.RecordPriceCollected(SourceType.Okx, tokenPair, price);
 
-        return price;
+            return price;
+        }
+        finally
+        {
+            timer.ObserveDuration();
+        }
     }
 }

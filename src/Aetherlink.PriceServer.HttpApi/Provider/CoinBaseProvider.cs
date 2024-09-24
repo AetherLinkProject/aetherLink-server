@@ -33,17 +33,35 @@ public class CoinBaseProvider : ICoinBaseProvider, ITransientDependency
 
     public async Task<long> GetTokenPriceAsync(string tokenPair)
     {
-        var price = PriceConvertHelper.ConvertPrice(double.Parse(
-            (await _http.GetAsync<CoinBaseResponseDto>(_option.BaseUrl + $"{tokenPair}/buy",
-                ContextHelper.GeneratorCtx())).Data["amount"]));
+        var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.CoinBase, tokenPair);
+        try
+        {
+            var price = PriceConvertHelper.ConvertPrice(double.Parse(
+                (await _http.GetAsync<CoinBaseResponseDto>(_option.BaseUrl + $"{tokenPair}/buy",
+                    ContextHelper.GeneratorCtx())).Data["amount"]));
 
-        _reporter.RecordPriceCollected(SourceType.CoinBase, tokenPair, price);
+            _reporter.RecordPriceCollected(SourceType.CoinBase, tokenPair, price);
 
-        return price;
+            return price;
+        }
+        finally
+        {
+            timer.ObserveDuration();
+        }
     }
 
     public async Task<long> GetHistoricPriceAsync(string tokenPair, DateTime time)
-        => PriceConvertHelper.ConvertPrice(double.Parse(
-            (await _http.GetAsync<CoinBaseResponseDto>(_option.BaseUrl + $"{tokenPair}/spot?date={time:yyyy-MM-dd}",
-                ContextHelper.GeneratorCtx())).Data["amount"]));
+    {
+        var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.CoinBase, tokenPair);
+        try
+        {
+            return PriceConvertHelper.ConvertPrice(double.Parse(
+                (await _http.GetAsync<CoinBaseResponseDto>(_option.BaseUrl + $"{tokenPair}/spot?date={time:yyyy-MM-dd}",
+                    ContextHelper.GeneratorCtx())).Data["amount"]));
+        }
+        finally
+        {
+            timer.ObserveDuration();
+        }
+    }
 }

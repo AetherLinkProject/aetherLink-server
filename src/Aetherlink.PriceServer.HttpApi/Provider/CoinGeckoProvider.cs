@@ -14,7 +14,6 @@ namespace AetherlinkPriceServer.Provider;
 
 public interface ICoinGeckoProvider
 {
-    public Task<PriceDto> GetTokenPriceAsync(string tokenPair);
     public Task<List<PriceDto>> GetTokenPricesAsync(List<string> tokenPairs);
     public Task<long> GetHistoricPriceAsync(string tokenPair, DateTime time);
 }
@@ -33,42 +32,52 @@ public class CoinGeckoProvider : ICoinGeckoProvider, ITransientDependency
         _tokenDict = CoinGeckoConstants.IdMap.ToDictionary(x => x.Value, x => x.Key);
     }
 
-    public async Task<PriceDto> GetTokenPriceAsync(string tokenPair)
-    {
-        var result = await GetTokenPricesAsync(new() { tokenPair });
-        return result.Count != 0 ? result.First() : null;
-    }
-
     public async Task<List<PriceDto>> GetTokenPricesAsync(List<string> tokenPairs)
     {
-        var priceList = await _coinGeckoClient.SimpleClient.GetSimplePrice(
-            tokenPairs.Select(GenerateCoinId).Where(c => !string.IsNullOrEmpty(c)).ToArray(), new[] { FiatSymbol });
-
-        return priceList.Select(kv =>
+        var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.CoinGecko, string.Join(",", tokenPairs));
+        try
         {
-            var tempPair = $"{_tokenDict[kv.Key]}-USD";
-            var tempPrice = PriceConvertHelper.ConvertPrice((double)kv.Value[FiatSymbol].Value);
+            var priceList = await _coinGeckoClient.SimpleClient.GetSimplePrice(
+                tokenPairs.Select(GenerateCoinId).Where(c => !string.IsNullOrEmpty(c)).ToArray(), new[] { FiatSymbol });
 
-            _reporter.RecordPriceCollected(SourceType.CoinGecko, tempPair, tempPrice);
-
-            return new PriceDto
+            return priceList.Select(kv =>
             {
-                TokenPair = tempPair,
-                Price = tempPrice,
-                UpdateTime = DateTime.Now
-            };
-        }).ToList();
+                var tempPair = $"{_tokenDict[kv.Key]}-USD";
+                var tempPrice = PriceConvertHelper.ConvertPrice((double)kv.Value[FiatSymbol].Value);
+
+                _reporter.RecordPriceCollected(SourceType.CoinGecko, tempPair, tempPrice);
+
+                return new PriceDto
+                {
+                    TokenPair = tempPair,
+                    Price = tempPrice,
+                    UpdateTime = DateTime.Now
+                };
+            }).ToList();
+        }
+        finally
+        {
+            timer.ObserveDuration();
+        }
     }
 
     public async Task<long> GetHistoricPriceAsync(string tokenPair, DateTime time)
     {
-        var coinId = GenerateCoinId(tokenPair);
-        if (string.IsNullOrEmpty(coinId)) throw new UserFriendlyException("Not support token");
+        var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.CoinGecko, tokenPair);
+        try
+        {
+            var coinId = GenerateCoinId(tokenPair);
+            if (string.IsNullOrEmpty(coinId)) throw new UserFriendlyException("Not support token");
 
-        var fullData = await _coinGeckoClient.CoinsClient.GetHistoryByCoinId(coinId,
-            time.ToString("dd-MM-yyyy"), "false");
+            var fullData = await _coinGeckoClient.CoinsClient.GetHistoryByCoinId(coinId,
+                time.ToString("dd-MM-yyyy"), "false");
 
-        return PriceConvertHelper.ConvertPrice((double)fullData.MarketData.CurrentPrice[FiatSymbol].Value);
+            return PriceConvertHelper.ConvertPrice((double)fullData.MarketData.CurrentPrice[FiatSymbol].Value);
+        }
+        finally
+        {
+            timer.ObserveDuration();
+        }
     }
 
     private string GenerateCoinId(string tokenPair)

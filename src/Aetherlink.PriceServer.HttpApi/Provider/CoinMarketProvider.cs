@@ -33,17 +33,25 @@ public class CoinMarketProvider : ICoinMarketProvider, ITransientDependency
 
     public async Task<long> GetTokenPriceAsync(string tokenPair)
     {
-        var tp = tokenPair.Split('-');
+        var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.CoinMarket, tokenPair);
+        try
+        {
+            var tp = tokenPair.Split('-');
 
-        var price = PriceConvertHelper.ConvertPrice((await _httpService.GetAsync<CoinMarketResponseDto>(
-            new Uri($"{_option.BaseUrl}?symbol={tp[0]}").ToString(), new Dictionary<string, string>
-            {
-                { "X-CMC_PRO_API_KEY", _option.ApiKey },
-                { "Accepts", "application/json" },
-            }, ContextHelper.GeneratorCtx())).Data[tp[0]].Quote[tp[1]].Price);
+            var price = PriceConvertHelper.ConvertPrice((await _httpService.GetAsync<CoinMarketResponseDto>(
+                new Uri($"{_option.BaseUrl}?symbol={tp[0]}").ToString(), new Dictionary<string, string>
+                {
+                    { "X-CMC_PRO_API_KEY", _option.ApiKey },
+                    { "Accepts", "application/json" },
+                }, ContextHelper.GeneratorCtx())).Data[tp[0]].Quote[tp[1]].Price);
 
-        _reporter.RecordPriceCollected(SourceType.CoinMarket, tokenPair, price);
+            _reporter.RecordPriceCollected(SourceType.CoinMarket, tokenPair, price);
 
-        return price;
+            return price;
+        }
+        finally
+        {
+            timer.ObserveDuration();
+        }
     }
 }
