@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using AetherLink.Worker.Core.Dtos;
 
 namespace AetherLink.Worker.Core.Common.TonIndexer;
 
@@ -27,6 +28,29 @@ public class Transaction
     public string PrevTransLt { get; set; }
     public string TotalFees { get; set; }
     public string TraceId { get; set; }
+
+    public CrossChainToTonTransactionDto ConvertToTonTransactionDto()
+    {
+        var tx = new CrossChainToTonTransactionDto
+        {
+            WorkChain = BlockRef.Workchain,
+            Shard = BlockRef.Shard,
+            SeqNo = BlockRef.Seqno,
+            TraceId = TraceId,
+            Hash = Hash,
+            Aborted = Description.Aborted,
+            PrevHash = PrevTransHash,
+            BlockTime = Now,
+            Body = InMsg.MessageContent.Body,
+            Success = Description.ComputePh.Success && Description.Action.Success,
+            ExitCode = Description.ComputePh.ExitCode,
+            Bounce = InMsg.Bounce,
+            Bounced = InMsg.Bounced,
+            OpCode = InMsg.Opcode
+        };
+
+        return tx;
+    }
 }
 
 public class AccountState

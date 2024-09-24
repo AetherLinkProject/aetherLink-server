@@ -13,7 +13,7 @@ public abstract class TonIndexerBase
     protected int _apiWeight { get; set; }
     public int ApiWeight => _apiWeight;
 
-    public TonIndexerBase(TonHelper tonHelper)
+    protected TonIndexerBase(TonHelper tonHelper)
     {
         _tonHelper = tonHelper;
     }
@@ -29,26 +29,7 @@ public abstract class TonIndexerBase
             return null;
         }
 
-        var originalTx = transactions.Transactions[0];
-        var tx = new CrossChainToTonTransactionDto
-        {
-            OpCode = originalTx.InMsg.Opcode,
-            WorkChain = originalTx.BlockRef.Workchain,
-            Shard = originalTx.BlockRef.Shard,
-            SeqNo = originalTx.BlockRef.Seqno,
-            TraceId = originalTx.TraceId,
-            Hash = originalTx.Hash,
-            Aborted = originalTx.Description.Aborted,
-            PrevHash = originalTx.PrevTransHash,
-            BlockTime = originalTx.Now,
-            Body = originalTx.InMsg.MessageContent.Body,
-            Success = originalTx.Description.ComputePh.Success && originalTx.Description.Action.Success,
-            ExitCode = originalTx.Description.ComputePh.ExitCode,
-            Bounce = originalTx.InMsg.Bounce,
-            Bounced = originalTx.InMsg.Bounced
-        };
-
-        return tx;
+        return transactions.Transactions[0].ConvertToTonTransactionDto();
     }
 
     public virtual async Task<(List<CrossChainToTonTransactionDto>, TonIndexerDto)> GetSubsequentTransaction(
@@ -83,37 +64,12 @@ public abstract class TonIndexerBase
                 skipCount = 0;
             }
             
-            var tx = new CrossChainToTonTransactionDto();
-            switch (originalTx.InMsg.Opcode)
+            var tx = originalTx.ConvertToTonTransactionDto();
+            if (tx.OpCode == TonOpCodeConstants.ForwardTx || tx.OpCode == TonOpCodeConstants.ResendTx ||
+                tx.OpCode == TonOpCodeConstants.ReceiveTx)
             {
-                case TonOpCodeConstants.ForwardTx:
-                    tx.OpCode = TonOpCodeConstants.ForwardTx;
-                    break;
-                case TonOpCodeConstants.ResendTx:
-                    tx.OpCode = TonOpCodeConstants.ResendTx;
-                    break;
-                case TonOpCodeConstants.ReceiveTx:
-                    tx.OpCode = TonOpCodeConstants.ReceiveTx;
-                    break;
-                default:
-                    continue;
+                result.Add(tx);
             }
-
-            tx.WorkChain = originalTx.BlockRef.Workchain;
-            tx.Shard = originalTx.BlockRef.Shard;
-            tx.SeqNo = originalTx.BlockRef.Seqno;
-            tx.TraceId = originalTx.TraceId;
-            tx.Hash = originalTx.Hash;
-            tx.Aborted = originalTx.Description.Aborted;
-            tx.PrevHash = originalTx.PrevTransHash;
-            tx.BlockTime = originalTx.Now;
-            tx.Body = originalTx.InMsg.MessageContent.Body;
-            tx.Success = originalTx.Description.ComputePh.Success && originalTx.Description.Action.Success;
-            tx.ExitCode = originalTx.Description.ComputePh.ExitCode;
-            tx.Bounce = originalTx.InMsg.Bounce;
-            tx.Bounced = originalTx.InMsg.Bounced;
-            
-            result.Add(tx);
         }
 
         return
