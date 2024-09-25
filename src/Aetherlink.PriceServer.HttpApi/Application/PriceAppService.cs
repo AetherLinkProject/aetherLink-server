@@ -34,63 +34,104 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
 
     public async Task<PriceResponseDto> GetTokenPriceAsync(GetTokenPriceRequestDto input)
     {
-        _reporter.RecordPriceQueried(input.AppId, nameof(GetTokenPriceAsync));
-
-        return new()
+        var timer = _reporter.GetPriceRequestLatencyTimer(input.AppId, RouterConstants.TOKEN_PRICE_URI);
+        try
         {
-            Source = input.Source.ToString(),
-            Data = await _priceProvider.GetPriceAsync(input.TokenPair, input.Source)
-        };
+            _reporter.RecordPriceQueriedTotal(input.AppId, RouterConstants.TOKEN_PRICE_URI);
+
+            return new()
+            {
+                Source = input.Source.ToString(),
+                Data = await _priceProvider.GetPriceAsync(input.TokenPair, input.Source)
+            };
+        }
+        finally
+        {
+            timer.ObserveDuration();
+        }
     }
 
     public async Task<PriceListResponseDto> GetTokenPriceListAsync(GetTokenPriceListRequestDto input)
     {
-        _reporter.RecordPriceQueried(input.AppId, nameof(GetTokenPriceListAsync));
-
-        return new()
+        var timer = _reporter.GetPriceRequestLatencyTimer(input.AppId, RouterConstants.TOKEN_PRICE_LIST_URI);
+        try
         {
-            Source = input.Source.ToString(),
-            Prices = await _priceProvider.GetPriceListAsync(input.Source, input.TokenPairs)
-        };
+            _reporter.RecordPriceQueriedTotal(input.AppId, RouterConstants.TOKEN_PRICE_LIST_URI);
+
+            return new()
+            {
+                Source = input.Source.ToString(),
+                Prices = await _priceProvider.GetPriceListAsync(input.Source, input.TokenPairs)
+            };
+        }
+        finally
+        {
+            timer.ObserveDuration();
+        }
     }
 
     public async Task<AggregatedPriceResponseDto> GetAggregatedTokenPriceAsync(GetAggregatedTokenPriceRequestDto input)
     {
-        _reporter.RecordPriceQueried(input.AppId, nameof(GetAggregatedTokenPriceAsync));
+        var timer = _reporter.GetPriceRequestLatencyTimer(input.AppId, RouterConstants.AGGREGATED_TOKEN_PRICE_URI);
+        try
+        {
+            _reporter.RecordPriceQueriedTotal(input.AppId, RouterConstants.AGGREGATED_TOKEN_PRICE_URI);
+            _reporter.RecordAggregatedPriceQueriedTotal(input.AppId, input.TokenPair, input.AggregateType.ToString());
 
-        var price = input.AggregateType == AggregateType.Latest
-            ? await _priceProvider.GetPriceAsync(input.TokenPair)
-            : await GetAggregatedPriceAsync(input);
+            var price = input.AggregateType == AggregateType.Latest
+                ? await _priceProvider.GetPriceAsync(input.TokenPair)
+                : await GetAggregatedPriceAsync(input);
 
-        return price != null
-            ? new() { AggregateType = input.AggregateType.ToString(), Data = price }
-            : new();
+            return price != null
+                ? new() { AggregateType = input.AggregateType.ToString(), Data = price }
+                : new();
+        }
+        finally
+        {
+            timer.ObserveDuration();
+        }
     }
 
     public async Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(
         GetPriceForLast24HoursRequestDto input)
     {
-        _reporter.RecordPriceQueried(input.AppId, nameof(GetPriceForLast24HoursAsync));
+        var timer = _reporter.GetPriceRequestLatencyTimer(input.AppId, RouterConstants.LAST_24HOURS_PRICE_URI);
+        try
+        {
+            _reporter.RecordPriceQueriedTotal(input.AppId, RouterConstants.LAST_24HOURS_PRICE_URI);
 
-        var prices = (await _priceProvider.GetLatest24HoursPriceAsync(input.TokenPair)).OrderBy(t => t.UpdateTime)
-            .ToList();
+            var prices = (await _priceProvider.GetLatest24HoursPriceAsync(input.TokenPair)).OrderBy(t => t.UpdateTime)
+                .ToList();
 
-        var changeRage = prices.Count > 2
-            ? Math.Round((double)(prices.Last().Price - prices.First().Price) / prices.First().Price, 5)
-            : 0;
+            var changeRage = prices.Count > 2
+                ? Math.Round((double)(prices.Last().Price - prices.First().Price) / prices.First().Price, 5)
+                : 0;
 
-        return new()
-            { Prices = prices.ToList(), ChangeRate24Hours = changeRage };
+            return new()
+                { Prices = prices.ToList(), ChangeRate24Hours = changeRage };
+        }
+        finally
+        {
+            timer.ObserveDuration();
+        }
     }
 
     public async Task<DailyPriceResponseDto> GetDailyPriceAsync(GetDailyPriceRequestDto input)
     {
-        _reporter.RecordPriceQueried(input.AppId, nameof(GetDailyPriceAsync));
+        var timer = _reporter.GetPriceRequestLatencyTimer(input.AppId, RouterConstants.DAILY_PRICE_URI);
+        try
+        {
+            _reporter.RecordPriceQueriedTotal(input.AppId, RouterConstants.DAILY_PRICE_URI);
 
-        DateTime.TryParseExact(input.TimeStamp, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None,
-            out var targetTime);
+            DateTime.TryParseExact(input.TimeStamp, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None,
+                out var targetTime);
 
-        return new() { Data = await _historicPriceProvider.GetHistoricPriceAsync(input.TokenPair, targetTime) };
+            return new() { Data = await _historicPriceProvider.GetHistoricPriceAsync(input.TokenPair, targetTime) };
+        }
+        finally
+        {
+            timer.ObserveDuration();
+        }
     }
 
     private async Task<PriceDto> GetAggregatedPriceAsync(GetAggregatedTokenPriceRequestDto input)

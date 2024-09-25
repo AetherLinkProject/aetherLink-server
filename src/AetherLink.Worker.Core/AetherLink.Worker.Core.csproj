@@ -10,16 +10,15 @@
         <PackageReference Include="AElf.Sdk.CSharp" Version="1.6.0" />
         <PackageReference Include="AutoMapper" Version="12.0.0" />
         <PackageReference Include="GraphQL" Version="7.0.0" />
+        <PackageReference Include="GraphQL.Client" Version="5.1.0" />
+        <PackageReference Include="GraphQL.Client" Version="5.1.0" />
         <PackageReference Include="GraphQL.Client.Abstractions" Version="5.1.0" />
+        <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="5.1.0" />
         <PackageReference Include="Grpc.Core" Version="2.46.6" />
         <PackageReference Include="Grpc.Net.Client" Version="2.60.0" />
         <PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
         <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
         <PackageReference Include="Serilog.Sinks.RollingFile" Version="3.3.0" />
-        <PackageReference Include="TonSdk.Client" Version="0.3.10" />
-        <PackageReference Include="TonSdk.Connect" Version="0.2.4" />
-        <PackageReference Include="TonSdk.Contracts" Version="0.3.1" />
-        <PackageReference Include="TonSdk.Core" Version="0.3.9" />
         <PackageReference Include="Volo.Abp.AspNetCore.Serilog" Version="7.0.0" />
         <PackageReference Include="Volo.Abp.AutoMapper" Version="7.0.0" />
         <PackageReference Include="Volo.Abp.BackgroundJobs.Abstractions" Version="7.0.0" />
@@ -32,8 +31,13 @@
         <PackageReference Include="Grpc.Tools" Version="2.46.3" />
         <PackageReference Include="Contrib.Grpc.Core.M1" Version="2.41.0" />
         <PackageReference Include="FluentScheduler" Version="5.4.0" />
-        <PackageReference Include="AetherlinkPriceServer" Version="1.0.3" />
+        <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="5.1.0" />
+        <PackageReference Include="TonSdk.Client" Version="0.3.10" />
+        <PackageReference Include="TonSdk.Connect" Version="0.2.4" />
+        <PackageReference Include="TonSdk.Contracts" Version="0.3.1" />
+        <PackageReference Include="TonSdk.Core" Version="0.3.9" />
         <PackageReference Include="Volo.Abp.Ddd.Domain" Version="7.0.0" />
+        <PackageReference Include="AetherlinkPriceServer" Version="1.0.4" />
     </ItemGroup>
 
     <Target Name="Gen_proto" BeforeTargets="BeforeBuild">

@@ -15,11 +15,11 @@ namespace AetherLink.Worker.Core.Provider;
 
 public interface IRetryProvider
 {
-    public Task RetryAsync<T>(T args, bool untilFailed = false, bool backOff = false, long delayDelta = 0)
+    Task RetryAsync<T>(T args, bool untilFailed = false, bool backOff = false, long delayDelta = 0)
         where T : JobPipelineArgsBase;
 
-    public Task RetryWithIdAsync<T>(T args, string id, bool untilFailed = false, bool backOff = false,
-        long delayDelta = 0);
+    Task RetryWithIdAsync<T>(T args, string id, bool untilFailed = false, bool backOff = false, long delayDelta = 0);
+    Task RetryAsync<T>(OCRContext context, T args, bool untilFailed = false, bool backOff = false, long delay = 0);
 }
 
 public class RetryProvider : IRetryProvider, ISingletonDependency
@@ -62,6 +62,12 @@ public class RetryProvider : IRetryProvider, ISingletonDependency
             id, delay, hangfireId, _retryCount[id]);
     }
 
+    public async Task RetryAsync<T>(OCRContext context, T obj, bool untilFailed = false, bool backOff = false,
+        long delay = 0) => await RetryWithIdAsync(obj, GenerateRetryId(context), untilFailed, backOff, delay);
+
     private string GenerateRetryId<T>(T args) where T : JobPipelineArgsBase
         => IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch, args.RoundId);
+
+    private string GenerateRetryId(OCRContext context)
+        => IdGeneratorHelper.GenerateId(context.ChainId, context.RequestId, context.Epoch, context.RoundId);
 }

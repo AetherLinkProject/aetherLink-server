@@ -101,8 +101,9 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
                 }
             }
 
-            await ProcessReportValidateResultAsync(args, await GeneratedPartialSignatureAsync(chainId,
-                job.TransactionId, reqId, ByteString.FromBase64(args.Observations), epoch));
+            await ProcessReportValidateResultAsync(args,
+                await GeneratedPartialSignatureAsync(chainId, job.TransactionId,
+                    ByteString.FromBase64(args.Observations), epoch));
         }
         catch (Exception e)
         {
@@ -110,16 +111,17 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
         }
     }
 
-    private async Task<PartialSignatureDto> GeneratedPartialSignatureAsync(string chainId, string transactionId,
-        string requestId, ByteString observations, long epoch)
+    private async Task<PartialSignatureDto> GeneratedPartialSignatureAsync(string chainId, string requestId,
+        ByteString observations, long epoch)
     {
         if (!_infoOptions.ChainConfig.TryGetValue(chainId, out var chainConfig))
         {
             throw new InvalidDataException($"Not support chain {chainId}.");
         }
 
-        var transmitData = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, requestId,
-            transactionId, epoch, observations);
+        var transmitData =
+            await _oracleContractProvider.GenerateTransmitDataByTransactionIdAsync(chainId, requestId, epoch,
+                observations);
 
         var msg = HashHelper.ConcatAndCompute(HashHelper.ComputeFrom(transmitData.Report.ToByteArray()),
             HashHelper.ComputeFrom(transmitData.ReportContext.ToString())).ToByteArray();

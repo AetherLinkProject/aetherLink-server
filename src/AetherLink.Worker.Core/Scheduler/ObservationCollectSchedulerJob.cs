@@ -61,7 +61,7 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
             var epoch = job.Epoch;
 
             _logger.LogInformation(
-                "[ObservationCollectScheduler] Scheduler job execute. reqId {ReqId}, roundId:{RoundId}, reqState:{State}",
+                "[ObservationCollectScheduler] Scheduler trigger execute. reqId {ReqId}, roundId:{RoundId}, reqState:{State}",
                 job.RequestId, job.RoundId, job.State.ToString());
 
             if (!_options.ChainConfig.TryGetValue(job.ChainId, out var chainConfig)) return;

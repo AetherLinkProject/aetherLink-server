@@ -20,7 +20,6 @@ public interface IWorkerProvider
     public Task<List<OcrLogEventDto>> SearchJobsAsync(string chainId, long to, long from);
     public Task<List<TransmittedDto>> SearchTransmittedAsync(string chainId, long to, long from);
     public Task<List<RequestCancelledDto>> SearchRequestCanceledAsync(string chainId, long to, long from);
-    public Task<long> GetBlockLatestHeightAsync(string chainId);
     public Task HandleJobAsync(OcrLogEventDto logEvent);
     public Task HandleTransmittedLogEventAsync(TransmittedDto transmitted);
     public Task HandleRequestCancelledLogEventAsync(RequestCancelledDto requestCancelled);
@@ -33,42 +32,34 @@ public interface IWorkerProvider
 public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependency
 {
     private readonly IObjectMapper _objectMapper;
+
     private readonly ILogger<WorkerProvider> _logger;
-    private readonly IIndexerProvider _indexerProvider;
     private readonly IStorageProvider _storageProvider;
-    private readonly IContractProvider _contractProvider;
+    private readonly IAeFinderProvider _aeFinderProvider;
     private readonly Dictionary<int, IRequestJob> _requestJob;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public WorkerProvider(IBackgroundJobManager backgroundJobManager, ILogger<WorkerProvider> logger,
-        IObjectMapper objectMapper, IIndexerProvider indexerProvider, IContractProvider contractProvider,
-        IOptionsSnapshot<RedisCacheOptions> optionsAccessor, IEnumerable<IRequestJob> requestJobs,
-        IStorageProvider storageProvider) : base(optionsAccessor)
+        IObjectMapper objectMapper, AeFinderProvider aeFinderProvider, IStorageProvider storageProvider,
+        IOptionsSnapshot<RedisCacheOptions> optionsAccessor, IEnumerable<IRequestJob> requestJobs) : base(
+        optionsAccessor)
     {
         _logger = logger;
         _objectMapper = objectMapper;
         _storageProvider = storageProvider;
-        _indexerProvider = indexerProvider;
-        _contractProvider = contractProvider;
+        _aeFinderProvider = aeFinderProvider;
         _backgroundJobManager = backgroundJobManager;
         _requestJob = requestJobs.ToDictionary(x => x.RequestTypeIndex, y => y);
     }
 
-    public async Task<long> GetBlockLatestHeightAsync(string chainId)
-    {
-        var currentBlockHeight = await _indexerProvider.GetIndexBlockHeightAsync(chainId);
-        if (currentBlockHeight > 0) return currentBlockHeight;
-        return await _contractProvider.GetBlockLatestHeightAsync(chainId);
-    }
-
     public async Task<List<OcrLogEventDto>> SearchJobsAsync(string chainId, long to, long from)
-        => await _indexerProvider.SubscribeLogsAsync(chainId, to, from);
+        => await _aeFinderProvider.SubscribeLogsAsync(chainId, to, from);
 
     public async Task<List<TransmittedDto>> SearchTransmittedAsync(string chainId, long to, long from)
-        => await _indexerProvider.SubscribeTransmittedAsync(chainId, to, from);
+        => await _aeFinderProvider.SubscribeTransmittedAsync(chainId, to, from);
 
     public async Task<List<RequestCancelledDto>> SearchRequestCanceledAsync(string chainId, long to, long from)
-        => await _indexerProvider.SubscribeRequestCancelledAsync(chainId, to, from);
+        => await _aeFinderProvider.SubscribeRequestCancelledAsync(chainId, to, from);
 
     public async Task HandleJobAsync(OcrLogEventDto logEvent)
     {
