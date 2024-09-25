@@ -20,11 +20,13 @@ public interface IOracleContractProvider
     public Task<Commitment> GetRequestCommitmentAsync(string chainId, string requestId);
     public Task<Commitment> GetRequestCommitmentByTxAsync(string chainId, string transactionId);
     public Task<long> GetStartEpochAsync(string chainId, long blockHeight);
-    // public Task<TransmitInputDto> GetTransmitInputByTransactionIdAsync(string chainId, string transactionId);
     public Task<Report> GetTransmitReportByTransactionIdAsync(string chainId, string transactionId);
 
     public Task<TransmitInput> GenerateTransmitDataAsync(string chainId, string requestId, long epoch,
         ByteString result);
+
+    public Task<TransmitInput> GenerateTransmitDataByTransactionIdAsync(string chainId, string transactionId,
+        long epoch, ByteString result);
 }
 
 // If there is request-related data loss in Indexer, the transaction results and contract view method will be used as a backup.
@@ -109,6 +111,26 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
             {
                 Result = result,
                 OnChainMetadata = (await GetRequestCommitmentAsync(chainId, requestId)).ToByteString(),
+                Error = ByteString.Empty,
+                OffChainMetadata = ByteString.Empty
+            }.ToByteString()
+        };
+
+        transmitData.ReportContext.Add(await GetOracleConfigAsync(chainId));
+        transmitData.ReportContext.Add(HashHelper.ComputeFrom(epoch));
+        transmitData.ReportContext.Add(HashHelper.ComputeFrom(0));
+        return transmitData;
+    }
+
+    public async Task<TransmitInput> GenerateTransmitDataByTransactionIdAsync(string chainId, string transactionId,
+        long epoch, ByteString result)
+    {
+        var transmitData = new TransmitInput
+        {
+            Report = new Report
+            {
+                Result = result,
+                OnChainMetadata = (await GetRequestCommitmentByTxAsync(chainId, transactionId)).ToByteString(),
                 Error = ByteString.Empty,
                 OffChainMetadata = ByteString.Empty
             }.ToByteString()

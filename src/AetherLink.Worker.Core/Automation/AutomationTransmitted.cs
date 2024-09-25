@@ -71,8 +71,7 @@ public class AutomationTransmitted : AsyncBackgroundJob<BroadcastTransmitResultA
                                 break;
                             case TriggerType.Log:
                                 var report = await _oracleContractProvider.GetTransmitReportByTransactionIdAsync(
-                                    chainId,
-                                    args.TransactionId);
+                                    chainId, args.TransactionId);
                                 var payload = LogTriggerCheckData.Parser.ParseFrom(report.Result);
                                 var id = AutomationHelper.GetLogTriggerKeyByPayload(chainId, upkeepId,
                                     payload.ToByteArray());

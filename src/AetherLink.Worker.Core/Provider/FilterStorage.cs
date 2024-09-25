@@ -111,15 +111,26 @@ public class FilterStorage : IFilterStorage, ISingletonDependency
             var chainId = logUpkeepInfo.ChainId;
             var eventId = GenerateEventId(logUpkeepInfo.TriggerContractAddress, logUpkeepInfo.TriggerEventName);
             var upkeepStorageId = IdGeneratorHelper.GenerateUpkeepInfoId(chainId, logUpkeepInfo.UpkeepId);
-            if (!_eventFilters[chainId].TryGetValue(eventId, out var eventFilters))
+
+            _logger.LogDebug("[FilterStorage] {chain} filter init {eventId}.", chainId, eventId);
+
+            if (!_eventFilters.TryGetValue(chainId, out var chainFilter))
             {
-                _eventFilters[chainId][eventId] = new() { upkeepStorageId };
-                _logger.LogDebug("[FilterStorage] {chain} filter init {eventId}.", chainId, eventId);
+                _eventFilters[chainId] = new ConcurrentDictionary<string, List<string>>
+                    { [eventId] = new() { upkeepStorageId } };
+                return;
+            }
+
+            if (!chainFilter.TryGetValue(eventId, out var eventFilters))
+            {
+                chainFilter[eventId] = new() { upkeepStorageId };
+                _eventFilters[chainId] = chainFilter;
                 return;
             }
 
             eventFilters.Add(upkeepStorageId);
-            _eventFilters[chainId][eventId] = eventFilters.Distinct().ToList();
+            chainFilter[eventId] = eventFilters.Distinct().ToList();
+            _eventFilters[chainId] = chainFilter;
         }
     }
 
@@ -130,7 +141,9 @@ public class FilterStorage : IFilterStorage, ISingletonDependency
             var chainId = logUpkeepInfo.ChainId;
             var upkeepId = logUpkeepInfo.UpkeepId;
             var eventId = GenerateEventId(logUpkeepInfo.TriggerContractAddress, logUpkeepInfo.TriggerEventName);
-            if (!_eventFilters[chainId].TryGetValue(eventId, out var eventFilters))
+
+            if (!_eventFilters.TryGetValue(chainId, out _) ||
+                !_eventFilters[chainId].TryGetValue(eventId, out var eventFilters))
             {
                 _logger.LogWarning("[FilterStorage] {chain} {upkeep} no need remove.", chainId, upkeepId);
                 return;
@@ -161,18 +174,15 @@ public class FilterStorage : IFilterStorage, ISingletonDependency
     {
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
+            _eventFilters[chainId] = new();
             var result = await _storageProvider.GetAsync<EventFiltersStorageDto>(GenerateFiltersStorageId(chainId));
-            if (result == null || !result.Filters.Any())
-            {
-                _logger.LogDebug("[FilterStorage] There is no filter in storage on {chain} yet.", chainId);
-                _eventFilters[chainId] = new();
-            }
-            else
-            {
-                _logger.LogInformation("[FilterStorage] Init {count} Filters on {chain}", result.Filters.Count,
-                    chainId);
-                result.Filters.ForEach(f => _eventFilters[chainId][f.Key] = f.Value);
-            }
+            if (result == null || !result.Filters.Any()) return;
+
+            _logger.LogInformation("[FilterStorage] Init {count} Filters on {chain}", result.Filters.Count,
+                chainId);
+            var chainFilter = new ConcurrentDictionary<string, List<string>>();
+            foreach (var filter in result.Filters) chainFilter[filter.Key] = filter.Value;
+            _eventFilters[chainId] = chainFilter;
 
             _logger.LogInformation("[FilterStorage] Finished FiltersStorage initialization.");
         }

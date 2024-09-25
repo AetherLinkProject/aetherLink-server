@@ -13,7 +13,7 @@ using aelf = global::AElf.CSharp.Core;
 namespace AetherLink.Contracts.DataFeeds.Coordinator {
 
   #region Events
-  internal partial class ConfigSet : aelf::IEvent<ConfigSet>
+  public partial class ConfigSet : aelf::IEvent<ConfigSet>
   {
     public global::System.Collections.Generic.IEnumerable<ConfigSet> GetIndexed()
     {
@@ -35,7 +35,7 @@ namespace AetherLink.Contracts.DataFeeds.Coordinator {
   /// <summary>
   /// the contract definition: a gRPC service definition.
   /// </summary>
-  internal static partial class DataFeedsCoordinatorContractContainer
+  public static partial class DataFeedsCoordinatorContractContainer
   {
     static readonly string __ServiceName = "data.DataFeedsCoordinatorContract";
 
@@ -193,26 +193,119 @@ namespace AetherLink.Contracts.DataFeeds.Coordinator {
     }
     #endregion
 
-    public class DataFeedsCoordinatorContractReferenceState : global::AElf.Sdk.CSharp.State.ContractReferenceState
-    {
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Coordinator.InitializeInput, global::Google.Protobuf.WellKnownTypes.Empty> Initialize { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty> TransferAdmin { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty> AcceptAdmin { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty> Pause { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Empty> Unpause { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty> SetOracleContractAddress { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Int32Value, global::Google.Protobuf.WellKnownTypes.Empty> SetRequestTypeIndex { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Coordinator.Request, global::Google.Protobuf.WellKnownTypes.Empty> SendRequest { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Coordinator.ReportInput, global::Google.Protobuf.WellKnownTypes.Empty> Report { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Hash, global::Google.Protobuf.WellKnownTypes.Empty> DeleteCommitment { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::AElf.Types.Address> GetAdmin { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.BoolValue> IsPaused { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::AElf.Types.Address> GetOracleContractAddress { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::Google.Protobuf.WellKnownTypes.Int32Value> GetRequestTypeIndex { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AElf.Types.Hash, global::AElf.Types.Hash> GetCommitmentHash { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::AetherLink.Contracts.DataFeeds.Coordinator.Config, global::Google.Protobuf.WellKnownTypes.Empty> SetConfig { get; set; }
-      internal global::AElf.Sdk.CSharp.State.MethodReference<global::Google.Protobuf.WellKnownTypes.Empty, global::AetherLink.Contracts.DataFeeds.Coordinator.Config> GetConfig { get; set; }
-    }
+    /// <summary>Base class for the contract of DataFeedsCoordinatorContract</summary>
+    // public abstract partial class DataFeedsCoordinatorContractBase : AElf.Sdk.CSharp.CSharpSmartContract<AetherLink.Contracts.DataFeeds.Coordinator.DataFeedsCoordinatorContractState>
+    // {
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Initialize(global::Coordinator.InitializeInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty TransferAdmin(global::AElf.Types.Address input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty AcceptAdmin(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Pause(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Unpause(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetOracleContractAddress(global::AElf.Types.Address input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetRequestTypeIndex(global::Google.Protobuf.WellKnownTypes.Int32Value input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SendRequest(global::Coordinator.Request input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Report(global::Coordinator.ReportInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty DeleteCommitment(global::AElf.Types.Hash input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AElf.Types.Address GetAdmin(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.BoolValue IsPaused(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AElf.Types.Address GetOracleContractAddress(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Int32Value GetRequestTypeIndex(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AElf.Types.Hash GetCommitmentHash(global::AElf.Types.Hash input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetConfig(global::AetherLink.Contracts.DataFeeds.Coordinator.Config input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AetherLink.Contracts.DataFeeds.Coordinator.Config GetConfig(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    // }
+    //
+    // public static aelf::ServerServiceDefinition BindService(DataFeedsCoordinatorContractBase serviceImpl)
+    // {
+    //   return aelf::ServerServiceDefinition.CreateBuilder()
+    //       .AddDescriptors(Descriptors)
+    //       .AddMethod(__Method_Initialize, serviceImpl.Initialize)
+    //       .AddMethod(__Method_TransferAdmin, serviceImpl.TransferAdmin)
+    //       .AddMethod(__Method_AcceptAdmin, serviceImpl.AcceptAdmin)
+    //       .AddMethod(__Method_Pause, serviceImpl.Pause)
+    //       .AddMethod(__Method_Unpause, serviceImpl.Unpause)
+    //       .AddMethod(__Method_SetOracleContractAddress, serviceImpl.SetOracleContractAddress)
+    //       .AddMethod(__Method_SetRequestTypeIndex, serviceImpl.SetRequestTypeIndex)
+    //       .AddMethod(__Method_SendRequest, serviceImpl.SendRequest)
+    //       .AddMethod(__Method_Report, serviceImpl.Report)
+    //       .AddMethod(__Method_DeleteCommitment, serviceImpl.DeleteCommitment)
+    //       .AddMethod(__Method_GetAdmin, serviceImpl.GetAdmin)
+    //       .AddMethod(__Method_IsPaused, serviceImpl.IsPaused)
+    //       .AddMethod(__Method_GetOracleContractAddress, serviceImpl.GetOracleContractAddress)
+    //       .AddMethod(__Method_GetRequestTypeIndex, serviceImpl.GetRequestTypeIndex)
+    //       .AddMethod(__Method_GetCommitmentHash, serviceImpl.GetCommitmentHash)
+    //       .AddMethod(__Method_SetConfig, serviceImpl.SetConfig)
+    //       .AddMethod(__Method_GetConfig, serviceImpl.GetConfig).Build();
+    // }
+
   }
 }
 #endregion

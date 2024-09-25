@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using AetherLink.Worker.Core.Dtos;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Provider;
@@ -56,11 +59,14 @@ public class PlainDataFeedsProvider : IPlainDataFeedsProvider, ITransientDepende
     private async Task<string> GetSortedResponseContentAsStringAsync(HttpResponseMessage response)
     {
         var content = await response.Content.ReadAsStringAsync();
-        var jsonObject = JsonConvert.DeserializeObject<JObject>(content);
-        var sortedObject = SortJToken(jsonObject);
-        var sortedJson = JsonConvert.SerializeObject(sortedObject, Formatting.Indented);
+        var authResponse = JsonConvert.DeserializeObject<AuthResponseDto>(content);
+        authResponse.Keys = authResponse.Keys.OrderBy(a => a.Kid).ToList();
+        return JsonConvert.SerializeObject(authResponse,
+            new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
-        return sortedJson;
+        // var jsonObject = JsonConvert.DeserializeObject<JObject>(content);
+        // var sortedObject = SortJToken(jsonObject);
+        // return JsonConvert.SerializeObject(sortedObject, Formatting.Indented);
     }
 
     private JObject SortJToken(JObject jObject)
