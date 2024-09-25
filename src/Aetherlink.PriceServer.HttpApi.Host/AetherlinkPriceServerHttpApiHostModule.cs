@@ -127,6 +127,7 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<GateIoPriceSearchWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CoinBaseTokenPriceSearchWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<HourlyPriceWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<DailyMetricsReportWorker>());
     }
 
     private void ConfigureLocalization()

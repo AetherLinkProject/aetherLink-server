@@ -1,5 +1,6 @@
-using System.Timers;
+using System.Collections.Concurrent;
 using AetherLink.Metric;
+using NUglify.Helpers;
 using Prometheus;
 using Volo.Abp.DependencyInjection;
 using Definition = AetherlinkPriceServer.Reporter.PriceQueryMetricsDefinition;
@@ -11,21 +12,23 @@ public interface IPriceQueryReporter
     public void RecordPriceQueriedTotal(string appId, string router);
     public ITimer GetPriceRequestLatencyTimer(string appId, string router);
     public void RecordAggregatedPriceQueriedTotal(string appId, string tokenPair, string type);
+    public void ReportAppQueriedRequestsMetrics();
 }
 
 public class PriceQueryReporter : IPriceQueryReporter, ISingletonDependency
 {
-    private readonly Gauge _priceQueriedRequests;
+    private readonly Gauge _appRequests;
     private readonly Histogram _priceRequestLatency;
     private readonly Counter _priceQueriedRequestsTotal;
     private readonly Counter _aggregatedPriceRequestsTotal;
+    private readonly ConcurrentDictionary<string, double> _appRequestsMap = new();
 
     public PriceQueryReporter()
     {
         _priceQueriedRequestsTotal = MetricsReporter.RegistryCounters(Definition.PriceQueryRequestsTotalName,
             Definition.PriceQueryRequestsTotalLabels);
-        _priceQueriedRequests = MetricsReporter.RegistryGauges(Definition.PriceQueryRequestsName,
-            Definition.PriceQueryRequestsLabels);
+        _appRequests = MetricsReporter.RegistryGauges(Definition.AppRequestsName,
+            Definition.AppRequestsLabels);
         _priceRequestLatency = MetricsReporter.RegistryHistograms(Definition.PriceRequestLatencyName,
             Definition.PriceRequestLatencyLabels);
         _aggregatedPriceRequestsTotal = MetricsReporter.RegistryCounters(Definition.AggregatedPriceRequestsTotalName,
@@ -35,7 +38,18 @@ public class PriceQueryReporter : IPriceQueryReporter, ISingletonDependency
     public void RecordPriceQueriedTotal(string appId, string router)
     {
         _priceQueriedRequestsTotal.WithLabels(appId, router).Inc();
-        _priceQueriedRequests.WithLabels(appId, router).Set(1);
+
+        if (!_appRequestsMap.TryGetValue(appId, out var app)) _appRequestsMap[appId] = 1;
+        else _appRequestsMap[appId] = app + 1;
+    }
+
+    public void ReportAppQueriedRequestsMetrics()
+    {
+        _appRequestsMap.ForEach(a =>
+        {
+            _appRequests.WithLabels(a.Key).Set(a.Value);
+            _appRequestsMap[a.Key] = 0;
+        });
     }
 
     public ITimer GetPriceRequestLatencyTimer(string appId, string router)
