@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Dtos;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.HttpSys;
 
 namespace AetherLink.Worker.Core.Common.TonIndexer;
@@ -57,12 +58,22 @@ public class TonIndexerWrapper
             return (false, null);
         }
 
-        public bool CanCheckAvailable()
-        {
-            return !_isAvailable && DateTime.UtcNow >= _nextCheckTime;
-        }
-        
         public async Task<bool> CheckAvailable()
+        {
+            return _isAvailable && await TryGetRequestAccess();
+        }
+
+        public async Task<bool> NeedCheckConnection()
+        {
+            if (!_isAvailable && DateTime.UtcNow >= _nextCheckTime)
+            {
+                return await _indexerBase.TryGetRequestAccess();
+            }
+
+            return false;
+        }
+
+        public async Task CheckConnection()
         {
             try
             {
@@ -81,11 +92,9 @@ public class TonIndexerWrapper
             {
                 SetDisable();
             }
-
-            return _isAvailable;
         }
 
-        public async Task<bool> TryGetRequestAccess()
+        private async Task<bool> TryGetRequestAccess()
         {
             try
             {

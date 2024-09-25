@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
+using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Worker;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -27,13 +29,16 @@ public sealed class TonHelper: ISingletonDependency
     private readonly KeyPair _keyPair ;
     private readonly string _transmitterFee;
     private readonly ILogger<TonHelper> _logger;
+    private readonly IStorageProvider _storageProvider;
+    private const string TonIndexerStorageKey = "TonIndexer";
     
-    public TonHelper(IOptionsSnapshot<IConfiguration> snapshotConfig, ILogger<TonHelper> logger)
+    public TonHelper(IOptionsSnapshot<IConfiguration> snapshotConfig, ILogger<TonHelper> logger, IStorageProvider storageProvider)
     {
         _tonConfigOptions = snapshotConfig.Value.GetSection("Chains:ChainInfos:Ton").Get<TonConfigOptions>();
         var secretKeyStr = snapshotConfig.Value.GetSection("OracleChainInfo:Ton:TransmitterSecretKey").Value;
         var publicKeyStr = snapshotConfig.Value.GetSection("OracleChainInfo:Ton:TransmitterPublicKey").Value;
         _transmitterFee = snapshotConfig.Value.GetSection("OracleChainInfo:Ton:TransmitterFee").Value;
+        _storageProvider = storageProvider;
         
         var secretKey = Hex.Decode(secretKeyStr);
         var publicKey = Hex.Decode(publicKeyStr);
@@ -100,6 +105,22 @@ public sealed class TonHelper: ISingletonDependency
         return result?.Hash;
     }
 
+    public async Task<TonIndexerDto> GetTonIndexerFromStorage()
+    {
+        var result = await _storageProvider.GetAsync<TonIndexerDto>(TonIndexerStorageKey);
+        if (result == null)
+        {
+            result = new TonIndexerDto();
+        }
+
+        return result;
+    }
+
+    public async Task StorageTonIndexer(TonIndexerDto tonIndexer)
+    {
+        await _storageProvider.SetAsync(TonIndexerStorageKey, tonIndexer);
+    }
+    
     public CrossChainForwardResendDto AnalysisResendTransaction(CrossChainToTonTransactionDto tonTransactionDto)
     {
         var body = Cell.From(tonTransactionDto.Body);

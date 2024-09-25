@@ -9,8 +9,11 @@ public class TonIndexerDto
     public string LatestTransactionHash;
 
     public string LatestTransactionLt;
-
+    
     public int SkipCount;
+
+    public Int64 IndexerTime;
+
 }
 
 

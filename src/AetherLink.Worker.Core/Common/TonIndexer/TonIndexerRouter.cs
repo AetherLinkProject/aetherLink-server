@@ -30,7 +30,7 @@ public class TonIndexerRouter:ISingletonDependency
     {
         foreach (var item in _indexerList)
         {
-            if (item.IsAvailable && await item.TryGetRequestAccess())
+            if (await item.CheckAvailable())
             {
                 var (success, result) = await item.GetSubsequentTransaction(tonIndexerDto);
                 if (success)
@@ -40,7 +40,7 @@ public class TonIndexerRouter:ISingletonDependency
             }
         }    
         
-        _logger.LogError($"All ton indexer are disabled");
+        _logger.LogError($"All ton indexer provider are disabled");
         return (null,null);
     }
 
@@ -48,7 +48,7 @@ public class TonIndexerRouter:ISingletonDependency
     {
         foreach (var item in _indexerList)
         {
-            if (item.IsAvailable && await item.TryGetRequestAccess())
+            if (await item.CheckAvailable())
             {
                 var (success, result) = await item.GetTransactionInfo(txId);
                 if (success)
@@ -58,8 +58,19 @@ public class TonIndexerRouter:ISingletonDependency
             }
         }
 
-        _logger.LogError($"All ton indexer are disabled");
+        _logger.LogError($"All ton indexer provider are disabled");
         return null;
+    }
+
+    public List<TonIndexerWrapper> GetIndexerApiProviderList()
+    {
+        var result = new List<TonIndexerWrapper>();
+        foreach (var item in _indexerList)
+        {
+            result.Add(item);
+        }
+
+        return result;
     }
 }
 
