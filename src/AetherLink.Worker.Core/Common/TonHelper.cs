@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
@@ -10,8 +11,10 @@ using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Worker;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NUglify.Helpers;
 using Org.BouncyCastle.Utilities.Encoders;
 using TonSdk.Client;
 using TonSdk.Core;
@@ -25,46 +28,45 @@ namespace AetherLink.Worker.Core.Common;
 
 public sealed class TonHelper: ISingletonDependency
 {
-    private readonly TonConfigOptions _tonConfigOptions;
+    private readonly TonPublicConfigOptions _tonPublicConfigOptions;
     private readonly KeyPair _keyPair ;
     private readonly string _transmitterFee;
     private readonly ILogger<TonHelper> _logger;
     private readonly IStorageProvider _storageProvider;
+    private readonly TonIndexerRouter _indexerRouter;
     private const string TonIndexerStorageKey = "TonIndexer";
     
-    public TonHelper(IOptionsSnapshot<IConfiguration> snapshotConfig, ILogger<TonHelper> logger, IStorageProvider storageProvider)
+    public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, IServiceProvider serviceProvider, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger, IStorageProvider storageProvider)
     {
-        _tonConfigOptions = snapshotConfig.Value.GetSection("Chains:ChainInfos:Ton").Get<TonConfigOptions>();
-        var secretKeyStr = snapshotConfig.Value.GetSection("OracleChainInfo:Ton:TransmitterSecretKey").Value;
-        var publicKeyStr = snapshotConfig.Value.GetSection("OracleChainInfo:Ton:TransmitterPublicKey").Value;
-        _transmitterFee = snapshotConfig.Value.GetSection("OracleChainInfo:Ton:TransmitterFee").Value;
+        _tonPublicConfigOptions = tonPublicOptions.Value;
+        _transmitterFee = tonSecretOptions.Value.TransmitterFee;
         _storageProvider = storageProvider;
+        _indexerRouter = serviceProvider.GetRequiredService<TonIndexerRouter>();
         
-        var secretKey = Hex.Decode(secretKeyStr);
-        var publicKey = Hex.Decode(publicKeyStr);
+        var secretKey = Hex.Decode(tonSecretOptions.Value.TransmitterSecretKey);
+        var publicKey = Hex.Decode(tonSecretOptions.Value.TransmitterPublicKey);
         
         _keyPair = new KeyPair(secretKey, publicKey);
 
         _logger = logger;
     }
 
-    public string TonOracleContractAddress => _tonConfigOptions.ContractAddress;
+    public string TonOracleContractAddress => _tonPublicConfigOptions.ContractAddress;
     
     [ItemCanBeNull]
     public async Task<string> SendTransaction(CrossChainForwardMessageDto crossChainForwardMessageDto , Dictionary<int, byte[]> consensusInfo)
     {
-        var walletV4 = new WalletV4(new WalletV4Options(){PublicKey = _keyPair.PrivateKey});
+        var walletV4 = new WalletV4(new WalletV4Options(){PublicKey = _keyPair.PublicKey});
         
-        HttpParameters tonClientParams = new HttpParameters 
-        {
-            Endpoint = _tonConfigOptions.BaseUrl,
-            ApiKey = string.IsNullOrEmpty(_tonConfigOptions.ApiKey)? null: _tonConfigOptions.ApiKey
-        };
-
-        using var tonClient = new TonClient(TonClientType.HTTP_TONCENTERAPIV2, tonClientParams);
         var receiverAddress = Encoding.UTF8.GetString(Base64.Decode(crossChainForwardMessageDto.Receiver));
         
-        var seqno = await tonClient.Wallet.GetSeqno(walletV4.Address);
+        var seqno = await _indexerRouter.GetAddressSeqno(walletV4.Address);
+        if (seqno == null)
+        {
+            _logger.LogError($"[Send Ton Transaction] get seqno error, messageId is {crossChainForwardMessageDto.MessageId}");
+            return null;
+        }
+        
         var bodyCell = new CellBuilder()
             .StoreUInt(TonOpCodeConstants.ForwardTx, 32)
             .StoreBytes(Base64.Decode(crossChainForwardMessageDto.MessageId))
@@ -86,7 +88,7 @@ public sealed class TonHelper: ISingletonDependency
                     Info = new IntMsgInfo(new IntMsgInfoOptions
                     {
                         Src = walletV4.Address,
-                        Dest = new Address(_tonConfigOptions.ContractAddress),
+                        Dest = new Address(_tonPublicConfigOptions.ContractAddress),
                         Value = new Coins(_transmitterFee)
                     }),
                     Body = bodyCell,
@@ -96,13 +98,16 @@ public sealed class TonHelper: ISingletonDependency
             }
         }, seqno ?? 0).Sign(_keyPair.PrivateKey);
             
-        var result = await tonClient.SendBoc(msg.Cell);
-        if (result != null)
+        var result = await _indexerRouter.CommitTransaction(msg.Cell);
+        if (result == null)
         {
-            _logger.LogInformation($"Cross to Ton: sourceChainId:{crossChainForwardMessageDto.SourceChainId} targetChainId:{crossChainForwardMessageDto.TargetChainId} messageId:{crossChainForwardMessageDto.Message} Transaction hash:{result.Value.Hash}");
+            _logger.LogError($"[Send Ton Transaction] send transaction error,messageId is {crossChainForwardMessageDto.MessageId}");
+            return null;
         }
         
-        return result?.Hash;
+        _logger.LogInformation($"[Send Ton Transaction] Cross to Ton: sourceChainId:{crossChainForwardMessageDto.SourceChainId} targetChainId:{crossChainForwardMessageDto.TargetChainId} messageId:{crossChainForwardMessageDto.Message} Transaction hash:{result}");
+        
+        return result;
     }
 
     public async Task<TonIndexerDto> GetTonIndexerFromStorage()

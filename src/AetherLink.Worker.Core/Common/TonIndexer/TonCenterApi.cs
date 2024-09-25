@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using AetherLink.Worker.Core.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Nest;
@@ -10,13 +11,13 @@ namespace AetherLink.Worker.Core.Common.TonIndexer;
 
 public sealed class TonCenterApi:TonIndexerBase,ISingletonDependency
 {
-    private readonly TonCenterApiConfig _apiConfig;
+    private readonly TonCenterProviderApiConfig _apiConfig;
     private readonly IHttpClientFactory _clientFactory;
     private readonly TonCenterRequestLimit _requestLimit;
     
-    public TonCenterApi(IOptionsSnapshot<IConfiguration> snapshotConfig, TonHelper tonHelper, IHttpClientFactory  clientFactory):base(tonHelper)
+    public TonCenterApi(IOptionsSnapshot<TonCenterProviderApiConfig> snapshotConfig, TonHelper tonHelper, IHttpClientFactory  clientFactory):base(tonHelper)
     {
-         _apiConfig = snapshotConfig.Value.GetSection("Chains:ChainInfos:Ton:Indexer:TonCenter").Get<TonCenterApiConfig>();
+         _apiConfig = snapshotConfig.Value;
          _clientFactory = clientFactory;
 
          var limitCount = string.IsNullOrEmpty(_apiConfig.ApiKey)
@@ -94,15 +95,4 @@ public class TonCenterRequestLimit
             return true;
         }
     }
-}
-
-public class TonCenterApiConfig
-{
-    public string Url { get; set; }
-    public int Weight { get; set; }
-    public string ApiKey { get; set; }
-    
-    public int ApiKeyPerSecondRequestLimit { get; set; }
-    
-    public int NoApiKeyPerSecondRequestLimit { get; set; }
 }

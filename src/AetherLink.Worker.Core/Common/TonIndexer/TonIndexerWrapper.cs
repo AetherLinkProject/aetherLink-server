@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using AetherLink.Worker.Core.Dtos;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.HttpSys;
+using TonSdk.Core;
+using TonSdk.Core.Boc;
 
 namespace AetherLink.Worker.Core.Common.TonIndexer;
 
@@ -18,11 +20,7 @@ public class TonIndexerWrapper
         
         private readonly TonIndexerBase _indexerBase;
         
-        public bool IsAvailable => _isAvailable;
-
         public TonIndexerBase IndexerBase => _indexerBase;
-
-        public DateTime NextCheckTime => _nextCheckTime;
 
         private int _checkTurn; 
         
@@ -51,6 +49,34 @@ public class TonIndexerWrapper
             {
                 return (true, await _indexerBase.GetTransactionInfo(txId));
             }catch(HttpRequestException)
+            {
+                SetDisable();
+            }
+
+            return (false, null);
+        }
+
+        public async Task<(bool, uint?)> GetAddressSeqno(Address address)
+        {
+            try
+            {
+                return (true, await _indexerBase.GetAddressSeqno(address));
+            }
+            catch (HttpRequestException)
+            {
+                SetDisable();
+            }
+
+            return (false, null);
+        }
+
+        public async Task<(bool, string)> CommitTransaction(Cell bodyCell)
+        {
+            try
+            {
+                return (true, await _indexerBase.CommitTransaction(bodyCell));
+            }
+            catch (HttpRequestException)
             {
                 SetDisable();
             }

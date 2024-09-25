@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -11,18 +12,18 @@ namespace AetherLink.Worker.Core.Common.TonIndexer;
 
 public sealed class GetBlockApi:TonIndexerBase,ISingletonDependency
 {
-    private readonly GetBlockConfig _apiConfig;
+    private readonly TonGetBlockProviderOptions _getBlockConfig;
     private readonly IHttpClientFactory _clientFactory;
     private readonly RequestLimit _requestLimit;
     
-    public GetBlockApi(IOptionsSnapshot<IConfiguration> snapshotConfig, TonHelper tonHelper,
+    public GetBlockApi(IOptionsSnapshot<TonGetBlockProviderOptions> snapshotConfig, TonHelper tonHelper,
         IHttpClientFactory clientFactory, IStorageProvider storageProvider):base(tonHelper)
     {
-        _apiConfig = snapshotConfig.Value.GetSection("Chains:ChainInfos:Ton:Indexer:GetBlock").Get<GetBlockConfig>();
+        _getBlockConfig = snapshotConfig.Value;
         _clientFactory = clientFactory;
-        _requestLimit = new RequestLimit(_apiConfig.ApiKeyPerSecondRequestLimit, _apiConfig.ApiKeyPerDayRequestLimit,
-            _apiConfig.ApiKeyPerMonthRequestLimit, storageProvider);
-        ApiWeight = _apiConfig.Weight;
+        _requestLimit = new RequestLimit(_getBlockConfig.ApiKeyPerSecondRequestLimit, _getBlockConfig.ApiKeyPerDayRequestLimit,
+            _getBlockConfig.ApiKeyPerMonthRequestLimit, storageProvider);
+        ApiWeight = _getBlockConfig.Weight;
     }
 
     public override async Task<bool> TryGetRequestAccess()
@@ -32,7 +33,7 @@ public sealed class GetBlockApi:TonIndexerBase,ISingletonDependency
     
     protected override string AssemblyUrl(string path)
     {
-        return $"{_apiConfig.Url}{(_apiConfig.Url.EndsWith("/") ? "" : "/")}{_apiConfig.ApiKey}{(path.StartsWith("/") ? "" : "/")}{path}";
+        return $"{_getBlockConfig.Url}{(_getBlockConfig.Url.EndsWith("/") ? "" : "/")}{_getBlockConfig.ApiKey}{(path.StartsWith("/") ? "" : "/")}{path}";
     }
 
     protected override HttpClient CreateClient()
@@ -177,16 +178,6 @@ public class RequestLimit
     {
         return (long)(dt - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
     }
-}
-
-public class GetBlockConfig
-{
-    public string Url { get; set; }
-    public int Weight { get; set; }
-    public string ApiKey { get; set; }
-    public int ApiKeyPerSecondRequestLimit { get; set; }
-    public int ApiKeyPerDayRequestLimit { get; set; }
-    public int ApiKeyPerMonthRequestLimit { get; set; }
 }
 
 public class RequestedDetail
