@@ -26,15 +26,13 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Common;
 
-public sealed class TonHelper: ISingletonDependency
+public sealed partial class TonHelper: ISingletonDependency
 {
     private readonly TonPublicConfigOptions _tonPublicConfigOptions;
     private readonly KeyPair _keyPair ;
     private readonly string _transmitterFee;
     private readonly ILogger<TonHelper> _logger;
-    private readonly IStorageProvider _storageProvider;
     private readonly TonIndexerRouter _indexerRouter;
-    private const string TonIndexerStorageKey = "TonIndexer";
     
     public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, IServiceProvider serviceProvider, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger, IStorageProvider storageProvider)
     {
@@ -110,22 +108,6 @@ public sealed class TonHelper: ISingletonDependency
         return result;
     }
 
-    public async Task<TonIndexerDto> GetTonIndexerFromStorage()
-    {
-        var result = await _storageProvider.GetAsync<TonIndexerDto>(TonIndexerStorageKey);
-        if (result == null)
-        {
-            result = new TonIndexerDto();
-        }
-
-        return result;
-    }
-
-    public async Task StorageTonIndexer(TonIndexerDto tonIndexer)
-    {
-        await _storageProvider.SetAsync(TonIndexerStorageKey, tonIndexer);
-    }
-    
     public CrossChainForwardResendDto AnalysisResendTransaction(CrossChainToTonTransactionDto tonTransactionDto)
     {
         var body = Cell.From(tonTransactionDto.Body);
@@ -153,6 +135,8 @@ public sealed class TonHelper: ISingletonDependency
         if (resendType == TonResendTypeConstants.IntervalSeconds)
         {
             var intervalSeconds = bodySlice.LoadUInt(32);
+
+            result.ResendTime = (long)intervalSeconds + tonTransactionDto.BlockTime;
             
             // next check tx time
             result.CheckCommitTime = (long)intervalSeconds + tonTransactionDto.BlockTime +

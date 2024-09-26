@@ -19,7 +19,7 @@ public interface IStorageProvider
     public Task<T> GetAsync<T>(string key) where T : class, new();
     public Task<Dictionary<string, T>> GetAsync<T>(List<string> keys) where T : class, new();
 
-    public Task SetHashsetAsync(string key, string field, string value);
+    public Task SetHashsetAsync<T>(string key, string field, T value);
 
     public Task<T> GetHashsetFieldAsync<T>(string key, string field) where T : class, new();
 
@@ -93,13 +93,13 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
         }
     }
 
-    public async Task SetHashsetAsync(string key, string field, string value)
+    public async Task SetHashsetAsync<T>(string key, string field, T value)
     { 
         try
         {
             await ConnectAsync();
 
-            await RedisDatabase.HashSetAsync(key, new []{ new HashEntry(field, value)} );
+            await RedisDatabase.HashSetAsync(key, new []{ new HashEntry(field, _serializer.Serialize(value))} );
         }
         catch (Exception e)
         {

@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
+using AetherLink.Worker.Core.Dtos;
+using AetherLink.Worker.Core.JobPipeline.Args;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -49,6 +51,18 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
         }
     }
 
+    private async Task InitNotFinishTask()
+    {
+        var allTask = await _tonHelper.GetAllTonTask();
+        foreach (var item in allTask)
+        {
+            if (item.Type == TonChainTaskType.Resend)
+            {
+                // todo: do task and backwork
+            }
+        }
+    }
+    
     private async Task TonIndexer()
     {
         var tonIndexer = await _tonHelper.GetTonIndexerFromStorage();
@@ -64,20 +78,13 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
                     switch (tx.OpCode)
                     {
                         case TonOpCodeConstants.ForwardTx:
-                            var forwardMessage = _tonHelper.AnalysisForwardTransaction(tx);
-                            if (forwardMessage != null)
-                            {
-                                // todo: check resend status
-                            }
-
+                            await TonForwardTxHandle(tx);
                             break;
                         case TonOpCodeConstants.ReceiveTx:
                             
                             break;
                         case TonOpCodeConstants.ResendTx:
-                            var resendMsg = _tonHelper.AnalysisResendTransaction(tx);
-                            // todo:check
-                            
+                            await TonResendTxHandle(tx);
                             break;
                         default:
                             continue;
@@ -94,6 +101,49 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
         if (currentIndexer != null)
         {
             currentIndexer.IndexerTime = dtNow;
+        }
+    }
+
+    private async Task TonForwardTxHandle(CrossChainToTonTransactionDto tx)
+    {
+        var forwardMessage = _tonHelper.AnalysisForwardTransaction(tx);
+        if (forwardMessage != null)
+        {
+            var tonTask = await _tonHelper.GetTonTask(forwardMessage.MessageId);
+            if (tonTask.Type == TonChainTaskType.Resend)
+            {
+                var message = tonTask.Convert<ResendTonBaseArgs>();
+                message.TargetBlockHeight = tx.SeqNo;
+                message.TargetTxHash = tx.Hash;
+                message.TargetBlockGeneratorTime = tx.BlockTime;
+                message.CheckCommitTime = 0;
+                message.ResendTime = 0;
+                message.Status = ResendStatus.ChainConfirm;
+
+                await _tonHelper.StorageTonTask(message.MessageId, new TonChainTaskDto(message));
+            }
+        }
+    }
+
+    private async Task TonResendTxHandle(CrossChainToTonTransactionDto tx)
+    {
+        var resendMessage = _tonHelper.AnalysisResendTransaction(tx);
+        if (resendMessage != null)
+        {
+            var tonTask = await _tonHelper.GetTonTask(resendMessage.MessageId);
+            if (tonTask.Type == TonChainTaskType.Resend)
+            {
+                var message = tonTask.Convert<ResendTonBaseArgs>();
+                message.TargetBlockHeight = tx.SeqNo;
+                message.TargetTxHash = tx.Hash;
+                message.TargetBlockGeneratorTime = tx.BlockTime;
+                message.ResendTime = tx.BlockTime + resendMessage.CheckCommitTime;
+                message.CheckCommitTime = message.ResendTime + TonEnvConstants.ResendMaxWaitSeconds;
+                message.Status = ResendStatus.WaitConsensus;
+
+                await _tonHelper.StorageTonTask(message.MessageId, new TonChainTaskDto(message));
+                // todo: open task and recheck backwork
+            }
         }
     }
 }

@@ -53,6 +53,8 @@ public class CrossChainForwardResendDto
     
     public Int64 TargetBlockGeneratorTime { get; set; }
     
+    public Int64 ResendTime { get; set; }
+    
     public Int64 CheckCommitTime { get; set; }
     
     public ResendStatus Status { get; set; }
