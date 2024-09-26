@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.CSharp.Core;
+using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Reporter;
@@ -52,9 +54,10 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         var startTime = DateTime.Now;
 
         await Task.WhenAll(
-            ExecuteJobsAsync(chainId, blockLatestHeight, startHeight),
-            ExecuteTransmittedAsync(chainId, blockLatestHeight, startHeight),
-            ExecuteRequestCanceledAsync(chainId, blockLatestHeight, startHeight)
+            // ExecuteJobsAsync(chainId, blockLatestHeight, startHeight),
+            // ExecuteTransmittedAsync(chainId, blockLatestHeight, startHeight),
+            // ExecuteRequestCanceledAsync(chainId, blockLatestHeight, startHeight)
+            ExecuteRampRequestsAsync(chainId, blockLatestHeight, startHeight)
         );
 
         _logger.LogDebug("[Search] {chain} search log took {time} ms.", chainId,
@@ -88,6 +91,36 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         _reporter.RecordOracleJobAsync(chainId, jobs.Count);
 
         _logger.LogDebug("[Search] {chain} found a total of {count} jobs.", chainId, jobs.Count);
+
+        await Task.WhenAll(tasks);
+    }
+
+    private async Task ExecuteRampRequestsAsync(string chainId, long to, long from)
+    {
+        _logger.LogDebug("ExecuteRampRequestsAsync................................");
+        var requests = await _provider.SearchRampRequestsAsync(chainId, to, from);
+        requests = new List<RampRequestDto>
+        {
+            new()
+            {
+                ChainId = "AELF",
+                TransactionId = "",
+                MessageId = "test-message-id",
+                TargetChainId = 111,
+                SourceChainId = 110,
+                Sender = "sender",
+                Receiver = "receiver",
+                Data = "data",
+                Epoch = 1,
+                StartTime = 1727317110000
+            }
+        };
+        var tasks = requests.Select(r => _provider.HandleRampRequestAsync(r));
+
+        // todo: record ramp requests
+        // _reporter.RecordOracleJobAsync(chainId, requests.Count);
+
+        _logger.LogDebug("[Search] {chain} found a total of {count} ramp requests.", chainId, requests.Count);
 
         await Task.WhenAll(tasks);
     }

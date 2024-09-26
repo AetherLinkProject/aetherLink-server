@@ -6,6 +6,7 @@ public static class RedisKeyConstants
     public const string VrfJobKey = "VrfJob";
     public const string ReportKey = "Report";
     public const string DataMessageKey = "DataMessage";
+    public const string RampMessageKey = "RampMessage";
     public const string SearchHeightKey = "SearchHeight";
     public const string PlainDataFeedsKey = "PlainDataFeeds";
     public const string UnconfirmedSearchHeightKey = "UnconfirmedSearchHeight";

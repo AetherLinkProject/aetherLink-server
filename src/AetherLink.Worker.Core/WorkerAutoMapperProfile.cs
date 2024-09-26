@@ -10,14 +10,17 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
     public AetherLinkServerWorkerAutoMapperProfile()
     {
         CreateMap<OcrLogEventDto, DataFeedsProcessJobArgs>();
+        CreateMap<RampRequestDto, RampRequestStartJobArgs>();
         CreateMap<TransmittedDto, TransmittedEventProcessJobArgs>();
         CreateMap<RequestCancelledDto, RequestCancelProcessJobArgs>();
 
+        CreateMap<RampRequestStartJobArgs, RampRequestPartialSignatureJobArgs>();
         CreateMap<DataFeedsProcessJobArgs, RequestStartProcessJobArgs>();
         CreateMap<RequestStartProcessJobArgs, JobDto>()
             .ForMember(t => t.TransactionBlockTime, m => m.MapFrom(f => f.StartTime));
         CreateMap<GenerateMultiSignatureJobArgs, TransmitResultProcessJobArgs>();
-
+        
+        CreateMap<RampRequestStartJobArgs, RampMessageDto>();
         CreateMap<CollectObservationJobArgs, DataMessageDto>();
         CreateMap<CollectObservationJobArgs, PlainDataFeedsDto>();
         CreateMap<CollectObservationJobArgs, GenerateReportJobArgs>();
@@ -56,5 +59,6 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
             .ForMember(t => t.TransactionId, m => m.MapFrom(f => f.TransmitTransactionId));
         CreateMap<CommitSignatureRequest, GenerateMultiSignatureJobArgs>();
         CreateMap<CommitObservationRequest, GenerateReportJobArgs>();
+        CreateMap<QueryMessageSignatureRequest, RampRequestPartialSignatureJobArgs>();
     }
 }

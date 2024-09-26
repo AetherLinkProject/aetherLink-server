@@ -23,6 +23,7 @@ public interface IServiceProcessor
     Task ProcessReportSignatureAsync(QueryReportSignatureRequest request, ServerCallContext context);
     Task ProcessPartialSignatureAsync(CommitPartialSignatureRequest request, ServerCallContext context);
     Task ProcessTransmitResultAsync(BroadcastTransmitResult request, ServerCallContext context);
+    Task ProcessMessagePartialSignatureAsync(QueryMessageSignatureRequest request, ServerCallContext context);
 }
 
 public class ServiceProcessor : IServiceProcessor, ISingletonDependency
@@ -120,6 +121,16 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
             Payload = request.Payload.ToByteArray()
         });
     }
+
+    public async Task ProcessMessagePartialSignatureAsync(QueryMessageSignatureRequest request,
+        ServerCallContext context)
+    {
+        if (!ValidateRequest(context)) return;
+
+        await _jobManager.EnqueueAsync(
+            _objectMapper.Map<QueryMessageSignatureRequest, RampRequestPartialSignatureJobArgs>(request));
+    }
+
 
     public async Task ProcessTransmitResultAsync(BroadcastTransmitResult request, ServerCallContext context)
     {
