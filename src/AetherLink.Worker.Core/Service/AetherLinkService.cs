@@ -67,7 +67,20 @@ public class AetherLinkService : AetherLinkServer.AetherLinkServerBase
     public override Task<VoidReply> QueryMessageSignatureAsync(QueryMessageSignatureRequest request,
         ServerCallContext context)
     {
-        _requestProcessor.ProcessMessagePartialSignatureAsync(request, context);
+        _requestProcessor.ProcessMessagePartialSignatureQueryAsync(request, context);
+        return Task.FromResult(new VoidReply());
+    }
+
+    public override Task<VoidReply> ReturnPartialSignatureResultsAsync(ReturnPartialSignatureResults request,
+        ServerCallContext context)
+    {
+        _requestProcessor.ProcessMessagePartialSignatureReturnAsync(request, context);
+        return Task.FromResult(new VoidReply());
+    }
+
+    public override Task<VoidReply> RampCommitResultAsync(RampCommitResultRequest request, ServerCallContext context)
+    {
+        _requestProcessor.ProcessRampCommitResultAsync(request, context);
         return Task.FromResult(new VoidReply());
     }
 }

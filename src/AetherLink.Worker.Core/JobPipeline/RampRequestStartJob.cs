@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.PeerManager;
@@ -18,18 +19,18 @@ public class RampRequestStartJob : AsyncBackgroundJob<RampRequestStartJobArgs>, 
     private readonly IObjectMapper _objectMapper;
     private readonly ISchedulerService _schedulerService;
     private readonly ILogger<RampRequestStartJob> _logger;
-    private readonly IRampMessageProvider _requestProvider;
+    private readonly IRampMessageProvider _rampMessageProvider;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public RampRequestStartJob(ILogger<RampRequestStartJob> logger, IPeerManager peerManager,
         IObjectMapper objectMapper, ISchedulerService schedulerService, IBackgroundJobManager backgroundJobManager,
-        IRampMessageProvider requestProvider)
+        IRampMessageProvider rampMessageProvider)
     {
         _logger = logger;
         _peerManager = peerManager;
         _objectMapper = objectMapper;
-        _requestProvider = requestProvider;
         _schedulerService = schedulerService;
+        _rampMessageProvider = rampMessageProvider;
         _backgroundJobManager = backgroundJobManager;
     }
 
@@ -37,11 +38,25 @@ public class RampRequestStartJob : AsyncBackgroundJob<RampRequestStartJobArgs>, 
     {
         try
         {
-            var rampMessageData = _objectMapper.Map<RampRequestStartJobArgs, RampMessageDto>(args);
-            var receivedTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
-            rampMessageData.RequestReceiveTime = receivedTime;
+            // new request, new round request, resend request
+            var rampMessageData = await _rampMessageProvider.GetAsync(args.ChainId, args.MessageId);
+            if (rampMessageData == null)
+            {
+                rampMessageData = _objectMapper.Map<RampRequestStartJobArgs, RampMessageDto>(args);
+                var receivedTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
+                rampMessageData.RequestReceiveTime = receivedTime;
+            }
+            else if (args.RoundId > 0)
+            {
+                // reset new received time to next time window 
+            }
+            else if (rampMessageData.State == RampRequestState.PendingResend)
+            {
+                // reset new received time to resend transaction time
+            }
+
             rampMessageData.State = RampRequestState.RequestStart;
-            await _requestProvider.SetAsync(rampMessageData);
+            await _rampMessageProvider.SetAsync(rampMessageData);
 
             if (_peerManager.IsLeader(args.Epoch, args.RoundId))
             {
@@ -60,7 +75,7 @@ public class RampRequestStartJob : AsyncBackgroundJob<RampRequestStartJobArgs>, 
                 }));
             }
 
-            _schedulerService.StartScheduler(rampMessageData);
+            _schedulerService.StartScheduler(rampMessageData, RampSchedulerType.CheckCommittedScheduler);
         }
         catch (Exception e)
         {

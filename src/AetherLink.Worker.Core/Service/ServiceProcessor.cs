@@ -23,7 +23,9 @@ public interface IServiceProcessor
     Task ProcessReportSignatureAsync(QueryReportSignatureRequest request, ServerCallContext context);
     Task ProcessPartialSignatureAsync(CommitPartialSignatureRequest request, ServerCallContext context);
     Task ProcessTransmitResultAsync(BroadcastTransmitResult request, ServerCallContext context);
-    Task ProcessMessagePartialSignatureAsync(QueryMessageSignatureRequest request, ServerCallContext context);
+    Task ProcessMessagePartialSignatureQueryAsync(QueryMessageSignatureRequest request, ServerCallContext context);
+    Task ProcessMessagePartialSignatureReturnAsync(ReturnPartialSignatureResults request, ServerCallContext context);
+    Task ProcessRampCommitResultAsync(RampCommitResultRequest request, ServerCallContext context);
 }
 
 public class ServiceProcessor : IServiceProcessor, ISingletonDependency
@@ -122,7 +124,7 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
         });
     }
 
-    public async Task ProcessMessagePartialSignatureAsync(QueryMessageSignatureRequest request,
+    public async Task ProcessMessagePartialSignatureQueryAsync(QueryMessageSignatureRequest request,
         ServerCallContext context)
     {
         if (!ValidateRequest(context)) return;
@@ -131,6 +133,22 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
             _objectMapper.Map<QueryMessageSignatureRequest, RampRequestPartialSignatureJobArgs>(request));
     }
 
+    public async Task ProcessMessagePartialSignatureReturnAsync(ReturnPartialSignatureResults request,
+        ServerCallContext context)
+    {
+        if (!ValidateRequest(context)) return;
+
+        await _jobManager.EnqueueAsync(
+            _objectMapper.Map<ReturnPartialSignatureResults, RampRequestMultiSignatureJobArgs>(request));
+    }
+
+    public async Task ProcessRampCommitResultAsync(RampCommitResultRequest request, ServerCallContext context)
+    {
+        if (!ValidateRequest(context)) return;
+
+        await _jobManager.EnqueueAsync(
+            _objectMapper.Map<RampCommitResultRequest, RampRequestCommitResultJobArgs>(request));
+    }
 
     public async Task ProcessTransmitResultAsync(BroadcastTransmitResult request, ServerCallContext context)
     {

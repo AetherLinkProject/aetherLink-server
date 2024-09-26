@@ -4,6 +4,5 @@ public enum RampRequestState
 {
     RequestStart = 1,
     Committed,
-    PendingResend,
-    Resent
+    PendingResend
 }

@@ -12,10 +12,10 @@ public class RampMessageDto
     public string Sender { get; set; }
     public string Receiver { get; set; }
     public string Data { get; set; }
-    
+
     // request metadata
     public long Epoch { get; set; }
-    public int Round { get; set; }
+    public int RoundId { get; set; }
 
     // When the task begins a new round, the RequestReceiveTime will become the starting point of the next round's time window.
     public DateTime RequestReceiveTime { get; set; }
@@ -24,5 +24,6 @@ public class RampMessageDto
     // target chain transaction information
     public string ResendTransactionId { get; set; }
     public long ResendTransactionBlockHeight { get; set; }
-    public string NextCommitDelayTime { get; set; }
+    public DateTime ResendTransactionBlockTime { get; set; }
+    public int NextCommitDelayTime { get; set; }
 }

@@ -121,7 +121,7 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
 
         if (reqRoundId > argRoundId || argEpoch < reqEpoch)
         {
-            _logger.LogInformation("[Step2] {RequestId} is not match, epoch:{epoch} round:{Round}.", reqRequestId,
+            _logger.LogInformation("[Step2] {RequestId} is not match, epoch:{epoch} round:{RoundId}.", reqRequestId,
                 reqEpoch, reqRoundId);
             return false;
         }
