@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using AetherLink.Worker.Core.Dtos;
+using Org.BouncyCastle.Utilities;
+using Org.BouncyCastle.Utilities.Encoders;
 
 namespace AetherLink.Worker.Core.Common.TonIndexer;
 
@@ -46,7 +48,7 @@ public class Transaction
             ExitCode = Description.ComputePh.ExitCode,
             Bounce = InMsg.Bounce,
             Bounced = InMsg.Bounced,
-            OpCode = InMsg.Opcode
+            OpCode = Convert.ToInt32(InMsg.Opcode,16)
         };
 
         return tx;
@@ -104,7 +106,7 @@ public class Message
     public string ImportFee { get; set; }
     public MessageContent InitState { get; set; }
     public MessageContent MessageContent { get; set; }
-    public int Opcode { get; set; }
+    public string Opcode { get; set; }
     public string Source { get; set; }
     public string Value { get; set; }
 }

@@ -14,7 +14,7 @@ public class TonIndexerRouter:ISingletonDependency
     private readonly List<TonIndexerWrapper> _indexerList;
     private readonly ILogger<TonIndexerRouter> _logger;
 
-    public TonIndexerRouter(IEnumerable<TonIndexerBase> tonIndexers, ILogger<TonIndexerRouter> logger)
+    public TonIndexerRouter(IEnumerable<ITonIndexerProvider> tonIndexers, ILogger<TonIndexerRouter> logger)
     {
         _logger = logger;
         
@@ -24,7 +24,7 @@ public class TonIndexerRouter:ISingletonDependency
             tonIndexerList.Add(new TonIndexerWrapper(item));
         }
     
-        tonIndexerList.Sort((s1,s2)=> s1.IndexerBase.Weight.CompareTo(s2.IndexerBase.Weight));
+        tonIndexerList.Sort((s1,s2)=> s2.IndexerBase.Weight.CompareTo(s1.IndexerBase.Weight));
 
         _indexerList = tonIndexerList;
     }

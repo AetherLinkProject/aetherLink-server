@@ -9,13 +9,13 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Common.TonIndexer;
 
-public sealed class TonCenterApi:TonIndexerBase,ISingletonDependency
+public class TonCenterApi:TonIndexerBase,ISingletonDependency
 {
     private readonly TonCenterProviderApiConfig _apiConfig;
     private readonly IHttpClientFactory _clientFactory;
     private readonly TonCenterRequestLimit _requestLimit;
     
-    public TonCenterApi(IOptionsSnapshot<TonCenterProviderApiConfig> snapshotConfig, TonHelper tonHelper, IHttpClientFactory  clientFactory):base(tonHelper)
+    public TonCenterApi(IOptionsSnapshot<TonCenterProviderApiConfig> snapshotConfig, IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, IHttpClientFactory  clientFactory):base(tonPublicOptions)
     {
          _apiConfig = snapshotConfig.Value;
          _clientFactory = clientFactory;
@@ -28,7 +28,6 @@ public sealed class TonCenterApi:TonIndexerBase,ISingletonDependency
          
         ApiWeight = _apiConfig.Weight;
     }
-
 
     public override Task<bool> TryGetRequestAccess()
     {

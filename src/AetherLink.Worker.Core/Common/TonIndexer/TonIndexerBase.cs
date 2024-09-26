@@ -5,7 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
+using AetherLink.Worker.Core.Options;
 using JetBrains.Annotations;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using TonSdk.Client;
 using TonSdk.Core;
@@ -13,15 +15,35 @@ using TonSdk.Core.Boc;
 
 namespace AetherLink.Worker.Core.Common.TonIndexer;
 
-public abstract class TonIndexerBase
+public interface ITonIndexerProvider
 {
-    private readonly TonHelper _tonHelper;
+    int Weight { get; }
+
+    Task<CrossChainToTonTransactionDto> GetTransactionInfo(string txId);
+
+    Task<(List<CrossChainToTonTransactionDto>, TonIndexerDto)> GetSubsequentTransaction(
+        TonIndexerDto tonIndexerDto);
+
+    Task<TonBlockInfo> GetLatestBlockInfo();
+    
+    Task<uint?> GetAddressSeqno(Address address);
+
+    Task<string> CommitTransaction(Cell bodyCell);
+
+    Task<bool> CheckAvailable();
+
+    Task<bool> TryGetRequestAccess();
+}
+
+public abstract class TonIndexerBase:ITonIndexerProvider
+{
+    private readonly string _contractAddress;
     protected int ApiWeight { get; init; }
     public int Weight => ApiWeight;
 
-    protected TonIndexerBase(TonHelper tonHelper)
+    protected TonIndexerBase(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions)
     {
-        _tonHelper = tonHelper;
+        _contractAddress = tonPublicOptions.Value.ContractAddress;
     }
     
     [ItemCanBeNull]
@@ -41,7 +63,7 @@ public abstract class TonIndexerBase
     public virtual async Task<(List<CrossChainToTonTransactionDto>, TonIndexerDto)> GetSubsequentTransaction(
         TonIndexerDto tonIndexerDto)
     {
-        var path = $"transactions?account={_tonHelper.TonOracleContractAddress}&start_lt={tonIndexerDto.LatestTransactionLt}&limit=30&offset={tonIndexerDto.SkipCount}&sort=asc";
+        var path = $"transactions?account={_contractAddress}&start_lt={tonIndexerDto.LatestTransactionLt}&limit=30&offset={tonIndexerDto.SkipCount}&sort=asc";
         var transactionResp = await GetDeserializeRequest<TransactionsResponse>(path);
         
         Transaction preTx = null;
@@ -148,7 +170,7 @@ public abstract class TonIndexerBase
     
     public virtual async Task<bool> CheckAvailable()
     {
-        var url = $"/addressBook?address={_tonHelper.TonOracleContractAddress}";
+        var url = $"/addressBook?address={_contractAddress}";
         await GetRequest(url);
         return true;
     }

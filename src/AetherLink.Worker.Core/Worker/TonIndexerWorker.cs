@@ -101,6 +101,7 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
         if (currentIndexer != null)
         {
             currentIndexer.IndexerTime = dtNow;
+            await _tonHelper.StorageTonIndexer(currentIndexer);
         }
     }
 

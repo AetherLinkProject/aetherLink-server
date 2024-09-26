@@ -34,12 +34,12 @@ public sealed partial class TonHelper: ISingletonDependency
     private readonly ILogger<TonHelper> _logger;
     private readonly TonIndexerRouter _indexerRouter;
     
-    public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, IServiceProvider serviceProvider, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger, IStorageProvider storageProvider)
+    public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, TonIndexerRouter indexerRouter, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger, IStorageProvider storageProvider)
     {
         _tonPublicConfigOptions = tonPublicOptions.Value;
         _transmitterFee = tonSecretOptions.Value.TransmitterFee;
         _storageProvider = storageProvider;
-        _indexerRouter = serviceProvider.GetRequiredService<TonIndexerRouter>();
+        _indexerRouter = indexerRouter;
         
         var secretKey = Hex.Decode(tonSecretOptions.Value.TransmitterSecretKey);
         var publicKey = Hex.Decode(tonSecretOptions.Value.TransmitterPublicKey);
@@ -197,7 +197,7 @@ public sealed partial class TonHelper: ISingletonDependency
 
         return KeyPair.Sign(unsignCell, this._keyPair.PrivateKey);
     }
-
+    
     private Cell BuildMessageBody(Int64 sourceChainId, Int64 targetChainId, byte[] sender, string receiverAddress,
         byte[] message)
     {

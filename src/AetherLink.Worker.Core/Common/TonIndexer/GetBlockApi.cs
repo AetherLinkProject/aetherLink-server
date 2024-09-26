@@ -4,20 +4,19 @@ using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Common.TonIndexer;
 
-public sealed class GetBlockApi:TonIndexerBase,ISingletonDependency
+public class GetBlockApi: TonIndexerBase, ISingletonDependency
 {
     private readonly TonGetBlockProviderOptions _getBlockConfig;
     private readonly IHttpClientFactory _clientFactory;
     private readonly RequestLimit _requestLimit;
     
-    public GetBlockApi(IOptionsSnapshot<TonGetBlockProviderOptions> snapshotConfig, TonHelper tonHelper,
-        IHttpClientFactory clientFactory, IStorageProvider storageProvider):base(tonHelper)
+    public GetBlockApi(IOptionsSnapshot<TonGetBlockProviderOptions> snapshotConfig, IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,
+        IHttpClientFactory clientFactory, IStorageProvider storageProvider):base(tonPublicOptions)
     {
         _getBlockConfig = snapshotConfig.Value;
         _clientFactory = clientFactory;

@@ -8,7 +8,7 @@ public class TonIndexerDto
 
     public string LatestTransactionHash;
 
-    public string LatestTransactionLt;
+    public string LatestTransactionLt = "0";
     
     public int SkipCount;
 

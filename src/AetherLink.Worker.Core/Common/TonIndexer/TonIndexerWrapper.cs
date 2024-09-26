@@ -18,13 +18,13 @@ public class TonIndexerWrapper
         
         private DateTime _nextCheckTime;
         
-        private readonly TonIndexerBase _indexerBase;
+        private readonly ITonIndexerProvider _indexerBase;
         
-        public TonIndexerBase IndexerBase => _indexerBase;
+        public ITonIndexerProvider IndexerBase => _indexerBase;
 
         private int _checkTurn; 
         
-        public TonIndexerWrapper(TonIndexerBase indexerBase)
+        public TonIndexerWrapper(ITonIndexerProvider indexerBase)
         {
             _indexerBase = indexerBase;
         }
@@ -35,9 +35,14 @@ public class TonIndexerWrapper
             try
             {
                 return (true, await _indexerBase.GetSubsequentTransaction(tonIndexerDto));
-            }catch(HttpRequestException)
+            }
+            catch (HttpRequestException)
             {
                 SetDisable();
+            }
+            catch (Exception ex)
+            {
+                
             }
 
             return (false, (null,null));
