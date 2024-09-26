@@ -17,6 +17,7 @@ public interface ISchedulerService
 {
     public void StartScheduler(JobDto job, SchedulerType type);
     public void StartScheduler(LogTriggerDto upkeep);
+    public void StartScheduler(RampMessageDto rampMessage);
     public void StartCronUpkeepScheduler(JobDto job);
     public void CancelScheduler(JobDto job, SchedulerType type);
     public void CancelLogUpkeep(LogTriggerDto upkeep);
@@ -97,6 +98,11 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         if (DateTime.UtcNow > overTime) return;
         _logger.LogDebug("[SchedulerService] Registry scheduler {name} OverTime:{overTime}", schedulerName, overTime);
         JobManager.Initialize(registry);
+    }
+
+    public void StartScheduler(RampMessageDto rampMessage)
+    {
+        // todo: add ramp message scheduler
     }
 
     public void StartCronUpkeepScheduler(JobDto job)

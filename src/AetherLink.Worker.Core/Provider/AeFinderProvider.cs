@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
@@ -17,6 +16,7 @@ namespace AetherLink.Worker.Core.Provider;
 public interface IAeFinderProvider
 {
     public Task<List<OcrLogEventDto>> SubscribeLogsAsync(string chainId, long to, long from);
+    public Task<List<RampRequestDto>> SubscribeRampRequestsAsync(string chainId, long to, long from);
     public Task<List<TransmittedDto>> SubscribeTransmittedAsync(string chainId, long to, long from);
     public Task<List<RequestCancelledDto>> SubscribeRequestCancelledAsync(string chainId, long to, long from);
     public Task<List<ChainItemDto>> GetChainSyncStateAsync();
@@ -69,6 +69,41 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         {
             _logger.LogError(e, "[Indexer] Subscribe Logs failed.");
             return new List<OcrLogEventDto>();
+        }
+    }
+
+    public async Task<List<RampRequestDto>> SubscribeRampRequestsAsync(string chainId, long to, long from)
+    {
+        try
+        {
+            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerRampRequestListDto>(GetClient(), new()
+            {
+                Query =
+                    @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
+                     rampRequests(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
+                         chainId,
+                         transactionId,
+                         messageId,
+                         targetChainId,
+                         sourceChainId,
+                         sender,
+                         receiver,
+                         data,
+                         startTime,
+                         epoch
+                 }
+             }",
+                Variables = new
+                {
+                    chainId = chainId, fromBlockHeight = from, toBlockHeight = to
+                }
+            });
+            return indexerResult != null ? indexerResult.RampRequests : new List<RampRequestDto>();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Indexer] Subscribe ramp requests failed.");
+            return new List<RampRequestDto>();
         }
     }
 

@@ -18,9 +18,11 @@ namespace AetherLink.Worker.Core.Provider;
 public interface IWorkerProvider
 {
     public Task<List<OcrLogEventDto>> SearchJobsAsync(string chainId, long to, long from);
+    public Task<List<RampRequestDto>> SearchRampRequestsAsync(string chainId, long to, long from);
     public Task<List<TransmittedDto>> SearchTransmittedAsync(string chainId, long to, long from);
     public Task<List<RequestCancelledDto>> SearchRequestCanceledAsync(string chainId, long to, long from);
     public Task HandleJobAsync(OcrLogEventDto logEvent);
+    public Task HandleRampRequestAsync(RampRequestDto rampRequest);
     public Task HandleTransmittedLogEventAsync(TransmittedDto transmitted);
     public Task HandleRequestCancelledLogEventAsync(RequestCancelledDto requestCancelled);
     public Task<long> GetStartHeightAsync(string chainId);
@@ -32,7 +34,6 @@ public interface IWorkerProvider
 public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependency
 {
     private readonly IObjectMapper _objectMapper;
-
     private readonly ILogger<WorkerProvider> _logger;
     private readonly IStorageProvider _storageProvider;
     private readonly IAeFinderProvider _aeFinderProvider;
@@ -55,6 +56,9 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
     public async Task<List<OcrLogEventDto>> SearchJobsAsync(string chainId, long to, long from)
         => await _aeFinderProvider.SubscribeLogsAsync(chainId, to, from);
 
+    public async Task<List<RampRequestDto>> SearchRampRequestsAsync(string chainId, long to, long from)
+        => await _aeFinderProvider.SubscribeRampRequestsAsync(chainId, to, from);
+
     public async Task<List<TransmittedDto>> SearchTransmittedAsync(string chainId, long to, long from)
         => await _aeFinderProvider.SubscribeTransmittedAsync(chainId, to, from);
 
@@ -71,6 +75,9 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
 
         await request.EnqueueAsync(logEvent);
     }
+
+    public async Task HandleRampRequestAsync(RampRequestDto rampRequest)
+        => await _backgroundJobManager.EnqueueAsync(_objectMapper.Map<RampRequestDto, RampRequestStartJobArgs>(rampRequest));
 
     public async Task<long> GetStartHeightAsync(string chainId)
     {
