@@ -15,7 +15,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NUglify.Helpers;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Utilities.Encoders;
+using Serilog.Debugging;
 using TonSdk.Client;
 using TonSdk.Core;
 using TonSdk.Core.Boc;
@@ -29,7 +32,7 @@ namespace AetherLink.Worker.Core.Common;
 public sealed partial class TonHelper: ISingletonDependency
 {
     private readonly TonPublicConfigOptions _tonPublicConfigOptions;
-    private readonly KeyPair _keyPair ;
+    private KeyPair _keyPair ;
     private readonly string _transmitterFee;
     private readonly ILogger<TonHelper> _logger;
     private readonly TonIndexerRouter _indexerRouter;
@@ -49,14 +52,12 @@ public sealed partial class TonHelper: ISingletonDependency
         _logger = logger;
     }
 
-    public string TonOracleContractAddress => _tonPublicConfigOptions.ContractAddress;
-    
     [ItemCanBeNull]
     public async Task<string> SendTransaction(CrossChainForwardMessageDto crossChainForwardMessageDto , Dictionary<int, byte[]> consensusInfo)
     {
         var walletV4 = new WalletV4(new WalletV4Options(){PublicKey = _keyPair.PublicKey});
         
-        var receiverAddress = Encoding.UTF8.GetString(Base64.Decode(crossChainForwardMessageDto.Receiver));
+        var receiverAddress = crossChainForwardMessageDto.Receiver;
         
         var seqno = await _indexerRouter.GetAddressSeqno(walletV4.Address);
         if (seqno == null)
@@ -67,12 +68,12 @@ public sealed partial class TonHelper: ISingletonDependency
         
         var bodyCell = new CellBuilder()
             .StoreUInt(TonOpCodeConstants.ForwardTx, 32)
-            .StoreBytes(Base64.Decode(crossChainForwardMessageDto.MessageId))
+            .StoreInt(new BigInteger(Base64.Decode(crossChainForwardMessageDto.MessageId)),256)
             .StoreAddress(new Address(receiverAddress))
-            .StoreRef(BuildMessageBody( crossChainForwardMessageDto.SourceChainId, 
+            .StoreRef(BuildMessageBody(crossChainForwardMessageDto.SourceChainId, 
                     crossChainForwardMessageDto.TargetChainId, 
                 Base64.Decode(crossChainForwardMessageDto.Sender),
-                      receiverAddress,
+                      new Address(receiverAddress),
                 Base64.Decode(crossChainForwardMessageDto.Message)))
             .StoreRef(new CellBuilder().StoreDict(BuildConsensusSignInfo(consensusInfo)).Build())
             .Build();
@@ -184,21 +185,52 @@ public sealed partial class TonHelper: ISingletonDependency
             Message = proxyMessageStr
         };
     }
-    
-    public byte[] ConsensusSign(byte[] messageId, Int64 sourceChainId, Int64 targetChainId, byte[] sender, string receiverAddress, byte[] message)
+
+    public bool CheckSign(CrossChainForwardMessageDto crossChainForwardMessageDto, byte[] sign, int nodeIndex)
     {
-        var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message);
-        
-        var unsignCell = new CellBuilder()
-            .StoreBytes(messageId)
-            .StoreAddress(new Address(receiverAddress))
-            .StoreRef(body)
-            .Build();
+        var unsignCell = BuildUnsignedCell(new BigInteger(Base64.Decode(crossChainForwardMessageDto.MessageId)),
+            crossChainForwardMessageDto.SourceChainId,
+            crossChainForwardMessageDto.TargetChainId,
+            Base64.Decode(crossChainForwardMessageDto.Sender),
+            new Address(crossChainForwardMessageDto.Receiver),
+            Base64.Decode(crossChainForwardMessageDto.Message));
+
+        var nodeInfo = _tonPublicConfigOptions.OracleNodeInfoList.Find(f => f.Index == nodeIndex);
+        if (nodeInfo == null)
+        {
+            return false;
+        }
+
+        Ed25519PublicKeyParameters publicKeyParameters = new Ed25519PublicKeyParameters(Hex.Decode(nodeInfo.PublicKey));
+        Ed25519Signer signer = new Ed25519Signer();
+        signer.Init(false, publicKeyParameters);
+        var hash = unsignCell.Hash.ToBytes();
+        signer.BlockUpdate(hash, 0, hash.Length);
+
+        return signer.VerifySignature(sign);
+    }
+    
+    public byte[] ConsensusSign(string messageId, Int64 sourceChainId, Int64 targetChainId, byte[] sender, string receiverAddress, byte[] message)
+    {
+        var unsignCell = BuildUnsignedCell(new BigInteger(Base64.Decode(messageId)), sourceChainId, targetChainId, sender, new Address(receiverAddress), message);
 
         return KeyPair.Sign(unsignCell, this._keyPair.PrivateKey);
     }
+
+    private Cell BuildUnsignedCell(BigInteger messageId, Int64 sourceChainId, Int64 targetChainId, byte[] sender,
+        Address receiverAddress, byte[] message)
+    {
+        var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message);
+        var unsignCell = new CellBuilder()
+            .StoreInt(messageId, 256)
+            .StoreAddress(receiverAddress)
+            .StoreRef(body)
+            .Build();
+
+        return unsignCell;
+    }
     
-    private Cell BuildMessageBody(Int64 sourceChainId, Int64 targetChainId, byte[] sender, string receiverAddress,
+    private Cell BuildMessageBody(Int64 sourceChainId, Int64 targetChainId, byte[] sender, Address receiverAddress,
         byte[] message)
     {
         
@@ -206,7 +238,7 @@ public sealed partial class TonHelper: ISingletonDependency
             .StoreUInt(sourceChainId, 64)
             .StoreUInt(targetChainId, 64)
             .StoreRef(new CellBuilder().StoreBytes(sender).Build())
-            .StoreRef(new CellBuilder().StoreAddress(new Address(receiverAddress)).Build())
+            .StoreRef(new CellBuilder().StoreAddress(receiverAddress).Build())
             .StoreRef(new CellBuilder().StoreBytes(message).Build())
             .Build();
     }
@@ -218,7 +250,7 @@ public sealed partial class TonHelper: ISingletonDependency
             Key = (key) =>
             {
                 var cell = new CellBuilder().StoreInt(new BigInteger(key), 256).Build();
-                return new Bits(cell.Parse().LoadBytes(32));
+                return cell.Parse().LoadBits(256);
             },
         
             Value = (value) => new CellBuilder().StoreBytes(value).Build()

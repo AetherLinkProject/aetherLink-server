@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -148,7 +149,8 @@ public abstract class TonIndexerBase:ITonIndexerProvider
         if (method.Value.ExitCode != 0 && method.Value.ExitCode != 1)
             return new uint?();
         uint num = 0;
-        num = uint.Parse(method.Value.Stack[0].ToString() ?? string.Empty);
+        var data = JsonConvert.DeserializeObject<Dictionary<string,string>>(method.Value.Stack[0].ToString());
+        num = Convert.ToUInt32(data["value"], 16);
         
         return num;
     }
@@ -163,9 +165,14 @@ public abstract class TonIndexerBase:ITonIndexerProvider
                 bodyCell.ToString("base64")
             }
         };
+        
+        var result = await PostDeserializeRequest<Dictionary<String,String>>(path, JsonConvert.SerializeObject(body));
+        if (result.ContainsKey("message_hash"))
+        {
+            return result["message_hash"];
+        }
 
-        var result = await PostDeserializeRequest<SendBocResult?>(path, JsonConvert.SerializeObject(body));
-        return result?.Hash;
+        return null;
     }
     
     public virtual async Task<bool> CheckAvailable()
@@ -207,7 +214,7 @@ public abstract class TonIndexerBase:ITonIndexerProvider
         var client = CreateClient();
         var url = AssemblyUrl(path);
 
-        var resp = await client.PostAsync(url, new StringContent(body, Encoding.UTF8, "application/json"));
+        var resp = await client.PostAsync(url, new StringContent(body, Encoding.Default, "application/json"));
         if (!resp.IsSuccessStatusCode)
         {
             throw new HttpRequestException();
