@@ -1,16 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
+using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Utilities.Encoders;
+using TonSdk.Contracts.Wallet;
 using TonSdk.Core;
+using TonSdk.Core.Block;
 using TonSdk.Core.Boc;
 using TonSdk.Core.Crypto;
 using Volo.Abp.DependencyInjection;
@@ -20,13 +25,17 @@ namespace AetherLink.Worker.Core.Common;
 public sealed partial class TonHelper: ISingletonDependency
 {
     private readonly TonPublicConfigOptions _tonPublicConfigOptions;
-    private readonly KeyPair _keyPair ;
+    private KeyPair _keyPair ;
     private readonly ILogger<TonHelper> _logger;
+    private readonly TonIndexerRouter _indexerRouter;
+    private readonly string _transmitterFee;
     
-    public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger, IStorageProvider storageProvider)
+    public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,TonIndexerRouter indexerRouter, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger, IStorageProvider storageProvider)
     {
         _tonPublicConfigOptions = tonPublicOptions.Value;
+        _transmitterFee = tonSecretOptions.Value.TransmitterFee;
         _storageProvider = storageProvider;
+        _indexerRouter = indexerRouter;
         
         var secretKey = Hex.Decode(tonSecretOptions.Value.TransmitterSecretKey);
         var publicKey = Hex.Decode(tonSecretOptions.Value.TransmitterPublicKey);
@@ -34,6 +43,63 @@ public sealed partial class TonHelper: ISingletonDependency
         _keyPair = new KeyPair(secretKey, publicKey);
 
         _logger = logger;
+    }
+
+    [ItemCanBeNull]
+    public async Task<string> SendTransaction(CrossChainForwardMessageDto crossChainForwardMessageDto , Dictionary<int, byte[]> consensusInfo)
+    {
+        var walletV4 = new WalletV4(new WalletV4Options(){PublicKey = _keyPair.PublicKey});
+        
+        var receiverAddress = crossChainForwardMessageDto.Receiver;
+        
+        var seqno = await _indexerRouter.GetAddressSeqno(walletV4.Address);
+        if (seqno == null)
+        {
+            _logger.LogError($"[Send Ton Transaction] get seqno error, messageId is {crossChainForwardMessageDto.MessageId}");
+            return null;
+        }
+        
+        var bodyCell = new CellBuilder()
+            .StoreUInt(TonOpCodeConstants.ForwardTx, 32)
+            .StoreInt(new BigInteger(Base64.Decode(crossChainForwardMessageDto.MessageId)),256)
+            .StoreAddress(new Address(receiverAddress))
+            .StoreRef(BuildMessageBody(crossChainForwardMessageDto.SourceChainId, 
+                    crossChainForwardMessageDto.TargetChainId, 
+                Base64.Decode(crossChainForwardMessageDto.Sender),
+                      new Address(receiverAddress),
+                Base64.Decode(crossChainForwardMessageDto.Message)))
+            .StoreRef(new CellBuilder().StoreDict(ConvertConsensusSignature(consensusInfo)).Build())
+            .Build();
+            
+        var msg = walletV4.CreateTransferMessage(new[]
+        {
+            new WalletTransfer
+            {
+                Message = new InternalMessage(new InternalMessageOptions
+                {
+                    Info = new IntMsgInfo(new IntMsgInfoOptions
+                    {
+                        Src = walletV4.Address,
+                        Dest = new Address(_tonPublicConfigOptions.ContractAddress),
+                        Value = new Coins(_transmitterFee)
+                    }),
+                    Body = bodyCell,
+                    StateInit = null,
+                }),
+                Mode = 0 // message mode
+            }
+        }, seqno ?? 0).Sign(_keyPair.PrivateKey);
+            
+        var result = await _indexerRouter.CommitTransaction(msg.Cell);
+        if (result == null)
+        {
+            _logger.LogError($"[Send Ton Transaction] send transaction error,messageId is {crossChainForwardMessageDto.MessageId}");
+            return null;
+        }
+        
+        _logger.LogInformation($"[Send Ton Transaction] Cross to Ton: sourceChainId:{crossChainForwardMessageDto.SourceChainId} targetChainId:{crossChainForwardMessageDto.TargetChainId} messageId:{crossChainForwardMessageDto.Message} Transaction hash:{result}");
+        
+        return result;
     }
 
     public CrossChainForwardResendDto AnalysisResendTransaction(CrossChainToTonTransactionDto tonTransactionDto)
@@ -140,6 +206,42 @@ public sealed partial class TonHelper: ISingletonDependency
         var unsignCell = BuildUnsignedCell(new BigInteger(Base64.Decode(messageId)), sourceChainId, targetChainId, sender, new Address(receiverAddress), message);
 
         return KeyPair.Sign(unsignCell, this._keyPair.PrivateKey);
+    }
+
+    public async Task TestSendTransaction()
+    {
+        var messageId = new CellBuilder().StoreInt(234, 256).Build().Hash.ToBytes();
+        var sourceId = 1;
+        var targetId = 2;
+        var sender = new byte[] { 1};
+        var recieve = "EQBY0bXyWw0xZDy28TkYk93CKvKFxG4nlEgFAANThjvOrDtl";
+        var message = new byte[] { 2};
+        var leaderKeyPair = _keyPair;
+        var signerLeader = ConsensusSign(Base64.ToBase64String(messageId), sourceId, targetId, sender,
+            recieve, message);
+
+        _keyPair = new KeyPair(Hex.Decode("d11abbb3c97ed14d86ef9b9eafc3d0395a12079755e936501dcfb9edb2e53184"),
+            Hex.Decode("63cc96a52e34cb95257967b10e7ba03dc3a0fac8fa62dc96e5000c27f9fa3224"));
+        var signerFollower = ConsensusSign(Base64.ToBase64String(messageId), sourceId, targetId, sender,
+            recieve, message);
+        
+        _keyPair = leaderKeyPair;
+        var consensusSign = new Dictionary<int,byte[]> ();
+        consensusSign[0] = signerLeader;
+        consensusSign[1] = signerFollower;
+
+        var messageDto = new CrossChainForwardMessageDto
+        {
+            MessageId = Base64.ToBase64String(messageId),
+            SourceChainId = sourceId,
+            TargetChainId = targetId,
+            TargetContractAddress = "EQBY0bXyWw0xZDy28TkYk93CKvKFxG4nlEgFAANThjvOrDtl",
+            Sender = Base64.ToBase64String(sender),
+            Receiver = recieve,
+            Message = Base64.ToBase64String(message)
+        };
+
+        await SendTransaction(messageDto, consensusSign);
     }
 
     private Cell BuildUnsignedCell(BigInteger messageId, Int64 sourceChainId, Int64 targetChainId, byte[] sender,
