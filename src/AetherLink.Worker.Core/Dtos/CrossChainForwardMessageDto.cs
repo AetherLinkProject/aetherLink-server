@@ -35,14 +35,6 @@ public class CrossChainForwardMessageDto
     public string Message { get; set; }
 }
 
-public class TransactionAnalysisDto<TX, TLatestTx>
-{ 
-    public List<TX> ResendTxList { get; set; }
-    public List<TX> ForwardTxList { get; set; }
-    public List<TX> ReceiveTxList { get; set; }
-    public TLatestTx LatestTransactions { get; set; }
-}
-
 public class CrossChainForwardResendDto
 {
     public string MessageId { get; set; }

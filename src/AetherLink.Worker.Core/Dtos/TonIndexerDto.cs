@@ -4,7 +4,7 @@ namespace AetherLink.Worker.Core.Dtos;
 
 public class TonIndexerDto
 {
-    public Int64 BlockHeight;
+    public long BlockHeight;
 
     public string LatestTransactionHash;
 
@@ -12,7 +12,7 @@ public class TonIndexerDto
     
     public int SkipCount;
 
-    public Int64 IndexerTime;
+    public long IndexerTime;
 
 }
 
@@ -21,11 +21,11 @@ public class CrossChainToTonTransactionDto
 {
     public int WorkChain { get; set; }
     public string Shard { get; set; }
-    public Int64 SeqNo { get; set; }
+    public long SeqNo { get; set; }
     public string TraceId { get; set; }
     public string Hash { get; set; }
     public string PrevHash { get; set; }
-    public Int64 BlockTime { get; set; }
+    public long BlockTime { get; set; }
     public int OpCode { get; set; }
     /// <summary>
     /// base64 encode

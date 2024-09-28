@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace AetherLink.Worker.Core.Common.TonIndexer;
+namespace AetherLink.Worker.Core.Common;
 
-public static class TonHttpResponseExtension
+public static class HttpResponseExtension
 {
     public static async Task<T> DeserializeSnakeCaseHttpContent<T>(this HttpContent content)
     {

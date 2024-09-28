@@ -70,9 +70,7 @@ public class AccountState
 public class BlockId
 {
     public Int64 Seqno { get; set; }
-    
     public string Shard { get; set; }
-    
     public int Workchain { get; set; }
 }
 

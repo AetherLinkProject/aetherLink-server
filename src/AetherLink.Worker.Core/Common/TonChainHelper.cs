@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Threading.Tasks;
-using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
-using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Org.BouncyCastle.Crypto.Parameters;
@@ -16,8 +13,6 @@ using Org.BouncyCastle.Utilities.Encoders;
 using TonSdk.Core;
 using TonSdk.Core.Boc;
 using TonSdk.Core.Crypto;
-using TonSdk.Contracts.Wallet;
-using TonSdk.Core.Block;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Common;
@@ -26,16 +21,12 @@ public sealed partial class TonHelper: ISingletonDependency
 {
     private readonly TonPublicConfigOptions _tonPublicConfigOptions;
     private readonly KeyPair _keyPair ;
-    private readonly string _transmitterFee;
     private readonly ILogger<TonHelper> _logger;
-    private readonly TonIndexerRouter _indexerRouter;
     
-    public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, TonIndexerRouter indexerRouter, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger, IStorageProvider storageProvider)
+    public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger, IStorageProvider storageProvider)
     {
         _tonPublicConfigOptions = tonPublicOptions.Value;
-        _transmitterFee = tonSecretOptions.Value.TransmitterFee;
         _storageProvider = storageProvider;
-        _indexerRouter = indexerRouter;
         
         var secretKey = Hex.Decode(tonSecretOptions.Value.TransmitterSecretKey);
         var publicKey = Hex.Decode(tonSecretOptions.Value.TransmitterPublicKey);
@@ -69,16 +60,14 @@ public sealed partial class TonHelper: ISingletonDependency
         };
 
         var resendType = bodySlice.LoadUInt(8);
-        if (resendType == TonResendTypeConstants.IntervalSeconds)
-        {
-            var intervalSeconds = bodySlice.LoadUInt(32);
+        if (resendType != TonResendTypeConstants.IntervalSeconds) return result;
+        var intervalSeconds = bodySlice.LoadUInt(32);
 
-            result.ResendTime = (long)intervalSeconds + tonTransactionDto.BlockTime;
+        result.ResendTime = (long)intervalSeconds + tonTransactionDto.BlockTime;
             
-            // next check tx time
-            result.CheckCommitTime = (long)intervalSeconds + tonTransactionDto.BlockTime +
-                                     TonEnvConstants.ResendMaxWaitSeconds;
-        }
+        // next check tx time
+        result.CheckCommitTime = (long)intervalSeconds + tonTransactionDto.BlockTime +
+                                 TonEnvConstants.ResendMaxWaitSeconds;
 
         return result;
     }
@@ -124,7 +113,7 @@ public sealed partial class TonHelper: ISingletonDependency
 
     public bool CheckSign(CrossChainForwardMessageDto crossChainForwardMessageDto, byte[] sign, int nodeIndex)
     {
-        var unsignCell = BuildUnsignedCell(new BigInteger(Base64.Decode(crossChainForwardMessageDto.MessageId)),
+        var bodyCell = BuildUnsignedCell(new BigInteger(Base64.Decode(crossChainForwardMessageDto.MessageId)),
             crossChainForwardMessageDto.SourceChainId,
             crossChainForwardMessageDto.TargetChainId,
             Base64.Decode(crossChainForwardMessageDto.Sender),
@@ -140,7 +129,7 @@ public sealed partial class TonHelper: ISingletonDependency
         Ed25519PublicKeyParameters publicKeyParameters = new Ed25519PublicKeyParameters(Hex.Decode(nodeInfo.PublicKey));
         Ed25519Signer signer = new Ed25519Signer();
         signer.Init(false, publicKeyParameters);
-        var hash = unsignCell.Hash.ToBytes();
+        var hash = bodyCell.Hash.ToBytes();
         signer.BlockUpdate(hash, 0, hash.Length);
 
         return signer.VerifySignature(sign);
@@ -169,7 +158,6 @@ public sealed partial class TonHelper: ISingletonDependency
     private Cell BuildMessageBody(Int64 sourceChainId, Int64 targetChainId, byte[] sender, Address receiverAddress,
         byte[] message)
     {
-        
         return new CellBuilder()
             .StoreUInt(sourceChainId, 64)
             .StoreUInt(targetChainId, 64)
@@ -179,7 +167,7 @@ public sealed partial class TonHelper: ISingletonDependency
             .Build();
     }
 
-    private HashmapE<int, byte[]> BuildConsensusSignInfo(Dictionary<int, byte[]> consensusInfo)
+    private HashmapE<int, byte[]> ConvertConsensusSignature(Dictionary<int, byte[]> consensusInfo)
     {
         var hashMapSerializer = new HashmapSerializers<int, byte[]>
         {
