@@ -35,7 +35,6 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        await _tonHelper.TestSendTransaction();
         await Task.WhenAll(CheckIndexerProviderConnect(), TonIndexer());
     }
 
