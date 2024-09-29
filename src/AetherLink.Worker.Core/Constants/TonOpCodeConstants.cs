@@ -10,14 +10,12 @@ public class TonEnvConstants
 
 public class TonOpCodeConstants
 {
-    public const int ForwardTx = 0x0000003;
-
-    public const int ReceiveTx = 0x000004;
-    
-    public const int ResendTx =  0x000009;
+    public const int ForwardTx = 3;
+    public const int ReceiveTx = 4;
+    public const int ResendTx =  9;
 }
 
 public class TonResendTypeConstants
 {
-    public const int IntervalSeconds = 0x01;
+    public const int IntervalSeconds = 1;
 }

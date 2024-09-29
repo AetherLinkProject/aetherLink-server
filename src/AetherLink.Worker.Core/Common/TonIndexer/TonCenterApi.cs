@@ -56,11 +56,8 @@ public class TonCenterApi:TonIndexerBase,ISingletonDependency
 public class TonCenterRequestLimit
 {
     private readonly object _lock = new object();
-    
     private readonly int _perSecondLimit;
-
     private long _latestExecuteTime;
-
     private int _latestSecondExecuteCount;
 
     public TonCenterRequestLimit(int perSecondLimit)
