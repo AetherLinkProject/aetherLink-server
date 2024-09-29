@@ -4,7 +4,8 @@ namespace AetherLink.Worker.Core.Constants;
 
 public class TonEnvConstants
 {
-    public const Int64 ResendMaxWaitSeconds = 30;
+    public const long ResendMaxWaitSeconds = 30;
+    public const int PullTransactionMinWaitSecond = 3;
 }
 
 public class TonOpCodeConstants
