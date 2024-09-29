@@ -112,6 +112,7 @@ namespace AetherLink.Worker
             context.AddBackgroundWorkerAsync<SearchWorker>();
             context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
             context.AddBackgroundWorkerAsync<LogsPoller>();
+            context.AddBackgroundWorkerAsync<PriceWorker>();
         }
 
         private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
