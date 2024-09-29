@@ -30,7 +30,7 @@
         <PackageReference Include="Grpc.Tools" Version="2.46.3" />
         <PackageReference Include="Contrib.Grpc.Core.M1" Version="2.41.0" />
         <PackageReference Include="FluentScheduler" Version="5.4.0" />
-        <PackageReference Include="AetherlinkPriceServer" Version="1.0.4" />
+<!--        <PackageReference Include="AetherlinkPriceServer" Version="1.0.4" />-->
     </ItemGroup>
 
     <Target Name="Gen_proto" BeforeTargets="BeforeBuild">
@@ -42,5 +42,6 @@
     <ItemGroup>
         <ProjectReference Include="..\AetherLink.Metric\AetherLink.Metric.csproj" />
         <ProjectReference Include="..\AetherLink.Multisignature\AetherLink.Multisignature.csproj" />
+        <ProjectReference Include="..\Aetherlink.PriceServer\Aetherlink.PriceServer.csproj" />
     </ItemGroup>
 </Project>
