@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
@@ -16,17 +17,19 @@ public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPart
 {
     private readonly IPeerManager _peerManager;
     private readonly IObjectMapper _objectMapper;
+    private readonly IRetryProvider _retryProvider;
     private readonly IRampMessageProvider _messageProvider;
     private readonly IBackgroundJobManager _backgroundJobManager;
     private readonly ILogger<RampRequestPartialSignatureJob> _logger;
 
     public RampRequestPartialSignatureJob(ILogger<RampRequestPartialSignatureJob> logger,
         IRampMessageProvider messageProvider, IPeerManager peerManager, IBackgroundJobManager backgroundJobManager,
-        IObjectMapper objectMapper)
+        IObjectMapper objectMapper, IRetryProvider retryProvider)
     {
         _logger = logger;
         _peerManager = peerManager;
         _objectMapper = objectMapper;
+        _retryProvider = retryProvider;
         _messageProvider = messageProvider;
         _backgroundJobManager = backgroundJobManager;
     }
@@ -40,15 +43,22 @@ public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPart
         {
             _logger.LogDebug(
                 $"get leader ramp request partial signature request.{args.MessageId} {args.ChainId} {args.Epoch} {args.RoundId}");
+
             var messageData = await _messageProvider.GetAsync(args.ChainId, args.MessageId);
             if (messageData == null || args.RoundId > messageData.RoundId)
             {
+                await _retryProvider.RetryWithIdAsync(args,
+                    IdGeneratorHelper.GenerateId(args.ChainId, args.MessageId, args.RoundId), backOff: true);
+
                 _logger.LogDebug($"The Ramp request {args.MessageId} from leader is not ready now,will try it later.");
-                // todo: retry
+
+                return;
             }
-            else if (args.RoundId < messageData.RoundId)
+
+            if (args.RoundId < messageData.RoundId)
             {
                 _logger.LogWarning($"The Ramp request {args.MessageId} from leader is too old.");
+
                 return;
             }
 
