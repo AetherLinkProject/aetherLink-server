@@ -39,7 +39,7 @@ namespace AetherLink.Worker
                 builder.Configuration.AddJsonFile("apollosettings.json");
                 builder.Host.AddAppSettingsSecretsJson()
                     .UseAutofac()
-                    .UseApollo()
+                    // .UseApollo()
                     .UseSerilog();
                 await builder.AddApplicationAsync<AetherLinkServerWorkerModule>();
                 var app = builder.Build();
