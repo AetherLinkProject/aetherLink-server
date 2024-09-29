@@ -4,6 +4,7 @@ public class RampRequestStartJobArgs
 {
     public string ChainId { get; set; }
     public string TransactionId { get; set; }
+    public long BlockHeight { get; set; }
     public string MessageId { get; set; }
     public long TargetChainId { get; set; }
     public long SourceChainId { get; set; }
