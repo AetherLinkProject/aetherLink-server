@@ -102,8 +102,8 @@ public sealed partial class TonHelper: ISingletonDependency
         return new CrossChainForwardMessageDto
         {
             MessageId = messageIdStr,
-            SourceChainId = (Int64) sourceChainId,
-            TargetChainId = (Int64) targetChainId,
+            SourceChainId = (long) sourceChainId,
+            TargetChainId = (long) targetChainId,
             TargetContractAddress = targetAddrStr,
             Sender = senderStr,
             Receiver = receiveStr,
@@ -135,14 +135,14 @@ public sealed partial class TonHelper: ISingletonDependency
         return signer.VerifySignature(sign);
     }
     
-    public byte[] ConsensusSign(string messageId, Int64 sourceChainId, Int64 targetChainId, byte[] sender, string receiverAddress, byte[] message)
+    public byte[] ConsensusSign(string messageId, long sourceChainId, long targetChainId, byte[] sender, string receiverAddress, byte[] message)
     {
         var unsignCell = BuildUnsignedCell(new BigInteger(Base64.Decode(messageId)), sourceChainId, targetChainId, sender, new Address(receiverAddress), message);
 
         return KeyPair.Sign(unsignCell, this._keyPair.PrivateKey);
     }
 
-    private Cell BuildUnsignedCell(BigInteger messageId, Int64 sourceChainId, Int64 targetChainId, byte[] sender,
+    private Cell BuildUnsignedCell(BigInteger messageId, long sourceChainId, long targetChainId, byte[] sender,
         Address receiverAddress, byte[] message)
     {
         var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message);
@@ -155,7 +155,7 @@ public sealed partial class TonHelper: ISingletonDependency
         return unsignCell;
     }
     
-    private Cell BuildMessageBody(Int64 sourceChainId, Int64 targetChainId, byte[] sender, Address receiverAddress,
+    private Cell BuildMessageBody(long sourceChainId, long targetChainId, byte[] sender, Address receiverAddress,
         byte[] message)
     {
         return new CellBuilder()

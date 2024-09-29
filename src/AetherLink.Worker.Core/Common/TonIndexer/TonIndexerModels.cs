@@ -204,57 +204,31 @@ public class TonBlockInfo
 {
     public bool AfterMerge { get; set; }
     public bool AfterSplit { get; set; }
-
     public bool BeforeSplit { get; set; }
-
     public string CreatedBy { get; set; }
-
     public string EndLt { get; set; }
-
     public string FileHash { get; set; }
-
     public int Flags { get; set; }
-
     public Int64 GenCatchainSeqno { get; set; }
-
     public string GenUtime { get; set; }
-
     public Int64 GlobalId { get; set; }
-
     public bool KeyBlock { get; set; }
-
     public Int64 MasterRefSeqno { get; set; }
-
     public TonBlockSummaryInfo BlockSummaryInfoRef { get; set; }
-
     public Int64 MinRefMcSeqno { get; set; }
-
     public List<TonBlockSummaryInfo> PrevBlocks { get; set; }
-
     public Int64 PrevKeyBlockSeqno { get; set; }
-
     public string RandSeed { get; set; }
-
     public string RootHash { get; set; }
-
     public Int64 Seqno { get; set; }
-
     public string Shard { get; set; }
-
     public string StartLt { get; set; }
-
     public int TxCount { get; set; }
-
     public int ValidatorListHashShort { get; set; }
-
     public int Version { get; set; }
-
     public int VertSeqno { get; set; }
-
     public bool VertSeqnoIncr { get; set; }
-
     public bool WantMerge { get; set; }
-
     public bool WantSplit { get; set; }
     public int Workchain { get; set; }
 }

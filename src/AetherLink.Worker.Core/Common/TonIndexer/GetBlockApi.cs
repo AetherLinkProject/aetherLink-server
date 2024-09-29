@@ -182,12 +182,9 @@ public class RequestLimit
 public class RequestedDetail
 {
     public  int SecondRequest { get; set; }
-    public  Int64 SecondTime { get; set; }
-
+    public  long SecondTime { get; set; }
     public int DayRequest { get; set; }
-    public Int64 DateTime { get; set; }
-
+    public long DateTime { get; set; }
     public int MonthRequest { get; set; }
-    
-    public Int64 Month { get; set; }
+    public long Month { get; set; }
 }
