@@ -12,16 +12,11 @@ namespace AetherLink.Worker.Core.Common.TonIndexer;
 public class TonIndexerWrapper
 {
         private readonly Object _lock = new object();
-
         private bool _isAvailable = true;
-        
         private DateTime _nextCheckTime;
-        
         private readonly ITonIndexerProvider _indexerBase;
-        
         public ITonIndexerProvider IndexerBase => _indexerBase;
-
-        private int _checkTurn; 
+        private int _checkTurn;
         
         public TonIndexerWrapper(ITonIndexerProvider indexerBase)
         {

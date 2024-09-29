@@ -5,13 +5,9 @@ namespace AetherLink.Worker.Core.Dtos;
 public class TonIndexerDto
 {
     public long BlockHeight;
-
     public string LatestTransactionHash;
-
     public string LatestTransactionLt = "0";
-    
     public int SkipCount;
-
     public long IndexerTime;
 
 }
@@ -31,7 +27,6 @@ public class CrossChainToTonTransactionDto
     /// base64 encode
     /// </summary>
     public string Body { get; set; }
-    
     public bool Success { get; set; }
     public int ExitCode { get; set; }
     public bool Aborted { get; set; }

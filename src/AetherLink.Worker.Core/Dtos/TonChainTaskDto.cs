@@ -10,7 +10,6 @@ namespace AetherLink.Worker.Core.Dtos;
 public class TonChainTaskDto
 {
     public TonChainTaskType Type { get; set; }
-    
     public string Content { get; set; }
 
     public TonChainTaskDto(ResendTonBaseArgs resendDto)
