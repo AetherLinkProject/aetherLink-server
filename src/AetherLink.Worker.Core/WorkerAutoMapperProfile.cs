@@ -17,19 +17,14 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
         CreateMap<RequestStartProcessJobArgs, JobDto>()
             .ForMember(t => t.TransactionBlockTime, m => m.MapFrom(f => f.StartTime));
         CreateMap<GenerateMultiSignatureJobArgs, TransmitResultProcessJobArgs>();
-
         CreateMap<CollectObservationJobArgs, DataMessageDto>();
         CreateMap<CollectObservationJobArgs, PlainDataFeedsDto>();
         CreateMap<CollectObservationJobArgs, GenerateReportJobArgs>();
         CreateMap<CollectObservationJobArgs, CommitObservationRequest>();
-
         CreateMap<GeneratePartialSignatureJobArgs, GenerateMultiSignatureJobArgs>();
         CreateMap<GeneratePartialSignatureJobArgs, CommitSignatureRequest>();
-
         CreateMap<GenerateReportJobArgs, GeneratePartialSignatureJobArgs>();
-
         CreateMap<RequestStartProcessJobArgs, CollectObservationJobArgs>();
-
         CreateMap<GenerateMultiSignatureJobArgs, CommitTransmitResultRequest>();
 
         // VRF
@@ -56,5 +51,17 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
             .ForMember(t => t.TransactionId, m => m.MapFrom(f => f.TransmitTransactionId));
         CreateMap<CommitSignatureRequest, GenerateMultiSignatureJobArgs>();
         CreateMap<CommitObservationRequest, GenerateReportJobArgs>();
+
+        // Ramp
+        CreateMap<RampRequestDto, RampRequestStartJobArgs>();
+        CreateMap<RampRequestStartJobArgs, RampMessageDto>();
+        CreateMap<RampCommitResultRequest, RampRequestCommitResultJobArgs>();
+        CreateMap<RampRequestMultiSignatureJobArgs, RampCommitResultRequest>();
+        CreateMap<RampRequestStartJobArgs, RampRequestPartialSignatureJobArgs>();
+        CreateMap<ReturnPartialSignatureResults, RampRequestMultiSignatureJobArgs>();
+        CreateMap<QueryMessageSignatureRequest, RampRequestPartialSignatureJobArgs>();
+        CreateMap<RampRequestMultiSignatureJobArgs, RampRequestCommitResultJobArgs>();
+        CreateMap<RampRequestPartialSignatureJobArgs, ReturnPartialSignatureResults>();
+        CreateMap<RampRequestPartialSignatureJobArgs, RampRequestMultiSignatureJobArgs>();
     }
 }

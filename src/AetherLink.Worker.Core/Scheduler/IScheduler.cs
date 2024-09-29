@@ -17,8 +17,10 @@ public interface ISchedulerService
 {
     public void StartScheduler(JobDto job, SchedulerType type);
     public void StartScheduler(LogTriggerDto upkeep);
+    public void StartScheduler(RampMessageDto rampMessage, RampSchedulerType type);
     public void StartCronUpkeepScheduler(JobDto job);
     public void CancelScheduler(JobDto job, SchedulerType type);
+    public void CancelScheduler(RampMessageDto job);
     public void CancelLogUpkeep(LogTriggerDto upkeep);
     public void CancelCronUpkeep(JobDto job);
     public void CancelAllSchedule(JobDto job);
@@ -29,8 +31,9 @@ public interface ISchedulerService
 public class SchedulerService : ISchedulerService, ISingletonDependency
 {
     private readonly SchedulerOptions _options;
-    private readonly object _upkeepSchedulesLock = new();
     private readonly ILogger<SchedulerService> _logger;
+    private readonly object _upkeepSchedulesLock = new();
+    private readonly IRampRequestSchedulerJob _rampRequestScheduler;
     private readonly IResetRequestSchedulerJob _resetRequestScheduler;
     private readonly IObservationCollectSchedulerJob _observationScheduler;
     private readonly IResetLogTriggerSchedulerJob _resetLogTriggerScheduler;
@@ -39,11 +42,13 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
 
     public SchedulerService(IResetRequestSchedulerJob resetRequestScheduler, ILogger<SchedulerService> logger,
         IOptionsSnapshot<SchedulerOptions> schedulerOptions, IObservationCollectSchedulerJob observationScheduler,
-        IResetLogTriggerSchedulerJob resetLogTriggerScheduler, IResetCronUpkeepSchedulerJob resetCronUpkeepScheduler)
+        IResetLogTriggerSchedulerJob resetLogTriggerScheduler, IResetCronUpkeepSchedulerJob resetCronUpkeepScheduler,
+        IRampRequestSchedulerJob rampRequestScheduler)
     {
         _logger = logger;
         _options = schedulerOptions.Value;
         _observationScheduler = observationScheduler;
+        _rampRequestScheduler = rampRequestScheduler;
         _resetRequestScheduler = resetRequestScheduler;
         _resetLogTriggerScheduler = resetLogTriggerScheduler;
         _resetCronUpkeepScheduler = resetCronUpkeepScheduler;
@@ -99,6 +104,36 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         JobManager.Initialize(registry);
     }
 
+    public void StartScheduler(RampMessageDto rampMessage, RampSchedulerType type)
+    {
+        JobManager.UseUtcTime();
+        DateTime overTime;
+        var registry = new Registry();
+        var schedulerName = GenerateScheduleName(rampMessage.ChainId, rampMessage.MessageId, type);
+        CancelSchedulerByName(schedulerName);
+
+        switch (type)
+        {
+            case RampSchedulerType.CheckCommittedScheduler:
+                overTime = rampMessage.RequestReceiveTime.AddMinutes(_options.CheckCommittedTimeoutWindow);
+                registry.Schedule(() => _rampRequestScheduler.Execute(rampMessage)).WithName(schedulerName)
+                    .NonReentrant().ToRunOnceAt(overTime);
+                break;
+            case RampSchedulerType.ResendPendingScheduler:
+                overTime = rampMessage.ResendTransactionBlockTime.AddMinutes(rampMessage.NextCommitDelayTime);
+                registry.Schedule(() => _rampRequestScheduler.Resend(rampMessage)).WithName(schedulerName)
+                    .NonReentrant().ToRunOnceAt(overTime);
+                break;
+            default:
+                overTime = DateTime.MinValue;
+                break;
+        }
+
+        if (DateTime.UtcNow > overTime) return;
+        _logger.LogInformation($"[SchedulerService] Registry ramp scheduler {schedulerName} OverTime:{overTime}");
+        JobManager.Initialize(registry);
+    }
+
     public void StartCronUpkeepScheduler(JobDto job)
     {
         JobManager.UseUtcTime();
@@ -134,6 +169,10 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
 
     public void CancelScheduler(JobDto job, SchedulerType type)
         => CancelSchedulerByName(GenerateScheduleName(job.ChainId, job.RequestId, type));
+
+    public void CancelScheduler(RampMessageDto job)
+        => CancelSchedulerByName(GenerateScheduleName(job.ChainId, job.MessageId,
+            RampSchedulerType.CheckCommittedScheduler));
 
     public void CancelLogUpkeep(LogTriggerDto upkeep)
     {
@@ -227,11 +266,14 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         JobManager.JobEnd += info => _logger.LogInformation("{Name}: ended", info.Name);
     }
 
-    private static string GenerateScheduleName(string chainId, string requestId, SchedulerType scheduleType)
-        => IdGeneratorHelper.GenerateId(chainId, requestId, scheduleType);
+    // private static string GenerateScheduleName(string chainId, string requestId, SchedulerType scheduleType)
+    //     => IdGeneratorHelper.GenerateId(chainId, requestId, scheduleType);
 
-    private static string GenerateScheduleName(string chainId, string requestId, UpkeepSchedulerType type)
-        => IdGeneratorHelper.GenerateId(chainId, requestId, type);
+    // private static string GenerateScheduleName(string chainId, string requestId, UpkeepSchedulerType type)
+    //     => IdGeneratorHelper.GenerateId(chainId, requestId, type);
+
+    private static string GenerateScheduleName(string chainId, string id, object type)
+        => IdGeneratorHelper.GenerateId(chainId, id, type);
 
     private static string GenerateScheduleName(LogTriggerDto trigger)
         => IdGeneratorHelper.GenerateId(trigger.Context.ChainId, trigger.Context.RequestId,

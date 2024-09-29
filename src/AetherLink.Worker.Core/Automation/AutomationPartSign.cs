@@ -129,7 +129,7 @@ public class AutomationPartSign : AsyncBackgroundJob<ReportSignatureRequestArgs>
 
         if (localRound > argRoundId || argEpoch < localEpoch)
         {
-            _logger.LogInformation("[Automation] {RequestId} is not match, epoch:{epoch} round:{Round}.", argRequestId,
+            _logger.LogInformation("[Automation] {RequestId} is not match, epoch:{epoch} round:{RoundId}.", argRequestId,
                 localEpoch, localRound);
             return false;
         }
