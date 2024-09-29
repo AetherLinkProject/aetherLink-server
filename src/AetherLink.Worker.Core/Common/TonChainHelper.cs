@@ -25,7 +25,7 @@ namespace AetherLink.Worker.Core.Common;
 public sealed partial class TonHelper: ISingletonDependency
 {
     private readonly TonPublicConfigOptions _tonPublicConfigOptions;
-    private KeyPair _keyPair ;
+    private readonly KeyPair _keyPair ;
     private readonly ILogger<TonHelper> _logger;
     private readonly TonIndexerRouter _indexerRouter;
     private readonly string _transmitterFee;
@@ -58,7 +58,7 @@ public sealed partial class TonHelper: ISingletonDependency
             _logger.LogError($"[Send Ton Transaction] get seqno error, messageId is {crossChainForwardMessageDto.MessageId}");
             return null;
         }
-        
+
         var bodyCell = new CellBuilder()
             .StoreUInt(TonOpCodeConstants.ForwardTx, 32)
             .StoreInt(new BigInteger(Base64.Decode(crossChainForwardMessageDto.MessageId)),256)
@@ -88,7 +88,7 @@ public sealed partial class TonHelper: ISingletonDependency
                 }),
                 Mode = 0 // message mode
             }
-        }, seqno ?? 0).Sign(_keyPair.PrivateKey);
+        }, (uint)seqno).Sign(_keyPair.PrivateKey);
             
         var result = await _indexerRouter.CommitTransaction(msg.Cell);
         if (result == null)
@@ -208,42 +208,6 @@ public sealed partial class TonHelper: ISingletonDependency
         return KeyPair.Sign(unsignCell, this._keyPair.PrivateKey);
     }
 
-    public async Task TestSendTransaction()
-    {
-        var messageId = new CellBuilder().StoreInt(234, 256).Build().Hash.ToBytes();
-        var sourceId = 1;
-        var targetId = 2;
-        var sender = new byte[] { 1};
-        var recieve = "EQBY0bXyWw0xZDy28TkYk93CKvKFxG4nlEgFAANThjvOrDtl";
-        var message = new byte[] { 2};
-        var leaderKeyPair = _keyPair;
-        var signerLeader = ConsensusSign(Base64.ToBase64String(messageId), sourceId, targetId, sender,
-            recieve, message);
-
-        _keyPair = new KeyPair(Hex.Decode("d11abbb3c97ed14d86ef9b9eafc3d0395a12079755e936501dcfb9edb2e53184"),
-            Hex.Decode("63cc96a52e34cb95257967b10e7ba03dc3a0fac8fa62dc96e5000c27f9fa3224"));
-        var signerFollower = ConsensusSign(Base64.ToBase64String(messageId), sourceId, targetId, sender,
-            recieve, message);
-        
-        _keyPair = leaderKeyPair;
-        var consensusSign = new Dictionary<int,byte[]> ();
-        consensusSign[0] = signerLeader;
-        consensusSign[1] = signerFollower;
-
-        var messageDto = new CrossChainForwardMessageDto
-        {
-            MessageId = Base64.ToBase64String(messageId),
-            SourceChainId = sourceId,
-            TargetChainId = targetId,
-            TargetContractAddress = "EQBY0bXyWw0xZDy28TkYk93CKvKFxG4nlEgFAANThjvOrDtl",
-            Sender = Base64.ToBase64String(sender),
-            Receiver = recieve,
-            Message = Base64.ToBase64String(message)
-        };
-
-        await SendTransaction(messageDto, consensusSign);
-    }
-
     private Cell BuildUnsignedCell(BigInteger messageId, Int64 sourceChainId, Int64 targetChainId, byte[] sender,
         Address receiverAddress, byte[] message)
     {
@@ -279,7 +243,7 @@ public sealed partial class TonHelper: ISingletonDependency
                 return cell.Parse().LoadBits(256);
             },
         
-            Value = (value) => new CellBuilder().StoreBytes(value).Build()
+            Value = (value) => new CellBuilder().StoreRef(new CellBuilder().StoreBytes(value).Build()).Build()  
         };
 
         var hashmap = new HashmapE<int, byte[]>(new HashmapOptions<int, byte[]>()

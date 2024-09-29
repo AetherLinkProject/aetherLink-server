@@ -172,12 +172,7 @@ public abstract class TonIndexerBase:ITonIndexerProvider
         };
         
         var result = await PostDeserializeRequest<Dictionary<String,String>>(path, JsonConvert.SerializeObject(body));
-        if (result.TryGetValue("message_hash", out var transaction))
-        {
-            return transaction;
-        }
-
-        return null;
+        return result.TryGetValue("message_hash", out var transaction) ? transaction : null;
     }
     
     public virtual async Task<bool> CheckAvailable()
