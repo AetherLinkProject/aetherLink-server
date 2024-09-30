@@ -19,3 +19,12 @@ public class TonResendTypeConstants
 {
     public const int IntervalSeconds = 1;
 }
+
+public class TonStringConstants
+{
+    public const string Value = "value";
+    public const string MessageValue = "message_hash";
+    public const string RunGetMethod = "runGetMethod";
+    public const string TonIndexerStorageKey = "TonIndexer";
+    public const string TonTaskStorageKey = "TonTask";
+}
