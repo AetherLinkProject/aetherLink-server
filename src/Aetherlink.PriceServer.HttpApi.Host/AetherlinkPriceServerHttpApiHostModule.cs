@@ -44,6 +44,7 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         ConfigureSwaggerServices(context, configuration);
         Configure<TokenPriceSourceOptions>(configuration.GetSection("TokenPriceSource"));
         Configure<HourlyPriceOption>(configuration.GetSection("HourlyPrice"));
+        Configure<MetricsReportOption>(configuration.GetSection("MetricsReport"));
         ConfigureMetrics(context, configuration);
         ConfigCoinGeckoApi(context);
     }
@@ -127,6 +128,7 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<GateIoPriceSearchWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<CoinBaseTokenPriceSearchWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<HourlyPriceWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<MetricsReportWorker>());
     }
 
     private void ConfigureLocalization()

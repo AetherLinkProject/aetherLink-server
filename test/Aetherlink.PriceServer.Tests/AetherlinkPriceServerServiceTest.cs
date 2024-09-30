@@ -30,6 +30,7 @@ public partial class AetherlinkPriceServerServiceTest : AetherlinkPriceServerTes
         var source = SourceType.CoinGecko;
         var result = await _priceAppService.GetTokenPriceAsync(new()
         {
+            AppId = "test",
             TokenPair = ELFUSDT,
             Source = source
         });
@@ -44,6 +45,7 @@ public partial class AetherlinkPriceServerServiceTest : AetherlinkPriceServerTes
     {
         var result = await _priceAppService.GetTokenPriceAsync(new()
         {
+            AppId = "test",
             TokenPair = "not-exist",
             Source = SourceType.CoinGecko
         });
@@ -55,6 +57,7 @@ public partial class AetherlinkPriceServerServiceTest : AetherlinkPriceServerTes
     {
         var result = await _priceAppService.GetTokenPriceAsync(new()
         {
+            AppId = "test",
             TokenPair = ELFUSDT,
             Source = (SourceType)10
         });
@@ -68,6 +71,7 @@ public partial class AetherlinkPriceServerServiceTest : AetherlinkPriceServerTes
         var source = SourceType.CoinGecko;
         var result = await _priceAppService.GetTokenPriceListAsync(new()
         {
+            AppId = "test",
             TokenPairs = new() { ELFUSDT, BTCUSDT },
             Source = source
         });
@@ -83,6 +87,7 @@ public partial class AetherlinkPriceServerServiceTest : AetherlinkPriceServerTes
     {
         var result = await _priceAppService.GetTokenPriceListAsync(new()
         {
+            AppId = "test",
             TokenPairs = new() { ELFUSDT, BTCUSDT, "not-exist" },
             Source = SourceType.CoinGecko
         });
@@ -94,6 +99,7 @@ public partial class AetherlinkPriceServerServiceTest : AetherlinkPriceServerTes
     {
         var result = await _priceAppService.GetTokenPriceListAsync(new()
         {
+            AppId = "test",
             TokenPairs = new() { ELFUSDT, BTCUSDT },
             Source = (SourceType)10
         });
@@ -106,6 +112,7 @@ public partial class AetherlinkPriceServerServiceTest : AetherlinkPriceServerTes
         var type = AggregateType.Latest;
         var result = await _priceAppService.GetAggregatedTokenPriceAsync(new()
         {
+            AppId = "test",
             TokenPair = ELFUSDT,
             AggregateType = type
         });
@@ -121,6 +128,7 @@ public partial class AetherlinkPriceServerServiceTest : AetherlinkPriceServerTes
         var type = AggregateType.Avg;
         var result = await _priceAppService.GetAggregatedTokenPriceAsync(new()
         {
+            AppId = "test",
             TokenPair = ELFUSDT,
             AggregateType = type
         });
@@ -137,6 +145,7 @@ public partial class AetherlinkPriceServerServiceTest : AetherlinkPriceServerTes
         var type = AggregateType.Medium;
         var result = await _priceAppService.GetAggregatedTokenPriceAsync(new()
         {
+            AppId = "test",
             TokenPair = ELFUSDT,
             AggregateType = type
         });
@@ -152,6 +161,7 @@ public partial class AetherlinkPriceServerServiceTest : AetherlinkPriceServerTes
     {
         var result = await _priceAppService.GetAggregatedTokenPriceAsync(new()
         {
+            AppId = "test",
             TokenPair = ELFUSDT,
             AggregateType = (AggregateType)10
         });
