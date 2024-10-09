@@ -1,16 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
+using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Utilities.Encoders;
+using TonSdk.Contracts.Wallet;
 using TonSdk.Core;
+using TonSdk.Core.Block;
 using TonSdk.Core.Boc;
 using TonSdk.Core.Crypto;
 using Volo.Abp.DependencyInjection;
@@ -22,11 +27,15 @@ public sealed partial class TonHelper: ISingletonDependency
     private readonly TonPublicConfigOptions _tonPublicConfigOptions;
     private readonly KeyPair _keyPair ;
     private readonly ILogger<TonHelper> _logger;
+    private readonly TonIndexerRouter _indexerRouter;
+    private readonly string _transmitterFee;
     
-    public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger, IStorageProvider storageProvider)
+    public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,TonIndexerRouter indexerRouter, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger, IStorageProvider storageProvider)
     {
         _tonPublicConfigOptions = tonPublicOptions.Value;
+        _transmitterFee = tonSecretOptions.Value.TransmitterFee;
         _storageProvider = storageProvider;
+        _indexerRouter = indexerRouter;
         
         var secretKey = Hex.Decode(tonSecretOptions.Value.TransmitterSecretKey);
         var publicKey = Hex.Decode(tonSecretOptions.Value.TransmitterPublicKey);
@@ -34,6 +43,63 @@ public sealed partial class TonHelper: ISingletonDependency
         _keyPair = new KeyPair(secretKey, publicKey);
 
         _logger = logger;
+    }
+
+    [ItemCanBeNull]
+    public async Task<string> SendTransaction(CrossChainForwardMessageDto crossChainForwardMessageDto , Dictionary<int, byte[]> consensusInfo)
+    {
+        var walletV4 = new WalletV4(new WalletV4Options(){PublicKey = _keyPair.PublicKey});
+        
+        var receiverAddress = crossChainForwardMessageDto.Receiver;
+        
+        var seqno = await _indexerRouter.GetAddressSeqno(walletV4.Address);
+        if (seqno == null)
+        {
+            _logger.LogError($"[Send Ton Transaction] get seqno error, messageId is {crossChainForwardMessageDto.MessageId}");
+            return null;
+        }
+
+        var bodyCell = new CellBuilder()
+            .StoreUInt(TonOpCodeConstants.ForwardTx, 32)
+            .StoreInt(new BigInteger(Base64.Decode(crossChainForwardMessageDto.MessageId)),256)
+            .StoreAddress(new Address(receiverAddress))
+            .StoreRef(BuildMessageBody(crossChainForwardMessageDto.SourceChainId, 
+                    crossChainForwardMessageDto.TargetChainId, 
+                Base64.Decode(crossChainForwardMessageDto.Sender),
+                      new Address(receiverAddress),
+                Base64.Decode(crossChainForwardMessageDto.Message)))
+            .StoreRef(new CellBuilder().StoreDict(ConvertConsensusSignature(consensusInfo)).Build())
+            .Build();
+            
+        var msg = walletV4.CreateTransferMessage(new[]
+        {
+            new WalletTransfer
+            {
+                Message = new InternalMessage(new InternalMessageOptions
+                {
+                    Info = new IntMsgInfo(new IntMsgInfoOptions
+                    {
+                        Src = walletV4.Address,
+                        Dest = new Address(_tonPublicConfigOptions.ContractAddress),
+                        Value = new Coins(_transmitterFee)
+                    }),
+                    Body = bodyCell,
+                    StateInit = null,
+                }),
+                Mode = 0 // message mode
+            }
+        }, (uint)seqno).Sign(_keyPair.PrivateKey);
+            
+        var result = await _indexerRouter.CommitTransaction(msg.Cell);
+        if (result == null)
+        {
+            _logger.LogError($"[Send Ton Transaction] send transaction error,messageId is {crossChainForwardMessageDto.MessageId}");
+            return null;
+        }
+        
+        _logger.LogInformation($"[Send Ton Transaction] Cross to Ton: sourceChainId:{crossChainForwardMessageDto.SourceChainId} targetChainId:{crossChainForwardMessageDto.TargetChainId} messageId:{crossChainForwardMessageDto.Message} Transaction hash:{result}");
+        
+        return result;
     }
 
     public CrossChainForwardResendDto AnalysisResendTransaction(CrossChainToTonTransactionDto tonTransactionDto)
@@ -177,7 +243,7 @@ public sealed partial class TonHelper: ISingletonDependency
                 return cell.Parse().LoadBits(256);
             },
         
-            Value = (value) => new CellBuilder().StoreBytes(value).Build()
+            Value = (value) => new CellBuilder().StoreRef(new CellBuilder().StoreBytes(value).Build()).Build()  
         };
 
         var hashmap = new HashmapE<int, byte[]>(new HashmapOptions<int, byte[]>()
