@@ -168,11 +168,10 @@ public sealed partial class TonHelper: ISingletonDependency
         return new CrossChainForwardMessageDto
         {
             MessageId = messageIdStr,
-            SourceChainId = (long) sourceChainId,
-            TargetChainId = (long) targetChainId,
-            TargetContractAddress = targetAddrStr,
+            SourceChainId = (Int64) sourceChainId,
+            TargetChainId = (Int64) targetChainId,
             Sender = senderStr,
-            Receiver = receiveStr,
+            Receiver = targetAddrStr,
             Message = proxyMessageStr
         };
     }
@@ -201,9 +200,14 @@ public sealed partial class TonHelper: ISingletonDependency
         return signer.VerifySignature(sign);
     }
     
-    public byte[] ConsensusSign(string messageId, long sourceChainId, long targetChainId, byte[] sender, string receiverAddress, byte[] message)
+    public byte[] ConsensusSign(CrossChainForwardMessageDto crossChainForwardMessageDto)
     {
-        var unsignCell = BuildUnsignedCell(new BigInteger(Base64.Decode(messageId)), sourceChainId, targetChainId, sender, new Address(receiverAddress), message);
+        var unsignCell = BuildUnsignedCell(new BigInteger(Base64.Decode(crossChainForwardMessageDto.MessageId)),
+            crossChainForwardMessageDto.SourceChainId,
+            crossChainForwardMessageDto.TargetChainId,
+            Base64.Decode(crossChainForwardMessageDto.Sender),
+            new Address(crossChainForwardMessageDto.Receiver),
+            Base64.Decode(crossChainForwardMessageDto.Message));
 
         return KeyPair.Sign(unsignCell, this._keyPair.PrivateKey);
     }
