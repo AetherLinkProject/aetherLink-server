@@ -17,11 +17,6 @@ public class CrossChainForwardMessageDto
     /// <summary>
     /// base64 encode
     /// </summary>
-    public string TargetContractAddress { get; set; }
-    
-    /// <summary>
-    /// base64 encode
-    /// </summary>
     public string Sender { get; set; }
     
     /// <summary>
