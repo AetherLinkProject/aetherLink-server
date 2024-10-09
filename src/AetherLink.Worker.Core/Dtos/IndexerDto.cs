@@ -11,7 +11,6 @@ public class IndexerLogEventListDto
 public class OcrLogEventDto : IndexerBasicDto
 {
     public int RequestTypeIndex { get; set; }
-
     public string TransactionId { get; set; }
     public long StartTime { get; set; }
 }

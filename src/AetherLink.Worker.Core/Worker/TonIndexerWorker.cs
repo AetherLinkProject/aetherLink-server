@@ -30,7 +30,7 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
         _tonIndexerRouter = tonIndexerRouter;
         _backgroundJobManager = backgroundJobManager;
         
-        timer.Period = 1000 * 3; // 
+        timer.Period = 1000 * TonEnvConstants.PullTransactionMinWaitSecond;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)

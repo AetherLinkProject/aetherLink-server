@@ -10,9 +10,9 @@ public class CrossChainForwardMessageDto
     /// </summary>
     public string MessageId { get; set; }
     
-    public Int64 SourceChainId { get; set; }
+    public long SourceChainId { get; set; }
     
-    public Int64 TargetChainId { get; set; }
+    public long TargetChainId { get; set; }
     
     /// <summary>
     /// base64 encode
@@ -34,15 +34,15 @@ public class CrossChainForwardResendDto
 {
     public string MessageId { get; set; }
     
-    public Int64 TargetBlockHeight { get; set; }
+    public long TargetBlockHeight { get; set; }
     
     public string Hash { get; set; }
     
-    public Int64 TargetBlockGeneratorTime { get; set; }
+    public long TargetBlockGeneratorTime { get; set; }
     
-    public Int64 ResendTime { get; set; }
+    public long ResendTime { get; set; }
     
-    public Int64 CheckCommitTime { get; set; }
+    public long CheckCommitTime { get; set; }
     
     public ResendStatus Status { get; set; }
 }
