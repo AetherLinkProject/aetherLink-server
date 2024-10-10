@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Provider;
+using JetBrains.Annotations;
 
 namespace AetherLink.Worker.Core.Common;
 
@@ -32,6 +33,7 @@ public sealed partial class TonHelper
         await _storageProvider.SetHashsetAsync(TonStringConstants.TonTaskStorageKey, messageId, task);
     }
 
+    [ItemCanBeNull]
     public async Task<TonChainTaskDto> GetTonTask(string messageId)
     {
        return await _storageProvider.GetHashsetFieldAsync<TonChainTaskDto>(TonStringConstants.TonTaskStorageKey, messageId);

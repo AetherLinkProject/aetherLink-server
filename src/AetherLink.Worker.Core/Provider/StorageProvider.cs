@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,7 +21,8 @@ public interface IStorageProvider
     public Task<Dictionary<string, T>> GetAsync<T>(List<string> keys) where T : class, new();
 
     public Task SetHashsetAsync<T>(string key, string field, T value);
-
+    
+    [ItemCanBeNull]
     public Task<T> GetHashsetFieldAsync<T>(string key, string field) where T : class, new();
 
     public Task<Dictionary<string,T>> ScanHashset<T>(string key, string prefixPattern, int startIndex, int count) where T : class, new();
@@ -107,6 +109,7 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
         }
     }
     
+    [ItemCanBeNull]
     public async Task<T> GetHashsetFieldAsync<T>(string key, string field) where T : class, new()
     {
         try

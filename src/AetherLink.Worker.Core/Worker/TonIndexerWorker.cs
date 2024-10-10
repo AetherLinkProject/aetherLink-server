@@ -5,6 +5,7 @@ using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -110,8 +111,10 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
         var forwardMessage = _tonHelper.AnalysisForwardTransaction(tx);
         if (forwardMessage != null)
         {
+            
+            // update resend task
             var tonTask = await _tonHelper.GetTonTask(forwardMessage.MessageId);
-            if (tonTask.Type == TonChainTaskType.Resend)
+            if (tonTask is { Type: TonChainTaskType.Resend })
             {
                 var message = tonTask.Convert<ResendTonBaseArgs>();
                 message.TargetBlockHeight = tx.SeqNo;
@@ -122,7 +125,13 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
                 message.Status = ResendStatus.ChainConfirm;
 
                 await _tonHelper.StorageTonTask(message.MessageId, new TonChainTaskDto(message));
+                _logger.LogInformation($"[Ton indexer] resend ");
             }
+        }
+        else
+        {
+            _logger.LogInformation(
+                $"[Ton indexer] AnalysisForwardTransaction Get Null, CrossChainToTonTransactionDto is:{JsonConvert.SerializeObject(tx)}");
         }
     }
 
@@ -132,7 +141,7 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
         if (resendMessage != null)
         {
             var tonTask = await _tonHelper.GetTonTask(resendMessage.MessageId);
-            if (tonTask.Type == TonChainTaskType.Resend)
+            if (tonTask is { Type: TonChainTaskType.Resend })
             {
                 var message = tonTask.Convert<ResendTonBaseArgs>();
                 message.TargetBlockHeight = tx.SeqNo;
@@ -145,6 +154,11 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
                 await _tonHelper.StorageTonTask(message.MessageId, new TonChainTaskDto(message));
                 // todo: open task and recheck backwork
             }
+        }
+        else
+        {
+            _logger.LogInformation(
+                $"[Ton indexer] AnalysisResendTransaction Get Null, CrossChainToTonTransactionDto is:{JsonConvert.SerializeObject(tx)}");
         }
     }
 }

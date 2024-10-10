@@ -114,7 +114,7 @@ public sealed partial class TonHelper: ISingletonDependency
             return null;
         }
 
-        var messageId = bodySlice.LoadBytes(64);
+        var messageId = bodySlice.LoadBytes(32);
         var messageIdStr = Base64.ToBase64String(messageId);
 
         var result = new CrossChainForwardResendDto
@@ -149,7 +149,7 @@ public sealed partial class TonHelper: ISingletonDependency
             _logger.LogError("AnalysisForwardTransaction OpCode Error");
             return null;
         }
-        var messageId = inMessageBodySlice.LoadBytes(64);
+        var messageId = inMessageBodySlice.LoadBytes(32);
         var messageIdStr = Base64.ToBase64String(messageId);
         var targetAddr = inMessageBodySlice.LoadAddress();
         var targetAddrStr = targetAddr?.ToString();
