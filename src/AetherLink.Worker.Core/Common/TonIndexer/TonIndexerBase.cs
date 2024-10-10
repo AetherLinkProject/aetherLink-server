@@ -143,7 +143,7 @@ public abstract class TonIndexerBase:ITonIndexerProvider
             }
         };
         
-        var method = await PostDeserializeRequest<RunGetMethodResult?>("runGetMethod", JsonConvert.SerializeObject(body));
+        var method = await PostDeserializeRequest<RunGetMethodResult?>(TonStringConstants.RunGetMethod, JsonConvert.SerializeObject(body));
         if (!method.HasValue)
             return new uint?();
         if (method.Value.ExitCode != 0 && method.Value.ExitCode != 1)
@@ -155,7 +155,7 @@ public abstract class TonIndexerBase:ITonIndexerProvider
         }
 
         var data = JsonConvert.DeserializeObject<Dictionary<string,string>>(value);
-        var num = Convert.ToUInt32(data["value"], 16);
+        var num = Convert.ToUInt32(data[TonStringConstants.Value], 16);
         
         return num;
     }
@@ -172,7 +172,7 @@ public abstract class TonIndexerBase:ITonIndexerProvider
         };
         
         var result = await PostDeserializeRequest<Dictionary<String,String>>(path, JsonConvert.SerializeObject(body));
-        return result.TryGetValue("message_hash", out var transaction) ? transaction : null;
+        return result.TryGetValue(TonStringConstants.MessageValue, out var transaction) ? transaction : null;
     }
     
     public virtual async Task<bool> CheckAvailable()

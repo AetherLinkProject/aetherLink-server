@@ -213,7 +213,7 @@ public sealed partial class TonHelper: ISingletonDependency
         return KeyPair.Sign(unsignCell, this._keyPair.PrivateKey);
     }
 
-    private Cell BuildUnsignedCell(BigInteger messageId, Int64 sourceChainId, Int64 targetChainId, byte[] sender,
+    private Cell BuildUnsignedCell(BigInteger messageId, long sourceChainId, long targetChainId, byte[] sender,
         Address receiverAddress, byte[] message)
     {
         var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message);
@@ -226,7 +226,7 @@ public sealed partial class TonHelper: ISingletonDependency
         return unsignCell;
     }
     
-    private Cell BuildMessageBody(Int64 sourceChainId, Int64 targetChainId, byte[] sender, Address receiverAddress,
+    private Cell BuildMessageBody(long sourceChainId, long targetChainId, byte[] sender, Address receiverAddress,
         byte[] message)
     {
         return new CellBuilder()
