@@ -19,7 +19,5 @@ public class TonSecretConfigOptions
 {
     public string TransmitterSecretKey { get; set; }
 
-    public string TransmitterPublicKey { get; set; }
-    
-    public string TransmitterFee { get; set; }
+    public string TransmitterFee { get; set; } = "0.015";
 }

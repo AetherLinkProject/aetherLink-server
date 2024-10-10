@@ -38,9 +38,10 @@ public sealed partial class TonHelper: ISingletonDependency
         _indexerRouter = indexerRouter;
         
         var secretKey = Hex.Decode(tonSecretOptions.Value.TransmitterSecretKey);
-        var publicKey = Hex.Decode(tonSecretOptions.Value.TransmitterPublicKey);
+        var privateKeyParameters = new Ed25519PrivateKeyParameters(secretKey);
+        var publicKey = privateKeyParameters.GeneratePublicKey();
         
-        _keyPair = new KeyPair(secretKey, publicKey);
+        _keyPair = new KeyPair(secretKey, publicKey.GetEncoded());
 
         _logger = logger;
     }

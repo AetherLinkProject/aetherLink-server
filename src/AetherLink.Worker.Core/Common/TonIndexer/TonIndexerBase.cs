@@ -145,10 +145,10 @@ public abstract class TonIndexerBase:ITonIndexerProvider
         
         var method = await PostDeserializeRequest<RunGetMethodResult?>(TonStringConstants.RunGetMethod, JsonConvert.SerializeObject(body));
         if (!method.HasValue)
-            return new uint?();
+            return 0;
         if (method.Value.ExitCode != 0 && method.Value.ExitCode != 1)
-            return new uint?();
-        var value =method.Value.Stack[0].ToString();
+            return 0;
+        var value = method.Value.Stack[0].ToString();
         if (value == null)
         {
             return 0;
