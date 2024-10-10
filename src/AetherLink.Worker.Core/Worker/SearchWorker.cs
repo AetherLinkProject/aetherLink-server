@@ -3,11 +3,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf;
 using AElf.CSharp.Core;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Reporter;
+using Google.Protobuf;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -99,22 +101,26 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
     {
         _logger.LogDebug("ExecuteRampRequestsAsync................................");
         var requests = await _provider.SearchRampRequestsAsync(chainId, to, from);
+
+        var messageDataByte = ByteString.CopyFrom(1, 2, 3).ToBase64();
+
         requests = new List<RampRequestDto>
         {
             new()
             {
                 ChainId = "AELF",
                 TransactionId = "",
-                MessageId = "test-message-id",
-                TargetChainId = 111,
+                MessageId = ByteString.CopyFrom(HashHelper.ComputeFrom("test-message-id").ToByteArray()).ToBase64(),
+                TargetChainId = 1100,
                 SourceChainId = 110,
-                Sender = "sender",
-                Receiver = "receiver",
-                Data = "data",
+                Sender = "EQBebzBhy3vNBuFYH7R5AwFSGT4a_tp5BfpDXjynuaItjKqb",
+                Receiver = "EQBebzBhy3vNBuFYH7R5AwFSGT4a_tp5BfpDXjynuaItjKqb",
+                Data = messageDataByte,
                 Epoch = 1,
                 StartTime = 1727317110000
             }
         };
+
         var tasks = requests.Select(r => _provider.HandleRampRequestAsync(r));
 
         // todo: record ramp requests
