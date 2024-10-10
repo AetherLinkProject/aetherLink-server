@@ -95,11 +95,6 @@ public class RampRequestMultiSignatureJob : AsyncBackgroundJob<RampRequestMultiS
                 return;
             }
 
-            foreach (var (index, sign) in signatures)
-            {
-                _logger.LogInformation($"[Ramp]============={index} signature {ByteString.CopyFrom(sign).ToBase64()}");
-            }
-
             _logger.LogInformation($"[Ramp][Leader] {messageId} MultiSignature generate success.");
 
             var commitTransactionId = await SendTransactionAsync(metadata, signatures);
