@@ -2,7 +2,6 @@ namespace AetherLink.Worker.Core.JobPipeline.Args;
 
 public class RampRequestStartJobArgs
 {
-    public string ChainId { get; set; }
     public string TransactionId { get; set; }
     public long BlockHeight { get; set; }
     public string MessageId { get; set; }
