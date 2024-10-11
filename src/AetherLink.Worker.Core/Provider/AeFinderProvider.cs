@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
@@ -40,14 +41,14 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         _httpClient = httpClient;
     }
 
-    public async Task<List<OcrLogEventDto>> SubscribeLogsAsync(string chainId, long to, long from)
+    [ExceptionHandler(typeof(Exception), Message = "[Indexer] Subscribe Logs failed.",
+        ReturnDefault = ReturnDefault.New)]
+    public virtual async Task<List<OcrLogEventDto>> SubscribeLogsAsync(string chainId, long to, long from)
     {
-        try
+        var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerLogEventListDto>(GetClient(), new()
         {
-            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerLogEventListDto>(GetClient(), new()
-            {
-                Query =
-                    @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
+            Query =
+                @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
                      ocrJobEvents(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
                          chainId,
                          requestTypeIndex,
@@ -58,28 +59,22 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                          requestId
                  }
              }",
-                Variables = new
-                {
-                    chainId = chainId, fromBlockHeight = from, toBlockHeight = to
-                }
-            });
-            return indexerResult != null ? indexerResult.OcrJobEvents : new List<OcrLogEventDto>();
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Indexer] Subscribe Logs failed.");
-            return new List<OcrLogEventDto>();
-        }
+            Variables = new
+            {
+                chainId = chainId, fromBlockHeight = from, toBlockHeight = to
+            }
+        });
+        return indexerResult != null ? indexerResult.OcrJobEvents : new List<OcrLogEventDto>();
     }
 
-    public async Task<List<TransmittedDto>> SubscribeTransmittedAsync(string chainId, long to, long from)
+    [ExceptionHandler(typeof(Exception), Message = "[Indexer] SubscribeTransmitted failed.",
+        ReturnDefault = ReturnDefault.New)]
+    public virtual async Task<List<TransmittedDto>> SubscribeTransmittedAsync(string chainId, long to, long from)
     {
-        try
+        var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerTransmittedListDto>(GetClient(), new()
         {
-            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerTransmittedListDto>(GetClient(), new()
-            {
-                Query =
-                    @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
+            Query =
+                @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
                     transmitted(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
                         chainId,
                         transactionId,
@@ -88,45 +83,34 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                         requestId
                 }
             }",
-                Variables = new
-                {
-                    chainId = chainId, fromBlockHeight = from, toBlockHeight = to
-                }
-            });
-            return indexerResult != null ? indexerResult.Transmitted : new List<TransmittedDto>();
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Indexer] SubscribeTransmitted failed.");
-            return new List<TransmittedDto>();
-        }
+            Variables = new
+            {
+                chainId = chainId, fromBlockHeight = from, toBlockHeight = to
+            }
+        });
+        return indexerResult != null ? indexerResult.Transmitted : new List<TransmittedDto>();
     }
 
-    public async Task<List<RequestCancelledDto>> SubscribeRequestCancelledAsync(string chainId, long to, long from)
+    [ExceptionHandler(typeof(Exception), Message = "[Indexer] SubscribeRequestCancelled failed.",
+        ReturnDefault = ReturnDefault.New)]
+    public virtual async Task<List<RequestCancelledDto>> SubscribeRequestCancelledAsync(string chainId, long to,
+        long from)
     {
-        try
+        var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerRequestCancelledListDto>(GetClient(), new()
         {
-            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerRequestCancelledListDto>(GetClient(), new()
-            {
-                Query =
-                    @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
+            Query =
+                @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
                     requestCancelled(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
                         chainId,
                         requestId
                 }
             }",
-                Variables = new
-                {
-                    chainId = chainId, fromBlockHeight = from, toBlockHeight = to
-                }
-            });
-            return indexerResult != null ? indexerResult.RequestCancelled : new List<RequestCancelledDto>();
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Indexer] SubscribeRequestCancelled failed.");
-            return new List<RequestCancelledDto>();
-        }
+            Variables = new
+            {
+                chainId = chainId, fromBlockHeight = from, toBlockHeight = to
+            }
+        });
+        return indexerResult != null ? indexerResult.RequestCancelled : new List<RequestCancelledDto>();
     }
 
     public async Task<List<ChainItemDto>> GetChainSyncStateAsync()
@@ -135,31 +119,25 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         return result.CurrentVersion.Items;
     }
 
-    public async Task<string> GetOracleConfigAsync(string chainId)
+    [ExceptionHandler(typeof(Exception), Message = "[Indexer] GetOracleConfig failed.",
+        ReturnDefault = ReturnDefault.Default)]
+    public virtual async Task<string> GetOracleConfigAsync(string chainId)
     {
-        try
+        var res = await GraphQLHelper.SendQueryAsync<OracleConfigDigestRecord>(GetClient(), new()
         {
-            var res = await GraphQLHelper.SendQueryAsync<OracleConfigDigestRecord>(GetClient(), new()
-            {
-                Query = @"
+            Query = @"
 			        query($chainId:String!){
                         oracleConfigDigest(input: {chainId:$chainId}){
                             configDigest
                     }
                 }",
-                Variables = new
-                {
-                    chainId = chainId
-                }
-            });
+            Variables = new
+            {
+                chainId = chainId
+            }
+        });
 
-            return res?.OracleConfigDigest == null ? "" : res.OracleConfigDigest.ConfigDigest;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Indexer] GetOracleConfig failed.");
-            return "";
-        }
+        return res?.OracleConfigDigest == null ? "" : res.OracleConfigDigest.ConfigDigest;
     }
 
     public async Task<long> GetOracleLatestEpochAsync(string chainId, long blockHeight)
@@ -189,13 +167,13 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         }
     }
 
-    public async Task<string> GetRequestCommitmentAsync(string chainId, string requestId)
+    [ExceptionHandler(typeof(Exception), Message = "[Indexer] GetRequestCommitment failed.",
+        ReturnDefault = ReturnDefault.Default)]
+    public virtual async Task<string> GetRequestCommitmentAsync(string chainId, string requestId)
     {
-        try
+        var res = await GraphQLHelper.SendQueryAsync<RequestCommitmentRecord>(GetClient(), new()
         {
-            var res = await GraphQLHelper.SendQueryAsync<RequestCommitmentRecord>(GetClient(), new()
-            {
-                Query = @"
+            Query = @"
                     query($chainId:String!,$requestId:String!){
                         requestCommitment(input: {chainId:$chainId,requestId:$requestId}){
                             chainId,
@@ -203,19 +181,13 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                             commitment
                         }
                 }",
-                Variables = new
-                {
-                    chainId, requestId
-                }
-            });
+            Variables = new
+            {
+                chainId, requestId
+            }
+        });
 
-            return res?.RequestCommitment == null ? "" : res.RequestCommitment.Commitment;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Indexer] GetRequestCommitment failed.");
-            return "";
-        }
+        return res?.RequestCommitment == null ? "" : res.RequestCommitment.Commitment;
     }
 
     public async Task<List<TransactionEventDto>> GetTransactionLogEventsAsync(string chainId, long to, long from)

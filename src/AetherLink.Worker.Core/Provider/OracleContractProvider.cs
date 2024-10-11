@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using AElf;
 using AElf.Types;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Contracts.Oracle;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
@@ -79,27 +80,16 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         return commitment;
     }
 
-    public async Task<long> GetStartEpochAsync(string chainId, long blockHeight)
+    [ExceptionHandler([typeof(Exception), typeof(OperationCanceledException)],
+        TargetType = typeof(OracleContractProvider), MethodName = nameof(HandleException))]
+    public virtual async Task<long> GetStartEpochAsync(string chainId, long blockHeight)
     {
-        try
-        {
-            var epoch = await _aeFinderProvider.GetOracleLatestEpochAsync(chainId, blockHeight);
+        var epoch = await _aeFinderProvider.GetOracleLatestEpochAsync(chainId, blockHeight);
 
-            if (epoch <= 0) return (await _contractProvider.GetLatestRoundAsync(chainId)).Value;
-            _logger.LogDebug("[OracleContract] Get indexer request start epoch:{epoch} before :{height}", epoch,
-                blockHeight);
-            return epoch;
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogError("[OracleContract] Get {chain} start epoch timeout", chainId);
-            throw;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[OracleContract] Get {chain} start epoch failed", chainId);
-            throw;
-        }
+        if (epoch <= 0) return (await _contractProvider.GetLatestRoundAsync(chainId)).Value;
+        _logger.LogDebug("[OracleContract] Get indexer request start epoch:{epoch} before :{height}", epoch,
+            blockHeight);
+        return epoch;
     }
 
     public async Task<TransmitInput> GenerateTransmitDataAsync(string chainId, string requestId, long epoch,
@@ -165,4 +155,25 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         var config = await _contractProvider.GetOracleConfigAsync(chainId);
         return config.Config.LatestConfigDigest;
     }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, string chainId)
+    {
+        if (ex is OperationCanceledException)
+        {
+            _logger.LogError("[OracleContract] Get {chain} start epoch timeout", chainId);
+        }
+        else
+        {
+            _logger.LogError(ex, "[OracleContract] Get {chain} start epoch failed", chainId);
+        }
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Rethrow,
+        };
+    }
+
+    #endregion
 }

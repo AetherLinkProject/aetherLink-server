@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Worker.Core.Dtos;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -29,31 +30,24 @@ public class PlainDataFeedsProvider : IPlainDataFeedsProvider, ITransientDepende
         _httpClientFactory = httpClientFactory;
     }
 
-    public async Task<string> RequestPlainDataAsync(string url)
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(PlainDataFeedsProvider),
+        MethodName = nameof(HandleException))]
+    public virtual async Task<string> RequestPlainDataAsync(string url)
     {
-        try
+        _logger.LogDebug("Starting to request {url}", url);
+
+        var resp = await _httpClientFactory.CreateClient().SendAsync(new()
         {
-            _logger.LogDebug("Starting to request {url}", url);
+            Method = HttpMethod.Get,
+            RequestUri = new Uri(url),
+            Headers = { { "accept", "text/plain" }, { "X-Requested-With", "XMLHttpRequest" } }
+        });
 
-            var resp = await _httpClientFactory.CreateClient().SendAsync(new()
-            {
-                Method = HttpMethod.Get,
-                RequestUri = new Uri(url),
-                Headers = { { "accept", "text/plain" }, { "X-Requested-With", "XMLHttpRequest" } }
-            });
+        if (resp.StatusCode == HttpStatusCode.OK) return await GetSortedResponseContentAsStringAsync(resp);
 
-            if (resp.StatusCode == HttpStatusCode.OK) return await GetSortedResponseContentAsStringAsync(resp);
+        _logger.LogWarning("Request {url} failed, StatusCode:{code}", url, resp.StatusCode);
 
-            _logger.LogWarning("Request {url} failed, StatusCode:{code}", url, resp.StatusCode);
-
-            return "";
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, $"Query auth url {url} failed");
-
-            return "";
-        }
+        return "";
     }
 
     private async Task<string> GetSortedResponseContentAsStringAsync(HttpResponseMessage response)
@@ -104,4 +98,18 @@ public class PlainDataFeedsProvider : IPlainDataFeedsProvider, ITransientDepende
                 throw new NotSupportedException($"Unsupported JSON token: {token.Type}");
         }
     }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, string url)
+    {
+        _logger.LogError(ex, $"Query auth url {url} failed");
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
+            ReturnValue = ""
+        };
+    }
+
+    #endregion
 }
