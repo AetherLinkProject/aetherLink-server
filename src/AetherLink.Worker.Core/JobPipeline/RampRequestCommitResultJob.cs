@@ -29,7 +29,7 @@ public class RampRequestCommitResultJob : AsyncBackgroundJob<RampRequestCommitRe
         var messageId = args.MessageId;
         _logger.LogInformation($"get leader ramp commit transaction {args.TransactionId}");
 
-        var messageData = await _messageProvider.GetAsync(chainId, messageId);
+        var messageData = await _messageProvider.GetAsync(messageId);
         if (messageData == null) return;
 
         // todo: check transaction by targetChainId

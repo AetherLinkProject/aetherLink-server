@@ -46,7 +46,7 @@ public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPart
         {
             _logger.LogDebug(
                 $"get leader ramp request partial signature request.{args.MessageId} {args.ChainId} {args.Epoch} {args.RoundId}");
-            var messageData = await _messageProvider.GetAsync(args.ChainId, args.MessageId);
+            var messageData = await _messageProvider.GetAsync(args.MessageId);
             if (messageData == null || args.RoundId > messageData.RoundId)
             {
                 _logger.LogDebug($"The Ramp request {args.MessageId} from leader is not ready now,will try it later.");
