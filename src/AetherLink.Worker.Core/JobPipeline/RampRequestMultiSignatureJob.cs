@@ -55,10 +55,10 @@ public class RampRequestMultiSignatureJob : AsyncBackgroundJob<RampRequestMultiS
         try
         {
             _logger.LogInformation($"Get partial signature {messageId} {epoch} {nodeIndex}");
-            var messageData = await _messageProvider.GetAsync(chainId, messageId);
+            var messageData = await _messageProvider.GetAsync(messageId);
             if (messageData == null) return;
 
-            var signatureId = IdGeneratorHelper.GenerateMultiSignatureId(chainId, messageId, epoch, roundId);
+            var signatureId = IdGeneratorHelper.GenerateId(messageId, epoch, roundId);
             if (_stateProvider.IsFinished(signatureId)) return;
 
             var metadata = new CrossChainForwardMessageDto

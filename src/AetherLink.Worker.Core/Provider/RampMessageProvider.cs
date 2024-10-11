@@ -10,7 +10,7 @@ namespace AetherLink.Worker.Core.Provider;
 public interface IRampMessageProvider
 {
     public Task SetAsync(RampMessageDto msg);
-    public Task<RampMessageDto> GetAsync(string chainId, string messageId);
+    public Task<RampMessageDto> GetAsync(string messageId);
 }
 
 public class RampMessageProvider : IRampMessageProvider, ITransientDependency
@@ -26,16 +26,16 @@ public class RampMessageProvider : IRampMessageProvider, ITransientDependency
 
     public async Task SetAsync(RampMessageDto msg)
     {
-        var key = GenerateRampMessageId(msg.ChainId, msg.MessageId);
+        var key = GenerateRampMessageId(msg.MessageId);
 
         _logger.LogDebug("[RampMessageProvider] Start to set {key}, data:{data}", key, msg.Data);
 
         await _storageProvider.SetAsync(key, msg);
     }
 
-    public async Task<RampMessageDto> GetAsync(string chainId, string messageId) =>
-        await _storageProvider.GetAsync<RampMessageDto>(GenerateRampMessageId(chainId, messageId));
+    public async Task<RampMessageDto> GetAsync(string messageId) =>
+        await _storageProvider.GetAsync<RampMessageDto>(GenerateRampMessageId(messageId));
 
-    private static string GenerateRampMessageId(string chainId, string messageId)
-        => IdGeneratorHelper.GenerateId(RedisKeyConstants.RampMessageKey, chainId, messageId);
+    private static string GenerateRampMessageId(string messageId)
+        => IdGeneratorHelper.GenerateId(RedisKeyConstants.RampMessageKey, messageId);
 }
