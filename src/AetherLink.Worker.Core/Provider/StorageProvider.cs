@@ -21,6 +21,8 @@ public interface IStorageProvider
     public Task<Dictionary<string, T>> GetAsync<T>(List<string> keys) where T : class, new();
 
     public Task SetHashsetAsync<T>(string key, string field, T value);
+
+    public Task DeleteHashsetFieldAsync<T>(string key, string field);
     
     [ItemCanBeNull]
     public Task<T> GetHashsetFieldAsync<T>(string key, string field) where T : class, new();
@@ -108,7 +110,21 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
             _logger.LogError(e, $"Hashset {string.Join(key, field)} error.");
         }
     }
-    
+
+    public async Task DeleteHashsetFieldAsync<T>(string key, string field)
+    {
+        try
+        {
+            await ConnectAsync();
+
+            await RedisDatabase.HashDeleteAsync(key, new RedisValue(field));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"Hashset {string.Join(key, field)} error.");
+        }
+    }
+
     [ItemCanBeNull]
     public async Task<T> GetHashsetFieldAsync<T>(string key, string field) where T : class, new()
     {

@@ -5,6 +5,7 @@ using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
+using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -21,14 +22,17 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
     private readonly ILogger<TonIndexerWorker> _logger;
     private readonly TonIndexerRouter _tonIndexerRouter;
     private readonly IBackgroundJobManager _backgroundJobManager;
+    private readonly IRampMessageProvider _rampMessageProvider;
 
     public TonIndexerWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        TonIndexerRouter tonIndexerRouter, TonHelper tonHelper, IBackgroundJobManager backgroundJobManager, ILogger<TonIndexerWorker> logger) : base(timer,
+        TonIndexerRouter tonIndexerRouter, TonHelper tonHelper, IBackgroundJobManager backgroundJobManager, ILogger<TonIndexerWorker> logger,
+        IRampMessageProvider rampMessageProvider) : base(timer,
         serviceScopeFactory)
     {
         _tonHelper = tonHelper;
         _logger = logger;
         _tonIndexerRouter = tonIndexerRouter;
+        _rampMessageProvider = rampMessageProvider;
         _backgroundJobManager = backgroundJobManager;
         
         timer.Period = 1000 * TonEnvConstants.PullTransactionMinWaitSecond;
@@ -111,6 +115,14 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
         var forwardMessage = _tonHelper.AnalysisForwardTransaction(tx);
         if (forwardMessage != null)
         {
+            var rampMessageData = await _rampMessageProvider.GetAsync(forwardMessage.MessageId);
+            if (rampMessageData.State != RampRequestState.Committed)
+            {
+                _logger.LogWarning($"[Ton indexer] MessageId:{forwardMessage.MessageId} state error,current status is:{rampMessageData.State}, but receive a chain transaction");
+            }
+
+            rampMessageData.State = RampRequestState.Confirmed;
+            await _rampMessageProvider.SetAsync(rampMessageData);
             
             // update resend task
             var tonTask = await _tonHelper.GetTonTask(forwardMessage.MessageId);
@@ -120,7 +132,6 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
                 message.TargetBlockHeight = tx.SeqNo;
                 message.TargetTxHash = tx.Hash;
                 message.TargetBlockGeneratorTime = tx.BlockTime;
-                message.CheckCommitTime = 0;
                 message.ResendTime = 0;
                 message.Status = ResendStatus.ChainConfirm;
 
@@ -147,8 +158,7 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
                 message.TargetBlockHeight = tx.SeqNo;
                 message.TargetTxHash = tx.Hash;
                 message.TargetBlockGeneratorTime = tx.BlockTime;
-                message.ResendTime = tx.BlockTime + resendMessage.CheckCommitTime;
-                message.CheckCommitTime = message.ResendTime + TonEnvConstants.ResendMaxWaitSeconds;
+                message.ResendTime = resendMessage.CheckCommitTime;
                 message.Status = ResendStatus.WaitConsensus;
 
                 await _tonHelper.StorageTonTask(message.MessageId, new TonChainTaskDto(message));

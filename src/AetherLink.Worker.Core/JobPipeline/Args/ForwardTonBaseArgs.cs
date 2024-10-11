@@ -18,8 +18,6 @@ public class ResendTonBaseArgs : ForwardTonBaseArgs
     
     public Int64 ResendTime { get; set; }
     
-    public Int64 CheckCommitTime { get; set; }
-    
     public ResendStatus Status { get; set; }
 
     public bool CheckNeedResend()
