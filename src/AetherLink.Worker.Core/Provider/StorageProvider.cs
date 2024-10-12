@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf.ExceptionHandler;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -36,17 +35,24 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
 
     public async Task SetAsync<T>(string key, T data) => await SetAsync(key, data, null);
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(StorageProvider), MethodName = nameof(HandingSetRedisKeyException))]
     public async Task SetAsync<T>(string key, T data, TimeSpan? expiry)
     {
+        try
+        {
             await ConnectAsync();
 
             await RedisDatabase.StringSetAsync(key, _serializer.Serialize(data), expiry);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Set {key} to redis error.", key);
+        }
     }
-    
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(StorageProvider), MethodName = nameof(HandingGetRedisKeyException))]
+
     public async Task<T> GetAsync<T>(string key) where T : class, new()
     {
+        try
+        {
             await ConnectAsync();
 
             var redisValue = await RedisDatabase.StringGetAsync(key);
@@ -54,49 +60,43 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
             _logger.LogDebug("[StorageProvider] {key} spec: {spec}", key, redisValue);
 
             return redisValue.HasValue ? _serializer.Deserialize<T>(redisValue) : null;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"Get {key} error.");
+            return null;
+        }
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(StorageProvider), MethodName = nameof(HandingGetRedisKeyException))]
     public async Task<Dictionary<string, T>> GetAsync<T>(List<string> keys) where T : class, new()
     {
+        try
+        {
             await ConnectAsync();
 
             var result = await RedisDatabase.StringGetAsync(keys.Select(k => (RedisKey)k).ToArray());
 
             return keys.Zip(result, (k, v) => new { k, v })
                 .ToDictionary(x => x.k, x => x.v.HasValue ? _serializer.Deserialize<T>(x.v) : null);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"Get {string.Join(",", keys)} error.");
+            return null;
+        }
     }
-    
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(StorageProvider), MethodName = nameof(HandingSetRedisKeyException))]
+
     public async Task RemoveAsync(string key)
     {
+        try
+        {
             await ConnectAsync();
 
             await RedisDatabase.KeyDeleteAsync(key);
-    }
-
-    #region Exception handing
-
-    public async Task<FlowBehavior> HandingSetRedisKeyException(Exception ex, string key)
-    {
-        _logger.LogError(ex, "Set {key} to redis error.", key);
-
-        return new FlowBehavior()
+        }
+        catch (Exception e)
         {
-            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
-            ReturnValue = null
-        };
+            _logger.LogError(e, "Set {key} to redis error.", key);
+        }
     }
-    public async Task<FlowBehavior> HandingGetRedisKeyException(Exception ex, string key)
-    {
-        _logger.LogError(ex, "Get {key} to redis error.", key);
-
-        return new FlowBehavior()
-        {
-            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
-            ReturnValue = null
-        };
-    }
-
-    #endregion
 }

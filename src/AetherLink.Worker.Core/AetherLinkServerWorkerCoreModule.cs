@@ -1,5 +1,4 @@
-﻿using AElf.ExceptionHandler;
-using AetherLink.Metric;
+﻿using AetherLink.Metric;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Reporter;
 using AetherLink.Worker.Core.Scheduler;
@@ -11,8 +10,7 @@ namespace AetherLink.Worker.Core;
 
 [DependsOn(
     typeof(AbpAutoMapperModule),
-    typeof(AetherLinkMetricModule),
-    typeof(AOPExceptionModule)
+    typeof(AetherLinkMetricModule)
 )]
 public class AetherLinkServerWorkerCoreModule : AbpModule
 {
