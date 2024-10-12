@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Automation.Providers;
 using AetherLink.Worker.Core.Constants;
@@ -37,7 +38,13 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
         _signatureProvider = signatureProvider;
     }
 
+
     public override async Task ExecuteAsync(AutomationStartJobArgs args)
+    {
+    }
+
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(AutomationStart), MethodName = nameof(HandleException))]
+    public virtual async Task Handler(AutomationStartJobArgs args)
     {
         var chainId = args.ChainId;
         var upkeepId = args.RequestId;
@@ -53,41 +60,56 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
         };
         var id = AutomationHelper.GenerateCronUpkeepId(context);
 
-        try
+        var job = await _jobProvider.GetAsync(args);
+        if (job == null) job = _mapper.Map<AutomationStartJobArgs, JobDto>(args);
+        else if (job.State == RequestState.RequestCanceled || epoch < job.Epoch) return;
+        else if (job.RoundId == 0 && job.State == RequestState.RequestEnd)
+            blockTime = DateTimeOffset.FromUnixTimeMilliseconds(job.TransactionBlockTime).DateTime;
+
+        job.RequestReceiveTime = _schedulerService.UpdateBlockTime(blockTime);
+        job.RoundId = roundId;
+        job.State = RequestState.RequestStart;
+        await _jobProvider.SetAsync(job);
+
+        _logger.LogDebug($"[Automation] {id} startTime {args.StartTime}, blockTime {job.TransactionBlockTime}");
+
+        var commitment = await _contractProvider.GetRequestCommitmentAsync(chainId, upkeepId);
+        var payload = AutomationHelper.GetUpkeepPerformData(commitment);
+
+        if (_peerManager.IsLeader(epoch, roundId))
         {
-            var job = await _jobProvider.GetAsync(args);
-            if (job == null) job = _mapper.Map<AutomationStartJobArgs, JobDto>(args);
-            else if (job.State == RequestState.RequestCanceled || epoch < job.Epoch) return;
-            else if (job.RoundId == 0 && job.State == RequestState.RequestEnd)
-                blockTime = DateTimeOffset.FromUnixTimeMilliseconds(job.TransactionBlockTime).DateTime;
-
-            job.RequestReceiveTime = _schedulerService.UpdateBlockTime(blockTime);
-            job.RoundId = roundId;
-            job.State = RequestState.RequestStart;
-            await _jobProvider.SetAsync(job);
-
-            _logger.LogDebug($"[Automation] {id} startTime {args.StartTime}, blockTime {job.TransactionBlockTime}");
-
-            var commitment = await _contractProvider.GetRequestCommitmentAsync(chainId, upkeepId);
-            var payload = AutomationHelper.GetUpkeepPerformData(commitment);
-
-            if (_peerManager.IsLeader(epoch, roundId))
-            {
-                _logger.LogInformation($"[Automation][Leader] {id} Is Leader.");
-                var request = new QueryReportSignatureRequest { Context = context, Payload = payload };
-                _signatureProvider.LeaderInitMultiSign(chainId, id, _signatureProvider.GenerateMsg(
-                        await _contractProvider.GenerateTransmitDataAsync(chainId, upkeepId, epoch, payload))
-                    .ToByteArray());
-                await _peerManager.BroadcastAsync(p => p.QueryReportSignatureAsync(request));
-            }
-
-            _schedulerService.StartCronUpkeepScheduler(job);
-
-            _logger.LogInformation($"[Automation] {id} Waiting for request end.");
+            _logger.LogInformation($"[Automation][Leader] {id} Is Leader.");
+            var request = new QueryReportSignatureRequest { Context = context, Payload = payload };
+            _signatureProvider.LeaderInitMultiSign(chainId, id, _signatureProvider.GenerateMsg(
+                    await _contractProvider.GenerateTransmitDataAsync(chainId, upkeepId, epoch, payload))
+                .ToByteArray());
+            await _peerManager.BroadcastAsync(p => p.QueryReportSignatureAsync(request));
         }
-        catch (Exception e)
-        {
-            _logger.LogError(e, $"[Automation] {id} Start process failed.");
-        }
+
+        _schedulerService.StartCronUpkeepScheduler(job);
+
+        _logger.LogInformation($"[Automation] {id} Waiting for request end.");
     }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, AutomationJobArgs args)
+    {
+        var context = new OCRContext
+        {
+            RequestId = args.RequestId,
+            ChainId = args.ChainId,
+            RoundId = args.RoundId,
+            Epoch = args.Epoch
+        };
+        var id = AutomationHelper.GenerateCronUpkeepId(context);
+        _logger.LogError(ex, $"[Automation] {id} Start process failed.");
+
+        return new FlowBehavior
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
+        };
+    }
+
+    #endregion
 }

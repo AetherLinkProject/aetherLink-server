@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
@@ -36,35 +37,30 @@ public class ResetRequestSchedulerJob : IResetRequestSchedulerJob, ITransientDep
         _backgroundJobManager = backgroundJobManager;
     }
 
-    public async Task Execute(JobDto job)
+    [ExceptionHandler(typeof(Exception), Message = "[ResetScheduler] Reset scheduler job failed.",
+        ReturnDefault = ReturnDefault.Default)]
+    public virtual async Task Execute(JobDto job)
     {
-        try
+        if (job.State == RequestState.RequestCanceled) return;
+
+        _logger.LogInformation(
+            "[ResetScheduler] Scheduler job execute. reqId {ReqId}, roundId:{RoundId}, reqState:{State}",
+            job.RequestId, job.RoundId, job.State.ToString());
+        job.RoundId++;
+
+        while (DateTime.UtcNow > DateTimeOffset.FromUnixTimeMilliseconds(job.TransactionBlockTime).DateTime)
         {
-            if (job.State == RequestState.RequestCanceled) return;
-
-            _logger.LogInformation(
-                "[ResetScheduler] Scheduler job execute. reqId {ReqId}, roundId:{RoundId}, reqState:{State}",
-                job.RequestId, job.RoundId, job.State.ToString());
-            job.RoundId++;
-
-            while (DateTime.UtcNow > DateTimeOffset.FromUnixTimeMilliseconds(job.TransactionBlockTime).DateTime)
-            {
-                job.TransactionBlockTime += _schedulerOptions.RetryTimeOut * 60 * 1000;
-            }
-
-            _logger.LogDebug("[ResetScheduler] blockTime {time}", job.TransactionBlockTime);
-
-            await _jobProvider.SetAsync(job);
-
-            var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
-                _objectMapper.Map<JobDto, RequestStartProcessJobArgs>(job), BackgroundJobPriority.High);
-            _logger.LogInformation(
-                "[ResetScheduler] Request {ReqId} timeout, will starting in new round:{RoundId}, hangfireId:{hangfire}",
-                job.RequestId, job.RoundId, hangfireJobId);
+            job.TransactionBlockTime += _schedulerOptions.RetryTimeOut * 60 * 1000;
         }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[ResetScheduler] Reset scheduler job failed.");
-        }
+
+        _logger.LogDebug("[ResetScheduler] blockTime {time}", job.TransactionBlockTime);
+
+        await _jobProvider.SetAsync(job);
+
+        var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
+            _objectMapper.Map<JobDto, RequestStartProcessJobArgs>(job), BackgroundJobPriority.High);
+        _logger.LogInformation(
+            "[ResetScheduler] Request {ReqId} timeout, will starting in new round:{RoundId}, hangfireId:{hangfire}",
+            job.RequestId, job.RoundId, hangfireJobId);
     }
 }

@@ -1,5 +1,7 @@
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Contracts.Automation;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Automation.Providers;
@@ -37,40 +39,34 @@ public class AutomationJobInit : AsyncBackgroundJob<AutomationJobArgs>, ITransie
 
     public override async Task ExecuteAsync(AutomationJobArgs args)
     {
+        await Handle(args);
+    }
+
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(AutomationJobInit), MethodName = nameof(HandleException))]
+    public async virtual Task Handle(AutomationJobArgs args)
+    {
         var chainId = args.ChainId;
         var upkeepId = args.RequestId;
         var jobId = IdGeneratorHelper.GenerateId(chainId, upkeepId);
 
-        try
+        _logger.LogInformation($"[Automation] Get a new upkeep {jobId} at blockHeight:{args.BlockHeight}.");
+        var commitment = await _oracleContractProvider.GetRequestCommitmentByTxAsync(chainId, args.TransactionId);
+        var triggerDataStr = AutomationHelper.GetTriggerData(commitment);
+
+        _logger.LogDebug($"Get automation job spec: {triggerDataStr}");
+        switch (AutomationHelper.GetTriggerType(commitment))
         {
-            _logger.LogInformation($"[Automation] Get a new upkeep {jobId} at blockHeight:{args.BlockHeight}.");
-            var commitment = await _oracleContractProvider.GetRequestCommitmentByTxAsync(chainId, args.TransactionId);
-            var triggerDataStr = AutomationHelper.GetTriggerData(commitment);
-            
-            _logger.LogDebug($"Get automation job spec: {triggerDataStr}");
-            switch (AutomationHelper.GetTriggerType(commitment))
-            {
-                case TriggerType.Cron:
-                    _logger.LogInformation($"[Automation] {jobId} Start a automation timer.");
-                    await AddCronUpkeepAsync(args, jobId, triggerDataStr);
-                    break;
-                case TriggerType.Log:
-                    _logger.LogInformation($"[Automation] {jobId} Start a automation log trigger.");
-                    var upkeepAddress = AutomationHelper.GetUpkeepAddress(commitment);
-                    await AddLogUpkeepAsync(chainId, upkeepId, upkeepAddress, triggerDataStr);
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogError("[Automation] Get Automation job info {name} timeout, retry later.", jobId);
-            await _retryProvider.RetryAsync(args, untilFailed: true, backOff: true);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Automation] Get a new Automation job {name} failed.", jobId);
+            case TriggerType.Cron:
+                _logger.LogInformation($"[Automation] {jobId} Start a automation timer.");
+                await AddCronUpkeepAsync(args, jobId, triggerDataStr);
+                break;
+            case TriggerType.Log:
+                _logger.LogInformation($"[Automation] {jobId} Start a automation log trigger.");
+                var upkeepAddress = AutomationHelper.GetUpkeepAddress(commitment);
+                await AddLogUpkeepAsync(chainId, upkeepId, upkeepAddress, triggerDataStr);
+                break;
+            default:
+                throw new NotImplementedException();
         }
     }
 
@@ -112,4 +108,27 @@ public class AutomationJobInit : AsyncBackgroundJob<AutomationJobArgs>, ITransie
         // await _upkeepStorage.SetAsync(IdGeneratorHelper.GenerateUpkeepInfoId(chainId, upkeepId), upkeepInfo);
         await _filterStorage.AddFilterAsync(upkeepInfo);
     }
+
+    #region ExceptionHanding
+
+    public async Task<FlowBehavior> HandleException(Exception ex, AutomationJobArgs args)
+    {
+        var jobId = IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId);
+        if (ex is OperationCanceledException)
+        {
+            _logger.LogError("[Automation] Get Automation job info {name} timeout, retry later.", jobId);
+            await _retryProvider.RetryAsync(args, untilFailed: true, backOff: true);
+        }
+        else
+        {
+            _logger.LogError(ex, "[Automation] Get a new Automation job {name} failed.", jobId);
+        }
+
+        return new FlowBehavior
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
+        };
+    }
+
+    #endregion
 }
