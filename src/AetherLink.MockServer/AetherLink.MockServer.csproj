@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net7.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <UserSecretsId>dotnet-OffChainNetworkServer.MockServer-D4FDEA56-C83F-4B45-917D-B6E8686BDEFE</UserSecretsId>
@@ -15,11 +15,11 @@
         <PackageReference Include="GraphQL.Server.Ui.Playground" Version="7.1.1" />
         <PackageReference Include="AElf.Indexing.Elasticsearch" Version="0.0.14" />
         <PackageReference Include="Nethereum.Hex" Version="4.20.0" />
-        <PackageReference Include="Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy" Version="8.2.0" />
+        <PackageReference Include="Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy" Version="7.0.0" />
         <PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
-        <PackageReference Include="Volo.Abp.AutoMapper" Version="8.2.0" />
-        <PackageReference Include="Volo.Abp.AspNetCore.Serilog" Version="8.2.0" />
-        <PackageReference Include="Volo.Abp.Swashbuckle" Version="8.2.0" />
+        <PackageReference Include="Volo.Abp.AutoMapper" Version="7.0.0" />
+        <PackageReference Include="Volo.Abp.AspNetCore.Serilog" Version="7.0.0" />
+        <PackageReference Include="Volo.Abp.Swashbuckle" Version="7.0.0" />
     </ItemGroup>
 
     <ItemGroup>
