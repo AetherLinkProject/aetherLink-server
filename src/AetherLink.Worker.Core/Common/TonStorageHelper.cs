@@ -33,6 +33,11 @@ public sealed partial class TonHelper
         await _storageProvider.SetHashsetAsync(TonStringConstants.TonTaskStorageKey, messageId, task);
     }
 
+    public async Task DeleteTonTask(string messageId)
+    {
+        await _storageProvider.DeleteHashsetFieldAsync(TonStringConstants.TonTaskStorageKey, messageId);
+    }
+
     [ItemCanBeNull]
     public async Task<TonChainTaskDto> GetTonTask(string messageId)
     {

@@ -10,13 +10,13 @@ public class ForwardTonBaseArgs:JobPipelineArgsBase
 
 public class ResendTonBaseArgs : ForwardTonBaseArgs
 {
-    public Int64 TargetBlockHeight { get; set; }
+    public long TargetBlockHeight { get; set; }
     
     public string TargetTxHash { get; set; }
     
-    public Int64 TargetBlockGeneratorTime { get; set; }
+    public long TargetBlockGeneratorTime { get; set; }
     
-    public Int64 ResendTime { get; set; }
+    public long ResendTime { get; set; }
     
     public ResendStatus Status { get; set; }
 
@@ -36,19 +36,4 @@ public class ResendTonBaseArgs : ForwardTonBaseArgs
         return false;
     }
 
-    public bool IfCheckCommitStatus()
-    {
-        if (Status == ResendStatus.ChainConfirm)
-        {
-            return false;
-        }
-        
-        var dtNow = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
-        if (dtNow >= CheckCommitTime)
-        {
-            return true;
-        }
-
-        return false;
-    }
 }

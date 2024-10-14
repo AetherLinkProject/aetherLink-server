@@ -130,7 +130,7 @@ public sealed partial class TonHelper: ISingletonDependency
         if (resendType != TonResendTypeConstants.IntervalSeconds) return result;
         var intervalSeconds = bodySlice.LoadUInt(32);
 
-        result.ResendTime = (long)intervalSeconds + tonTransactionDto.BlockTime;
+        result.ResendTime = (long)intervalSeconds;
             
         // next check tx time
         result.CheckCommitTime = (long)intervalSeconds + tonTransactionDto.BlockTime +

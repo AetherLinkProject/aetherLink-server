@@ -22,7 +22,7 @@ public interface IStorageProvider
 
     public Task SetHashsetAsync<T>(string key, string field, T value);
 
-    public Task DeleteHashsetFieldAsync<T>(string key, string field);
+    public Task DeleteHashsetFieldAsync(string key, string field);
     
     [ItemCanBeNull]
     public Task<T> GetHashsetFieldAsync<T>(string key, string field) where T : class, new();
@@ -111,7 +111,7 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
         }
     }
 
-    public async Task DeleteHashsetFieldAsync<T>(string key, string field)
+    public async Task DeleteHashsetFieldAsync(string key, string field)
     {
         try
         {

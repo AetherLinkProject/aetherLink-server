@@ -6,6 +6,7 @@ using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -23,10 +24,13 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
     private readonly TonIndexerRouter _tonIndexerRouter;
     private readonly IBackgroundJobManager _backgroundJobManager;
     private readonly IRampMessageProvider _rampMessageProvider;
+    private readonly IRampRequestSchedulerJob _requestScheduler;
 
     public TonIndexerWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        TonIndexerRouter tonIndexerRouter, TonHelper tonHelper, IBackgroundJobManager backgroundJobManager, ILogger<TonIndexerWorker> logger,
-        IRampMessageProvider rampMessageProvider) : base(timer,
+        TonIndexerRouter tonIndexerRouter, TonHelper tonHelper, IBackgroundJobManager backgroundJobManager,
+        ILogger<TonIndexerWorker> logger,
+        IRampMessageProvider rampMessageProvider,
+        IRampRequestSchedulerJob rampRequestSchedulerJob) : base(timer,
         serviceScopeFactory)
     {
         _tonHelper = tonHelper;
@@ -34,7 +38,8 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
         _tonIndexerRouter = tonIndexerRouter;
         _rampMessageProvider = rampMessageProvider;
         _backgroundJobManager = backgroundJobManager;
-        
+        _requestScheduler = rampRequestSchedulerJob;
+
         timer.Period = 1000 * TonEnvConstants.PullTransactionMinWaitSecond;
     }
 
@@ -67,11 +72,11 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
             }
         }
     }
-    
+
     private async Task TonIndexer()
     {
         var tonIndexer = await _tonHelper.GetTonIndexerFromStorage();
-        
+
         var (transactionList, currentIndexer) = await _tonIndexerRouter.GetSubsequentTransaction(tonIndexer);
         var dtNow = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
         if (transactionList is { Count: > 0 })
@@ -86,7 +91,7 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
                             await TonForwardTxHandle(tx);
                             break;
                         case TonOpCodeConstants.ReceiveTx:
-                            
+
                             break;
                         case TonOpCodeConstants.ResendTx:
                             await TonResendTxHandle(tx);
@@ -118,30 +123,29 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
             var rampMessageData = await _rampMessageProvider.GetAsync(forwardMessage.MessageId);
             if (rampMessageData.State != RampRequestState.Committed)
             {
-                _logger.LogWarning($"[Ton indexer] MessageId:{forwardMessage.MessageId} state error,current status is:{rampMessageData.State}, but receive a chain transaction");
+                _logger.LogWarning(
+                    $"[Ton indexer] MessageId:{forwardMessage.MessageId} state error,current status is:{rampMessageData.State}, but receive a chain transaction");
             }
-
+            
+            // update message status
             rampMessageData.State = RampRequestState.Confirmed;
             await _rampMessageProvider.SetAsync(rampMessageData);
-            
-            // update resend task
+
+            // delete resend task
             var tonTask = await _tonHelper.GetTonTask(forwardMessage.MessageId);
             if (tonTask is { Type: TonChainTaskType.Resend })
             {
-                var message = tonTask.Convert<ResendTonBaseArgs>();
-                message.TargetBlockHeight = tx.SeqNo;
-                message.TargetTxHash = tx.Hash;
-                message.TargetBlockGeneratorTime = tx.BlockTime;
-                message.ResendTime = 0;
-                message.Status = ResendStatus.ChainConfirm;
-
-                await _tonHelper.StorageTonTask(message.MessageId, new TonChainTaskDto(message));
-                _logger.LogInformation($"[Ton indexer] resend ");
+                var resendMessage = tonTask.Convert<ResendTonBaseArgs>();
+                await _tonHelper.DeleteTonTask(forwardMessage.MessageId);
+                _logger.LogInformation(
+                    $"[Ton indexer] Resend messageId:{forwardMessage.MessageId} hash:{resendMessage.TargetTxHash} has confirmed, the confirm transaction hash is:{tx.Hash}");
             }
+            
+            // todo:delete transaction check job
         }
         else
         {
-            _logger.LogInformation(
+            _logger.LogWarning(
                 $"[Ton indexer] AnalysisForwardTransaction Get Null, CrossChainToTonTransactionDto is:{JsonConvert.SerializeObject(tx)}");
         }
     }
@@ -154,16 +158,35 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
             var tonTask = await _tonHelper.GetTonTask(resendMessage.MessageId);
             if (tonTask is { Type: TonChainTaskType.Resend })
             {
-                var message = tonTask.Convert<ResendTonBaseArgs>();
-                message.TargetBlockHeight = tx.SeqNo;
-                message.TargetTxHash = tx.Hash;
-                message.TargetBlockGeneratorTime = tx.BlockTime;
-                message.ResendTime = resendMessage.CheckCommitTime;
-                message.Status = ResendStatus.WaitConsensus;
-
-                await _tonHelper.StorageTonTask(message.MessageId, new TonChainTaskDto(message));
-                // todo: open task and recheck backwork
+                var resendTask = tonTask.Convert<ResendTonBaseArgs>();
+                _logger.LogWarning(
+                    $"[Ton indexer] exist resend task, messageId:{resendMessage.MessageId}, block time compare:{resendTask.TargetBlockGeneratorTime}-{tx.BlockTime} resend time compare:{resendTask.ResendTime}-{resendMessage.ResendTime}");
             }
+            
+            var rampMessageData = await _rampMessageProvider.GetAsync(resendMessage.MessageId);
+            if (rampMessageData == null)
+            {
+                _logger.LogWarning(
+                    $"[Ton indexer] resend task, messageId:{resendMessage.MessageId} not find in system, block time:{tx.BlockTime} resend time:{resendMessage.ResendTime}");
+                return;
+            }
+            
+            var newTonTask = new ResendTonBaseArgs();
+            newTonTask.MessageId = resendMessage.MessageId;
+            newTonTask.TargetBlockHeight = tx.SeqNo;
+            newTonTask.TargetTxHash = tx.Hash;
+            newTonTask.TargetBlockGeneratorTime = tx.BlockTime;
+            newTonTask.ResendTime = resendMessage.ResendTime;
+            newTonTask.Status = ResendStatus.WaitConsensus;
+            await _tonHelper.StorageTonTask(newTonTask.MessageId, new TonChainTaskDto(newTonTask));
+            _logger.LogInformation(
+                $"[Ton indexer] received resend transaction messageId:{resendMessage.MessageId}, hash:{resendMessage.Hash}, block time:{tx.BlockTime}, resend time:{newTonTask.ResendTime}");
+
+            rampMessageData.ResendTransactionBlockTime =
+                DateTimeOffset.FromUnixTimeSeconds(newTonTask.TargetBlockGeneratorTime).DateTime;
+            rampMessageData.NextCommitDelayTime = (int) resendMessage.ResendTime;
+            await _requestScheduler.Resend(rampMessageData);
+            // todo: open task and recheck backwork
         }
         else
         {
