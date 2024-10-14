@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using AElf.ExceptionHandler;
 using AetherLink.Contracts.Consumer;
 using AetherLink.Worker.Core.Common;
+using AetherLink.Worker.Core.Common.ContractHandler;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
@@ -53,8 +54,8 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
         _backgroundJobManager = backgroundJobManager;
     }
 
-    [ExceptionHandler(typeof(Exception),
-        Message = "[ObservationCollectScheduler] Observation collect scheduler execute failed.")]
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ObservationCollectSchedulerJob),
+        MethodName = nameof(HandingException))]
     public virtual async Task Execute(JobDto job)
     {
         var chainId = job.ChainId;
@@ -119,4 +120,19 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
 
         _stateProvider.SetFinishedFlag(reportId);
     }
+
+    #region Exception handing
+
+    public async Task<FlowBehavior> HandingException(Exception ex)
+    {
+        _logger.LogError(ex, "[ObservationCollectScheduler] Observation collect scheduler execute failed.");
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
+        };
+    }
+    
+    #endregion
+
 }

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Options;
 using AetherlinkPriceServer.Provider;
@@ -36,31 +37,41 @@ public class BinancePriceSearchWorker : TokenPriceSearchWorkerBase
             (await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync))).ToList());
     }
 
-    private async Task<PriceDto> SearchTokenPriceAsync(string tokenPair)
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(BinancePriceSearchWorker),
+        MethodName = nameof(HandleException))]
+    public virtual async Task<PriceDto> SearchTokenPriceAsync(string tokenPair)
     {
-        try
+        return new()
         {
-            return new()
-            {
-                TokenPair = tokenPair,
-                Price = await _binanceProvider.GetTokenPriceAsync(tokenPair),
-                UpdateTime = DateTime.Now
-            };
-        }
-        catch (TaskCanceledException)
+            TokenPair = tokenPair,
+            Price = await _binanceProvider.GetTokenPriceAsync(tokenPair),
+            UpdateTime = DateTime.Now
+        };
+    }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, string tokenPair)
+    {
+        if (ex is TaskCanceledException)
         {
             BaseLogger.LogWarning("[Binance] Timeout of 100 seconds elapsing.");
-            return new();
         }
-        catch (HttpRequestException he)
+        else if (ex is HttpRequestException he)
         {
             if (he.Message.Contains("No route to host")) BaseLogger.LogWarning("[Binance] Network error please check.");
-            return new();
         }
-        catch (Exception e)
+        else
         {
-            BaseLogger.LogError(e, $"[Binance] Can not get {tokenPair} current price.");
-            return new();
+            BaseLogger.LogError(ex, $"[Binance] Can not get {tokenPair} current price.");
         }
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
+            ReturnValue = new PriceDto()
+        };
     }
+
+    #endregion
 }

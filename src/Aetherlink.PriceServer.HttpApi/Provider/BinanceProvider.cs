@@ -1,4 +1,6 @@
+using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Common;
 using AetherlinkPriceServer.Reporter;
@@ -23,21 +25,33 @@ public class BinanceProvider : IBinanceProvider, ITransientDependency
         _reporter = reporter;
     }
 
-    public async Task<long> GetTokenPriceAsync(string tokenPair)
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(BinanceProvider), MethodName = nameof(HandleException),
+        FinallyMethodName = nameof(FinallyHandler))]
+    public virtual async Task<long> GetTokenPriceAsync(string tokenPair)
+    {
+        var price = PriceConvertHelper.ConvertPrice(double.Parse(JsonConvert.DeserializeObject<BinancePriceDto>(
+            await new Market().SymbolPriceTicker(tokenPair.Replace("-", "").ToUpper())).Price));
+
+        _reporter.RecordPriceCollected(SourceType.Binance, tokenPair, price);
+
+        return price;
+    }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex)
+    {
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Rethrow,
+        };
+    }
+
+    public async Task FinallyHandler(string tokenPair)
     {
         var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.Binance, tokenPair);
-        try
-        {
-            var price = PriceConvertHelper.ConvertPrice(double.Parse(JsonConvert.DeserializeObject<BinancePriceDto>(
-                await new Market().SymbolPriceTicker(tokenPair.Replace("-", "").ToUpper())).Price));
-
-            _reporter.RecordPriceCollected(SourceType.Binance, tokenPair, price);
-
-            return price;
-        }
-        finally
-        {
-            timer.ObserveDuration();
-        }
+        timer.ObserveDuration();
     }
+
+    #endregion
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Common;
 using AetherlinkPriceServer.Dtos;
@@ -32,52 +33,41 @@ public class CoinGeckoProvider : ICoinGeckoProvider, ITransientDependency
         _tokenDict = CoinGeckoConstants.IdMap.ToDictionary(x => x.Value, x => x.Key);
     }
 
-    public async Task<List<PriceDto>> GetTokenPricesAsync(List<string> tokenPairs)
+
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(CoinGeckoProvider), MethodName = nameof(HandleException),
+        FinallyMethodName = nameof(FinallyTokenListHandler))]
+    public virtual async Task<List<PriceDto>> GetTokenPricesAsync(List<string> tokenPairs)
     {
-        var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.CoinGecko, string.Join(",", tokenPairs));
-        try
-        {
-            var priceList = await _coinGeckoClient.SimpleClient.GetSimplePrice(
-                tokenPairs.Select(GenerateCoinId).Where(c => !string.IsNullOrEmpty(c)).ToArray(), new[] { FiatSymbol });
+        var priceList = await _coinGeckoClient.SimpleClient.GetSimplePrice(
+            tokenPairs.Select(GenerateCoinId).Where(c => !string.IsNullOrEmpty(c)).ToArray(), new[] { FiatSymbol });
 
-            return priceList.Select(kv =>
+        return priceList.Select(kv =>
+        {
+            var tempPair = $"{_tokenDict[kv.Key]}-USD";
+            var tempPrice = PriceConvertHelper.ConvertPrice((double)kv.Value[FiatSymbol].Value);
+
+            _reporter.RecordPriceCollected(SourceType.CoinGecko, tempPair, tempPrice);
+
+            return new PriceDto
             {
-                var tempPair = $"{_tokenDict[kv.Key]}-USD";
-                var tempPrice = PriceConvertHelper.ConvertPrice((double)kv.Value[FiatSymbol].Value);
-
-                _reporter.RecordPriceCollected(SourceType.CoinGecko, tempPair, tempPrice);
-
-                return new PriceDto
-                {
-                    TokenPair = tempPair,
-                    Price = tempPrice,
-                    UpdateTime = DateTime.Now
-                };
-            }).ToList();
-        }
-        finally
-        {
-            timer.ObserveDuration();
-        }
+                TokenPair = tempPair,
+                Price = tempPrice,
+                UpdateTime = DateTime.Now
+            };
+        }).ToList();
     }
 
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(CoinGeckoProvider), MethodName = nameof(HandleException),
+        FinallyMethodName = nameof(FinallyHandler))]
     public async Task<long> GetHistoricPriceAsync(string tokenPair, DateTime time)
     {
-        var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.CoinGecko, tokenPair);
-        try
-        {
-            var coinId = GenerateCoinId(tokenPair);
-            if (string.IsNullOrEmpty(coinId)) throw new UserFriendlyException("Not support token");
+        var coinId = GenerateCoinId(tokenPair);
+        if (string.IsNullOrEmpty(coinId)) throw new UserFriendlyException("Not support token");
 
-            var fullData = await _coinGeckoClient.CoinsClient.GetHistoryByCoinId(coinId,
-                time.ToString("dd-MM-yyyy"), "false");
+        var fullData = await _coinGeckoClient.CoinsClient.GetHistoryByCoinId(coinId,
+            time.ToString("dd-MM-yyyy"), "false");
 
-            return PriceConvertHelper.ConvertPrice((double)fullData.MarketData.CurrentPrice[FiatSymbol].Value);
-        }
-        finally
-        {
-            timer.ObserveDuration();
-        }
+        return PriceConvertHelper.ConvertPrice((double)fullData.MarketData.CurrentPrice[FiatSymbol].Value);
     }
 
     private string GenerateCoinId(string tokenPair)
@@ -87,4 +77,31 @@ public class CoinGeckoProvider : ICoinGeckoProvider, ITransientDependency
 
         return CoinGeckoConstants.IdMap.TryGetValue(pair[0].ToUpper(), out var coinId) ? coinId : "";
     }
+
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex)
+    {
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Rethrow,
+        };
+    }
+
+    public async Task FinallyHandler(string tokenPair)
+    {
+        var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.CoinGecko, tokenPair);
+
+        timer.ObserveDuration();
+    }
+
+    public async Task FinallyTokenListHandler(List<string> tokenPairs)
+    {
+        var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.CoinGecko, string.Join(",", tokenPairs));
+
+        timer.ObserveDuration();
+    }
+
+    #endregion
 }

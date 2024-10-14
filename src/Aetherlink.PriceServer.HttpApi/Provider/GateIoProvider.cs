@@ -24,26 +24,20 @@ public class GateIoProvider : IGateIoProvider, ITransientDependency
         _reporter = reporter;
     }
 
-    public async Task<long> GetTokenPriceAsync(string tokenPair)
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(GateIoProvider), MethodName = nameof(HandleException),
+        FinallyMethodName = nameof(FinallyHandler))]
+    public virtual async Task<long> GetTokenPriceAsync(string tokenPair)
     {
-        var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.GateIo, tokenPair);
-        try
-        {
-            var currencyPair = await new SpotApi().ListTickersAsync(tokenPair.Replace("-", "_"));
+        var currencyPair = await new SpotApi().ListTickersAsync(tokenPair.Replace("-", "_"));
 
-            if (currencyPair == null || currencyPair.Count == 0)
-                throw new UserFriendlyException("[GateIo] Get token {tokenPair} price error.");
+        if (currencyPair == null || currencyPair.Count == 0)
+            throw new UserFriendlyException("[GateIo] Get token {tokenPair} price error.");
 
-            var price = PriceConvertHelper.ConvertPrice(double.Parse(currencyPair[0].Last));
+        var price = PriceConvertHelper.ConvertPrice(double.Parse(currencyPair[0].Last));
 
-            _reporter.RecordPriceCollected(SourceType.GateIo, tokenPair, price);
+        _reporter.RecordPriceCollected(SourceType.GateIo, tokenPair, price);
 
-            return price;
-        }
-        finally
-        {
-            timer.ObserveDuration();
-        }
+        return price;
     }
 
     #region Exception Handing

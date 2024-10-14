@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using Aetherlink.PriceServer.Common;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Common;
@@ -31,37 +32,43 @@ public class CoinBaseProvider : ICoinBaseProvider, ITransientDependency
         _option = options.Value.GetSourceOption(SourceType.CoinBase);
     }
 
-    public async Task<long> GetTokenPriceAsync(string tokenPair)
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(CoinBaseProvider), MethodName = nameof(HandleException),
+        FinallyMethodName = nameof(FinallyHandler))]
+    public virtual async Task<long> GetTokenPriceAsync(string tokenPair)
     {
-        var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.CoinBase, tokenPair);
-        try
-        {
-            var price = PriceConvertHelper.ConvertPrice(double.Parse(
-                (await _http.GetAsync<CoinBaseResponseDto>(_option.BaseUrl + $"{tokenPair}/buy",
-                    ContextHelper.GeneratorCtx())).Data["amount"]));
+        var price = PriceConvertHelper.ConvertPrice(double.Parse(
+            (await _http.GetAsync<CoinBaseResponseDto>(_option.BaseUrl + $"{tokenPair}/buy",
+                ContextHelper.GeneratorCtx())).Data["amount"]));
 
-            _reporter.RecordPriceCollected(SourceType.CoinBase, tokenPair, price);
+        _reporter.RecordPriceCollected(SourceType.CoinBase, tokenPair, price);
 
-            return price;
-        }
-        finally
-        {
-            timer.ObserveDuration();
-        }
+        return price;
+    }
+    
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(CoinBaseProvider), MethodName = nameof(HandleException),
+        FinallyMethodName = nameof(FinallyHandler))]
+    public virtual async Task<long> GetHistoricPriceAsync(string tokenPair, DateTime time)
+    {
+        return PriceConvertHelper.ConvertPrice(double.Parse(
+            (await _http.GetAsync<CoinBaseResponseDto>(_option.BaseUrl + $"{tokenPair}/spot?date={time:yyyy-MM-dd}",
+                ContextHelper.GeneratorCtx())).Data["amount"]));
     }
 
-    public async Task<long> GetHistoricPriceAsync(string tokenPair, DateTime time)
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex)
+    {
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Rethrow,
+        };
+    }
+
+    public async Task FinallyHandler(string tokenPair)
     {
         var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.CoinBase, tokenPair);
-        try
-        {
-            return PriceConvertHelper.ConvertPrice(double.Parse(
-                (await _http.GetAsync<CoinBaseResponseDto>(_option.BaseUrl + $"{tokenPair}/spot?date={time:yyyy-MM-dd}",
-                    ContextHelper.GeneratorCtx())).Data["amount"]));
-        }
-        finally
-        {
-            timer.ObserveDuration();
-        }
+        timer.ObserveDuration();
     }
+
+    #endregion
 }

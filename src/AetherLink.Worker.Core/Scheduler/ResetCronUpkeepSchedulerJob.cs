@@ -41,7 +41,8 @@ public class ResetCronUpkeepSchedulerJob : IResetCronUpkeepSchedulerJob, ITransi
         _backgroundJobManager = backgroundJobManager;
     }
 
-    [ExceptionHandler(typeof(Exception), Message = "[CronUpkeep] Reset scheduler job failed.")]
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ResetCronUpkeepSchedulerJob),
+        MethodName = nameof(HandleException))]
     public virtual async Task Execute(JobDto job)
     {
         if (job.State == RequestState.RequestCanceled) return;
@@ -67,4 +68,18 @@ public class ResetCronUpkeepSchedulerJob : IResetCronUpkeepSchedulerJob, ITransi
             "[CronUpkeep] Request {ReqId} timeout, will starting in new round:{RoundId}, hangfireId:{hangfire}",
             job.RequestId, job.RoundId, hangfireJobId);
     }
+
+    #region Exception handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex)
+    {
+        _logger.LogError(ex, "[CronUpkeep] Reset scheduler job failed.");
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
+        };
+    }
+
+    #endregion
 }

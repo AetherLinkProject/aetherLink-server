@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -35,68 +36,91 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
 
     public async Task SetAsync<T>(string key, T data) where T : class => await SetAsync(key, data, null);
 
-    public async Task SetAsync<T>(string key, T data, TimeSpan? expiry) where T : class
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(StorageProvider),
+        MethodName = nameof(HandleSetAsyncMessageException))]
+    public virtual async Task SetAsync<T>(string key, T data, TimeSpan? expiry) where T : class
     {
-        try
-        {
-            await ConnectAsync();
+        await ConnectAsync();
 
-            await RedisDatabase.StringSetAsync(key, _serializer.Serialize(data), expiry);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Set {key} to redis error.", key);
-        }
+        await RedisDatabase.StringSetAsync(key, _serializer.Serialize(data), expiry);
     }
 
-    public async Task SetAsync<T>(KeyValuePair<string, T>[] values) where T : class
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(StorageProvider),
+        MethodName = nameof(HandleSetMessageException))]
+    public virtual async Task SetAsync<T>(KeyValuePair<string, T>[] values) where T : class
     {
-        try
-        {
-            await ConnectAsync();
+        await ConnectAsync();
 
-            await RedisDatabase.StringSetAsync(values
-                .Select(kv => new KeyValuePair<RedisKey, RedisValue>(kv.Key, _serializer.Serialize(kv.Value)))
-                .ToArray());
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Batch set to redis error.");
-        }
+        await RedisDatabase.StringSetAsync(values
+            .Select(kv => new KeyValuePair<RedisKey, RedisValue>(kv.Key, _serializer.Serialize(kv.Value)))
+            .ToArray());
     }
 
-    public async Task<T> GetAsync<T>(string key) where T : class, new()
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(StorageProvider),
+        MethodName = nameof(HandleGetKeyAsyncException))]
+    public virtual async Task<T> GetAsync<T>(string key) where T : class, new()
     {
-        try
-        {
-            await ConnectAsync();
+        await ConnectAsync();
 
-            var redisValue = await RedisDatabase.StringGetAsync(key);
+        var redisValue = await RedisDatabase.StringGetAsync(key);
 
-            // _logger.LogDebug("[StorageProvider] {key} spec: {spec}", key, redisValue);
+        // _logger.LogDebug("[StorageProvider] {key} spec: {spec}", key, redisValue);
 
-            return redisValue.HasValue ? _serializer.Deserialize<T>(redisValue) : null;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, $"Get {key} error.");
-            return null;
-        }
+        return redisValue.HasValue ? _serializer.Deserialize<T>(redisValue) : null;
     }
 
-    public async Task<List<T>> GetAsync<T>(RedisKey[] keys) where T : class, new()
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(StorageProvider),
+        MethodName = nameof(HandleGetAsyncException))]
+    public virtual async Task<List<T>> GetAsync<T>(RedisKey[] keys) where T : class, new()
     {
-        try
-        {
-            await ConnectAsync();
-            var result = await RedisDatabase.StringGetAsync(keys);
-            return result.Where(v => v.HasValue)
-                .Select(v => _serializer.Deserialize<T>(v)).ToList();
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, $"Get {string.Join(",", keys)} error.");
-            return null;
-        }
+        await ConnectAsync();
+        var result = await RedisDatabase.StringGetAsync(keys);
+        return result.Where(v => v.HasValue)
+            .Select(v => _serializer.Deserialize<T>(v)).ToList();
     }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleGetKeyAsyncException(Exception ex, string key)
+    {
+        _logger.LogError(ex, $"Get {key} error.");
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
+            ReturnValue = null
+        };
+    }
+
+    public async Task<FlowBehavior> HandleGetAsyncException(Exception ex, RedisKey[] keys)
+    {
+        _logger.LogError(ex, $"Get {string.Join(",", keys)} error.");
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
+            ReturnValue = null
+        };
+    }
+
+    public async Task<FlowBehavior> HandleSetMessageException(Exception ex)
+    {
+        _logger.LogError(ex, "Batch set to redis error.");
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
+            ReturnValue = null
+        };
+    }
+
+    public async Task<FlowBehavior> HandleSetAsyncMessageException(Exception ex, string key)
+    {
+        _logger.LogError(ex, "Set {key} to redis error.", key);
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
+            ReturnValue = null
+        };
+    }
+
+    #endregion
 }

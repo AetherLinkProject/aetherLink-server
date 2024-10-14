@@ -37,7 +37,8 @@ public class ResetRequestSchedulerJob : IResetRequestSchedulerJob, ITransientDep
         _backgroundJobManager = backgroundJobManager;
     }
 
-    [ExceptionHandler(typeof(Exception), Message = "[ResetScheduler] Reset scheduler job failed.")]
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(ResetRequestSchedulerJob),
+        MethodName = nameof(HandleException))]
     public virtual async Task Execute(JobDto job)
     {
         if (job.State == RequestState.RequestCanceled) return;
@@ -62,4 +63,18 @@ public class ResetRequestSchedulerJob : IResetRequestSchedulerJob, ITransientDep
             "[ResetScheduler] Request {ReqId} timeout, will starting in new round:{RoundId}, hangfireId:{hangfire}",
             job.RequestId, job.RoundId, hangfireJobId);
     }
+    
+    #region Exception handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex)
+    {
+        _logger.LogError(ex, "[ResetScheduler] Reset scheduler job failed.");
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
+        };
+    }
+
+    #endregion
 }
