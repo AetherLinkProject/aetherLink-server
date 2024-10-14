@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Options;
 using AetherlinkPriceServer.Provider;
@@ -37,28 +38,40 @@ public class CoinGeckoTokenPriceSearchWorker : TokenPriceSearchWorkerBase
         await CollectRealTimePricesAsync();
     }
 
-    private async Task CollectRealTimePricesAsync()
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(CoinGeckoTokenPriceSearchWorker),
+        MethodName = nameof(HandleException))]
+    public virtual async Task CollectRealTimePricesAsync()
     {
-        try
-        {
-            await PriceProvider.UpdatePricesAsync(SourceType.CoinGecko,
-                await _coinGeckoProvider.GetTokenPricesAsync(_coinIds));
-        }
-        catch (TaskCanceledException)
+        await PriceProvider.UpdatePricesAsync(SourceType.CoinGecko,
+            await _coinGeckoProvider.GetTokenPricesAsync(_coinIds));
+    }
+
+    #region Exception handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex)
+    {
+        if (ex is TaskCanceledException)
         {
             BaseLogger.LogWarning("[CoinGecko] Timeout of 100 seconds elapsing.");
         }
-        catch (HttpRequestException e)
+        else if (ex is HttpRequestException he)
         {
-            if (e.StatusCode == HttpStatusCode.TooManyRequests)
+            if (he.StatusCode == HttpStatusCode.TooManyRequests)
             {
                 BaseLogger.LogWarning("[CoinGecko] Too Many Requests");
                 Thread.Sleep(10000);
             }
         }
-        catch (Exception e)
+        else
         {
-            BaseLogger.LogError(e, "[CoinGecko] Query token price error.");
+            BaseLogger.LogError(ex, "[CoinGecko] Query token price error.");
         }
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
+        };
     }
+
+    #endregion
 }

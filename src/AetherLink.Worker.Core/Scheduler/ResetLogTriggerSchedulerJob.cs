@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Automation.Providers;
 using AetherLink.Worker.Core.Dtos;
@@ -34,46 +35,40 @@ public class ResetLogTriggerSchedulerJob : IResetLogTriggerSchedulerJob, ITransi
         _backgroundJobManager = backgroundJobManager;
     }
 
+    [ExceptionHandler(typeof(Exception), Message = "[ResetScheduler] Reset scheduler trigger failed.")]
     public async Task Execute(LogTriggerDto trigger)
     {
-        try
+        if (trigger.State == RequestState.RequestCanceled) return;
+        var eventStorageId = trigger.TransactionEventStorageId;
+        var logUpkeepStorageId = trigger.LogUpkeepStorageId;
+
+        _logger.LogInformation(
+            $"[ResetScheduler] Scheduler trigger execute. Event {eventStorageId}, Upkeep {logUpkeepStorageId} State:{trigger.State}");
+        trigger.Context.RoundId++;
+
+        var transactionEvent = await _storageProvider.GetAsync<TransactionEventDto>(eventStorageId);
+        var startTime = transactionEvent.StartTime;
+        while (DateTime.UtcNow > DateTimeOffset.FromUnixTimeMilliseconds(startTime).DateTime)
         {
-            if (trigger.State == RequestState.RequestCanceled) return;
-            var eventStorageId = trigger.TransactionEventStorageId;
-            var logUpkeepStorageId = trigger.LogUpkeepStorageId;
+            startTime += _schedulerOptions.RetryTimeOut * 60 * 1000;
+        }
 
-            _logger.LogInformation(
-                $"[ResetScheduler] Scheduler trigger execute. Event {eventStorageId}, Upkeep {logUpkeepStorageId} State:{trigger.State}");
-            trigger.Context.RoundId++;
+        _logger.LogDebug($"[ResetScheduler] blockTime {startTime}");
 
-            var transactionEvent = await _storageProvider.GetAsync<TransactionEventDto>(eventStorageId);
-            var startTime = transactionEvent.StartTime;
-            while (DateTime.UtcNow > DateTimeOffset.FromUnixTimeMilliseconds(startTime).DateTime)
+        trigger.ReceiveTime = DateTimeOffset.FromUnixTimeMilliseconds(startTime).DateTime;
+        await _storageProvider.SetAsync(AutomationHelper.GenerateLogTriggerKey(eventStorageId, logUpkeepStorageId),
+            trigger);
+
+        var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
+            new AutomationLogTriggerArgs
             {
-                startTime += _schedulerOptions.RetryTimeOut * 60 * 1000;
-            }
+                Context = trigger.Context,
+                StartTime = startTime,
+                TransactionEventStorageId = eventStorageId,
+                LogUpkeepStorageId = logUpkeepStorageId
+            }, BackgroundJobPriority.High);
 
-            _logger.LogDebug($"[ResetScheduler] blockTime {startTime}");
-
-            trigger.ReceiveTime = DateTimeOffset.FromUnixTimeMilliseconds(startTime).DateTime;
-            await _storageProvider.SetAsync(AutomationHelper.GenerateLogTriggerKey(eventStorageId, logUpkeepStorageId),
-                trigger);
-
-            var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
-                new AutomationLogTriggerArgs
-                {
-                    Context = trigger.Context,
-                    StartTime = startTime,
-                    TransactionEventStorageId = eventStorageId,
-                    LogUpkeepStorageId = logUpkeepStorageId
-                }, BackgroundJobPriority.High);
-
-            _logger.LogInformation(
-                $"[ResetScheduler] Event {trigger.TransactionEventStorageId}, Upkeep {logUpkeepStorageId} timeout, will starting in new round:{trigger.Context.RoundId}, hangfireId:{hangfireJobId}");
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[ResetScheduler] Reset scheduler trigger failed.");
-        }
+        _logger.LogInformation(
+            $"[ResetScheduler] Event {trigger.TransactionEventStorageId}, Upkeep {logUpkeepStorageId} timeout, will starting in new round:{trigger.Context.RoundId}, hangfireId:{hangfireJobId}");
     }
 }

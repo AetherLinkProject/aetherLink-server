@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Options;
 using AetherlinkPriceServer.Provider;
@@ -36,26 +38,38 @@ public class GateIoPriceSearchWorker : TokenPriceSearchWorkerBase
             (await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync))).ToList());
     }
 
-    private async Task<PriceDto> SearchTokenPriceAsync(string tokenPair)
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(GateIoPriceSearchWorker),
+        MethodName = nameof(HandleException))]
+    public virtual async Task<PriceDto> SearchTokenPriceAsync(string tokenPair)
     {
-        try
+        return new()
         {
-            return new()
-            {
-                TokenPair = tokenPair,
-                Price = await _gateIoProvider.GetTokenPriceAsync(tokenPair),
-                UpdateTime = DateTime.Now
-            };
-        }
-        catch (ApiException ae)
-        {
-            BaseLogger.LogWarning(ae, "[GateIo] Connection error.");
-            return new();
-        }
-        catch (Exception e)
-        {
-            BaseLogger.LogError(e, $"[GateIo] Can not get {tokenPair} current price.");
-            return new();
-        }
+            TokenPair = tokenPair,
+            Price = await _gateIoProvider.GetTokenPriceAsync(tokenPair),
+            UpdateTime = DateTime.Now
+        };
     }
+
+    #region Exception handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, string tokenPair)
+    {
+        switch (ex)
+        {
+            case ApiException ae:
+                BaseLogger.LogWarning(ae, "[GateIo] Connection error.");
+                break;
+            default:
+                BaseLogger.LogError(ex, $"[GateIo] Can not get {tokenPair} current price.");
+                break;
+        }
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
+            ReturnValue = new PriceDto()
+        };
+    }
+
+    #endregion
 }

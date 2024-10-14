@@ -37,8 +37,7 @@ public class ResetRequestSchedulerJob : IResetRequestSchedulerJob, ITransientDep
         _backgroundJobManager = backgroundJobManager;
     }
 
-    [ExceptionHandler(typeof(Exception), Message = "[ResetScheduler] Reset scheduler job failed.",
-        ReturnDefault = ReturnDefault.Default)]
+    [ExceptionHandler(typeof(Exception), Message = "[ResetScheduler] Reset scheduler job failed.")]
     public virtual async Task Execute(JobDto job)
     {
         if (job.State == RequestState.RequestCanceled) return;

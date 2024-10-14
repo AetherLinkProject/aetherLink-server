@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using AElf;
+using AElf.ExceptionHandler;
 using AetherLink.Contracts.Consumer;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
@@ -51,6 +53,13 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
 
     public override async Task ExecuteAsync(GeneratePartialSignatureJobArgs args)
     {
+        await Handler(args);
+    }
+
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(GeneratePartialSignatureJob),
+        MethodName = nameof(HandleException))]
+    public virtual async Task Handler(GeneratePartialSignatureJobArgs args)
+    {
         var chainId = args.ChainId;
         var reqId = args.RequestId;
         var epoch = args.Epoch;
@@ -59,56 +68,50 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
         _logger.LogInformation("[step4] {name} Start to validate report", argId);
 
         var observation = ByteString.FromBase64(args.Observations);
-        try
+
+        // Check Request State
+        var job = await _jobProvider.GetAsync(args);
+        if (job == null || job.State is RequestState.RequestCanceled) return;
+        var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
+
+        if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
         {
-            // Check Request State
-            var job = await _jobProvider.GetAsync(args);
-            if (job == null || job.State is RequestState.RequestCanceled) return;
-            var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
-
-            if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
+            var pendingConfirmData = Encoding.UTF8.GetString(observation.ToByteArray());
+            var plainData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
+            if (pendingConfirmData != plainData.NewData)
             {
-                var pendingConfirmData = Encoding.UTF8.GetString(observation.ToByteArray());
-                var plainData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
-                if (pendingConfirmData != plainData.NewData)
-                {
-                    _logger.LogError("[step4] Local data {ld} is inconsistent with the leader's data {pd}.",
-                        plainData.NewData, pendingConfirmData);
-                    return;
-                }
-
-                plainData.OldData = plainData.NewData;
-                await _dataMessageProvider.SetAsync(plainData);
-            }
-            else
-            {
-                var observations = LongList.Parser.ParseFrom(observation).Data;
-                _logger.LogDebug("[step4] {name} Leader report: {result}", argId, observations.JoinAsString(","));
-                if (observations.Count < _peerManager.GetPeersCount())
-                {
-                    _logger.LogWarning("[step4] {name} observations {count} count not enough", argId,
-                        observations.Count);
-                    return;
-                }
-
-                // Check Data In Report
-                var dataMessage = await _dataMessageProvider.GetAsync(args);
-                if ((dataMessage != null && observations[_peerManager.GetOwnIndex()] != dataMessage.Data) ||
-                    (dataMessage == null && observations[_peerManager.GetOwnIndex()] != 0))
-                {
-                    _logger.LogWarning("[step4] {name} Check data fail", argId);
-                    return;
-                }
+                _logger.LogError("[step4] Local data {ld} is inconsistent with the leader's data {pd}.",
+                    plainData.NewData, pendingConfirmData);
+                return;
             }
 
-            await ProcessReportValidateResultAsync(args,
-                await GeneratedPartialSignatureAsync(chainId, job.TransactionId,
-                    ByteString.FromBase64(args.Observations), epoch));
+            plainData.OldData = plainData.NewData;
+            await _dataMessageProvider.SetAsync(plainData);
         }
-        catch (Exception e)
+        else
         {
-            _logger.LogError(e, "[Follower][step4] {name} Sign report failed", argId);
+            var observations = LongList.Parser.ParseFrom(observation).Data;
+            _logger.LogDebug("[step4] {name} Leader report: {result}", argId, observations.JoinAsString(","));
+            if (observations.Count < _peerManager.GetPeersCount())
+            {
+                _logger.LogWarning("[step4] {name} observations {count} count not enough", argId,
+                    observations.Count);
+                return;
+            }
+
+            // Check Data In Report
+            var dataMessage = await _dataMessageProvider.GetAsync(args);
+            if ((dataMessage != null && observations[_peerManager.GetOwnIndex()] != dataMessage.Data) ||
+                (dataMessage == null && observations[_peerManager.GetOwnIndex()] != 0))
+            {
+                _logger.LogWarning("[step4] {name} Check data fail", argId);
+                return;
+            }
         }
+
+        await ProcessReportValidateResultAsync(args,
+            await GeneratedPartialSignatureAsync(chainId, job.TransactionId,
+                ByteString.FromBase64(args.Observations), epoch));
     }
 
     private async Task<PartialSignatureDto> GeneratedPartialSignatureAsync(string chainId, string requestId,
@@ -157,4 +160,19 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
         _logger.LogInformation("[step4][Follower] {reqId}-{epoch} Send signature to leader, Waiting for transmitted.",
             reqId, epoch);
     }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, GeneratePartialSignatureJobArgs args)
+    {
+        var argId = IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch, args.RoundId);
+        _logger.LogError(ex, "[Follower][step4] {name} Sign report failed", argId);
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
+        };
+    }
+
+    #endregion
 }

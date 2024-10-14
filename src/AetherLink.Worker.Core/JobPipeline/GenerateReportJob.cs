@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Contracts.Consumer;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
@@ -58,6 +59,13 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
 
     public override async Task ExecuteAsync(GenerateReportJobArgs args)
     {
+        await Handler(args);
+    }
+
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(GenerateReportJob),
+        MethodName = nameof(HandleException))]
+    public virtual async Task Handler(GenerateReportJobArgs args)
+    {
         var reqId = args.RequestId;
         var chainId = args.ChainId;
         var roundId = args.RoundId;
@@ -65,78 +73,71 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
         var epoch = args.Epoch;
         var argId = IdGeneratorHelper.GenerateId(chainId, reqId, epoch, roundId);
 
-        try
+        // check epoch state
+        var job = await _jobProvider.GetAsync(args);
+        if (job == null || job.State is RequestState.RequestCanceled) return;
+
+        var reportId = IdGeneratorHelper.GenerateReportId(args);
+        if (_stateProvider.IsFinished(reportId)) return;
+
+        _logger.LogInformation("[Step3][Leader] {name} Start process {index} request.", argId, index);
+
+        TryProcessObservation(args, job);
+
+        if (!IsReportEnough(args))
         {
-            // check epoch state
-            var job = await _jobProvider.GetAsync(args);
-            if (job == null || job.State is RequestState.RequestCanceled) return;
-
-            var reportId = IdGeneratorHelper.GenerateReportId(args);
-            if (_stateProvider.IsFinished(reportId)) return;
-
-            _logger.LogInformation("[Step3][Leader] {name} Start process {index} request.", argId, index);
-
-            TryProcessObservation(args, job);
-
-            if (!IsReportEnough(args))
-            {
-                _logger.LogDebug("[Step3][Leader] {name} is not enough, no need to generate report.", argId);
-                return;
-            }
-
-            if (_stateProvider.IsFinished(reportId))
-            {
-                _logger.LogDebug("[Step3][Leader] {name} report is finished.", argId);
-                return;
-            }
-
-            _stateProvider.SetFinishedFlag(reportId);
-
-            _logger.LogInformation("[Step3][Leader] {name} Generate report, index:{index}", argId, index);
-
-            var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
-            var report = new ReportDto
-            {
-                ChainId = chainId,
-                RequestId = reqId,
-                RoundId = roundId,
-                Epoch = epoch
-            };
-            ByteString observation;
-
-            if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
-            {
-                var authData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
-                observation = ByteString.CopyFrom(Encoding.UTF8.GetBytes(authData.NewData));
-            }
-            else
-            {
-                var multiObservations = GenerateMultiObservations(args);
-                report.Observations = multiObservations;
-                observation = new LongList { Data = { multiObservations } }.ToByteString();
-            }
-
-            await _reportProvider.SetAsync(report);
-
-            _schedulerService.CancelScheduler(job, SchedulerType.ObservationCollectWaitingScheduler);
-
-            var procJob = _objectMapper.Map<JobDto, GeneratePartialSignatureJobArgs>(job);
-            procJob.Observations = observation.ToBase64();
-            await _backgroundJobManager.EnqueueAsync(procJob);
-
-            await _peerManager.BroadcastAsync(p => p.CommitReportAsync(new CommitReportRequest
-            {
-                RequestId = job.RequestId,
-                ChainId = job.ChainId,
-                RoundId = job.RoundId,
-                Epoch = job.Epoch,
-                ObservationResults = procJob.Observations
-            }));
+            _logger.LogDebug("[Step3][Leader] {name} is not enough, no need to generate report.", argId);
+            return;
         }
-        catch (Exception e)
+
+        if (_stateProvider.IsFinished(reportId))
         {
-            _logger.LogError(e, "[Step3][Leader] {name} Generate report failed.", argId);
+            _logger.LogDebug("[Step3][Leader] {name} report is finished.", argId);
+            return;
         }
+
+        _stateProvider.SetFinishedFlag(reportId);
+
+        _logger.LogInformation("[Step3][Leader] {name} Generate report, index:{index}", argId, index);
+
+        var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
+        var report = new ReportDto
+        {
+            ChainId = chainId,
+            RequestId = reqId,
+            RoundId = roundId,
+            Epoch = epoch
+        };
+        ByteString observation;
+
+        if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
+        {
+            var authData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
+            observation = ByteString.CopyFrom(Encoding.UTF8.GetBytes(authData.NewData));
+        }
+        else
+        {
+            var multiObservations = GenerateMultiObservations(args);
+            report.Observations = multiObservations;
+            observation = new LongList { Data = { multiObservations } }.ToByteString();
+        }
+
+        await _reportProvider.SetAsync(report);
+
+        _schedulerService.CancelScheduler(job, SchedulerType.ObservationCollectWaitingScheduler);
+
+        var procJob = _objectMapper.Map<JobDto, GeneratePartialSignatureJobArgs>(job);
+        procJob.Observations = observation.ToBase64();
+        await _backgroundJobManager.EnqueueAsync(procJob);
+
+        await _peerManager.BroadcastAsync(p => p.CommitReportAsync(new CommitReportRequest
+        {
+            RequestId = job.RequestId,
+            ChainId = job.ChainId,
+            RoundId = job.RoundId,
+            Epoch = job.Epoch,
+            ObservationResults = procJob.Observations
+        }));
     }
 
     private bool IsReportEnough(GenerateReportJobArgs args)
@@ -184,4 +185,19 @@ public class GenerateReportJob : AsyncBackgroundJob<GenerateReportJobArgs>, ISin
             aggregationResults.JoinAsString(","), aggregationResults.Count);
         return aggregationResults;
     }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, GenerateReportJobArgs args)
+    {
+        var argId = IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch, args.RoundId);
+        _logger.LogError(ex, "[Step3][Leader] {name} Generate report failed.", argId);
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
+        };
+    }
+
+    #endregion
 }

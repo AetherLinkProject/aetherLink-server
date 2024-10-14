@@ -1,6 +1,10 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
+using AElf.ExceptionHandler;
+using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
+using AetherLink.Worker.Core.JobPipeline.Args;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Grpc.Net.Client.Configuration;
@@ -58,34 +62,39 @@ public class Connection
     public TResponse CallAsync<TResponse>(Func<AetherLinkServer.AetherLinkServerClient, TResponse> callFunc) =>
         callFunc.Invoke(_client);
 
-    public bool IsConnectionReady()
+    [ExceptionHandler(typeof(OperationCanceledException), TargetType = typeof(CommonExceptionHanding),
+        MethodName = nameof(CommonExceptionHanding.RethrowException))]
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(Connection), MethodName = nameof(HandleException))]
+    public virtual async Task<bool> IsConnectionReady()
     {
-        try
+        // Because grpc update connection state is locked, there is no need to add additional locks to obtain the state here, and then establish the connection.
+        switch (_channel.State)
         {
-            // Because grpc update connection state is locked, there is no need to add additional locks to obtain the state here, and then establish the connection.
-            switch (_channel.State)
-            {
-                case ConnectivityState.Ready:
-                    return true;
-                case ConnectivityState.Idle:
-                case ConnectivityState.Connecting:
-                case ConnectivityState.TransientFailure:
-                    var context =
-                        new CancellationTokenSource(TimeSpan.FromSeconds(GrpcConstants.DefaultConnectTimeout));
-                    _channel.ConnectAsync(context.Token);
-                    return true;
-                case ConnectivityState.Shutdown:
-                default:
-                    return false;
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception)
-        {
-            return false;
+            case ConnectivityState.Ready:
+                return true;
+            case ConnectivityState.Idle:
+            case ConnectivityState.Connecting:
+            case ConnectivityState.TransientFailure:
+                var context =
+                    new CancellationTokenSource(TimeSpan.FromSeconds(GrpcConstants.DefaultConnectTimeout));
+                _channel.ConnectAsync(context.Token);
+                return true;
+            case ConnectivityState.Shutdown:
+            default:
+                return false;
         }
     }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex)
+    {
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
+            ReturnValue = false
+        };
+    }
+
+    #endregion
 }

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using AElf;
 using AElf.Client.Dto;
+using AElf.ExceptionHandler;
 using AElf.Types;
 using AetherLink.Contracts.Oracle;
 using AetherLink.MockServer.Common;
@@ -9,6 +10,7 @@ using Google.Protobuf;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Org.BouncyCastle.Asn1.X509;
 using BlockHelper = AetherLink.MockServer.Common.BlockHelper;
 
 namespace AetherLink.MockServer.Provider;
@@ -60,20 +62,15 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         };
     }
 
-    public async Task<string> GenerateTransactionIdAsync(string rawTransaction)
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(TransactionProvider),
+        MethodName = nameof(HandleException))]
+    public virtual async Task<string> GenerateTransactionIdAsync(string rawTransaction)
     {
-        try
-        {
-            var byteArray = ByteArrayHelper.HexStringToByteArray(rawTransaction);
-            var transaction = Transaction.Parser.ParseFrom(byteArray);
-            var txId = transaction.GetHash().ToHex();
-            _txDict[txId] = transaction;
-            return txId;
-        }
-        catch (Exception)
-        {
-            return HashHelper.ComputeFrom(DateTime.UtcNow.Microsecond).ToHex();
-        }
+        var byteArray = ByteArrayHelper.HexStringToByteArray(rawTransaction);
+        var transaction = Transaction.Parser.ParseFrom(byteArray);
+        var txId = transaction.GetHash().ToHex();
+        _txDict[txId] = transaction;
+        return txId;
     }
 
     public async Task<string> CreateTransactionAsync(string chainId, string name)
@@ -139,6 +136,19 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
                 Commitment = "commitment"
             }).ToList();
     }
+
+    #region Exception handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex)
+    {
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
+            ReturnValue = HashHelper.ComputeFrom(DateTime.UtcNow.Microsecond).ToHex()
+        };
+    }
+
+    #endregion
 }
 
 public class TransactionWithHeight

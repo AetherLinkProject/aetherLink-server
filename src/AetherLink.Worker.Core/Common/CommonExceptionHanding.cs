@@ -23,4 +23,12 @@ public static class CommonExceptionHanding
             ReturnValue = null
         };
     }
+
+    public static async Task<FlowBehavior> RethrowException(Exception ex)
+    {
+        return new FlowBehavior
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Rethrow
+        };
+    }
 }

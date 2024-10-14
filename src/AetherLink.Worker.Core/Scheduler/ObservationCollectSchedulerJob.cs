@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Contracts.Consumer;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
@@ -51,75 +53,70 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
         _backgroundJobManager = backgroundJobManager;
     }
 
-    public async Task Execute(JobDto job)
+    [ExceptionHandler(typeof(Exception),
+        Message = "[ObservationCollectScheduler] Observation collect scheduler execute failed.")]
+    public virtual async Task Execute(JobDto job)
     {
-        try
+        var chainId = job.ChainId;
+        var reqId = job.RequestId;
+        var roundId = job.RoundId;
+        var epoch = job.Epoch;
+
+        _logger.LogInformation(
+            "[ObservationCollectScheduler] Scheduler trigger execute. reqId {ReqId}, roundId:{RoundId}, reqState:{State}",
+            job.RequestId, job.RoundId, job.State.ToString());
+
+        if (!_options.ChainConfig.TryGetValue(job.ChainId, out var chainConfig)) return;
+        var reportId = IdGeneratorHelper.GenerateReportId(job: job);
+
+        var observations = _stateProvider.GetObservations(reportId);
+        if (observations == null || observations.Count < chainConfig.PartialSignaturesThreshold)
         {
-            var chainId = job.ChainId;
-            var reqId = job.RequestId;
-            var roundId = job.RoundId;
-            var epoch = job.Epoch;
-
-            _logger.LogInformation(
-                "[ObservationCollectScheduler] Scheduler trigger execute. reqId {ReqId}, roundId:{RoundId}, reqState:{State}",
-                job.RequestId, job.RoundId, job.State.ToString());
-
-            if (!_options.ChainConfig.TryGetValue(job.ChainId, out var chainConfig)) return;
-            var reportId = IdGeneratorHelper.GenerateReportId(job: job);
-
-            var observations = _stateProvider.GetObservations(reportId);
-            if (observations == null || observations.Count < chainConfig.PartialSignaturesThreshold)
-            {
-                _logger.LogInformation("[ObservationCollectScheduler] Observation collection not enough.");
-                return;
-            }
-
-            ByteString observation;
-            var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
-            var report = new ReportDto
-            {
-                ChainId = chainId,
-                RequestId = reqId,
-                RoundId = roundId,
-                Epoch = epoch
-            };
-
-            if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
-            {
-                var authData = await _dataMessageProvider.GetPlainDataFeedsAsync(chainId, reqId);
-                observation = ByteString.CopyFrom(Encoding.UTF8.GetBytes(authData.NewData));
-            }
-            else
-            {
-                var collectResult = Enumerable.Repeat(0L, _peerManager.GetPeersCount()).ToList();
-                _stateProvider.GetObservations(reportId).ForEach(o => collectResult[o.Index] = o.ObservationResult);
-                _logger.LogDebug("[ObservationCollectScheduler] {requestId} report:{results} count:{count}",
-                    job.RequestId, collectResult.JoinAsString(","), collectResult.Count);
-                report.Observations = collectResult;
-                observation = new LongList { Data = { collectResult } }.ToByteString();
-            }
-
-            await _reportProvider.SetAsync(report);
-
-            var args = _objectMapper.Map<JobDto, GeneratePartialSignatureJobArgs>(job);
-            args.Observations = observation.ToBase64();
-
-            await _backgroundJobManager.EnqueueAsync(args);
-
-            await _peerManager.BroadcastAsync(p => p.CommitReportAsync(new CommitReportRequest
-            {
-                RequestId = job.RequestId,
-                ChainId = job.ChainId,
-                RoundId = job.RoundId,
-                Epoch = job.Epoch,
-                ObservationResults = args.Observations
-            }));
-
-            _stateProvider.SetFinishedFlag(reportId);
+            _logger.LogInformation("[ObservationCollectScheduler] Observation collection not enough.");
+            return;
         }
-        catch (Exception e)
+
+        ByteString observation;
+        var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
+        var report = new ReportDto
         {
-            _logger.LogError(e, "[ObservationCollectScheduler] Observation collect scheduler execute failed.");
+            ChainId = chainId,
+            RequestId = reqId,
+            RoundId = roundId,
+            Epoch = epoch
+        };
+
+        if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
+        {
+            var authData = await _dataMessageProvider.GetPlainDataFeedsAsync(chainId, reqId);
+            observation = ByteString.CopyFrom(Encoding.UTF8.GetBytes(authData.NewData));
         }
+        else
+        {
+            var collectResult = Enumerable.Repeat(0L, _peerManager.GetPeersCount()).ToList();
+            _stateProvider.GetObservations(reportId).ForEach(o => collectResult[o.Index] = o.ObservationResult);
+            _logger.LogDebug("[ObservationCollectScheduler] {requestId} report:{results} count:{count}",
+                job.RequestId, collectResult.JoinAsString(","), collectResult.Count);
+            report.Observations = collectResult;
+            observation = new LongList { Data = { collectResult } }.ToByteString();
+        }
+
+        await _reportProvider.SetAsync(report);
+
+        var args = _objectMapper.Map<JobDto, GeneratePartialSignatureJobArgs>(job);
+        args.Observations = observation.ToBase64();
+
+        await _backgroundJobManager.EnqueueAsync(args);
+
+        await _peerManager.BroadcastAsync(p => p.CommitReportAsync(new CommitReportRequest
+        {
+            RequestId = job.RequestId,
+            ChainId = job.ChainId,
+            RoundId = job.RoundId,
+            Epoch = job.Epoch,
+            ObservationResults = args.Observations
+        }));
+
+        _stateProvider.SetFinishedFlag(reportId);
     }
 }

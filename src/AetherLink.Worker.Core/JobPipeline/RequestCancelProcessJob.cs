@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Contracts.Automation;
 using AetherLink.Worker.Core.Automation.Providers;
 using AetherLink.Worker.Core.Common;
@@ -40,47 +41,63 @@ public class RequestCancelProcessJob : AsyncBackgroundJob<RequestCancelProcessJo
 
     public override async Task ExecuteAsync(RequestCancelProcessJobArgs args)
     {
+        await Handler(args);
+    }
+
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(RequestCancelProcessJob),
+        MethodName = nameof(HandleException), FinallyMethodName = nameof(FinallyHandler))]
+    public virtual async Task Handler(RequestCancelProcessJobArgs args)
+    {
         var chainId = args.ChainId;
         var requestId = args.RequestId;
-        try
+
+        _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} Start cancel job.");
+
+        var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, requestId);
+        if (commitment.RequestTypeIndex == RequestTypeConst.Automation &&
+            AutomationHelper.GetTriggerType(commitment) == TriggerType.Log)
         {
-            _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} Start cancel job.");
+            var logUpkeepInfoId = IdGeneratorHelper.GenerateUpkeepInfoId(chainId, requestId);
+            var logUpkeepInfo = await _storageProvider.GetAsync<LogUpkeepInfoDto>(logUpkeepInfoId);
+            _schedulerService.CancelLogUpkeepAllSchedule(logUpkeepInfo);
 
-            var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, requestId);
-            if (commitment.RequestTypeIndex == RequestTypeConst.Automation &&
-                AutomationHelper.GetTriggerType(commitment) == TriggerType.Log)
-            {
-                var logUpkeepInfoId = IdGeneratorHelper.GenerateUpkeepInfoId(chainId, requestId);
-                var logUpkeepInfo = await _storageProvider.GetAsync<LogUpkeepInfoDto>(logUpkeepInfoId);
-                _schedulerService.CancelLogUpkeepAllSchedule(logUpkeepInfo);
-
-                await _filterStorage.DeleteFilterAsync(logUpkeepInfo);
-                await _storageProvider.RemoveAsync(logUpkeepInfoId);
-                return;
-            }
-
-            _recurringJobManager.RemoveIfExists(IdGeneratorHelper.GenerateId(chainId, requestId));
-            var job = await _jobProvider.GetAsync(args);
-            if (job == null)
-            {
-                _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} not exist");
-                return;
-            }
-
-            if (commitment.RequestTypeIndex == RequestTypeConst.Automation) _schedulerService.CancelCronUpkeep(job);
-
-            job.State = RequestState.RequestCanceled;
-            await _jobProvider.SetAsync(job);
-            _schedulerService.CancelAllSchedule(job);
+            await _filterStorage.DeleteFilterAsync(logUpkeepInfo);
+            await _storageProvider.RemoveAsync(logUpkeepInfoId);
+            return;
         }
-        catch (Exception e)
+
+        _recurringJobManager.RemoveIfExists(IdGeneratorHelper.GenerateId(chainId, requestId));
+        var job = await _jobProvider.GetAsync(args);
+        if (job == null)
         {
-            _logger.LogError(e, $"[RequestCancelProcess] {chainId} {requestId} Cancel job failed.");
+            _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} not exist");
+            return;
         }
-        finally
-        {
-            // todo: add state cleanup
-            _logger.LogInformation($"[RequestCancelProcess] {chainId} {requestId} Cancel job finished.");
-        }
+
+        if (commitment.RequestTypeIndex == RequestTypeConst.Automation) _schedulerService.CancelCronUpkeep(job);
+
+        job.State = RequestState.RequestCanceled;
+        await _jobProvider.SetAsync(job);
+        _schedulerService.CancelAllSchedule(job);
     }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, RequestCancelProcessJobArgs args)
+    {
+        _logger.LogError(ex, $"[RequestCancelProcess] {args.ChainId} {args.RequestId} Cancel job failed.");
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
+        };
+    }
+
+    public async Task FinallyHandler(RequestCancelProcessJobArgs args)
+    {
+        // todo: add state cleanup
+        _logger.LogInformation($"[RequestCancelProcess] {args.ChainId} {args.RequestId} Cancel job finished.");
+    }
+
+    #endregion
 }

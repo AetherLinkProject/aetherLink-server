@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Contracts.Automation;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Automation.Providers;
@@ -43,45 +44,46 @@ public class AutomationPartSign : AsyncBackgroundJob<ReportSignatureRequestArgs>
 
     public override async Task ExecuteAsync(ReportSignatureRequestArgs args)
     {
+        await Handle(args);
+    }
+
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(AutomationPartSign),
+        MethodName = nameof(HandleException))]
+    public virtual async Task Handle(ReportSignatureRequestArgs args)
+    {
         var chainId = args.Context.ChainId;
         var upkeepId = args.Context.RequestId;
         var epoch = args.Context.Epoch;
 
         _logger.LogDebug($"[Automation] Get leader {upkeepId} partial signature request.");
-        try
+
+        var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, upkeepId);
+        switch (AutomationHelper.GetTriggerType(commitment))
         {
-            var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, upkeepId);
-            switch (AutomationHelper.GetTriggerType(commitment))
-            {
-                case TriggerType.Cron:
-                    if (!await IsJobNeedExecuteAsync(args)) return;
-                    if (ByteString.CopyFrom(args.Payload) != AutomationHelper.GetUpkeepPerformData(commitment))
-                    {
-                        _logger.LogError("[Automation] Is different with leader check data.");
-                        return;
-                    }
+            case TriggerType.Cron:
+                if (!await IsJobNeedExecuteAsync(args)) return;
+                if (ByteString.CopyFrom(args.Payload) != AutomationHelper.GetUpkeepPerformData(commitment))
+                {
+                    _logger.LogError("[Automation] Is different with leader check data.");
+                    return;
+                }
 
-                    break;
-                case TriggerType.Log:
-                    var logUpkeepInfoId = IdGeneratorHelper.GenerateUpkeepInfoId(chainId, upkeepId);
-                    var logUpkeepInfo = await _storageProvider.GetAsync<LogUpkeepInfoDto>(logUpkeepInfoId);
-                    if (logUpkeepInfo == null) return;
-                    if (!await ValidateLeaderUpkeepTriggerAsync(args)) return;
+                break;
+            case TriggerType.Log:
+                var logUpkeepInfoId = IdGeneratorHelper.GenerateUpkeepInfoId(chainId, upkeepId);
+                var logUpkeepInfo = await _storageProvider.GetAsync<LogUpkeepInfoDto>(logUpkeepInfoId);
+                if (logUpkeepInfo == null) return;
+                if (!await ValidateLeaderUpkeepTriggerAsync(args)) return;
 
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-
-            await CommitToLeaderAsync(args.Context, args.Payload);
-
-            _logger.LogInformation(
-                $"[Automation] Send {upkeepId}-{epoch} signature to leader, Waiting for transmitted.");
+                break;
+            default:
+                throw new NotImplementedException();
         }
-        catch (Exception e)
-        {
-            _logger.LogError(e, $"[Automation] {upkeepId}-{epoch} Sign report failed");
-        }
+
+        await CommitToLeaderAsync(args.Context, args.Payload);
+
+        _logger.LogInformation(
+            $"[Automation] Send {upkeepId}-{epoch} signature to leader, Waiting for transmitted.");
     }
 
     private async Task CommitToLeaderAsync(OCRContext context, byte[] payload)
@@ -181,4 +183,18 @@ public class AutomationPartSign : AsyncBackgroundJob<ReportSignatureRequestArgs>
 
         return false;
     }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, ReportSignatureRequestArgs args)
+    {
+        _logger.LogError(ex, $"[Automation] {args.Context.RequestId}-{args.Context.Epoch} Sign report failed");
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
+        };
+    }
+
+    #endregion
 }

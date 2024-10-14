@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Contracts.Automation;
 using AetherLink.Worker.Core.Automation.Providers;
 using AetherLink.Worker.Core.Common;
@@ -35,52 +36,68 @@ public class TransmittedEventProcessJob : AsyncBackgroundJob<TransmittedEventPro
 
     public override async Task ExecuteAsync(TransmittedEventProcessJobArgs args)
     {
+        await Handler(args);
+    }
+
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(TransmittedEventProcessJob),
+        MethodName = nameof(HandleException))]
+    public virtual async Task Handler(TransmittedEventProcessJobArgs args)
+    {
         var chainId = args.ChainId;
         var requestId = args.RequestId;
         var argId = IdGeneratorHelper.GenerateId(chainId, requestId);
-        try
-        {
-            var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, requestId);
-            if (commitment.RequestTypeIndex == RequestTypeConst.Automation)
-            {
-                if (AutomationHelper.GetTriggerType(commitment) == TriggerType.Log)
-                {
-                    var report =
-                        await _oracleContractProvider.GetTransmitReportByTransactionIdAsync(chainId,
-                            args.TransactionId);
-                    var payload = LogTriggerCheckData.Parser.ParseFrom(report.Result);
-                    var triggerKey =
-                        AutomationHelper.GetLogTriggerKeyByPayload(chainId, requestId, payload.ToByteArray());
-                    var logTriggerInfo = await _storageProvider.GetAsync<LogTriggerDto>(triggerKey);
-                    if (logTriggerInfo != null) _schedulerService.CancelLogUpkeep(logTriggerInfo);
-                    return;
-                }
-            }
 
-            var job = await _jobProvider.GetAsync(args);
-            if (job == null)
+        var commitment = await _oracleContractProvider.GetRequestCommitmentAsync(chainId, requestId);
+        if (commitment.RequestTypeIndex == RequestTypeConst.Automation)
+        {
+            if (AutomationHelper.GetTriggerType(commitment) == TriggerType.Log)
             {
-                _logger.LogDebug("[Transmitted] {name} not need update.", argId);
+                var report =
+                    await _oracleContractProvider.GetTransmitReportByTransactionIdAsync(chainId,
+                        args.TransactionId);
+                var payload = LogTriggerCheckData.Parser.ParseFrom(report.Result);
+                var triggerKey =
+                    AutomationHelper.GetLogTriggerKeyByPayload(chainId, requestId, payload.ToByteArray());
+                var logTriggerInfo = await _storageProvider.GetAsync<LogTriggerDto>(triggerKey);
+                if (logTriggerInfo != null) _schedulerService.CancelLogUpkeep(logTriggerInfo);
                 return;
             }
-
-            if (commitment.RequestTypeIndex == RequestTypeConst.Automation) _schedulerService.CancelCronUpkeep(job);
-            else _schedulerService.CancelAllSchedule(job);
-
-            _logger.LogInformation("[Transmitted] {name} epoch:{epoch} end", argId, job.Epoch);
-
-            job.TransactionBlockTime = args.StartTime;
-            job.State = RequestState.RequestEnd;
-            job.RoundId = 0;
-            job.Epoch = args.Epoch;
-            await _jobProvider.SetAsync(job);
-
-            _logger.LogDebug("[Transmitted] {name} will update epoch => {epoch}, block-time => {time}", argId,
-                args.Epoch, args.StartTime);
         }
-        catch (Exception e)
+
+        var job = await _jobProvider.GetAsync(args);
+        if (job == null)
         {
-            _logger.LogError(e, "[Transmitted] {name} Transmitted process failed.", argId);
+            _logger.LogDebug("[Transmitted] {name} not need update.", argId);
+            return;
         }
+
+        if (commitment.RequestTypeIndex == RequestTypeConst.Automation) _schedulerService.CancelCronUpkeep(job);
+        else _schedulerService.CancelAllSchedule(job);
+
+        _logger.LogInformation("[Transmitted] {name} epoch:{epoch} end", argId, job.Epoch);
+
+        job.TransactionBlockTime = args.StartTime;
+        job.State = RequestState.RequestEnd;
+        job.RoundId = 0;
+        job.Epoch = args.Epoch;
+        await _jobProvider.SetAsync(job);
+
+        _logger.LogDebug("[Transmitted] {name} will update epoch => {epoch}, block-time => {time}", argId,
+            args.Epoch, args.StartTime);
     }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, TransmittedEventProcessJobArgs args)
+    {
+        var argId = IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId);
+        _logger.LogError(ex, "[Transmitted] {name} Transmitted process failed.", argId);
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
+        };
+    }
+
+    #endregion
 }

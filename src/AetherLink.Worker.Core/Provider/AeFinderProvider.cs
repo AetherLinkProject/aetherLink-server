@@ -140,31 +140,25 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         return res?.OracleConfigDigest == null ? "" : res.OracleConfigDigest.ConfigDigest;
     }
 
-    public async Task<long> GetOracleLatestEpochAsync(string chainId, long blockHeight)
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(AeFinderProvider),
+        MethodName = nameof(HandleGetOracleLatestException))]
+    public virtual async Task<long> GetOracleLatestEpochAsync(string chainId, long blockHeight)
     {
-        try
+        var res = await GraphQLHelper.SendQueryAsync<OracleLatestEpochRecord>(GetClient(), new()
         {
-            var res = await GraphQLHelper.SendQueryAsync<OracleLatestEpochRecord>(GetClient(), new()
-            {
-                Query = @"
+            Query = @"
 			        query($chainId:String!,$blockHeight:Long!){
                         oracleLatestEpoch(input: {chainId:$chainId,blockHeight:$blockHeight}){
                         epoch
                     }
                 }",
-                Variables = new
-                {
-                    chainId = chainId, blockHeight = blockHeight
-                }
-            });
+            Variables = new
+            {
+                chainId = chainId, blockHeight = blockHeight
+            }
+        });
 
-            return res?.OracleLatestEpoch?.Epoch ?? 0;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Indexer] GetOracleLatestEpoch failed.");
-            throw;
-        }
+        return res?.OracleLatestEpoch?.Epoch ?? 0;
     }
 
     [ExceptionHandler(typeof(Exception), Message = "[Indexer] GetRequestCommitment failed.",
@@ -190,14 +184,14 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         return res?.RequestCommitment == null ? "" : res.RequestCommitment.Commitment;
     }
 
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(AeFinderProvider),
+        MethodName = nameof(HandleGetTransactionLogException))]
     public async Task<List<TransactionEventDto>> GetTransactionLogEventsAsync(string chainId, long to, long from)
     {
-        try
+        var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerTransactionEventListDto>(GetClient(), new()
         {
-            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerTransactionEventListDto>(GetClient(), new()
-            {
-                Query =
-                    @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
+            Query =
+                @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
                     transactionEvents(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
                             chainId,
                             blockHash,
@@ -210,21 +204,39 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                             startTime
                     }
                 }",
-                Variables = new
-                {
-                    chainId = chainId, fromBlockHeight = from, toBlockHeight = to
-                }
-            });
-            return indexerResult == null ? new() : indexerResult.TransactionEvents;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Indexer] SubscribeLogs failed.");
-            throw;
-        }
+            Variables = new
+            {
+                chainId = chainId, fromBlockHeight = from, toBlockHeight = to
+            }
+        });
+        return indexerResult == null ? new() : indexerResult.TransactionEvents;
     }
 
     private IGraphQLClient GetClient() => new GraphQLHttpClient(
         new GraphQLHttpClientOptions { EndPoint = new Uri(_options.BaseUrl + _options.GraphQlUri) },
         new NewtonsoftJsonSerializer());
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleGetTransactionLogException(Exception ex)
+    {
+        _logger.LogError(ex, "[Indexer] SubscribeLogs failed.");
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Throw
+        };
+    }
+
+    public async Task<FlowBehavior> HandleGetOracleLatestException(Exception ex)
+    {
+        _logger.LogError(ex, "[Indexer] GetOracleLatestEpoch failed.");
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Throw
+        };
+    }
+
+    #endregion
 }

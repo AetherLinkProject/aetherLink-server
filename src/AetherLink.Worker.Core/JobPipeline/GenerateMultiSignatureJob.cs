@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Contracts.Consumer;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
@@ -62,81 +63,81 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
 
     public override async Task ExecuteAsync(GenerateMultiSignatureJobArgs args)
     {
+        await Handler(args);
+    }
+
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(GenerateMultiSignatureJob),
+        MethodName = nameof(HandleException))]
+    public virtual async Task Handler(GenerateMultiSignatureJobArgs args)
+    {
         var reqId = args.RequestId;
         var chainId = args.ChainId;
         var roundId = args.RoundId;
         var epoch = args.Epoch;
         var argId = IdGeneratorHelper.GenerateId(chainId, reqId, epoch, roundId);
 
-        try
+        var job = await _jobProvider.GetAsync(args);
+        if (job == null || job.State == RequestState.RequestCanceled) return;
+
+        var multiSignId = IdGeneratorHelper.GenerateMultiSignatureId(args);
+        if (_stateProvider.IsFinished(multiSignId)) return;
+
+        var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
+        ByteString result;
+
+        if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
         {
-            var job = await _jobProvider.GetAsync(args);
-            if (job == null || job.State == RequestState.RequestCanceled) return;
-
-            var multiSignId = IdGeneratorHelper.GenerateMultiSignatureId(args);
-            if (_stateProvider.IsFinished(multiSignId)) return;
-
-            var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
-            ByteString result;
-
-            if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
+            var authData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
+            if (authData == null)
             {
-                var authData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
-                if (authData == null)
-                {
-                    _logger.LogError("[Step5][Leader] {name} Report is null.", argId);
-                    return;
-                }
-
-                result = ByteString.CopyFrom(Encoding.UTF8.GetBytes(authData.NewData));
-            }
-            else
-            {
-                var observations = await _reportProvider.GetAsync(args);
-                if (observations == null)
-                {
-                    _logger.LogError("[Step5][Leader] {name} Report is null.", argId);
-                    return;
-                }
-
-                result = new LongList { Data = { observations.Observations } }.ToByteString();
-            }
-
-            var transmitData = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, reqId, epoch, result);
-            var msg = HashHelper.ConcatAndCompute(HashHelper.ComputeFrom(transmitData.Report.ToByteArray()),
-                HashHelper.ComputeFrom(transmitData.ReportContext.ToString())).ToByteArray();
-
-            TryProcessMultiSignature(args, msg);
-
-            if (!IsSignatureEnough(args))
-            {
-                _logger.LogDebug("[Step5][Leader] {name} is not enough, no need to generate signature.", argId);
+                _logger.LogError("[Step5][Leader] {name} Report is null.", argId);
                 return;
             }
 
-            if (!TryProcessFinishedFlag(multiSignId))
+            result = ByteString.CopyFrom(Encoding.UTF8.GetBytes(authData.NewData));
+        }
+        else
+        {
+            var observations = await _reportProvider.GetAsync(args);
+            if (observations == null)
             {
-                _logger.LogDebug("[Step5][Leader] {name} signature is finished.", argId);
+                _logger.LogError("[Step5][Leader] {name} Report is null.", argId);
                 return;
             }
 
-            _logger.LogInformation("[Step5][Leader] {name} MultiSignature generate success.", argId);
-
-            var multiSignature = _stateProvider.GetMultiSignature(multiSignId);
-            multiSignature.TryGetSignatures(out var signature);
-            transmitData.Signatures.AddRange(signature);
-
-            // send transmit transaction to oracle contract
-            var transactionId = await _contractProvider.SendTransmitAsync(chainId, transmitData);
-            _logger.LogInformation("[step5][Leader] {name} Transmit transaction {transactionId}", argId,
-                transactionId);
-
-            await ProcessTransactionResultAsync(args, transactionId, job);
+            result = new LongList { Data = { observations.Observations } }.ToByteString();
         }
-        catch (Exception e)
+
+        var transmitData = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, reqId, epoch, result);
+        var msg = HashHelper.ConcatAndCompute(HashHelper.ComputeFrom(transmitData.Report.ToByteArray()),
+            HashHelper.ComputeFrom(transmitData.ReportContext.ToString())).ToByteArray();
+
+        TryProcessMultiSignature(args, msg);
+
+        if (!IsSignatureEnough(args))
         {
-            _logger.LogError(e, "[Step5][Leader] {name} SendTransaction Failed.", argId);
+            _logger.LogDebug("[Step5][Leader] {name} is not enough, no need to generate signature.", argId);
+            return;
         }
+
+        if (!TryProcessFinishedFlag(multiSignId))
+        {
+            _logger.LogDebug("[Step5][Leader] {name} signature is finished.", argId);
+            return;
+        }
+
+        _logger.LogInformation("[Step5][Leader] {name} MultiSignature generate success.", argId);
+
+        var multiSignature = _stateProvider.GetMultiSignature(multiSignId);
+        multiSignature.TryGetSignatures(out var signature);
+        transmitData.Signatures.AddRange(signature);
+
+        // send transmit transaction to oracle contract
+        var transactionId = await _contractProvider.SendTransmitAsync(chainId, transmitData);
+        _logger.LogInformation("[step5][Leader] {name} Transmit transaction {transactionId}", argId,
+            transactionId);
+
+        await ProcessTransactionResultAsync(args, transactionId, job);
     }
 
     private bool IsSignatureEnough(GenerateMultiSignatureJobArgs args)
@@ -203,4 +204,19 @@ public class GenerateMultiSignatureJob : AsyncBackgroundJob<GenerateMultiSignatu
         _reporter.RecordMultiSignatureProcessResultAsync(args.ChainId, args.RequestId, args.Epoch,
             args.PartialSignature.Index);
     }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, GenerateMultiSignatureJobArgs args)
+    {
+        var argId = IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch, args.RoundId);
+        _logger.LogError(ex, "[Step5][Leader] {name} SendTransaction Failed.", argId);
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
+        };
+    }
+
+    #endregion
 }

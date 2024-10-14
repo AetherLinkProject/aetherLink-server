@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
@@ -42,7 +43,15 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
         _plainDataFeedsProvider = plainDataFeedsProvider;
     }
 
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(CollectObservationJob),
+        MethodName = nameof(HandleExecuteAsyncException),
+        ReturnDefault = ReturnDefault.Default)]
     public override async Task ExecuteAsync(CollectObservationJobArgs args)
+    {
+        await Handle(args);
+    }
+
+    public virtual async Task Handle(CollectObservationJobArgs args)
     {
         var chainId = args.ChainId;
         var reqId = args.RequestId;
@@ -50,43 +59,35 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
         var roundId = args.RoundId;
         var argId = IdGeneratorHelper.GenerateId(chainId, reqId, epoch, roundId);
 
-        try
+        _logger.LogInformation("[Step2] Get leader observation collect job {name}.", argId);
+
+        var job = await _jobProvider.GetAsync(args);
+        if (!await IsJobNeedExecuteAsync(args, job)) return;
+
+        var dataSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
+        var observationResult = await GetDataFeedsDataAsync(args, dataSpec);
+        _logger.LogDebug("[step2] Get DataFeeds observation result: {result}", observationResult);
+
+        if (string.IsNullOrEmpty(observationResult))
         {
-            _logger.LogInformation("[Step2] Get leader observation collect job {name}.", argId);
-
-            var job = await _jobProvider.GetAsync(args);
-            if (!await IsJobNeedExecuteAsync(args, job)) return;
-
-            var dataSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
-            var observationResult = await GetDataFeedsDataAsync(args, dataSpec);
-            _logger.LogDebug("[step2] Get DataFeeds observation result: {result}", observationResult);
-
-            if (string.IsNullOrEmpty(observationResult))
-            {
-                // The timeout window still exists and the collection will be reorganized in the next round.
-                _logger.LogWarning("[step2] Empty collection results will not be returned to the leader.");
-                return;
-            }
-
-            if (_peerManager.IsLeader(args.Epoch, args.RoundId))
-            {
-                var leaderJob = _objectMapper.Map<CollectObservationJobArgs, GenerateReportJobArgs>(args);
-                if (dataSpec.Type == DataFeedsType.PriceFeeds) leaderJob.Data = observationResult;
-                leaderJob.Index = _peerManager.GetOwnIndex();
-                await _backgroundJobManager.EnqueueAsync(leaderJob, BackgroundJobPriority.High);
-                return;
-            }
-
-            var msg = _objectMapper.Map<CollectObservationJobArgs, CommitObservationRequest>(args);
-            if (dataSpec.Type == DataFeedsType.PriceFeeds) msg.Data = observationResult;
-            msg.Index = _peerManager.GetOwnIndex();
-            await _peerManager.CommitToLeaderAsync(p => p.CommitObservationAsync(msg), args.Epoch, args.RoundId);
+            // The timeout window still exists and the collection will be reorganized in the next round.
+            _logger.LogWarning("[step2] Empty collection results will not be returned to the leader.");
+            return;
         }
-        catch (Exception e)
+
+        if (_peerManager.IsLeader(args.Epoch, args.RoundId))
         {
-            _logger.LogError(e, "[Step2] {name} Fail.", argId);
-            await _retryProvider.RetryAsync(args, backOff: true);
+            var leaderJob = _objectMapper.Map<CollectObservationJobArgs, GenerateReportJobArgs>(args);
+            if (dataSpec.Type == DataFeedsType.PriceFeeds) leaderJob.Data = observationResult;
+            leaderJob.Index = _peerManager.GetOwnIndex();
+            await _backgroundJobManager.EnqueueAsync(leaderJob, BackgroundJobPriority.High);
+            return;
         }
+
+        var msg = _objectMapper.Map<CollectObservationJobArgs, CommitObservationRequest>(args);
+        if (dataSpec.Type == DataFeedsType.PriceFeeds) msg.Data = observationResult;
+        msg.Index = _peerManager.GetOwnIndex();
+        await _peerManager.CommitToLeaderAsync(p => p.CommitObservationAsync(msg), args.Epoch, args.RoundId);
     }
 
     private async Task<bool> IsJobNeedExecuteAsync(CollectObservationJobArgs args, JobDto job)
@@ -129,51 +130,73 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
         return true;
     }
 
-    private async Task<string> GetDataFeedsDataAsync(CollectObservationJobArgs args, DataFeedsJobSpec dataSpec)
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(CollectObservationJob),
+        MethodName = nameof(HandleGetDataFeedsDataAsyncException))]
+    protected virtual async Task<string> GetDataFeedsDataAsync(CollectObservationJobArgs args,
+        DataFeedsJobSpec dataSpec)
     {
-        try
+        switch (dataSpec.Type)
         {
-            switch (dataSpec.Type)
-            {
-                case DataFeedsType.PriceFeeds:
-                    _logger.LogInformation("[Step2] Starting execute PriceFeeds collect job.");
-                    var priceData = await _dataMessageProvider.GetAsync(args);
-                    if (priceData != null) return priceData.Data.ToString();
+            case DataFeedsType.PriceFeeds:
+                _logger.LogInformation("[Step2] Starting execute PriceFeeds collect job.");
+                var priceData = await _dataMessageProvider.GetAsync(args);
+                if (priceData != null) return priceData.Data.ToString();
 
-                    var amount = await _priceFeedsProvider.GetPriceFeedsDataAsync(dataSpec.CurrencyPair);
-                    var dataMsg = _objectMapper.Map<CollectObservationJobArgs, DataMessageDto>(args);
-                    dataMsg.Data = amount;
-                    await _dataMessageProvider.SetAsync(dataMsg);
-                    return amount.ToString();
-                case DataFeedsType.PlainDataFeeds:
-                    _logger.LogInformation("[Step2] Starting execute PlainDataFeedsDto collect job.");
-                    var resp = await _plainDataFeedsProvider.RequestPlainDataAsync(dataSpec.Url);
-                    if (string.IsNullOrEmpty(resp)) return "";
+                var amount = await _priceFeedsProvider.GetPriceFeedsDataAsync(dataSpec.CurrencyPair);
+                var dataMsg = _objectMapper.Map<CollectObservationJobArgs, DataMessageDto>(args);
+                dataMsg.Data = amount;
+                await _dataMessageProvider.SetAsync(dataMsg);
+                return amount.ToString();
+            case DataFeedsType.PlainDataFeeds:
+                _logger.LogInformation("[Step2] Starting execute PlainDataFeedsDto collect job.");
+                var resp = await _plainDataFeedsProvider.RequestPlainDataAsync(dataSpec.Url);
+                if (string.IsNullOrEmpty(resp)) return "";
 
-                    var plainData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
+                var plainData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
 
-                    if (plainData == null)
-                    {
-                        plainData = _objectMapper.Map<CollectObservationJobArgs, PlainDataFeedsDto>(args);
-                        plainData.OldData = "";
-                    }
-                    else if (plainData.OldData != null && resp == plainData.OldData)
-                    {
-                        _logger.LogDebug("[Step2] New collect result is same as old data {data}", resp);
-                        return "";
-                    }
-
-                    plainData.NewData = resp;
-                    await _dataMessageProvider.SetAsync(plainData);
-                    return resp;
-                default:
+                if (plainData == null)
+                {
+                    plainData = _objectMapper.Map<CollectObservationJobArgs, PlainDataFeedsDto>(args);
+                    plainData.OldData = "";
+                }
+                else if (plainData.OldData != null && resp == plainData.OldData)
+                {
+                    _logger.LogDebug("[Step2] New collect result is same as old data {data}", resp);
                     return "";
-            }
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[Step2] Get DataFeeds data failed.");
-            throw;
+                }
+
+                plainData.NewData = resp;
+                await _dataMessageProvider.SetAsync(plainData);
+                return resp;
+            default:
+                return "";
         }
     }
+
+    #region Exception Handle
+
+    public async Task<FlowBehavior> HandleExecuteAsyncException(Exception ex, CollectObservationJobArgs args)
+    {
+        var argId = IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch, args.RoundId);
+        _logger.LogError(ex, "[Step2] {name} Fail.", argId);
+
+        await _retryProvider.RetryAsync(args, backOff: true);
+        
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
+        };
+    }
+
+    public async Task<FlowBehavior> HandleGetDataFeedsDataAsyncException(Exception ex)
+    {
+        _logger.LogError(ex, "[Step2] Get DataFeeds data failed.");
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Rethrow,
+        };
+    }
+
+    #endregion
 }

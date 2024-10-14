@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Cryptography;
 using AElf.Cryptography.ECDSA;
+using AElf.ExceptionHandler;
 using AetherLink.Contracts.Oracle;
 using AetherLink.Contracts.VRF.Coordinator;
 using AetherLink.Worker.Core.Common;
@@ -53,6 +54,13 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
 
     public override async Task ExecuteAsync(VRFJobArgs args)
     {
+        await Handler(args);
+    }
+
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(VRFProcessJob),
+        MethodName = nameof(HandleException))]
+    public virtual async Task Handler(VRFJobArgs args)
+    {
         var chainId = args.ChainId;
         var reqId = args.RequestId;
         if (args.StartTime == 0) args.StartTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds();
@@ -69,60 +77,52 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
             return;
         }
 
-        try
+        _logger.LogInformation("[VRF] Start Generate vrf proof reqId {reqId}.", reqId);
+        var vrfKp = CryptoHelper.FromPrivateKey(ByteArrayHelper.HexStringToByteArray(vrfInfo.VRFSecret));
+
+        // check vrf request transaction exist.
+        var commitment = await _oracleContractProvider.GetRequestCommitmentByTxAsync(chainId, args.TransactionId);
+        var specificData = SpecificData.Parser.ParseFrom(commitment.SpecificData);
+
+        // validate keyHash
+        if (HashHelper.ComputeFrom(vrfKp.PublicKey.ToHex()) != specificData.KeyHash)
         {
-            _logger.LogInformation("[VRF] Start Generate vrf proof reqId {reqId}.", reqId);
-            var vrfKp = CryptoHelper.FromPrivateKey(ByteArrayHelper.HexStringToByteArray(vrfInfo.VRFSecret));
-
-            // check vrf request transaction exist.
-            var commitment = await _oracleContractProvider.GetRequestCommitmentByTxAsync(chainId, args.TransactionId);
-            var specificData = SpecificData.Parser.ParseFrom(commitment.SpecificData);
-
-            // validate keyHash
-            if (HashHelper.ComputeFrom(vrfKp.PublicKey.ToHex()) != specificData.KeyHash)
-            {
-                _logger.LogInformation("[VRF] This vrf job isn't belong to this node. reqId {reqId}", reqId);
-                return;
-            }
-
-            // generate vrf prove in report
-            var transmitInput = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, reqId,
-                await _oracleContractProvider.GetOracleLatestEpochAndRoundAsync(chainId),
-                ByteString.CopyFrom(await GenerateVrf(chainId, vrfKp, specificData)));
-            transmitInput.Signatures.AddRange(new List<ByteString>
-                { GenerateSignature(vrfKp.PrivateKey, transmitInput) });
-
-            _logger.LogInformation("[VRF] Generate proof success, ready to send transmit.");
-
-            // send to oracle contract
-            var refBlockHeight = args.BlockHeight;
-            var regBlockHash = args.BlockHash;
-            _logger.LogDebug("[VRF] Request {id} reference blockHeight: {height} blockHash: {hash}", reqId,
-                refBlockHeight, regBlockHash);
-
-            var transactionId = await _contractProvider.SendTransmitWithRefHashAsync(chainId, transmitInput,
-                refBlockHeight, regBlockHash);
-
-            _vrfReporter.RecordVrfExecuteTime(chainId, reqId,
-                new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds() - args.StartTime);
-
-            _logger.LogInformation("[VRF] reqId {reqId} Transmit transaction: {txId}, ready to check result", reqId,
-                transactionId);
-
-            var vrfTransmitResult = _objectMapper.Map<VRFJobArgs, VrfTxResultCheckJobArgs>(args);
-            vrfTransmitResult.TransmitTransactionId = transactionId;
-            var vrfJob = _objectMapper.Map<VRFJobArgs, VrfJobDto>(vrfTransmitResult);
-            vrfJob.Status = VrfJobState.CheckPending;
-
-            await _vrfProvider.SetAsync(vrfJob);
-            await _backgroundJobManager.EnqueueAsync(vrfTransmitResult,
-                delay: TimeSpan.FromSeconds(_processJobOptions.TransactionResultDelay));
+            _logger.LogInformation("[VRF] This vrf job isn't belong to this node. reqId {reqId}", reqId);
+            return;
         }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[VRF] ReqId {reqId} generate VRF Failed", reqId);
-            await _retryProvider.RetryWithIdAsync(args, GenerateVrfRetryId(chainId, reqId));
-        }
+
+        // generate vrf prove in report
+        var transmitInput = await _oracleContractProvider.GenerateTransmitDataAsync(chainId, reqId,
+            await _oracleContractProvider.GetOracleLatestEpochAndRoundAsync(chainId),
+            ByteString.CopyFrom(await GenerateVrf(chainId, vrfKp, specificData)));
+        transmitInput.Signatures.AddRange(new List<ByteString>
+            { GenerateSignature(vrfKp.PrivateKey, transmitInput) });
+
+        _logger.LogInformation("[VRF] Generate proof success, ready to send transmit.");
+
+        // send to oracle contract
+        var refBlockHeight = args.BlockHeight;
+        var regBlockHash = args.BlockHash;
+        _logger.LogDebug("[VRF] Request {id} reference blockHeight: {height} blockHash: {hash}", reqId,
+            refBlockHeight, regBlockHash);
+
+        var transactionId = await _contractProvider.SendTransmitWithRefHashAsync(chainId, transmitInput,
+            refBlockHeight, regBlockHash);
+
+        _vrfReporter.RecordVrfExecuteTime(chainId, reqId,
+            new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds() - args.StartTime);
+
+        _logger.LogInformation("[VRF] reqId {reqId} Transmit transaction: {txId}, ready to check result", reqId,
+            transactionId);
+
+        var vrfTransmitResult = _objectMapper.Map<VRFJobArgs, VrfTxResultCheckJobArgs>(args);
+        vrfTransmitResult.TransmitTransactionId = transactionId;
+        var vrfJob = _objectMapper.Map<VRFJobArgs, VrfJobDto>(vrfTransmitResult);
+        vrfJob.Status = VrfJobState.CheckPending;
+
+        await _vrfProvider.SetAsync(vrfJob);
+        await _backgroundJobManager.EnqueueAsync(vrfTransmitResult,
+            delay: TimeSpan.FromSeconds(_processJobOptions.TransactionResultDelay));
     }
 
     private async Task<bool> CheckVrfJobConsumed(string chainId, string requestId)
@@ -143,4 +143,19 @@ public class VRFProcessJob : AsyncBackgroundJob<VRFJobArgs>, ITransientDependenc
 
     private string GenerateVrfRetryId(string chainId, string requestId) =>
         IdGeneratorHelper.GenerateId("vrf", "execute", chainId, requestId);
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, VRFJobArgs args)
+    {
+        _logger.LogError(ex, "[VRF] ReqId {reqId} generate VRF Failed", args.RequestId);
+        await _retryProvider.RetryWithIdAsync(args, GenerateVrfRetryId(args.ChainId, args.RequestId));
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
+        };
+    }
+
+    #endregion
 }

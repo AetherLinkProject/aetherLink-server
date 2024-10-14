@@ -1,4 +1,6 @@
+using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Common;
 using AetherlinkPriceServer.Reporter;
@@ -43,4 +45,22 @@ public class GateIoProvider : IGateIoProvider, ITransientDependency
             timer.ObserveDuration();
         }
     }
+
+    #region Exception Handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex)
+    {
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Rethrow,
+        };
+    }
+
+    public async Task FinallyHandler(string tokenPair)
+    {
+        var timer = _reporter.GetPriceCollectLatencyTimer(SourceType.GateIo, tokenPair);
+        timer.ObserveDuration();
+    }
+
+    #endregion
 }

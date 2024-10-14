@@ -1,9 +1,11 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Options;
 using AetherlinkPriceServer.Provider;
+using Io.Gate.GateApi.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -35,21 +37,30 @@ public class OkxTokenPriceSearchWorker : TokenPriceSearchWorkerBase
             (await Task.WhenAll(_option.Tokens.Select(SearchTokenPriceAsync))).ToList());
     }
 
-    private async Task<PriceDto> SearchTokenPriceAsync(string tokenPair)
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(OkxTokenPriceSearchWorker),
+        MethodName = nameof(HandleException))]
+    public virtual async Task<PriceDto> SearchTokenPriceAsync(string tokenPair)
     {
-        try
+        return new()
         {
-            return new()
-            {
-                TokenPair = tokenPair,
-                Price = await _okxProvider.GetTokenPriceAsync(tokenPair),
-                UpdateTime = DateTime.Now
-            };
-        }
-        catch (Exception e)
-        {
-            BaseLogger.LogError(e, $"[OKX] Can not get {tokenPair} current price.");
-            return new();
-        }
+            TokenPair = tokenPair,
+            Price = await _okxProvider.GetTokenPriceAsync(tokenPair),
+            UpdateTime = DateTime.Now
+        };
     }
+
+    #region Exception handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, string tokenPair)
+    {
+        BaseLogger.LogError(ex, $"[OKX] Can not get {tokenPair} current price.");
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return,
+            ReturnValue = new PriceDto()
+        };
+    }
+
+    #endregion
 }

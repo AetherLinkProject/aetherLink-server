@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AElf.ExceptionHandler;
 using AetherLink.Contracts.Automation;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Automation.Providers;
@@ -37,6 +38,13 @@ public class AutomationLogTrigger : AsyncBackgroundJob<AutomationLogTriggerArgs>
 
     public override async Task ExecuteAsync(AutomationLogTriggerArgs args)
     {
+        await Handle(args);
+    }
+
+    [ExceptionHandler(typeof(Exception), TargetType = typeof(AutomationLogTrigger),
+        MethodName = nameof(HandleException))]
+    public virtual async Task Handle(AutomationLogTriggerArgs args)
+    {
         // todo add request canceled filter
         var chainId = args.Context.ChainId;
         var upkeepId = args.Context.RequestId;
@@ -46,67 +54,77 @@ public class AutomationLogTrigger : AsyncBackgroundJob<AutomationLogTriggerArgs>
         var logTriggerId = AutomationHelper.GenerateLogTriggerId(eventId, logUpkeepId);
         var logTriggerKey = AutomationHelper.GenerateLogTriggerKey(eventId, logUpkeepId);
 
-        try
+
+        var startTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
+        var transactionEvent = await _storageProvider.GetAsync<TransactionEventDto>(eventId);
+        var logTriggerInfo = await _storageProvider.GetAsync<LogTriggerDto>(logTriggerKey);
+        if (logTriggerInfo == null)
         {
-            var startTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
-            var transactionEvent = await _storageProvider.GetAsync<TransactionEventDto>(eventId);
-            var logTriggerInfo = await _storageProvider.GetAsync<LogTriggerDto>(logTriggerKey);
-            if (logTriggerInfo == null)
+            logTriggerInfo = new LogTriggerDto
             {
-                logTriggerInfo = new LogTriggerDto
-                {
-                    TransactionEventStorageId = eventId,
-                    LogUpkeepStorageId = logUpkeepId,
-                    ReceiveTime = startTime,
-                    Context = args.Context
-                };
-            }
-            else if (logTriggerInfo.Context.RoundId != 0)
-            {
-                logTriggerInfo.ReceiveTime = _schedulerService.UpdateBlockTime(startTime);
-            }
-            else
-            {
-                _logger.LogWarning($"[Automation] {logTriggerId} has been executed.");
-                return;
-            }
-
-            await _storageProvider.SetAsync(logTriggerKey, logTriggerInfo, TimeSpan.FromMinutes(30));
-
-            _logger.LogDebug($"[Automation] Log trigger {logTriggerId} startTime {logTriggerInfo.ReceiveTime}");
-
-            if (_peerManager.IsLeader(logTriggerInfo.Context))
-            {
-                _logger.LogInformation($"[Automation][Leader] {logTriggerId} Is Leader.");
-                var request = new QueryReportSignatureRequest
-                {
-                    Context = logTriggerInfo.Context,
-                    Payload = new LogTriggerCheckData
-                    {
-                        ChainId = transactionEvent.ChainId,
-                        TransactionId = transactionEvent.TransactionId,
-                        BlockHeight = transactionEvent.BlockHeight,
-                        BlockHash = transactionEvent.BlockHash,
-                        ContractAddress = transactionEvent.ContractAddress,
-                        EventName = transactionEvent.EventName,
-                        Index = transactionEvent.Index
-                    }.ToByteString()
-                };
-
-
-                _signatureProvider.LeaderInitMultiSign(chainId, logTriggerId, _signatureProvider.GenerateMsg(
-                        await _contractProvider.GenerateTransmitDataAsync(chainId, upkeepId, epoch, request.Payload))
-                    .ToByteArray());
-                await _peerManager.BroadcastAsync(p => p.QueryReportSignatureAsync(request));
-            }
-
-            _schedulerService.StartScheduler(logTriggerInfo);
-
-            _logger.LogInformation($"[Automation] {logTriggerId} Waiting for request end.");
+                TransactionEventStorageId = eventId,
+                LogUpkeepStorageId = logUpkeepId,
+                ReceiveTime = startTime,
+                Context = args.Context
+            };
         }
-        catch (Exception e)
+        else if (logTriggerInfo.Context.RoundId != 0)
         {
-            _logger.LogError(e, $"[Automation] {logTriggerId} Start process failed.");
+            logTriggerInfo.ReceiveTime = _schedulerService.UpdateBlockTime(startTime);
         }
+        else
+        {
+            _logger.LogWarning($"[Automation] {logTriggerId} has been executed.");
+            return;
+        }
+
+        await _storageProvider.SetAsync(logTriggerKey, logTriggerInfo, TimeSpan.FromMinutes(30));
+
+        _logger.LogDebug($"[Automation] Log trigger {logTriggerId} startTime {logTriggerInfo.ReceiveTime}");
+
+        if (_peerManager.IsLeader(logTriggerInfo.Context))
+        {
+            _logger.LogInformation($"[Automation][Leader] {logTriggerId} Is Leader.");
+            var request = new QueryReportSignatureRequest
+            {
+                Context = logTriggerInfo.Context,
+                Payload = new LogTriggerCheckData
+                {
+                    ChainId = transactionEvent.ChainId,
+                    TransactionId = transactionEvent.TransactionId,
+                    BlockHeight = transactionEvent.BlockHeight,
+                    BlockHash = transactionEvent.BlockHash,
+                    ContractAddress = transactionEvent.ContractAddress,
+                    EventName = transactionEvent.EventName,
+                    Index = transactionEvent.Index
+                }.ToByteString()
+            };
+
+
+            _signatureProvider.LeaderInitMultiSign(chainId, logTriggerId, _signatureProvider.GenerateMsg(
+                    await _contractProvider.GenerateTransmitDataAsync(chainId, upkeepId, epoch, request.Payload))
+                .ToByteArray());
+            await _peerManager.BroadcastAsync(p => p.QueryReportSignatureAsync(request));
+        }
+
+        _schedulerService.StartScheduler(logTriggerInfo);
+
+        _logger.LogInformation($"[Automation] {logTriggerId} Waiting for request end.");
     }
+
+    #region Exception handing
+
+    public async Task<FlowBehavior> HandleException(Exception ex, AutomationLogTriggerArgs args)
+    {
+        var logTriggerId =
+            AutomationHelper.GenerateLogTriggerId(args.TransactionEventStorageId, args.LogUpkeepStorageId);
+        _logger.LogError(ex, $"[Automation] {logTriggerId} Start process failed.");
+
+        return new FlowBehavior()
+        {
+            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
+        };
+    }
+
+    #endregion
 }
