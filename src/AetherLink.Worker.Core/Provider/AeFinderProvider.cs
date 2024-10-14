@@ -140,8 +140,7 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         return res?.OracleConfigDigest == null ? "" : res.OracleConfigDigest.ConfigDigest;
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(AeFinderProvider),
-        MethodName = nameof(HandleGetOracleLatestException))]
+    [ExceptionHandler(typeof(Exception), Message = "[Indexer] GetOracleLatestEpoch failed.", LogOnly = true)]
     public virtual async Task<long> GetOracleLatestEpochAsync(string chainId, long blockHeight)
     {
         var res = await GraphQLHelper.SendQueryAsync<OracleLatestEpochRecord>(GetClient(), new()
@@ -184,8 +183,7 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         return res?.RequestCommitment == null ? "" : res.RequestCommitment.Commitment;
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(AeFinderProvider),
-        MethodName = nameof(HandleGetTransactionLogException))]
+    [ExceptionHandler(typeof(Exception), Message = "[Indexer] SubscribeLogs failed.", LogOnly = true)]
     public async Task<List<TransactionEventDto>> GetTransactionLogEventsAsync(string chainId, long to, long from)
     {
         var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerTransactionEventListDto>(GetClient(), new()
@@ -215,28 +213,4 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
     private IGraphQLClient GetClient() => new GraphQLHttpClient(
         new GraphQLHttpClientOptions { EndPoint = new Uri(_options.BaseUrl + _options.GraphQlUri) },
         new NewtonsoftJsonSerializer());
-
-    #region Exception Handing
-
-    public async Task<FlowBehavior> HandleGetTransactionLogException(Exception ex)
-    {
-        _logger.LogError(ex, "[Indexer] SubscribeLogs failed.");
-
-        return new FlowBehavior()
-        {
-            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Throw
-        };
-    }
-
-    public async Task<FlowBehavior> HandleGetOracleLatestException(Exception ex)
-    {
-        _logger.LogError(ex, "[Indexer] GetOracleLatestEpoch failed.");
-
-        return new FlowBehavior()
-        {
-            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Throw
-        };
-    }
-
-    #endregion
 }

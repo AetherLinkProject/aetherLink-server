@@ -35,8 +35,7 @@ public class ResetLogTriggerSchedulerJob : IResetLogTriggerSchedulerJob, ITransi
         _backgroundJobManager = backgroundJobManager;
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(ResetLogTriggerSchedulerJob),
-        MethodName = nameof(HandleException))]
+    [ExceptionHandler(typeof(Exception), Message = "[ResetScheduler] Reset scheduler trigger failed.")]
     public async Task Execute(LogTriggerDto trigger)
     {
         if (trigger.State == RequestState.RequestCanceled) return;
@@ -72,18 +71,4 @@ public class ResetLogTriggerSchedulerJob : IResetLogTriggerSchedulerJob, ITransi
         _logger.LogInformation(
             $"[ResetScheduler] Event {trigger.TransactionEventStorageId}, Upkeep {logUpkeepStorageId} timeout, will starting in new round:{trigger.Context.RoundId}, hangfireId:{hangfireJobId}");
     }
-    
-    #region Exception handing
-
-    public async Task<FlowBehavior> HandleException(Exception ex)
-    {
-        _logger.LogError(ex, "[ResetScheduler] Reset scheduler trigger failed.");
-
-        return new FlowBehavior()
-        {
-            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
-        };
-    }
-
-    #endregion
 }

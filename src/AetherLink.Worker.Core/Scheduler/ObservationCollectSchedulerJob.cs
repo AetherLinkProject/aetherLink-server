@@ -54,8 +54,7 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
         _backgroundJobManager = backgroundJobManager;
     }
 
-    [ExceptionHandler(typeof(Exception), TargetType = typeof(ObservationCollectSchedulerJob),
-        MethodName = nameof(HandingException))]
+    [ExceptionHandler(typeof(Exception), Message = "[ObservationCollectScheduler] Observation collect scheduler execute failed.", ReturnDefault = ReturnDefault.Default)]
     public virtual async Task Execute(JobDto job)
     {
         var chainId = job.ChainId;
@@ -120,19 +119,4 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
 
         _stateProvider.SetFinishedFlag(reportId);
     }
-
-    #region Exception handing
-
-    public async Task<FlowBehavior> HandingException(Exception ex)
-    {
-        _logger.LogError(ex, "[ObservationCollectScheduler] Observation collect scheduler execute failed.");
-
-        return new FlowBehavior()
-        {
-            ExceptionHandlingStrategy = ExceptionHandlingStrategy.Return
-        };
-    }
-    
-    #endregion
-
 }
