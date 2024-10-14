@@ -10,7 +10,7 @@
     <ItemGroup>
         <PackageReference Include="AElf.Client" Version="1.1.0" />
         <PackageReference Include="AElf.CSharp.Core" Version="1.6.0" />
-        <PackageReference Include="AElf.ExceptionHandler" Version="1.5.0" />
+        <PackageReference Include="AElf.ExceptionHandler.ABP" Version="1.0.0" />
         <PackageReference Include="Google.Protobuf" Version="3.19.4" />
         <PackageReference Include="GraphQL.Server.Transports.AspNetCore" Version="7.1.1" />
         <PackageReference Include="GraphQL.Server.Ui.Playground" Version="7.1.1" />

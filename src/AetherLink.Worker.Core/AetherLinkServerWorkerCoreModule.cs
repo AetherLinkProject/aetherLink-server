@@ -1,4 +1,5 @@
 ﻿using AElf.ExceptionHandler;
+using AElf.ExceptionHandler.ABP;
 using AetherLink.Metric;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Reporter;
