@@ -22,7 +22,7 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Common;
 
-public sealed partial class TonHelper: ISingletonDependency
+public sealed class TonHelper: ISingletonDependency
 {
     private readonly TonPublicConfigOptions _tonPublicConfigOptions;
     private readonly KeyPair _keyPair ;
@@ -30,11 +30,10 @@ public sealed partial class TonHelper: ISingletonDependency
     private readonly TonIndexerRouter _indexerRouter;
     private readonly string _transmitterFee;
     
-    public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,TonIndexerRouter indexerRouter, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger, IStorageProvider storageProvider)
+    public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,TonIndexerRouter indexerRouter, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger)
     {
         _tonPublicConfigOptions = tonPublicOptions.Value;
         _transmitterFee = tonSecretOptions.Value.TransmitterFee;
-        _storageProvider = storageProvider;
         _indexerRouter = indexerRouter;
         
         var secretKey = Hex.Decode(tonSecretOptions.Value.TransmitterSecretKey);
@@ -46,6 +45,8 @@ public sealed partial class TonHelper: ISingletonDependency
         _logger = logger;
     }
 
+    #region Ton Chain
+    
     [ItemCanBeNull]
     public async Task<string> SendTransaction(CrossChainForwardMessageDto crossChainForwardMessageDto , Dictionary<int, byte[]> consensusInfo)
     {
@@ -264,4 +265,6 @@ public sealed partial class TonHelper: ISingletonDependency
 
         return hashmap;
     }
+    
+    #endregion
 }
