@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf.ExceptionHandler;
 using AetherLink.Worker.Core.Options;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
@@ -25,18 +26,20 @@ public interface IPeerManager
 
 public class PeerManager : IPeerManager, ISingletonDependency
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly int _peersCount;
     private readonly int _ownerIndex;
     private readonly NetworkOptions _option;
     private readonly ILogger<PeerManager> _logger;
-    private readonly ConcurrentDictionary<string, Connection> _peers = new();
+    private readonly ConcurrentDictionary<string, IConnection> _peers = new();
 
-    public PeerManager(IOptionsSnapshot<NetworkOptions> option, ILogger<PeerManager> logger)
+    public PeerManager(IOptionsSnapshot<NetworkOptions> option, ILogger<PeerManager> logger, IServiceProvider serviceProvider)
     {
         _logger = logger;
         _option = option.Value;
         _ownerIndex = _option.Index;
         _peersCount = _option.Domains.Count;
+        _serviceProvider = serviceProvider;
         InitConnection().GetAwaiter().GetResult();
     }
 
@@ -55,7 +58,7 @@ public class PeerManager : IPeerManager, ISingletonDependency
 
     [ExceptionHandler(typeof(Exception), TargetType = typeof(PeerManager),
         MethodName = nameof(HandleBroadcastException))]
-    public virtual async Task BroadcastHandleAsync<TResponse>(KeyValuePair<string, Connection> peer,
+    public virtual async Task BroadcastHandleAsync<TResponse>(KeyValuePair<string, IConnection> peer,
         Func<AetherlinkClient, TResponse> func)
     {
         if (await peer.Value.IsConnectionReady() == false)
@@ -88,6 +91,7 @@ public class PeerManager : IPeerManager, ISingletonDependency
     public virtual async Task CommitToLeaderHandlerAsync<TResponse>(string leader,
         Func<AetherlinkClient, TResponse> func)
     {
+        
         _logger.LogDebug("[PeerManager] Send to leader {peer}", leader);
         await Task.FromResult(_peers[leader].CallAsync(func));
     }
@@ -104,7 +108,10 @@ public class PeerManager : IPeerManager, ISingletonDependency
         MethodName = nameof(HandleInitConnectionException))]
     public virtual async Task InitConnectionHandle(string domain)
     {
-        _peers.TryAdd(domain, new Connection(domain));
+        var connection = _serviceProvider.GetRequiredService<IConnection>();
+        await connection.Init(domain);
+        
+        _peers.TryAdd(domain, connection);
     }
 
     private int LeaderElection(long epoch, int roundId) => (int)(epoch + roundId) % _peersCount;

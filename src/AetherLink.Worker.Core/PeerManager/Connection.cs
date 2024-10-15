@@ -8,15 +8,26 @@ using AetherLink.Worker.Core.JobPipeline.Args;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Grpc.Net.Client.Configuration;
+using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.PeerManager;
 
-public class Connection
+public interface IConnection
 {
-    private readonly GrpcChannel _channel;
-    private readonly AetherLinkServer.AetherLinkServerClient _client;
+    Task Init(string domain);
 
-    public Connection(string endpoint)
+    TResponse CallAsync<TResponse>(Func<AetherLinkServer.AetherLinkServerClient, TResponse> callFunc);
+
+    Task<bool> IsConnectionReady();
+}
+
+public class Connection : IConnection, ITransientDependency
+{
+    private GrpcChannel _channel;
+
+    private AetherLinkServer.AetherLinkServerClient _client;
+
+    public async Task Init(string endpoint)
     {
         // todo: complete ip address validate 
 
