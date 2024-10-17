@@ -6,6 +6,7 @@ public class TonEnvConstants
 {
     public const long ResendMaxWaitSeconds = 30;
     public const int PullTransactionMinWaitSecond = 3;
+    public const int ApiProviderHealthCheckPeriod = 1;
 }
 
 public class TonOpCodeConstants

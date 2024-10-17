@@ -22,6 +22,7 @@ public class CrossChainToTonTransactionDto
     public string Hash { get; set; }
     public string PrevHash { get; set; }
     public long BlockTime { get; set; }
+    public string TransactionLt { get; set; }
     public int OpCode { get; set; }
     /// <summary>
     /// base64 encode
