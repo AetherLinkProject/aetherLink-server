@@ -60,6 +60,7 @@ namespace AetherLink.Worker
             context.Services.AddSingleton<IOracleContractProvider, OracleContractProvider>();
             context.Services.AddSingleton<IBlockchainClientFactory<AElfClient>, AElfClientFactory>();
             context.Services.AddSingleton<AetherLinkServer.AetherLinkServerBase, AetherLinkService>();
+            context.Services.AddSingleton<ITonStorageProvider, TonStorageProvider>();
 
             // Http Client and Service
             context.Services.AddHttpClient();
@@ -117,6 +118,7 @@ namespace AetherLink.Worker
             context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
             context.AddBackgroundWorkerAsync<LogsPoller>();
             context.AddBackgroundWorkerAsync<TonIndexerWorker>();
+            context.AddBackgroundWorkerAsync<TonApiProviderWorker>();
         }
 
         private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)

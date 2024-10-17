@@ -22,7 +22,7 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Common;
 
-public sealed partial class TonHelper: ISingletonDependency
+public sealed class TonHelper: ISingletonDependency
 {
     private readonly TonPublicConfigOptions _tonPublicConfigOptions;
     private readonly KeyPair _keyPair ;
@@ -30,11 +30,10 @@ public sealed partial class TonHelper: ISingletonDependency
     private readonly TonIndexerRouter _indexerRouter;
     private readonly string _transmitterFee;
     
-    public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,TonIndexerRouter indexerRouter, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger, IStorageProvider storageProvider)
+    public TonHelper(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,TonIndexerRouter indexerRouter, IOptionsSnapshot<TonSecretConfigOptions> tonSecretOptions, ILogger<TonHelper> logger)
     {
         _tonPublicConfigOptions = tonPublicOptions.Value;
         _transmitterFee = tonSecretOptions.Value.TransmitterFee;
-        _storageProvider = storageProvider;
         _indexerRouter = indexerRouter;
         
         var secretKey = Hex.Decode(tonSecretOptions.Value.TransmitterSecretKey);
@@ -46,6 +45,8 @@ public sealed partial class TonHelper: ISingletonDependency
         _logger = logger;
     }
 
+    #region Ton Chain
+    
     [ItemCanBeNull]
     public async Task<string> SendTransaction(CrossChainForwardMessageDto crossChainForwardMessageDto , Dictionary<int, byte[]> consensusInfo)
     {
@@ -114,7 +115,7 @@ public sealed partial class TonHelper: ISingletonDependency
             return null;
         }
 
-        var messageId = bodySlice.LoadBytes(64);
+        var messageId = bodySlice.LoadBytes(32);
         var messageIdStr = Base64.ToBase64String(messageId);
 
         var result = new CrossChainForwardResendDto
@@ -130,7 +131,7 @@ public sealed partial class TonHelper: ISingletonDependency
         if (resendType != TonResendTypeConstants.IntervalSeconds) return result;
         var intervalSeconds = bodySlice.LoadUInt(32);
 
-        result.ResendTime = (long)intervalSeconds + tonTransactionDto.BlockTime;
+        result.ResendTime = (long)intervalSeconds;
             
         // next check tx time
         result.CheckCommitTime = (long)intervalSeconds + tonTransactionDto.BlockTime +
@@ -149,7 +150,7 @@ public sealed partial class TonHelper: ISingletonDependency
             _logger.LogError("AnalysisForwardTransaction OpCode Error");
             return null;
         }
-        var messageId = inMessageBodySlice.LoadBytes(64);
+        var messageId = inMessageBodySlice.LoadBytes(32);
         var messageIdStr = Base64.ToBase64String(messageId);
         var targetAddr = inMessageBodySlice.LoadAddress();
         var targetAddrStr = targetAddr?.ToString();
@@ -264,4 +265,6 @@ public sealed partial class TonHelper: ISingletonDependency
 
         return hashmap;
     }
+    
+    #endregion
 }
