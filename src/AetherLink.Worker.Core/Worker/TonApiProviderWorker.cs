@@ -11,11 +11,12 @@ public class TonApiProviderWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly TonIndexerRouter _tonIndexerRouter;
 
-    public TonApiProviderWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,TonIndexerRouter tonIndexerRouter): base(timer,
+    public TonApiProviderWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
+        TonIndexerRouter tonIndexerRouter) : base(timer,
         serviceScopeFactory)
     {
         _tonIndexerRouter = tonIndexerRouter;
-        
+
         timer.Period = 1000 * TonEnvConstants.ApiProviderHealthCheckPeriod;
     }
 

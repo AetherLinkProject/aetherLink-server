@@ -9,9 +9,7 @@ public class TonIndexerDto
     public string LatestTransactionLt { get; set; } = "0";
     public int SkipCount { get; set; }
     public long IndexerTime { get; set; }
-
 }
-
 
 public class CrossChainToTonTransactionDto
 {
@@ -24,10 +22,12 @@ public class CrossChainToTonTransactionDto
     public long BlockTime { get; set; }
     public string TransactionLt { get; set; }
     public int OpCode { get; set; }
+
     /// <summary>
     /// base64 encode
     /// </summary>
     public string Body { get; set; }
+
     public bool Success { get; set; }
     public int ExitCode { get; set; }
     public bool Aborted { get; set; }
