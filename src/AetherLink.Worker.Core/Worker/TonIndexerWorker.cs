@@ -1,11 +1,9 @@
 using System;
-using System.Reactive.Concurrency;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
-using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.DependencyInjection;
@@ -60,8 +58,9 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
             return;
         }
 
-        foreach (var tx in transactionList)
+        for (var i = 0; i < transactionList.Count; i++)
         {
+            var tx = transactionList[i];
             if (!tx.Aborted && !tx.Bounced && tx.ExitCode == 0)
             {
                 switch (tx.OpCode)
@@ -91,8 +90,14 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
             tonIndexer.LatestTransactionHash = tx.Hash;
             tonIndexer.LatestTransactionLt = tx.TransactionLt;
             tonIndexer.BlockHeight = tx.SeqNo;
-
-            await _tonStorageProvider.SetTonIndexerInfo(currentIndexer);
+            if (i < transactionList.Count - 1)
+            {
+                await _tonStorageProvider.SetTonIndexerInfo(tonIndexer);
+            }
+            else
+            {
+                await _tonStorageProvider.SetTonIndexerInfo(currentIndexer);
+            }
         }
     }
 

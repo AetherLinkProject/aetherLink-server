@@ -4,11 +4,11 @@ namespace AetherLink.Worker.Core.Dtos;
 
 public class TonIndexerDto
 {
-    public long BlockHeight;
-    public string LatestTransactionHash;
-    public string LatestTransactionLt = "0";
-    public int SkipCount;
-    public long IndexerTime;
+    public long BlockHeight { get; set; }
+    public string LatestTransactionHash { get; set; }
+    public string LatestTransactionLt { get; set; } = "0";
+    public int SkipCount { get; set; }
+    public long IndexerTime { get; set; }
 
 }
 
