@@ -18,13 +18,6 @@ public interface IStorageProvider
     public Task SetAsync<T>(string key, T data, TimeSpan? expiry);
     public Task<T> GetAsync<T>(string key) where T : class, new();
     public Task<Dictionary<string, T>> GetAsync<T>(List<string> keys) where T : class, new();
-
-    public Task SetHashsetAsync<T>(string key, string field, T value);
-
-    public Task<T> GetHashsetFieldAsync<T>(string key, string field) where T : class, new();
-
-    public Task<Dictionary<string,T>> ScanHashset<T>(string key, string prefixPattern, int startIndex, int count) where T : class, new();
-    
     public Task RemoveAsync(string key);
 }
 
@@ -91,59 +84,6 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
             _logger.LogError(e, $"Get {string.Join(",", keys)} error.");
             return null;
         }
-    }
-
-    public async Task SetHashsetAsync<T>(string key, string field, T value)
-    { 
-        try
-        {
-            await ConnectAsync();
-
-            await RedisDatabase.HashSetAsync(key, new []{ new HashEntry(field, _serializer.Serialize(value))} );
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, $"Hashset {string.Join(key, field)} error.");
-        }
-    }
-    
-    public async Task<T> GetHashsetFieldAsync<T>(string key, string field) where T : class, new()
-    {
-        try
-        {
-            await ConnectAsync();
-
-            var redisValue = await RedisDatabase.HashGetAsync(key, field);
-            return redisValue.HasValue ? _serializer.Deserialize<T>(redisValue) : null;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, $"Hashset {string.Join(key, field)} error.");
-        }
-
-        return null;
-    }
-
-    public async Task<Dictionary<string,T>> ScanHashset<T>(string key, string prefixPattern, int startIndex, int count) where T : class, new()
-    {
-        try
-        {
-            await ConnectAsync();
-
-            var result = new Dictionary<string, T>();
-            await foreach(var item in RedisDatabase.HashScanAsync (key, prefixPattern, count, startIndex))
-            {
-                result[item.Name] = _serializer.Deserialize<T>(item.Value);
-            }
-
-            return result;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, $"ScanHashset {string.Join(key, prefixPattern)} error.");
-        }
-
-        return null;
     }
 
     public async Task RemoveAsync(string key)

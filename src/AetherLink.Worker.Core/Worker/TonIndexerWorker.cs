@@ -4,11 +4,11 @@ using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
-using AetherLink.Worker.Core.JobPipeline.Args;
+using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Volo.Abp.BackgroundJobs;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
@@ -19,132 +19,162 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
     private readonly TonHelper _tonHelper;
     private readonly ILogger<TonIndexerWorker> _logger;
     private readonly TonIndexerRouter _tonIndexerRouter;
-    private readonly IBackgroundJobManager _backgroundJobManager;
+    private readonly IRampMessageProvider _rampMessageProvider;
+    private readonly IRampRequestSchedulerJob _requestScheduler;
+    private readonly ITonStorageProvider _tonStorageProvider;
+    private readonly ISchedulerService _scheduler;
 
     public TonIndexerWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        TonIndexerRouter tonIndexerRouter, TonHelper tonHelper, IBackgroundJobManager backgroundJobManager, ILogger<TonIndexerWorker> logger) : base(timer,
+        TonIndexerRouter tonIndexerRouter, TonHelper tonHelper,
+        ILogger<TonIndexerWorker> logger,
+        IRampMessageProvider rampMessageProvider,
+        ITonStorageProvider tonStorageProvider,
+        IRampRequestSchedulerJob rampRequestSchedulerJob,
+        ISchedulerService scheduler) : base(timer,
         serviceScopeFactory)
     {
         _tonHelper = tonHelper;
         _logger = logger;
         _tonIndexerRouter = tonIndexerRouter;
-        _backgroundJobManager = backgroundJobManager;
-        
+        _rampMessageProvider = rampMessageProvider;
+        _tonStorageProvider = tonStorageProvider;
+        _requestScheduler = rampRequestSchedulerJob;
+        _scheduler = scheduler;
+
         timer.Period = 1000 * TonEnvConstants.PullTransactionMinWaitSecond;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        await Task.WhenAll(CheckIndexerProviderConnect(), TonIndexer());
-    }
+        var indexerInfo = await _tonStorageProvider.GetTonIndexerInfoAsync();
 
-    private async Task CheckIndexerProviderConnect()
-    {
-        var apiProviderList = _tonIndexerRouter.GetIndexerApiProviderList();
-        foreach (var provider in apiProviderList)
-        {
-            var needCheckAvailable = await provider.NeedCheckConnection();
-            if (needCheckAvailable)
-            {
-                await provider.CheckConnection();
-            }
-        }
-    }
-
-    private async Task InitNotFinishTask()
-    {
-        var allTask = await _tonHelper.GetAllTonTask();
-        foreach (var item in allTask)
-        {
-            if (item.Type == TonChainTaskType.Resend)
-            {
-                // todo: do task and backwork
-            }
-        }
-    }
-    
-    private async Task TonIndexer()
-    {
-        var tonIndexer = await _tonHelper.GetTonIndexerFromStorage();
-        
-        var (transactionList, currentIndexer) = await _tonIndexerRouter.GetSubsequentTransaction(tonIndexer);
+        var (transactionList, currentIndexerInfo) = await _tonIndexerRouter.GetSubsequentTransaction(indexerInfo);
         var dtNow = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
-        if (transactionList is { Count: > 0 })
+        if (transactionList == null || transactionList.Count == 0)
         {
-            foreach (var tx in transactionList)
-            {
-                if (!tx.Aborted && !tx.Bounced && tx.ExitCode == 0)
-                {
-                    switch (tx.OpCode)
-                    {
-                        case TonOpCodeConstants.ForwardTx:
-                            await TonForwardTxHandle(tx);
-                            break;
-                        case TonOpCodeConstants.ReceiveTx:
-                            
-                            break;
-                        case TonOpCodeConstants.ResendTx:
-                            await TonResendTxHandle(tx);
-                            break;
-                        default:
-                            continue;
-                    }
-                }
-                else
-                {
-                    _logger.LogInformation(
-                        $"[Ton indexer] transaction execute error, detail message is:{JsonConvert.SerializeObject(tx)}");
-                }
-            }
+            if (currentIndexerInfo == null) return;
+            currentIndexerInfo.IndexerTime = dtNow;
+            await _tonStorageProvider.SetTonIndexerInfoAsync(currentIndexerInfo);
+            return;
         }
 
-        if (currentIndexer != null)
+        for (var i = 0; i < transactionList.Count; i++)
         {
-            currentIndexer.IndexerTime = dtNow;
-            await _tonHelper.StorageTonIndexer(currentIndexer);
+            var tx = transactionList[i];
+            if (!tx.Aborted && !tx.Bounced && tx.ExitCode == 0)
+            {
+                switch (tx.OpCode)
+                {
+                    case TonOpCodeConstants.ForwardTx:
+                        await TonForwardTxHandle(tx);
+                        break;
+                    case TonOpCodeConstants.ReceiveTx:
+                        // todo: receive logic
+                        break;
+                    case TonOpCodeConstants.ResendTx:
+                        await HandleTonResendTx(tx);
+                        break;
+                    default:
+                        continue;
+                }
+            }
+            else
+            {
+                _logger.LogInformation(
+                    $"[Ton indexer] transaction execute error, detail message is:{JsonConvert.SerializeObject(tx)}");
+            }
+
+            // update indexer info
+            indexerInfo.IndexerTime = dtNow;
+            indexerInfo.SkipCount = 0;
+            indexerInfo.LatestTransactionHash = tx.Hash;
+            indexerInfo.LatestTransactionLt = tx.TransactionLt;
+            indexerInfo.BlockHeight = tx.SeqNo;
+            if (i < transactionList.Count - 1)
+            {
+                await _tonStorageProvider.SetTonIndexerInfoAsync(indexerInfo);
+            }
+            else
+            {
+                await _tonStorageProvider.SetTonIndexerInfoAsync(currentIndexerInfo);
+            }
         }
     }
 
     private async Task TonForwardTxHandle(CrossChainToTonTransactionDto tx)
     {
         var forwardMessage = _tonHelper.AnalysisForwardTransaction(tx);
-        if (forwardMessage != null)
+        if (forwardMessage == null)
         {
-            var tonTask = await _tonHelper.GetTonTask(forwardMessage.MessageId);
-            if (tonTask.Type == TonChainTaskType.Resend)
-            {
-                var message = tonTask.Convert<ResendTonBaseArgs>();
-                message.TargetBlockHeight = tx.SeqNo;
-                message.TargetTxHash = tx.Hash;
-                message.TargetBlockGeneratorTime = tx.BlockTime;
-                message.CheckCommitTime = 0;
-                message.ResendTime = 0;
-                message.Status = ResendStatus.ChainConfirm;
-
-                await _tonHelper.StorageTonTask(message.MessageId, new TonChainTaskDto(message));
-            }
+            _logger.LogWarning(
+                $"[Ton indexer] AnalysisForwardTransaction Get Null, CrossChainToTonTransactionDto is:{JsonConvert.SerializeObject(tx)}");
+            return;
         }
+
+        var rampMessageData = await _rampMessageProvider.GetAsync(forwardMessage.MessageId);
+        if (rampMessageData == null)
+        {
+            _logger.LogWarning(
+                $"[Ton indexer] forward task, messageId:{forwardMessage.MessageId} not find in system, transaction hash:{tx.Hash}");
+            return;
+        }
+
+        if (rampMessageData.ResendTransactionBlockHeight > tx.SeqNo)
+        {
+            _logger.LogWarning(
+                $"[Ton indexer] forward message block height conflict, block:{rampMessageData.ResendTransactionBlockHeight}-{tx.SeqNo}, tx:{rampMessageData.ResendTransactionId}-{tx.Hash}");
+            return;
+        }
+
+        if (rampMessageData.State != RampRequestState.Committed)
+        {
+            _logger.LogWarning(
+                $"[Ton indexer] MessageId:{forwardMessage.MessageId} state error,current status is:{rampMessageData.State}, but receive a chain transaction");
+        }
+
+        // update message status
+        rampMessageData.State = RampRequestState.Confirmed;
+        rampMessageData.ResendTransactionBlockHeight = tx.SeqNo;
+        rampMessageData.ResendTransactionId = tx.Hash;
+        await _rampMessageProvider.SetAsync(rampMessageData);
+
+        // cancel check transaction status task
+        _scheduler.CancelScheduler(rampMessageData);
     }
 
-    private async Task TonResendTxHandle(CrossChainToTonTransactionDto tx)
+    private async Task HandleTonResendTx(CrossChainToTonTransactionDto tx)
     {
         var resendMessage = _tonHelper.AnalysisResendTransaction(tx);
-        if (resendMessage != null)
+        if (resendMessage == null)
         {
-            var tonTask = await _tonHelper.GetTonTask(resendMessage.MessageId);
-            if (tonTask.Type == TonChainTaskType.Resend)
-            {
-                var message = tonTask.Convert<ResendTonBaseArgs>();
-                message.TargetBlockHeight = tx.SeqNo;
-                message.TargetTxHash = tx.Hash;
-                message.TargetBlockGeneratorTime = tx.BlockTime;
-                message.ResendTime = tx.BlockTime + resendMessage.CheckCommitTime;
-                message.CheckCommitTime = message.ResendTime + TonEnvConstants.ResendMaxWaitSeconds;
-                message.Status = ResendStatus.WaitConsensus;
-
-                await _tonHelper.StorageTonTask(message.MessageId, new TonChainTaskDto(message));
-                // todo: open task and recheck backwork
-            }
+            _logger.LogInformation(
+                $"[Ton indexer] AnalysisResendTransaction Get Null, CrossChainToTonTransactionDto is:{JsonConvert.SerializeObject(tx)}");
+            return;
         }
+
+        var rampMessageData = await _rampMessageProvider.GetAsync(resendMessage.MessageId);
+        if (rampMessageData == null)
+        {
+            _logger.LogWarning(
+                $"[Ton indexer] resend task, messageId:{resendMessage.MessageId} not find in system, block time:{tx.BlockTime} resend time:{resendMessage.ResendTime}");
+            return;
+        }
+
+        if (rampMessageData.ResendTransactionBlockHeight > tx.SeqNo)
+        {
+            _logger.LogWarning(
+                $"[Ton Indexer] receive resend transaction, but block height conflict, messageId:{resendMessage.MessageId}, current block height:{rampMessageData.ResendTransactionBlockHeight}-{tx.SeqNo}, hash compare:{rampMessageData.ResendTransactionId}-{tx.Hash}");
+            return;
+        }
+
+        rampMessageData.ResendTransactionBlockTime =
+            DateTimeOffset.FromUnixTimeSeconds(tx.BlockTime).DateTime;
+        rampMessageData.NextCommitDelayTime = (int)resendMessage.ResendTime;
+        rampMessageData.ResendTransactionId = tx.Hash;
+        rampMessageData.ResendTransactionBlockHeight = tx.SeqNo;
+        await _requestScheduler.Resend(rampMessageData);
+
+        _logger.LogInformation(
+            $"[Ton indexer] received resend transaction messageId:{resendMessage.MessageId}, hash:{resendMessage.Hash}, block time:{tx.BlockTime}, resend time:{resendMessage.ResendTime}");
     }
 }

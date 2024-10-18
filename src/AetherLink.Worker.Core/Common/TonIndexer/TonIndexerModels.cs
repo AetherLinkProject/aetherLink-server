@@ -39,6 +39,7 @@ public class Transaction
             Shard = BlockRef.Shard,
             SeqNo = BlockRef.Seqno,
             TraceId = TraceId,
+            TransactionLt = Lt,
             Hash = Hash,
             Aborted = Description.Aborted,
             PrevHash = PrevTransHash,
