@@ -1,14 +1,19 @@
 using System;
+using System.Numerics;
 using System.Threading.Tasks;
+using AElf;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Scheduler;
+using Google.Protobuf;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Utilities.Encoders;
+using TonSdk.Core.Boc;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
@@ -46,6 +51,20 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
+        var data_bytes = HashHelper.ComputeFrom("test-message-id").ToByteArray();
+        var ddd1 = Hex.ToHexString(data_bytes);
+        var MessageId = ByteString.CopyFrom(data_bytes).ToBase64();
+
+        var dddd = Base64.Decode(MessageId);
+        var ddd2 = Hex.ToHexString(dddd);
+
+        ;
+        
+        var cell = new CellBuilder().StoreInt(new BigInteger(new ReadOnlySpan<byte>(Base64.Decode(MessageId)), false, true), 256).Build();
+        var new_bytes = cell.Parse().LoadBytes(32);
+        var base64ddd =  ByteString.CopyFrom(new_bytes).ToBase64();
+        var ddd3 = Hex.ToHexString(new_bytes);
+        
         var indexerInfo = await _tonStorageProvider.GetTonIndexerInfoAsync();
 
         var (transactionList, currentIndexerInfo) = await _tonIndexerRouter.GetSubsequentTransaction(indexerInfo);
