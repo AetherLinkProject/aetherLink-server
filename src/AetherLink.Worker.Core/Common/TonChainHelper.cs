@@ -63,7 +63,7 @@ public sealed class TonHelper: ISingletonDependency
 
         var bodyCell = new CellBuilder()
             .StoreUInt(TonOpCodeConstants.ForwardTx, 32)
-            .StoreInt(new BigInteger(Base64.Decode(crossChainForwardMessageDto.MessageId)),256)
+            .StoreInt(new BigInteger(new ReadOnlySpan<byte> (Base64.Decode(crossChainForwardMessageDto.MessageId)), false, true),256)
             .StoreAddress(new Address(receiverAddress))
             .StoreRef(BuildMessageBody(crossChainForwardMessageDto.SourceChainId, 
                     crossChainForwardMessageDto.TargetChainId, 
@@ -99,7 +99,7 @@ public sealed class TonHelper: ISingletonDependency
             return null;
         }
         
-        _logger.LogInformation($"[Send Ton Transaction] Cross to Ton: sourceChainId:{crossChainForwardMessageDto.SourceChainId} targetChainId:{crossChainForwardMessageDto.TargetChainId} messageId:{crossChainForwardMessageDto.Message} Transaction hash:{result}");
+        _logger.LogInformation($"[Send Ton Transaction] Cross to Ton: sourceChainId:{crossChainForwardMessageDto.SourceChainId} targetChainId:{crossChainForwardMessageDto.TargetChainId} messageId:{crossChainForwardMessageDto.MessageId} Transaction hash:{result}");
         
         return result;
     }
