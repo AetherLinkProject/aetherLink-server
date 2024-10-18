@@ -2,13 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
-using AElf;
 using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
-using Google.Protobuf;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -65,7 +63,7 @@ public sealed class TonHelper: ISingletonDependency
 
         var bodyCell = new CellBuilder()
             .StoreUInt(TonOpCodeConstants.ForwardTx, 32)
-            .StoreInt(new BigInteger(new ReadOnlySpan<byte>(Base64.Decode(crossChainForwardMessageDto.MessageId)), false, true),256)
+            .StoreInt(new BigInteger(Base64.Decode(crossChainForwardMessageDto.MessageId)),256)
             .StoreAddress(new Address(receiverAddress))
             .StoreRef(BuildMessageBody(crossChainForwardMessageDto.SourceChainId, 
                     crossChainForwardMessageDto.TargetChainId, 
@@ -100,9 +98,8 @@ public sealed class TonHelper: ISingletonDependency
             _logger.LogError($"[Send Ton Transaction] send transaction error,messageId is {crossChainForwardMessageDto.MessageId}");
             return null;
         }
-
         
-        _logger.LogInformation($"[Send Ton Transaction] Cross to Ton: sourceChainId:{crossChainForwardMessageDto.SourceChainId} targetChainId:{crossChainForwardMessageDto.TargetChainId} messageId:{crossChainForwardMessageDto.MessageId} Transaction hash:{result}");
+        _logger.LogInformation($"[Send Ton Transaction] Cross to Ton: sourceChainId:{crossChainForwardMessageDto.SourceChainId} targetChainId:{crossChainForwardMessageDto.TargetChainId} messageId:{crossChainForwardMessageDto.Message} Transaction hash:{result}");
         
         return result;
     }
