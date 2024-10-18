@@ -114,9 +114,9 @@ namespace AetherLink.Worker
 
         private void ConfigureBackgroundWorker(ApplicationInitializationContext context)
         {
-            // context.AddBackgroundWorkerAsync<SearchWorker>();
-            // context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
-            // context.AddBackgroundWorkerAsync<LogsPoller>();
+            context.AddBackgroundWorkerAsync<SearchWorker>();
+            context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
+            context.AddBackgroundWorkerAsync<LogsPoller>();
             context.AddBackgroundWorkerAsync<TonIndexerWorker>();
             context.AddBackgroundWorkerAsync<TonApiProviderWorker>();
         }
