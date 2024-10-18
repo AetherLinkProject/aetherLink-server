@@ -39,7 +39,7 @@ public class RampRequestStartJob : AsyncBackgroundJob<RampRequestStartJobArgs>, 
         try
         {
             // new request, new round request, resend request
-            var rampMessageData = await _rampMessageProvider.GetAsync(args.ChainId, args.MessageId);
+            var rampMessageData = await _rampMessageProvider.GetAsync(args.MessageId);
             if (rampMessageData == null)
             {
                 rampMessageData = _objectMapper.Map<RampRequestStartJobArgs, RampMessageDto>(args);
@@ -69,7 +69,6 @@ public class RampRequestStartJob : AsyncBackgroundJob<RampRequestStartJobArgs>, 
                 await _peerManager.BroadcastAsync(p => p.QueryMessageSignatureAsync(new QueryMessageSignatureRequest
                 {
                     MessageId = args.MessageId,
-                    ChainId = args.ChainId,
                     RoundId = args.RoundId,
                     Epoch = args.Epoch
                 }));

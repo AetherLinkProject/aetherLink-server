@@ -60,11 +60,10 @@ message CommitSignatureRequest {
 
 message ReturnPartialSignatureResults {
   string message_id = 1;
-  string chain_id = 2;
-  int32 round_id = 3;
-  int64 epoch = 4;
-  int32 index = 5;
-  bytes signature = 6;
+  int32 round_id = 2;
+  int64 epoch = 3;
+  int32 index = 4;
+  bytes signature = 5;
 }
 
 message CommitTransmitResultRequest {
@@ -77,10 +76,9 @@ message CommitTransmitResultRequest {
 
 message RampCommitResultRequest {
   string message_id = 1;
-  string chain_id = 2;
-  int32 round_id = 3;
-  int64 epoch = 4;
-  string commit_transaction_id = 5;
+  int32 round_id = 2;
+  int64 epoch = 3;
+  string commit_transaction_id = 4;
 }
 
 message QueryReportSignatureRequest {
@@ -90,9 +88,8 @@ message QueryReportSignatureRequest {
 
 message QueryMessageSignatureRequest {
   string message_id = 1;
-  string chain_id = 2;
-  int32 round_id = 3;
-  int64 epoch = 4;
+  int32 round_id = 2;
+  int64 epoch = 3;
 }
 
 message CommitPartialSignatureRequest {

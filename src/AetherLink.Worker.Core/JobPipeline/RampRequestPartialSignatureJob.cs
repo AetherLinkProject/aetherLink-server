@@ -9,12 +9,14 @@ using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
+using IdGeneratorHelper = Aetherlink.PriceServer.Common.IdGeneratorHelper;
 
 namespace AetherLink.Worker.Core.JobPipeline;
 
 public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPartialSignatureJobArgs>,
     ITransientDependency
 {
+    private readonly TonHelper _tonHelper;
     private readonly IPeerManager _peerManager;
     private readonly IObjectMapper _objectMapper;
     private readonly IRetryProvider _retryProvider;
@@ -24,9 +26,10 @@ public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPart
 
     public RampRequestPartialSignatureJob(ILogger<RampRequestPartialSignatureJob> logger,
         IRampMessageProvider messageProvider, IPeerManager peerManager, IBackgroundJobManager backgroundJobManager,
-        IObjectMapper objectMapper, IRetryProvider retryProvider)
+        IObjectMapper objectMapper, TonHelper tonHelper, IRetryProvider retryProvider)
     {
         _logger = logger;
+        _tonHelper = tonHelper;
         _peerManager = peerManager;
         _objectMapper = objectMapper;
         _retryProvider = retryProvider;
@@ -44,14 +47,14 @@ public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPart
             _logger.LogDebug(
                 $"get leader ramp request partial signature request.{args.MessageId} {args.ChainId} {args.Epoch} {args.RoundId}");
 
-            var messageData = await _messageProvider.GetAsync(args.ChainId, args.MessageId);
+            var messageData = await _messageProvider.GetAsync(args.MessageId);
             if (messageData == null || args.RoundId > messageData.RoundId)
             {
                 await _retryProvider.RetryWithIdAsync(args,
                     IdGeneratorHelper.GenerateId(args.ChainId, args.MessageId, args.RoundId), backOff: true);
 
                 _logger.LogDebug($"The Ramp request {args.MessageId} from leader is not ready now,will try it later.");
-
+                await _retryProvider.RetryWithIdAsync(args, IdGeneratorHelper.GenerateId(messageId, epoch, roundId));
                 return;
             }
 
@@ -62,8 +65,15 @@ public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPart
                 return;
             }
 
-            // todo: partial signature
-            var partialSig = new byte[] { 12, 34, 56 };
+            var partialSig = _tonHelper.ConsensusSign(new()
+            {
+                MessageId = messageData.MessageId,
+                SourceChainId = messageData.SourceChainId,
+                TargetChainId = messageData.TargetChainId,
+                Sender = messageData.Sender,
+                Receiver = messageData.Receiver,
+                Message = messageData.Data
+            });
 
             // send partial signature to leader
             var nodeIndex = _peerManager.GetOwnIndex();
@@ -91,8 +101,7 @@ public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPart
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            _logger.LogError(e, "[Ramp]Partial signature failed.");
         }
     }
 }
