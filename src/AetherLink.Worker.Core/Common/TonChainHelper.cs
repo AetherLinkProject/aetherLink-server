@@ -180,7 +180,7 @@ public sealed class TonHelper: ISingletonDependency
 
     public bool CheckSign(CrossChainForwardMessageDto crossChainForwardMessageDto, byte[] sign, int nodeIndex)
     {
-        var bodyCell = BuildUnsignedCell(new BigInteger(Base64.Decode(crossChainForwardMessageDto.MessageId)),
+        var bodyCell = BuildUnsignedCell(new BigInteger(new ReadOnlySpan<byte> (Base64.Decode(crossChainForwardMessageDto.MessageId)), false, true),
             crossChainForwardMessageDto.SourceChainId,
             crossChainForwardMessageDto.TargetChainId,
             Base64.Decode(crossChainForwardMessageDto.Sender),
@@ -204,7 +204,7 @@ public sealed class TonHelper: ISingletonDependency
     
     public byte[] ConsensusSign(CrossChainForwardMessageDto crossChainForwardMessageDto)
     {
-        var unsignCell = BuildUnsignedCell(new BigInteger(Base64.Decode(crossChainForwardMessageDto.MessageId)),
+        var unsignCell = BuildUnsignedCell(new BigInteger(new ReadOnlySpan<byte> (Base64.Decode(crossChainForwardMessageDto.MessageId)), false, true),
             crossChainForwardMessageDto.SourceChainId,
             crossChainForwardMessageDto.TargetChainId,
             Base64.Decode(crossChainForwardMessageDto.Sender),
