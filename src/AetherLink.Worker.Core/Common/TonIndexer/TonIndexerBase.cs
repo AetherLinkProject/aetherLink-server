@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,6 +7,7 @@ using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using JetBrains.Annotations;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using TonSdk.Client;
@@ -39,11 +39,13 @@ public interface ITonIndexerProvider
 public abstract class TonIndexerBase:ITonIndexerProvider
 {
     private readonly string _contractAddress;
+    private readonly ILogger<TonIndexerBase> _logger;
     protected int ApiWeight { get; init; }
     public int Weight => ApiWeight;
 
-    protected TonIndexerBase(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions)
+    protected TonIndexerBase(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, ILogger<TonIndexerBase> logger)
     {
+        _logger = logger;
         _contractAddress = tonPublicOptions.Value.ContractAddress;
     }
     
@@ -197,6 +199,7 @@ public abstract class TonIndexerBase:ITonIndexerProvider
         var resp = await client.GetAsync(url);
         if (!resp.IsSuccessStatusCode)
         {
+            _logger.LogError($"[Ton provider]  request Error, response message is:{resp}");
             throw new HttpRequestException();
         }
 

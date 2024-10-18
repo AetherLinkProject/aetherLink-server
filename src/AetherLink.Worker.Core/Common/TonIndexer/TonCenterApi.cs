@@ -2,30 +2,31 @@ using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Options;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nest;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Common.TonIndexer;
 
-public class TonCenterApi:TonIndexerBase,ISingletonDependency
+public class TonCenterApi : TonIndexerBase, ISingletonDependency
 {
     private readonly TonCenterProviderApiConfig _apiConfig;
     private readonly IHttpClientFactory _clientFactory;
     private readonly TonCenterRequestLimit _requestLimit;
-    
-    public TonCenterApi(IOptionsSnapshot<TonCenterProviderApiConfig> snapshotConfig, IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, IHttpClientFactory  clientFactory):base(tonPublicOptions)
+
+    public TonCenterApi(IOptionsSnapshot<TonCenterProviderApiConfig> snapshotConfig,
+        IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, IHttpClientFactory clientFactory,
+        ILogger<TonCenterApi> logger) : base(tonPublicOptions, logger)
     {
-         _apiConfig = snapshotConfig.Value;
-         _clientFactory = clientFactory;
+        _apiConfig = snapshotConfig.Value;
+        _clientFactory = clientFactory;
 
-         var limitCount = string.IsNullOrEmpty(_apiConfig.ApiKey)
-             ? _apiConfig.NoApiKeyPerSecondRequestLimit
-             : _apiConfig.ApiKeyPerSecondRequestLimit;
+        var limitCount = string.IsNullOrEmpty(_apiConfig.ApiKey)
+            ? _apiConfig.NoApiKeyPerSecondRequestLimit
+            : _apiConfig.ApiKeyPerSecondRequestLimit;
 
-         _requestLimit = new TonCenterRequestLimit(limitCount);
-         
+        _requestLimit = new TonCenterRequestLimit(limitCount);
+
         ApiWeight = _apiConfig.Weight;
     }
 
@@ -36,7 +37,8 @@ public class TonCenterApi:TonIndexerBase,ISingletonDependency
 
     protected override string AssemblyUrl(string path)
     {
-        return  $"{_apiConfig.Url}{(_apiConfig.Url.EndsWith("/")?"":"/")}{(path.StartsWith("/")? path.Substring(1): path)}";
+        return
+            $"{_apiConfig.Url}{(_apiConfig.Url.EndsWith("/") ? "" : "/")}{(path.StartsWith("/") ? path.Substring(1) : path)}";
     }
 
     protected override HttpClient CreateClient()
@@ -48,7 +50,7 @@ public class TonCenterApi:TonIndexerBase,ISingletonDependency
         }
 
         client.DefaultRequestHeaders.Add("accept", "application/json");
-        
+
         return client;
     }
 }
@@ -71,13 +73,13 @@ public class TonCenterRequestLimit
 
         lock (_lock)
         {
-            if (_latestExecuteTime == dtNow )
+            if (_latestExecuteTime == dtNow)
             {
                 if (_perSecondLimit >= _latestSecondExecuteCount)
                 {
                     return false;
                 }
-    
+
                 _latestSecondExecuteCount += 1;
                 return true;
             }
@@ -87,7 +89,7 @@ public class TonCenterRequestLimit
                 _latestExecuteTime = dtNow;
                 _latestSecondExecuteCount = 1;
             }
-            
+
             return true;
         }
     }
