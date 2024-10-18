@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
@@ -24,13 +25,19 @@ public class TonApiProviderWorker : AsyncPeriodicBackgroundWorkerBase
     {
         // api provider health check
         var apiProviderList = _tonIndexerRouter.GetIndexerApiProviderList();
+        var taskList = new List<Task>();
         foreach (var provider in apiProviderList)
         {
             var needCheckAvailable = await provider.NeedCheckConnection();
             if (needCheckAvailable)
             {
-                await provider.CheckConnection();
+                taskList.Add(provider.CheckConnection());;
             }
+        }
+
+        if (taskList.Count > 0)
+        {
+            await Task.WhenAll(taskList);
         }
     }
 }

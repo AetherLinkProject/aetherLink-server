@@ -46,15 +46,15 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        var tonIndexer = await _tonStorageProvider.GetTonIndexerInfo();
+        var indexerInfo = await _tonStorageProvider.GetTonIndexerInfoAsync();
 
-        var (transactionList, currentIndexer) = await _tonIndexerRouter.GetSubsequentTransaction(tonIndexer);
+        var (transactionList, currentIndexerInfo) = await _tonIndexerRouter.GetSubsequentTransaction(indexerInfo);
         var dtNow = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
         if (transactionList == null || transactionList.Count == 0)
         {
-            if (currentIndexer == null) return;
-            currentIndexer.IndexerTime = dtNow;
-            await _tonStorageProvider.SetTonIndexerInfo(currentIndexer);
+            if (currentIndexerInfo == null) return;
+            currentIndexerInfo.IndexerTime = dtNow;
+            await _tonStorageProvider.SetTonIndexerInfoAsync(currentIndexerInfo);
             return;
         }
 
@@ -85,18 +85,18 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
             }
 
             // update indexer info
-            tonIndexer.IndexerTime = dtNow;
-            tonIndexer.SkipCount = 0;
-            tonIndexer.LatestTransactionHash = tx.Hash;
-            tonIndexer.LatestTransactionLt = tx.TransactionLt;
-            tonIndexer.BlockHeight = tx.SeqNo;
+            indexerInfo.IndexerTime = dtNow;
+            indexerInfo.SkipCount = 0;
+            indexerInfo.LatestTransactionHash = tx.Hash;
+            indexerInfo.LatestTransactionLt = tx.TransactionLt;
+            indexerInfo.BlockHeight = tx.SeqNo;
             if (i < transactionList.Count - 1)
             {
-                await _tonStorageProvider.SetTonIndexerInfo(tonIndexer);
+                await _tonStorageProvider.SetTonIndexerInfoAsync(indexerInfo);
             }
             else
             {
-                await _tonStorageProvider.SetTonIndexerInfo(currentIndexer);
+                await _tonStorageProvider.SetTonIndexerInfoAsync(currentIndexerInfo);
             }
         }
     }
