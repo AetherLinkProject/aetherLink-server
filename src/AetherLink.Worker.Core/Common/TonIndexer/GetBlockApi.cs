@@ -4,23 +4,28 @@ using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Serilog;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Common.TonIndexer;
 
-public class GetBlockApi: TonIndexerBase, ISingletonDependency
+public class GetBlockApi : TonIndexerBase, ISingletonDependency
 {
     private readonly TonGetBlockProviderOptions _getBlockConfig;
     private readonly IHttpClientFactory _clientFactory;
     private readonly RequestLimit _requestLimit;
-    
-    public GetBlockApi(IOptionsSnapshot<TonGetBlockProviderOptions> snapshotConfig, IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,
-        IHttpClientFactory clientFactory, IStorageProvider storageProvider):base(tonPublicOptions)
+
+    public GetBlockApi(IOptionsSnapshot<TonGetBlockProviderOptions> snapshotConfig,
+        IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,
+        IHttpClientFactory clientFactory, IStorageProvider storageProvider, ILogger<GetBlockApi> logger) : base(
+        tonPublicOptions, logger)
     {
         _getBlockConfig = snapshotConfig.Value;
         _clientFactory = clientFactory;
-        _requestLimit = new RequestLimit(_getBlockConfig.ApiKeyPerSecondRequestLimit, _getBlockConfig.ApiKeyPerDayRequestLimit,
+        _requestLimit = new RequestLimit(_getBlockConfig.ApiKeyPerSecondRequestLimit,
+            _getBlockConfig.ApiKeyPerDayRequestLimit,
             _getBlockConfig.ApiKeyPerMonthRequestLimit, storageProvider);
         ApiWeight = _getBlockConfig.Weight;
     }
@@ -29,10 +34,11 @@ public class GetBlockApi: TonIndexerBase, ISingletonDependency
     {
         return await _requestLimit.TryApplyAccess();
     }
-    
+
     protected override string AssemblyUrl(string path)
     {
-        return $"{_getBlockConfig.Url}{(_getBlockConfig.Url.EndsWith("/") ? "" : "/")}{_getBlockConfig.ApiKey}{(path.StartsWith("/") ? "" : "/")}{path}";
+        return
+            $"{_getBlockConfig.Url}{(_getBlockConfig.Url.EndsWith("/") ? "" : "/")}{_getBlockConfig.ApiKey}{(path.StartsWith("/") ? "" : "/")}{path}";
     }
 
     protected override HttpClient CreateClient()
@@ -46,17 +52,18 @@ public class RequestLimit
 {
     private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
     private readonly IStorageProvider _storageProvider;
-    private const string StorageKey = "GetBlockRequestedDetail"; 
-    
+    private const string StorageKey = "GetBlockRequestedDetail";
+
     private readonly int _perSecondRequestLimit;
     private readonly int _perDayRequestLimit;
     private readonly int _perMonthRequestLimit;
 
     private int _requestCount;
-    
-    private RequestedDetail _requestedDetail; 
-    
-    public RequestLimit(int perSecondRequestLimit, int perDayRequestLimit, int perMonthRequestLimit, IStorageProvider storageProvider)
+
+    private RequestedDetail _requestedDetail;
+
+    public RequestLimit(int perSecondRequestLimit, int perDayRequestLimit, int perMonthRequestLimit,
+        IStorageProvider storageProvider)
     {
         _perSecondRequestLimit = perSecondRequestLimit;
         _perDayRequestLimit = perDayRequestLimit;
@@ -78,7 +85,7 @@ public class RequestLimit
                     _requestedDetail = new RequestedDetail();
                 }
             }
-            
+
             var secondRequest = _requestedDetail.SecondRequest;
             var secondTime = _requestedDetail.SecondTime;
 
@@ -181,8 +188,8 @@ public class RequestLimit
 
 public class RequestedDetail
 {
-    public  int SecondRequest { get; set; }
-    public  long SecondTime { get; set; }
+    public int SecondRequest { get; set; }
+    public long SecondTime { get; set; }
     public int DayRequest { get; set; }
     public long DateTime { get; set; }
     public int MonthRequest { get; set; }

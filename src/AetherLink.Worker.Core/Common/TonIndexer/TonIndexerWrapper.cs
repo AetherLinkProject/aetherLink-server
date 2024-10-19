@@ -146,7 +146,7 @@ public class TonIndexerWrapper
                 }
 
                 _checkTurn += 1;
-                _nextCheckTime = DateTime.UtcNow.AddSeconds(Math.Pow(2, _checkTurn) * 10);
+                _nextCheckTime = DateTime.UtcNow.AddSeconds(_checkTurn*2);
                 _isAvailable = false;
             }
         }
