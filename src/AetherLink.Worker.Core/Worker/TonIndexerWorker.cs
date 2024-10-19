@@ -138,6 +138,7 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
         rampMessageData.ResendTransactionId = tx.Hash;
         await _rampMessageProvider.SetAsync(rampMessageData);
 
+        _logger.LogDebug($"[Ton indexer] {rampMessageData.MessageId} has been confirmed.");
         // cancel check transaction status task
         _scheduler.CancelScheduler(rampMessageData);
     }

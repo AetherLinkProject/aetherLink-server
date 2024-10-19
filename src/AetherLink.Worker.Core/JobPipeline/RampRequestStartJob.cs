@@ -50,9 +50,18 @@ public class RampRequestStartJob : AsyncBackgroundJob<RampRequestStartJobArgs>, 
             {
                 // reset new received time to next time window 
             }
-            else if (rampMessageData.State == RampRequestState.PendingResend)
+            else switch (rampMessageData.State)
             {
-                // reset new received time to resend transaction time
+                case RampRequestState.RequestStart:
+                case RampRequestState.Committed:
+                case RampRequestState.Confirmed:
+                    _logger.LogDebug("Request already started.");
+                    return;
+                case RampRequestState.PendingResend:
+                    // reset new received time to resend transaction time
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
 
             rampMessageData.State = RampRequestState.RequestStart;

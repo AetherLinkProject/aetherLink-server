@@ -161,7 +161,7 @@ public class RampRequestMultiSignatureJob : AsyncBackgroundJob<RampRequestMultiS
 
             _logger.LogError(
                 $"[Ramp][Leader] {metadata.MessageId} send transaction failed in {i} times, will send it later.");
-            Thread.Sleep(RetryConstants.DefaultDelay * (i + 1) * 1000);
+            Thread.Sleep((i + 1) * 1000);
         }
 
         // If we get here, it means we have exhausted the retry count
