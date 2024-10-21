@@ -2,5 +2,5 @@ namespace Aetherlink.PriceServer.Dtos;
 
 public class AuthDto
 {
-    public string AppId { get; set; } = "aetherlink";
+    public string AppId { get; set; }
 }

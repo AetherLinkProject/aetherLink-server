@@ -1,5 +1,4 @@
-﻿using AElf.ExceptionHandler;
-using AetherLink.Metric;
+﻿using AetherLink.Metric;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Provider;
@@ -13,8 +12,7 @@ namespace AetherLink.Worker.Core;
 
 [DependsOn(
     typeof(AbpAutoMapperModule),
-    typeof(AetherLinkMetricModule),
-    typeof(AOPExceptionModule)
+    typeof(AetherLinkMetricModule)
 )]
 public class AetherLinkServerWorkerCoreModule : AbpModule
 {
