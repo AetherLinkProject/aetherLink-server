@@ -54,9 +54,11 @@ public class TonIndexerRouter:ISingletonDependency
         {
             if (await item.CheckAvailable())
             {
+                _logger.LogDebug($"[Ton Send Transaction] Start Provider is:{nameof(item)}");
                 var (success, result) = await item.CommitTransaction(signedBodyCell);
                 if (success)
                 {
+                    _logger.LogDebug($"[Ton Send Transaction] End");
                     return result;
                 }
             }
