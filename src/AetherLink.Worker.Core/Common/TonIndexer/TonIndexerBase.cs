@@ -239,6 +239,7 @@ public abstract class TonIndexerBase : ITonIndexerProvider
         var resp = await client.PostAsync(url, new StringContent(body, Encoding.Default, "application/json"));
         if (!resp.IsSuccessStatusCode)
         {
+            _logger.LogError($"[Ton Post Message] response error, message is:{resp} ");
             throw new HttpRequestException();
         }
 
