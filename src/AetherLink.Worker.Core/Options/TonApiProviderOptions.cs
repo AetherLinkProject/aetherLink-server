@@ -22,7 +22,7 @@ public class TonCenterProviderApiConfig
 public class TonapiProviderApiConfig
 {
         public string Url { get; set; }
-        public int Weight { get; set; } = 60;
+        public int Weight { get; set; } = 70;
         public string ApiKey { get; set; }
         public int ApiKeyPerSecondRequestLimit { get; set; } = 10;
         public int NoApiKeyPerSecondRequestLimit { get; set; } = 1;

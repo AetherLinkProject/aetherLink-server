@@ -8,6 +8,7 @@ using AetherLink.Worker.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Utilities.Encoders;
 using TonSdk.Core;
 using TonSdk.Core.Boc;
 using Volo.Abp.DependencyInjection;
@@ -20,7 +21,7 @@ public class TonapiApi : TonIndexerBase, ISingletonDependency
     private readonly TonapiProviderApiConfig _tonapiProviderApiConfig;
     private readonly TonPublicConfigOptions _tonPublicConfigOptions;
     private TonapiRequestLimit _tonapiRequestLimit;
-    private readonly ILogger<TonapiApi> _logger; 
+    private readonly ILogger<TonapiApi> _logger;
 
     public TonapiApi(IOptionsSnapshot<TonapiProviderApiConfig> snapshotConfig,
         IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,
@@ -31,6 +32,7 @@ public class TonapiApi : TonIndexerBase, ISingletonDependency
         _logger = logger;
         _tonPublicConfigOptions = tonPublicOptions.Value;
         _tonapiProviderApiConfig = snapshotConfig.Value;
+        ApiWeight = _tonapiProviderApiConfig.Weight;
         var limitCount = string.IsNullOrWhiteSpace(_tonapiProviderApiConfig.ApiKey)
             ? _tonapiProviderApiConfig.NoApiKeyPerSecondRequestLimit
             : _tonapiProviderApiConfig.ApiKeyPerSecondRequestLimit;
@@ -48,15 +50,16 @@ public class TonapiApi : TonIndexerBase, ISingletonDependency
     public override async Task<(List<CrossChainToTonTransactionDto>, TonIndexerDto)> GetSubsequentTransaction(
         TonIndexerDto tonIndexerDto)
     {
-        var path = $"/v2/blockchain/accounts/{_tonPublicConfigOptions.ContractAddress}/transactions?after_lt={tonIndexerDto.LatestTransactionLt}&limit=30&sort_order=asc";
+        var path =
+            $"/v2/blockchain/accounts/{_tonPublicConfigOptions.ContractAddress}/transactions?after_lt={tonIndexerDto.LatestTransactionLt}&limit=30&sort_order=asc";
         var transactionResp = await GetDeserializeRequest<TonApiTransactions>(path);
-        
+
         CrossChainToTonTransactionDto preTx = null;
 
         var result = new List<CrossChainToTonTransactionDto>();
         var skipCount = tonIndexerDto.SkipCount;
         var latestTransactionLt = tonIndexerDto.LatestTransactionLt;
-        
+
         // transactions has been order by asc 
         foreach (var originalTx in transactionResp.Transactions)
         {
@@ -64,7 +67,7 @@ public class TonapiApi : TonIndexerBase, ISingletonDependency
             {
                 continue;
             }
-            
+
             var tx = originalTx.ConvertTransactionDto();
             preTx = tx;
 
@@ -77,7 +80,7 @@ public class TonapiApi : TonIndexerBase, ISingletonDependency
                 latestTransactionLt = tx.TransactionLt;
                 skipCount = 0;
             }
-            
+
             if (tx.OpCode == TonOpCodeConstants.ForwardTx || tx.OpCode == TonOpCodeConstants.ResendTx ||
                 tx.OpCode == TonOpCodeConstants.ReceiveTx)
             {
@@ -107,18 +110,19 @@ public class TonapiApi : TonIndexerBase, ISingletonDependency
                 bodyCell.ToString("base64")
             }
         };
-        
-        var respStr = await PostRequest(path, JsonConvert.SerializeObject(body));
-        if (string.IsNullOrWhiteSpace(respStr))
-        {
-            return null;
-        }
+
         try
         {
+            var respStr = await PostRequest(path, JsonConvert.SerializeObject(body));
+            if (string.IsNullOrWhiteSpace(respStr))
+            {
+                return null;
+            }
+
             // judge json string
             if (respStr.StartsWith("{"))
             {
-                var errorDic =  JsonConvert.DeserializeObject<Dictionary<string, string>>(respStr);
+                var errorDic = JsonConvert.DeserializeObject<Dictionary<string, string>>(respStr);
                 errorDic.TryGetValue(TonStringConstants.Error, out string errorMsg);
                 _logger.LogError($"Tonapi  Commit Transaction error, message is:{errorMsg}");
                 return null;
@@ -126,8 +130,9 @@ public class TonapiApi : TonIndexerBase, ISingletonDependency
 
             return respStr;
         }
-        catch
+        catch(Exception ex)
         {
+            _logger.LogError($"[Ton Api Provider] Send Transaction error:{ex}");
             return null;
         }
     }
@@ -140,7 +145,7 @@ public class TonapiApi : TonIndexerBase, ISingletonDependency
     public override async Task<uint?> GetAddressSeqno(Address address)
     {
         var path = $"/v2/wallet/{address.ToString()}/seqno";
-        var respDic = await GetDeserializeRequest<Dictionary<String,UInt32>>(path);
+        var respDic = await GetDeserializeRequest<Dictionary<String, UInt32>>(path);
         return respDic.TryGetValue(TonStringConstants.Seqno, out var seqno) ? seqno : (uint?)0;
     }
 
@@ -236,7 +241,7 @@ public class TonApiTransaction
 
     public CrossChainToTonTransactionDto ConvertTransactionDto()
     {
-        var blockStr = Block.Split(",");
+        var blockStr = Block.Replace("(", "").Replace(")", "").Split(",");
 
         return new CrossChainToTonTransactionDto()
         {
@@ -248,9 +253,9 @@ public class TonApiTransaction
             PrevHash = PrevTransHash,
             BlockTime = Utime,
             TransactionLt = Lt.ToString(),
-            OpCode = int.Parse(InMsg.OpCode),
+            OpCode = InMsg.OpCode == null ? 0 : Convert.ToInt32(InMsg.OpCode, 16),
             Body = InMsg.RawBody,
-            Success = ActionPhase.Success,
+            Success = ActionPhase?.Success ?? false,
             ExitCode = ComputePhase.ExitCode,
             Aborted = Aborted,
             Bounce = InMsg.Bounce,
@@ -287,7 +292,7 @@ public class TonapiMessage
     public string Hash { get; set; }
     public string RawBody { get; set; }
     public string DecodedOpName { get; set; }
-    public string DecodedBody { get; set; }
+    public DecodedBody DecodedBody { get; set; }
 }
 
 public class Init
@@ -330,4 +335,9 @@ public class TonapiActionPhase
     public long FwdFees { get; set; }
     public long TotalFees { get; set; }
     public string ResultCodeDescription { get; set; }
+}
+
+public class DecodedBody
+{
+    public string Payload { get; set; }
 }

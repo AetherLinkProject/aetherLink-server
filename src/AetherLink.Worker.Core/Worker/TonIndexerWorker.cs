@@ -4,10 +4,12 @@ using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
+using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
@@ -23,8 +25,10 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
     private readonly IRampRequestSchedulerJob _requestScheduler;
     private readonly ITonStorageProvider _tonStorageProvider;
     private readonly ISchedulerService _scheduler;
+    private readonly TonPublicConfigOptions _tonPublicOptions;
 
-    public TonIndexerWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
+    public TonIndexerWorker(AbpAsyncTimer timer, IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,
+        IServiceScopeFactory serviceScopeFactory,
         TonIndexerRouter tonIndexerRouter, TonHelper tonHelper,
         ILogger<TonIndexerWorker> logger,
         IRampMessageProvider rampMessageProvider,
@@ -35,13 +39,14 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
     {
         _tonHelper = tonHelper;
         _logger = logger;
+        _tonPublicOptions = tonPublicOptions.Value;
         _tonIndexerRouter = tonIndexerRouter;
         _rampMessageProvider = rampMessageProvider;
         _tonStorageProvider = tonStorageProvider;
         _requestScheduler = rampRequestSchedulerJob;
         _scheduler = scheduler;
 
-        timer.Period = 1000 * TonEnvConstants.PullTransactionMinWaitSecond;
+        timer.Period = 1000 * _tonPublicOptions.IndexerPeriod;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)

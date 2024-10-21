@@ -5,7 +5,7 @@ namespace AetherLink.Worker.Core.Options;
 public class TonPublicConfigOptions
 {
     public string ContractAddress { get; set; }
-    
+    public int IndexerPeriod { get; set; }
     public List<OracleNodeInfo> OracleNodeInfoList { get; set; }
 }
 

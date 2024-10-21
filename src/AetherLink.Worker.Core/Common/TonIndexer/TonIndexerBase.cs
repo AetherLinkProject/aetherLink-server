@@ -26,7 +26,7 @@ public interface ITonIndexerProvider
         TonIndexerDto tonIndexerDto);
 
     Task<TonBlockInfo> GetLatestBlockInfo();
-    
+
     Task<uint?> GetAddressSeqno(Address address);
 
     Task<string> CommitTransaction(Cell bodyCell);
@@ -36,7 +36,7 @@ public interface ITonIndexerProvider
     Task<bool> TryGetRequestAccess();
 }
 
-public abstract class TonIndexerBase:ITonIndexerProvider
+public abstract class TonIndexerBase : ITonIndexerProvider
 {
     private readonly string _contractAddress;
     private readonly ILogger<TonIndexerBase> _logger;
@@ -48,7 +48,7 @@ public abstract class TonIndexerBase:ITonIndexerProvider
         _logger = logger;
         _contractAddress = tonPublicOptions.Value.ContractAddress;
     }
-    
+
     [ItemCanBeNull]
     public virtual async Task<CrossChainToTonTransactionDto> GetTransactionInfo(string txId)
     {
@@ -66,15 +66,16 @@ public abstract class TonIndexerBase:ITonIndexerProvider
     public virtual async Task<(List<CrossChainToTonTransactionDto>, TonIndexerDto)> GetSubsequentTransaction(
         TonIndexerDto tonIndexerDto)
     {
-        var path = $"transactions?account={_contractAddress}&start_lt={tonIndexerDto.LatestTransactionLt}&limit=30&offset={tonIndexerDto.SkipCount}&sort=asc";
+        var path =
+            $"transactions?account={_contractAddress}&start_lt={tonIndexerDto.LatestTransactionLt}&limit=30&offset={tonIndexerDto.SkipCount}&sort=asc";
         var transactionResp = await GetDeserializeRequest<TransactionsResponse>(path);
-        
+
         Transaction preTx = null;
 
         var result = new List<CrossChainToTonTransactionDto>();
         var skipCount = tonIndexerDto.SkipCount;
         var latestTransactionLt = tonIndexerDto.LatestTransactionLt;
-        
+
         // transactions has been order by asc 
         foreach (var originalTx in transactionResp.Transactions)
         {
@@ -82,7 +83,7 @@ public abstract class TonIndexerBase:ITonIndexerProvider
             {
                 continue;
             }
-            
+
             preTx = originalTx;
 
             if (originalTx.Lt == latestTransactionLt)
@@ -94,7 +95,7 @@ public abstract class TonIndexerBase:ITonIndexerProvider
                 latestTransactionLt = originalTx.Lt;
                 skipCount = 0;
             }
-            
+
             var tx = originalTx.ConvertToTonTransactionDto();
             if (tx.OpCode == TonOpCodeConstants.ForwardTx || tx.OpCode == TonOpCodeConstants.ResendTx ||
                 tx.OpCode == TonOpCodeConstants.ReceiveTx)
@@ -144,8 +145,10 @@ public abstract class TonIndexerBase:ITonIndexerProvider
                 Array.Empty<string[]>()
             }
         };
-        
-        var method = await PostDeserializeRequest<RunGetMethodResult?>(TonStringConstants.RunGetMethod, JsonConvert.SerializeObject(body));
+
+        var method =
+            await PostDeserializeRequest<RunGetMethodResult?>(TonStringConstants.RunGetMethod,
+                JsonConvert.SerializeObject(body));
         if (!method.HasValue)
             return 0;
         if (method.Value.ExitCode != 0 && method.Value.ExitCode != 1)
@@ -156,9 +159,9 @@ public abstract class TonIndexerBase:ITonIndexerProvider
             return 0;
         }
 
-        var data = JsonConvert.DeserializeObject<Dictionary<string,string>>(value);
+        var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(value);
         var num = Convert.ToUInt32(data[TonStringConstants.Value], 16);
-        
+
         return num;
     }
 
@@ -172,18 +175,27 @@ public abstract class TonIndexerBase:ITonIndexerProvider
                 bodyCell.ToString("base64")
             }
         };
-        
-        var result = await PostDeserializeRequest<Dictionary<String,String>>(path, JsonConvert.SerializeObject(body));
-        return result.TryGetValue(TonStringConstants.MessageValue, out var transaction) ? transaction : null;
+        try
+        {
+            var result =
+                await PostDeserializeRequest<Dictionary<String, String>>(path, JsonConvert.SerializeObject(body));
+            return result.TryGetValue(TonStringConstants.MessageValue, out var transaction) ? transaction : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"[Ton Api Provider] Send Transaction error:{ex}");
+        }
+
+        return null;
     }
-    
+
     public virtual async Task<bool> CheckAvailable()
     {
         var url = $"/addressBook?address={_contractAddress}";
         await GetRequest(url);
         return true;
     }
-    
+
     public abstract Task<bool> TryGetRequestAccess();
 
     protected async Task<T> GetDeserializeRequest<T>(string path)
@@ -191,7 +203,7 @@ public abstract class TonIndexerBase:ITonIndexerProvider
         var resp = await GetRequest(path);
         return await resp.Content.DeserializeSnakeCaseHttpContent<T>();
     }
-    
+
     protected virtual async Task<HttpResponseMessage> GetRequest(string path)
     {
         var client = CreateClient();
@@ -218,7 +230,7 @@ public abstract class TonIndexerBase:ITonIndexerProvider
         var result = await resp.Content.ReadAsStringAsync();
         return result;
     }
-    
+
     protected virtual async Task<HttpResponseMessage> PostMessage(string path, string body)
     {
         var client = CreateClient();
