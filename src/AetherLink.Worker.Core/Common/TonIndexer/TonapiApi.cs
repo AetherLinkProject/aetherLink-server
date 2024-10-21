@@ -149,6 +149,14 @@ public class TonapiApi : TonIndexerBase, ISingletonDependency
         return respDic.TryGetValue(TonStringConstants.Seqno, out var seqno) ? seqno : (uint?)0;
     }
 
+    public override async Task<bool> CheckAvailable()
+    {
+        var path =
+            $"/v2/blockchain/accounts/{_tonPublicConfigOptions.ContractAddress}/transactions?after_lt=0&limit=1&sort_order=asc";
+        await GetDeserializeRequest<TonApiTransactions>(path);
+        return true;
+    }
+
     public override Task<bool> TryGetRequestAccess()
     {
         return Task.FromResult(_tonapiRequestLimit.TryGetAccess());
