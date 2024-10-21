@@ -7,6 +7,8 @@ public class TonPublicConfigOptions
     public string ContractAddress { get; set; }
     public int IndexerPeriod { get; set; }
     public List<OracleNodeInfo> OracleNodeInfoList { get; set; }
+    public List<string> IndexerProvider { get; set; }
+    public List<string> CommitProvider { get; set; }
 }
 
 public class OracleNodeInfo

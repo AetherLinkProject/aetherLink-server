@@ -33,4 +33,5 @@ public class TonStringConstants
     public const string TonCenter = "TonCenter";
     public const string GetBlock = "GetBlock";
     public const string TonApi = "TonApi";
+    public const string ChainStack = "ChainStack";
 }
