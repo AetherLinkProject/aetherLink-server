@@ -76,7 +76,7 @@ public class TonCenterRequestLimit
         {
             if (_latestExecuteTime == dtNow)
             {
-                if (_perSecondLimit >= _latestSecondExecuteCount)
+                if (_perSecondLimit <= _latestSecondExecuteCount)
                 {
                     return false;
                 }

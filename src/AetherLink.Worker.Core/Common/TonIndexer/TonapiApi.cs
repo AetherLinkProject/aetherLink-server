@@ -184,12 +184,18 @@ public class TonapiApi : TonIndexerBase, ISingletonDependency
     }
 }
 
-public class TonapiRequestLimit(int perSecondLimit)
+public class TonapiRequestLimit
 {
     private readonly object _lock = new object();
     private long _latestExecuteTime;
     private int _latestSecondExecuteCount;
+    private int _perSecondLimit;
 
+    public TonapiRequestLimit(int perSecondLimit)
+    {
+        _perSecondLimit = perSecondLimit;
+    }
+    
     public bool TryGetAccess()
     {
         var dtNow = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
@@ -198,7 +204,7 @@ public class TonapiRequestLimit(int perSecondLimit)
         {
             if (_latestExecuteTime == dtNow)
             {
-                if (perSecondLimit >= _latestSecondExecuteCount)
+                if (_perSecondLimit <= _latestSecondExecuteCount)
                 {
                     return false;
                 }
