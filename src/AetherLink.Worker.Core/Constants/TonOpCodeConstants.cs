@@ -30,4 +30,7 @@ public class TonStringConstants
     public const string TonTaskStorageKey = "TonTask";
     public const string Seqno = "seqno";
     public const string Error = "error";
+    public const string TonCenter = "TonCenter";
+    public const string GetBlock = "GetBlock";
+    public const string TonApi = "TonApi";
 }

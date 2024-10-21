@@ -19,7 +19,7 @@ namespace AetherLink.Worker.Core.Common.TonIndexer;
 public interface ITonIndexerProvider
 {
     int Weight { get; }
-
+    string ApiProviderName { get; }
     Task<CrossChainToTonTransactionDto> GetTransactionInfo(string txId);
 
     Task<(List<CrossChainToTonTransactionDto>, TonIndexerDto)> GetSubsequentTransaction(
@@ -41,7 +41,9 @@ public abstract class TonIndexerBase : ITonIndexerProvider
     private readonly string _contractAddress;
     private readonly ILogger<TonIndexerBase> _logger;
     protected int ApiWeight { get; init; }
+    protected string ProviderName { get; init; }
     public int Weight => ApiWeight;
+    public string ApiProviderName => ProviderName;
 
     protected TonIndexerBase(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, ILogger<TonIndexerBase> logger)
     {

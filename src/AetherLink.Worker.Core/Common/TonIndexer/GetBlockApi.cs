@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Logging;
@@ -28,6 +29,7 @@ public class GetBlockApi : TonIndexerBase, ISingletonDependency
             _getBlockConfig.ApiKeyPerDayRequestLimit,
             _getBlockConfig.ApiKeyPerMonthRequestLimit, storageProvider);
         ApiWeight = _getBlockConfig.Weight;
+        ProviderName = TonStringConstants.GetBlock;
     }
 
     public override async Task<bool> TryGetRequestAccess()

@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -24,9 +25,9 @@ public class TonCenterApi : TonIndexerBase, ISingletonDependency
         var limitCount = string.IsNullOrEmpty(_apiConfig.ApiKey)
             ? _apiConfig.NoApiKeyPerSecondRequestLimit
             : _apiConfig.ApiKeyPerSecondRequestLimit;
-
         _requestLimit = new TonCenterRequestLimit(limitCount);
 
+        ProviderName = TonStringConstants.TonCenter;
         ApiWeight = _apiConfig.Weight;
     }
 

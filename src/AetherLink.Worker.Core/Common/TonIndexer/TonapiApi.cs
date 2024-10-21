@@ -32,11 +32,14 @@ public class TonapiApi : TonIndexerBase, ISingletonDependency
         _logger = logger;
         _tonPublicConfigOptions = tonPublicOptions.Value;
         _tonapiProviderApiConfig = snapshotConfig.Value;
-        ApiWeight = _tonapiProviderApiConfig.Weight;
+        
         var limitCount = string.IsNullOrWhiteSpace(_tonapiProviderApiConfig.ApiKey)
             ? _tonapiProviderApiConfig.NoApiKeyPerSecondRequestLimit
             : _tonapiProviderApiConfig.ApiKeyPerSecondRequestLimit;
         _tonapiRequestLimit = new TonapiRequestLimit(limitCount);
+        
+        ApiWeight = _tonapiProviderApiConfig.Weight;
+        ProviderName = TonStringConstants.TonApi;
     }
 
     public override async Task<CrossChainToTonTransactionDto> GetTransactionInfo(string txId)
