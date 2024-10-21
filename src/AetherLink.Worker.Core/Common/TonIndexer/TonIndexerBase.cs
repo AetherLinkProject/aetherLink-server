@@ -211,6 +211,13 @@ public abstract class TonIndexerBase:ITonIndexerProvider
         var resp = await PostMessage(path, body);
         return await resp.Content.DeserializeSnakeCaseHttpContent<T>();
     }
+
+    protected virtual async Task<string> PostRequest(string path, string body)
+    {
+        var resp = await PostMessage(path, body);
+        var result = await resp.Content.ReadAsStringAsync();
+        return result;
+    }
     
     protected virtual async Task<HttpResponseMessage> PostMessage(string path, string body)
     {

@@ -88,6 +88,7 @@ namespace AetherLink.Worker
             Configure<TonSecretConfigOptions>(configuration.GetSection("OracleChainInfo:ChainConfig:Ton"));
             Configure<TonGetBlockProviderOptions>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:GetBlock"));
             Configure<TonCenterProviderApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:TonCenter"));
+            Configure<TonapiProviderApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:TonApi"));
         }
 
 

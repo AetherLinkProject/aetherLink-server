@@ -28,4 +28,6 @@ public class TonStringConstants
     public const string RunGetMethod = "runGetMethod";
     public const string TonIndexerStorageKey = "TonIndexer";
     public const string TonTaskStorageKey = "TonTask";
+    public const string Seqno = "seqno";
+    public const string Error = "error";
 }

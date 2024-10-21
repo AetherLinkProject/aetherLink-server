@@ -41,5 +41,6 @@ public class AetherLinkServerWorkerCoreModule : AbpModule
         // ton
         context.Services.AddSingleton<ITonIndexerProvider, TonCenterApi>();
         context.Services.AddSingleton<ITonIndexerProvider, GetBlockApi>();
+        context.Services.AddSingleton<ITonIndexerProvider, TonapiApi>();
     }
 }
