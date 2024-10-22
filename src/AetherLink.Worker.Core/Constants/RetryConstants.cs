@@ -2,5 +2,5 @@ namespace AetherLink.Worker.Core.Constants;
 
 public static class RetryConstants
 {
-    public const int DefaultDelay = 3;
+    public const int DefaultDelay = 30;
 }

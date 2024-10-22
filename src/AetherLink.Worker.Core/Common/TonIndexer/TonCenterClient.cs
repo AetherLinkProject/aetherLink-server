@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -8,15 +9,15 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Common.TonIndexer;
 
-public class TonCenterApi : TonIndexerBase, ISingletonDependency
+public class TonCenterClient : TonIndexerBase, ISingletonDependency
 {
     private readonly TonCenterProviderApiConfig _apiConfig;
     private readonly IHttpClientFactory _clientFactory;
     private readonly TonCenterRequestLimit _requestLimit;
 
-    public TonCenterApi(IOptionsSnapshot<TonCenterProviderApiConfig> snapshotConfig,
+    public TonCenterClient(IOptionsSnapshot<TonCenterProviderApiConfig> snapshotConfig,
         IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, IHttpClientFactory clientFactory,
-        ILogger<TonCenterApi> logger) : base(tonPublicOptions, logger)
+        ILogger<TonCenterClient> logger) : base(tonPublicOptions, logger)
     {
         _apiConfig = snapshotConfig.Value;
         _clientFactory = clientFactory;
@@ -24,9 +25,9 @@ public class TonCenterApi : TonIndexerBase, ISingletonDependency
         var limitCount = string.IsNullOrEmpty(_apiConfig.ApiKey)
             ? _apiConfig.NoApiKeyPerSecondRequestLimit
             : _apiConfig.ApiKeyPerSecondRequestLimit;
-
         _requestLimit = new TonCenterRequestLimit(limitCount);
 
+        ProviderName = TonStringConstants.TonCenter;
         ApiWeight = _apiConfig.Weight;
     }
 
@@ -75,7 +76,7 @@ public class TonCenterRequestLimit
         {
             if (_latestExecuteTime == dtNow)
             {
-                if (_perSecondLimit >= _latestSecondExecuteCount)
+                if (_perSecondLimit <= _latestSecondExecuteCount)
                 {
                     return false;
                 }

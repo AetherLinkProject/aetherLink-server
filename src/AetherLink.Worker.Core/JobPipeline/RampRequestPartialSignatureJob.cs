@@ -46,9 +46,13 @@ public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPart
         {
             _logger.LogDebug(
                 $"get leader ramp request partial signature request.{args.MessageId} {args.ChainId} {args.Epoch} {args.RoundId}");
+
             var messageData = await _messageProvider.GetAsync(args.MessageId);
             if (messageData == null || args.RoundId > messageData.RoundId)
             {
+                await _retryProvider.RetryWithIdAsync(args,
+                    IdGeneratorHelper.GenerateId(args.ChainId, args.MessageId, args.RoundId), backOff: true);
+
                 _logger.LogDebug($"The Ramp request {args.MessageId} from leader is not ready now,will try it later.");
                 await _retryProvider.RetryWithIdAsync(args, IdGeneratorHelper.GenerateId(messageId, epoch, roundId));
                 return;
@@ -57,6 +61,7 @@ public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPart
             if (args.RoundId < messageData.RoundId)
             {
                 _logger.LogWarning($"The Ramp request {args.MessageId} from leader is too old.");
+
                 return;
             }
 

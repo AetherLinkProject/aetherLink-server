@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Dtos;
-using AetherLink.Worker.Core.JobPipeline;
+using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Logging;
@@ -50,7 +50,7 @@ public class RampRequestSchedulerJob : IRampRequestSchedulerJob, ITransientDepen
         await _rampMessageProvider.SetAsync(messageData);
 
         var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
-            _objectMapper.Map<RampMessageDto, RampRequestStartJob>(messageData), BackgroundJobPriority.High);
+            _objectMapper.Map<RampMessageDto, RampRequestStartJobArgs>(messageData));
         _logger.LogInformation(
             $"[RampRequestSchedulerJob] Message {messageData.MessageId} timeout, will starting in new round:{messageData.RoundId}, hangfireId:{hangfireJobId}");
     }
@@ -64,7 +64,7 @@ public class RampRequestSchedulerJob : IRampRequestSchedulerJob, ITransientDepen
         await _rampMessageProvider.SetAsync(messageData);
 
         var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
-            _objectMapper.Map<RampMessageDto, RampRequestStartJob>(messageData), BackgroundJobPriority.High);
+            _objectMapper.Map<RampMessageDto, RampRequestStartJobArgs>(messageData));
         _logger.LogInformation(
             $"[RampRequestSchedulerJob] Message {messageData.MessageId} time to resend, hangfireId:{hangfireJobId}");
     }

@@ -57,8 +57,13 @@ public class RampRequestMultiSignatureJob : AsyncBackgroundJob<RampRequestMultiS
             _logger.LogInformation($"Get partial signature {messageId} {epoch} {nodeIndex}");
             var messageData = await _messageProvider.GetAsync(messageId);
             if (messageData == null) return;
-
             var signatureId = IdGeneratorHelper.GenerateId(messageId, epoch, roundId);
+
+            if (!string.IsNullOrEmpty(messageData.ResendTransactionId))
+            {
+                signatureId = IdGeneratorHelper.GenerateId(signatureId, messageData.ResendTransactionId);
+            }
+
             if (_stateProvider.IsFinished(signatureId)) return;
 
             var metadata = new CrossChainForwardMessageDto
@@ -161,7 +166,7 @@ public class RampRequestMultiSignatureJob : AsyncBackgroundJob<RampRequestMultiS
 
             _logger.LogError(
                 $"[Ramp][Leader] {metadata.MessageId} send transaction failed in {i} times, will send it later.");
-            Thread.Sleep(RetryConstants.DefaultDelay * (i + 1) * 1000);
+            Thread.Sleep((i + 1) * 1000 * 2);
         }
 
         // If we get here, it means we have exhausted the retry count

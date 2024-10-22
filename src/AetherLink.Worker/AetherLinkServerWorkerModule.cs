@@ -88,6 +88,8 @@ namespace AetherLink.Worker
             Configure<TonSecretConfigOptions>(configuration.GetSection("OracleChainInfo:ChainConfig:Ton"));
             Configure<TonGetBlockProviderOptions>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:GetBlock"));
             Configure<TonCenterProviderApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:TonCenter"));
+            Configure<TonapiProviderApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:TonApi"));
+            Configure<ChainStackApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:ChainStack"));
         }
 
 
@@ -115,8 +117,8 @@ namespace AetherLink.Worker
         private void ConfigureBackgroundWorker(ApplicationInitializationContext context)
         {
             context.AddBackgroundWorkerAsync<SearchWorker>();
-            context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
-            context.AddBackgroundWorkerAsync<LogsPoller>();
+            // context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
+            // context.AddBackgroundWorkerAsync<LogsPoller>();
             context.AddBackgroundWorkerAsync<TonIndexerWorker>();
             context.AddBackgroundWorkerAsync<TonApiProviderWorker>();
         }
