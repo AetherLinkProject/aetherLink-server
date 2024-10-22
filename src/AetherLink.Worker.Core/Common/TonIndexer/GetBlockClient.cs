@@ -12,15 +12,15 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Common.TonIndexer;
 
-public class GetBlockApi : TonIndexerBase, ISingletonDependency
+public class GetBlockClient : TonIndexerBase, ISingletonDependency
 {
     private readonly TonGetBlockProviderOptions _getBlockConfig;
     private readonly IHttpClientFactory _clientFactory;
     private readonly RequestLimit _requestLimit;
 
-    public GetBlockApi(IOptionsSnapshot<TonGetBlockProviderOptions> snapshotConfig,
+    public GetBlockClient(IOptionsSnapshot<TonGetBlockProviderOptions> snapshotConfig,
         IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,
-        IHttpClientFactory clientFactory, IStorageProvider storageProvider, ILogger<GetBlockApi> logger) : base(
+        IHttpClientFactory clientFactory, IStorageProvider storageProvider, ILogger<GetBlockClient> logger) : base(
         tonPublicOptions, logger)
     {
         _getBlockConfig = snapshotConfig.Value;

@@ -37,9 +37,9 @@ public class AetherLinkServerWorkerCoreModule : AbpModule
         context.Services.AddSingleton<IMultiSignatureReporter, MultiSignatureReporter>();
         
         // ton
-        context.Services.AddSingleton<ITonIndexerProvider, TonCenterApi>();
-        context.Services.AddSingleton<ITonIndexerProvider, GetBlockApi>();
-        context.Services.AddSingleton<ITonIndexerProvider, TonapiApi>();
-        context.Services.AddSingleton<ITonIndexerProvider, ChainStackApi>();
+        context.Services.AddSingleton<ITonIndexerProvider, TonCenterClient>();
+        context.Services.AddSingleton<ITonIndexerProvider, GetBlockClient>();
+        context.Services.AddSingleton<ITonIndexerProvider, TonApiClient>();
+        context.Services.AddSingleton<ITonIndexerProvider, ChainStackClient>();
     }
 }

@@ -9,15 +9,15 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Common.TonIndexer;
 
-public class TonCenterApi : TonIndexerBase, ISingletonDependency
+public class TonCenterClient : TonIndexerBase, ISingletonDependency
 {
     private readonly TonCenterProviderApiConfig _apiConfig;
     private readonly IHttpClientFactory _clientFactory;
     private readonly TonCenterRequestLimit _requestLimit;
 
-    public TonCenterApi(IOptionsSnapshot<TonCenterProviderApiConfig> snapshotConfig,
+    public TonCenterClient(IOptionsSnapshot<TonCenterProviderApiConfig> snapshotConfig,
         IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, IHttpClientFactory clientFactory,
-        ILogger<TonCenterApi> logger) : base(tonPublicOptions, logger)
+        ILogger<TonCenterClient> logger) : base(tonPublicOptions, logger)
     {
         _apiConfig = snapshotConfig.Value;
         _clientFactory = clientFactory;

@@ -11,15 +11,15 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Common.TonIndexer;
 
-public class ChainStackApi: TonIndexerBase, ISingletonDependency
+public class ChainStackClient: TonIndexerBase, ISingletonDependency
 {
     private readonly ChainStackApiConfig _chainStackConfig;
     private readonly IHttpClientFactory _clientFactory;
     private readonly ChainStackRequestLimit _requestLimit;
     
-    public ChainStackApi(IOptionsSnapshot<ChainStackApiConfig> snapshotConfig,
+    public ChainStackClient(IOptionsSnapshot<ChainStackApiConfig> snapshotConfig,
         IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,
-        IHttpClientFactory clientFactory, IStorageProvider storageProvider, ILogger<ChainStackApi> logger) : base(
+        IHttpClientFactory clientFactory, IStorageProvider storageProvider, ILogger<ChainStackClient> logger) : base(
         tonPublicOptions, logger)
     {
         _chainStackConfig = snapshotConfig.Value;
