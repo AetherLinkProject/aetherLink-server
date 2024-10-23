@@ -4,7 +4,6 @@ namespace AetherLink.Worker.Core.Options;
 
 public class OracleInfoOptions
 {
-    public int ObservationsThreshold { get; set; } = 5;
     public int PartialSignaturesThreshold { get; set; } = 4;
     public Dictionary<string, ChainConfig> ChainConfig { get; set; }
 }

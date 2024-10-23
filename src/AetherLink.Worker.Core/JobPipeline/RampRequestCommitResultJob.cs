@@ -25,7 +25,6 @@ public class RampRequestCommitResultJob : AsyncBackgroundJob<RampRequestCommitRe
 
     public override async Task ExecuteAsync(RampRequestCommitResultJobArgs args)
     {
-        var chainId = args.ChainId;
         var messageId = args.MessageId;
         _logger.LogInformation($"get leader ramp commit transaction {args.TransactionId}");
 
@@ -33,7 +32,6 @@ public class RampRequestCommitResultJob : AsyncBackgroundJob<RampRequestCommitRe
         if (messageData == null) return;
 
         // todo: check transaction by targetChainId
-
 
         messageData.State = RampRequestState.Committed;
         await _messageProvider.SetAsync(messageData);

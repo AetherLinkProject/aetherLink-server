@@ -9,7 +9,6 @@ using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
-using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundJobs;
@@ -47,7 +46,6 @@ public class RampRequestMultiSignatureJob : AsyncBackgroundJob<RampRequestMultiS
 
     public override async Task ExecuteAsync(RampRequestMultiSignatureJobArgs args)
     {
-        var chainId = args.ChainId;
         var messageId = args.MessageId;
         var epoch = args.Epoch;
         var nodeIndex = args.Index;
