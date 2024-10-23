@@ -1,20 +1,14 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf;
 using AElf.CSharp.Core;
-using AElf.Types;
-using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Reporter;
-using Google.Protobuf;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
@@ -22,7 +16,6 @@ namespace AetherLink.Worker.Core.Worker;
 
 public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
 {
-    private bool _executed = false;
     private readonly WorkerOptions _options;
     private readonly IWorkerProvider _provider;
     private readonly IWorkerReporter _reporter;
@@ -59,9 +52,9 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         var startTime = DateTime.Now;
 
         await Task.WhenAll(
-            // ExecuteJobsAsync(chainId, blockLatestHeight, startHeight),
-            // ExecuteTransmittedAsync(chainId, blockLatestHeight, startHeight),
-            // ExecuteRequestCanceledAsync(chainId, blockLatestHeight, startHeight)
+            ExecuteJobsAsync(chainId, blockLatestHeight, startHeight),
+            ExecuteTransmittedAsync(chainId, blockLatestHeight, startHeight),
+            ExecuteRequestCanceledAsync(chainId, blockLatestHeight, startHeight),
             ExecuteRampRequestsAsync(chainId, blockLatestHeight, startHeight)
         );
 
@@ -102,45 +95,14 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
 
     private async Task ExecuteRampRequestsAsync(string chainId, long to, long from)
     {
-        if (_executed)
-        {
-            _logger.LogDebug("================== _executed");
-            return;
-        }
-
-        _logger.LogDebug("ExecuteRampRequestsAsync................................");
         var requests = await _provider.SearchRampRequestsAsync(chainId, to, from);
-
-        var sender = ByteString.CopyFrom(Address.FromPublicKey("AAA".HexToByteArray()).ToByteArray()).ToBase64();
-        var messageDataByte = ByteString.CopyFrom(1, 2, 3).ToBase64();
-
-        requests = new List<RampRequestDto>
-        {
-            new()
-            {
-                ChainId = "AELF",
-                TransactionId = "",
-                MessageId = ByteString.CopyFrom(HashHelper.ComputeFrom("test-message-id").ToByteArray()).ToBase64(),
-                TargetChainId = 1100,
-                SourceChainId = 110,
-                Sender = sender,
-                Receiver = "EQBebzBhy3vNBuFYH7R5AwFSGT4a_tp5BfpDXjynuaItjKqb",
-                Data = messageDataByte,
-                Epoch = 1,
-                StartTime = 1727317110000
-            }
-        };
-
         var tasks = requests.Select(r => _provider.HandleRampRequestAsync(r));
 
         // todo: record ramp requests
         // _reporter.RecordOracleJobAsync(chainId, requests.Count);
-
         _logger.LogDebug("[Search] {chain} found a total of {count} ramp requests.", chainId, requests.Count);
 
         await Task.WhenAll(tasks);
-        
-        _executed = true;
     }
 
     // search oracle transmitted event
