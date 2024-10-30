@@ -4,6 +4,8 @@ using AetherLink.Metric;
 using Aetherlink.PriceServer;
 using AetherlinkPriceServer.Options;
 using AetherlinkPriceServer.Worker;
+using Hangfire;
+using Hangfire.Redis.StackExchange;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
@@ -49,6 +51,23 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         Configure<RedisCacheOptions>(configuration.GetSection("Redis"));
         ConfigureMetrics(context, configuration);
         ConfigCoinGeckoApi(context);
+    }
+    
+    private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        var hangfireOptions = configuration.GetSection("Hangfire").Get<HangfireOptions>();
+        var options = new RedisStorageOptions
+        {
+            Prefix = hangfireOptions.RedisStorage.Prefix,
+            Db = hangfireOptions.RedisStorage.DbIndex
+        };
+
+        context.Services.AddHangfire(config =>
+        {
+            config.UseRedisStorage(hangfireOptions.RedisStorage.Host, options);
+        });
+
+        context.Services.AddHangfireServer();
     }
 
     private void ConfigureConventionalControllers()
