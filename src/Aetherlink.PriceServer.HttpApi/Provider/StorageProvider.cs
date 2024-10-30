@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DependencyInjection;
+using Serilog;
 
 namespace AetherlinkPriceServer.Provider;
 
@@ -23,13 +23,13 @@ public interface IStorageProvider
 
 public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDependency
 {
-    private readonly ILogger<StorageProvider> _logger;
+    private readonly ILogger _logger;
     private readonly IDistributedCacheSerializer _serializer;
 
-    public StorageProvider(IOptions<RedisCacheOptions> optionsAccessor, ILogger<StorageProvider> logger,
-        IDistributedCacheSerializer serializer) : base(optionsAccessor)
+    public StorageProvider(IOptions<RedisCacheOptions> optionsAccessor, IDistributedCacheSerializer serializer) : base(
+        optionsAccessor)
     {
-        _logger = logger;
+        _logger = Log.ForContext<StorageProvider>();
         _serializer = serializer;
     }
 
@@ -45,7 +45,7 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Set {key} to redis error.", key);
+            _logger.Error(e, "Set {key} to redis error.", key);
         }
     }
 
@@ -61,7 +61,7 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Batch set to redis error.");
+            _logger.Error(e, "Batch set to redis error.");
         }
     }
 
@@ -79,7 +79,7 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"Get {key} error.");
+            _logger.Error(e, $"Get {key} error.");
             return null;
         }
     }
@@ -95,7 +95,7 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"Get {string.Join(",", keys)} error.");
+            _logger.Error(e, $"Get {string.Join(",", keys)} error.");
             return null;
         }
     }
