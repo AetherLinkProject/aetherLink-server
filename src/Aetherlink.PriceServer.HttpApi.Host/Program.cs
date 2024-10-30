@@ -5,7 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Serilog.Events;
 
 namespace AetherlinkPriceServer;
 
@@ -28,7 +27,7 @@ public class Program
             builder.Configuration.AddJsonFile("apollosettings.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
-                .UseApollo()
+                // .UseApollo()
                 .UseSerilog();
             await builder.AddApplicationAsync<AetherlinkPriceServerHttpApiHostModule>();
             var app = builder.Build();

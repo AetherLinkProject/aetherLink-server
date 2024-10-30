@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using Aetherlink.PriceServer.Dtos;
 using AetherlinkPriceServer.Provider;
 using AetherlinkPriceServer.Reporter;
+using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
-using Serilog;
 
 namespace AetherlinkPriceServer.Application;
 
@@ -21,23 +21,23 @@ public interface IPriceAppService
 
 public class PriceAppService : IPriceAppService, ISingletonDependency
 {
-    private readonly ILogger _logger;
     private readonly IPriceProvider _priceProvider;
     private readonly IPriceQueryReporter _reporter;
+    private readonly ILogger<PriceAppService> _logger;
     private readonly IHistoricPriceProvider _historicPriceProvider;
 
     public PriceAppService(IPriceProvider priceProvider, IHistoricPriceProvider historicPriceProvider,
-        IPriceQueryReporter reporter)
+        IPriceQueryReporter reporter, ILogger<PriceAppService> logger)
     {
+        _logger = logger;
         _reporter = reporter;
         _priceProvider = priceProvider;
-        _logger = Log.ForContext<PriceAppService>();
         _historicPriceProvider = historicPriceProvider;
     }
 
     public async Task<PriceResponseDto> GetTokenPriceAsync(GetTokenPriceRequestDto input)
     {
-        _logger.Debug($"Get {input.AppId} GetTokenPriceAsync request. ");
+        _logger.LogDebug($"Get {input.AppId} GetTokenPriceAsync request. ");
         var timer = _reporter.GetPriceRequestLatencyTimer(input.AppId, RouterConstants.TOKEN_PRICE_URI);
         try
         {
@@ -49,11 +49,6 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
                 Data = await _priceProvider.GetPriceAsync(input.TokenPair, input.Source)
             };
         }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "GetTokenPriceAsync error!");
-            return new();
-        }
         finally
         {
             timer.ObserveDuration();
@@ -62,7 +57,7 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
 
     public async Task<PriceListResponseDto> GetTokenPriceListAsync(GetTokenPriceListRequestDto input)
     {
-        _logger.Debug($"Get {input.AppId} GetTokenPriceListAsync request. ");
+        _logger.LogDebug($"Get {input.AppId} GetTokenPriceListAsync request. ");
         var timer = _reporter.GetPriceRequestLatencyTimer(input.AppId, RouterConstants.TOKEN_PRICE_LIST_URI);
         try
         {
@@ -74,11 +69,6 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
                 Prices = await _priceProvider.GetPriceListAsync(input.Source, input.TokenPairs)
             };
         }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "GetTokenPriceListAsync error!");
-            return new();
-        }
         finally
         {
             timer.ObserveDuration();
@@ -87,7 +77,7 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
 
     public async Task<AggregatedPriceResponseDto> GetAggregatedTokenPriceAsync(GetAggregatedTokenPriceRequestDto input)
     {
-        _logger.Debug($"Get {input.AppId} GetAggregatedTokenPriceAsync request. ");
+        _logger.LogDebug($"Get {input.AppId} GetAggregatedTokenPriceAsync request. ");
         var timer = _reporter.GetPriceRequestLatencyTimer(input.AppId, RouterConstants.AGGREGATED_TOKEN_PRICE_URI);
         try
         {
@@ -102,11 +92,6 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
                 ? new() { AggregateType = input.AggregateType.ToString(), Data = price }
                 : new();
         }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "GetAggregatedTokenPriceAsync error!");
-            return new();
-        }
         finally
         {
             timer.ObserveDuration();
@@ -116,7 +101,7 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
     public async Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(
         GetPriceForLast24HoursRequestDto input)
     {
-        _logger.Debug($"Get {input.AppId} GetPriceForLast24HoursAsync request. ");
+        _logger.LogDebug($"Get {input.AppId} GetPriceForLast24HoursAsync request. ");
         var timer = _reporter.GetPriceRequestLatencyTimer(input.AppId, RouterConstants.LAST_24HOURS_PRICE_URI);
         try
         {
@@ -132,11 +117,6 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
             return new()
                 { Prices = prices.ToList(), ChangeRate24Hours = changeRage };
         }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "GetPriceForLast24HoursAsync error!");
-            return new();
-        }
         finally
         {
             timer.ObserveDuration();
@@ -145,7 +125,7 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
 
     public async Task<DailyPriceResponseDto> GetDailyPriceAsync(GetDailyPriceRequestDto input)
     {
-        _logger.Debug($"Get {input.AppId} GetDailyPriceAsync request. ");
+        _logger.LogDebug($"Get {input.AppId} GetDailyPriceAsync request. ");
         var timer = _reporter.GetPriceRequestLatencyTimer(input.AppId, RouterConstants.DAILY_PRICE_URI);
         try
         {
@@ -155,11 +135,6 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
                 out var targetTime);
 
             return new() { Data = await _historicPriceProvider.GetHistoricPriceAsync(input.TokenPair, targetTime) };
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "GetDailyPriceAsync error!");
-            return new();
         }
         finally
         {

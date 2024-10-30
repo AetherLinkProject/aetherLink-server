@@ -1,6 +1,5 @@
 ﻿using AElf.ExceptionHandler;
 using AetherLink.Metric;
-using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Reporter;
