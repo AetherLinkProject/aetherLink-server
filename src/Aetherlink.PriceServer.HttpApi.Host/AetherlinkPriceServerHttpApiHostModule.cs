@@ -48,27 +48,8 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         Configure<TokenPriceSourceOptions>(configuration.GetSection("TokenPriceSource"));
         Configure<HourlyPriceOption>(configuration.GetSection("HourlyPrice"));
         Configure<MetricsReportOption>(configuration.GetSection("MetricsReport"));
-        Configure<RedisCacheOptions>(configuration.GetSection("Redis"));
         ConfigureMetrics(context, configuration);
         ConfigCoinGeckoApi(context);
-        ConfigureHangfire(context, configuration);
-    }
-    
-    private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
-    {
-        var hangfireOptions = configuration.GetSection("Hangfire").Get<HangfireOptions>();
-        var options = new RedisStorageOptions
-        {
-            Prefix = hangfireOptions.RedisStorage.Prefix,
-            Db = hangfireOptions.RedisStorage.DbIndex
-        };
-
-        context.Services.AddHangfire(config =>
-        {
-            config.UseRedisStorage(hangfireOptions.RedisStorage.Host, options);
-        });
-
-        context.Services.AddHangfireServer();
     }
 
     private void ConfigureConventionalControllers()
