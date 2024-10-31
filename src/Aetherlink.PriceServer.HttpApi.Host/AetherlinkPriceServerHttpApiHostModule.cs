@@ -6,6 +6,7 @@ using AetherlinkPriceServer.Options;
 using AetherlinkPriceServer.Worker;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -45,7 +46,7 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         Configure<TokenPriceSourceOptions>(configuration.GetSection("TokenPriceSource"));
         Configure<HourlyPriceOption>(configuration.GetSection("HourlyPrice"));
         Configure<MetricsReportOption>(configuration.GetSection("MetricsReport"));
-        Configure<RedisCacheOptions>(configuration.GetSection("Redis"));
+        Configure<RedisCacheOptions>(configuration.GetSection("MetricsReport"));
         ConfigureMetrics(context, configuration);
         ConfigCoinGeckoApi(context);
     }
@@ -142,9 +143,9 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
             options.Languages.Add(new LanguageInfo("en-GB", "en-GB", "English (UK)"));
             options.Languages.Add(new LanguageInfo("fi", "fi", "Finnish"));
             options.Languages.Add(new LanguageInfo("fr", "fr", "Français"));
-            options.Languages.Add(new LanguageInfo("hi", "hi", "Hindi", "in"));
-            options.Languages.Add(new LanguageInfo("is", "is", "Icelandic", "is"));
-            options.Languages.Add(new LanguageInfo("it", "it", "Italiano", "it"));
+            options.Languages.Add(new LanguageInfo("hi", "hi", "Hindi"));
+            options.Languages.Add(new LanguageInfo("is", "is", "Icelandic"));
+            options.Languages.Add(new LanguageInfo("it", "it", "Italiano"));
             options.Languages.Add(new LanguageInfo("ro-RO", "ro-RO", "Română"));
             options.Languages.Add(new LanguageInfo("hu", "hu", "Magyar"));
             options.Languages.Add(new LanguageInfo("pt-BR", "pt-BR", "Português"));
@@ -153,8 +154,8 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
             options.Languages.Add(new LanguageInfo("tr", "tr", "Türkçe"));
             options.Languages.Add(new LanguageInfo("zh-Hans", "zh-Hans", "简体中文"));
             options.Languages.Add(new LanguageInfo("zh-Hant", "zh-Hant", "繁體中文"));
-            options.Languages.Add(new LanguageInfo("de-DE", "de-DE", "Deutsch", "de"));
-            options.Languages.Add(new LanguageInfo("es", "es", "Español", "es"));
+            options.Languages.Add(new LanguageInfo("de-DE", "de-DE", "Deutsch"));
+            options.Languages.Add(new LanguageInfo("es", "es", "Español"));
             options.Languages.Add(new LanguageInfo("el", "el", "Ελληνικά"));
         });
     }
