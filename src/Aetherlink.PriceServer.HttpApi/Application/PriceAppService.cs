@@ -15,6 +15,7 @@ public interface IPriceAppService
     public Task<PriceResponseDto> GetTokenPriceAsync(GetTokenPriceRequestDto input);
     public Task<AggregatedPriceResponseDto> GetAggregatedTokenPriceAsync(GetAggregatedTokenPriceRequestDto input);
     public Task<PriceListResponseDto> GetTokenPriceListAsync(GetTokenPriceListRequestDto input);
+    public Task<LatestPriceListResponseDto> GetLatestTokenPriceListAsync(GetLatestTokenPriceListRequestDto input);
     public Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(GetPriceForLast24HoursRequestDto input);
     public Task<DailyPriceResponseDto> GetDailyPriceAsync(GetDailyPriceRequestDto input);
 }
@@ -67,6 +68,26 @@ public class PriceAppService : IPriceAppService, ISingletonDependency
             {
                 Source = input.Source.ToString(),
                 Prices = await _priceProvider.GetPriceListAsync(input.Source, input.TokenPairs)
+            };
+        }
+        finally
+        {
+            timer.ObserveDuration();
+        }
+    }
+
+    public async Task<LatestPriceListResponseDto> GetLatestTokenPriceListAsync(GetLatestTokenPriceListRequestDto input)
+    {
+        _logger.LogDebug($"Get {input.AppId} GetLatestTokenPriceListAsync request. ");
+
+        var timer = _reporter.GetPriceRequestLatencyTimer(input.AppId, RouterConstants.LATEST_TOKEN_PRICE_LIST_URI);
+        try
+        {
+            _reporter.RecordPriceQueriedTotal(input.AppId, RouterConstants.LATEST_TOKEN_PRICE_LIST_URI);
+
+            return new()
+            {
+                Prices = await _priceProvider.GetPriceListAsync(input.TokenPairs)
             };
         }
         finally

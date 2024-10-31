@@ -11,6 +11,7 @@ public interface IPriceServerProvider
     public Task<PriceResponseDto> GetTokenPriceAsync(GetTokenPriceRequestDto input);
     public Task<AggregatedPriceResponseDto> GetAggregatedTokenPriceAsync(GetAggregatedTokenPriceRequestDto input);
     public Task<PriceListResponseDto> GetTokenPriceListAsync(GetTokenPriceListRequestDto input);
+    public Task<LatestPriceListResponseDto> GetLatestTokenPriceListAsync(GetLatestTokenPriceListRequestDto input);
     public Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(GetPriceForLast24HoursRequestDto input);
     public Task<DailyPriceResponseDto> GetDailyPriceAsync(GetDailyPriceRequestDto input);
 }
@@ -37,6 +38,10 @@ public class PriceServerProvider : IPriceServerProvider, ITransientDependency
     public async Task<PriceListResponseDto> GetTokenPriceListAsync(GetTokenPriceListRequestDto input)
         => await QueryAsync<PriceListResponseDto>(RouterConstants.TOKEN_PRICE_LIST_URI, AddAuthParams(input),
             ContextHelper.GeneratorCtx());
+
+    public async Task<LatestPriceListResponseDto> GetLatestTokenPriceListAsync(GetLatestTokenPriceListRequestDto input)
+        => await QueryAsync<LatestPriceListResponseDto>(RouterConstants.LATEST_TOKEN_PRICE_LIST_URI,
+            AddAuthParams(input), ContextHelper.GeneratorCtx());
 
     public async Task<PriceForLast24HoursResponseDto> GetPriceForLast24HoursAsync(
         GetPriceForLast24HoursRequestDto input) =>

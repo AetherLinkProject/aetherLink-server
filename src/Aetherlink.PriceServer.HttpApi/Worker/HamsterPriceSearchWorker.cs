@@ -28,6 +28,8 @@ public class HamsterPriceSearchWorker : TokenPriceSearchWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
+        BaseLogger.LogInformation("[Hamster] Search worker Start...");
+
         try
         {
             await PriceProvider.UpdatePricesAsync(SourceType.Hamster,
