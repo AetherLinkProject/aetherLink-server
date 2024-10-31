@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using StackExchange.Redis;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
@@ -24,7 +23,6 @@ public interface IStorageProvider
 
 public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDependency
 {
-    private readonly RedisCacheOptions _cacheOptions;
     private readonly ILogger<StorageProvider> _logger;
     private readonly IDistributedCacheSerializer _serializer;
 
@@ -33,8 +31,6 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
     {
         _logger = logger;
         _serializer = serializer;
-        _cacheOptions = optionsAccessor.Value;
-        _logger.LogDebug($"get config: {JsonConvert.SerializeObject(_cacheOptions)}");
     }
 
     public async Task SetAsync<T>(string key, T data) where T : class => await SetAsync(key, data, null);
