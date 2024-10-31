@@ -128,7 +128,7 @@ public class TonApiClient : TonIndexerBase, ISingletonDependency
             {
                 var errorDic = JsonConvert.DeserializeObject<Dictionary<string, string>>(respStr);
                 errorDic.TryGetValue(TonStringConstants.Error, out string errorMsg);
-                _logger.LogError($"Tonapi  Commit Transaction error, message is:{errorMsg}");
+                _logger.LogWarning($"Tonapi  Commit Transaction error, message is:{errorMsg}");
                 return null;
             }
 
@@ -136,7 +136,7 @@ public class TonApiClient : TonIndexerBase, ISingletonDependency
         }
         catch(Exception ex)
         {
-            _logger.LogError($"[Ton Api Provider] Send Transaction error:{ex}");
+            _logger.LogWarning($"[Ton Api Provider] Send Transaction error:{ex}");
             return null;
         }
     }

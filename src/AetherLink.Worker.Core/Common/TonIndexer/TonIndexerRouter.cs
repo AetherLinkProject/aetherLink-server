@@ -61,6 +61,8 @@ public class TonIndexerRouter:ISingletonDependency
                 {
                     return result;
                 }
+                
+                _logger.LogInformation($"Ton provider is changed,current indexer provider is:{item.IndexerBase.ApiProviderName}");
             }
         }    
         
@@ -82,6 +84,8 @@ public class TonIndexerRouter:ISingletonDependency
                     _logger.LogDebug($"[Ton Send Transaction] End");
                     return result;
                 }
+                
+                _logger.LogInformation($"Ton provider is changed,current commit provider is:{item.IndexerBase.ApiProviderName}");
             }
         }
         
@@ -100,6 +104,8 @@ public class TonIndexerRouter:ISingletonDependency
                 {
                     return result;
                 }
+                
+                _logger.LogInformation($"Ton provider is changed,current index provider is:{item.IndexerBase.ApiProviderName}");
             }
         }
         
@@ -118,6 +124,8 @@ public class TonIndexerRouter:ISingletonDependency
                 {
                     return result;
                 }
+                
+                _logger.LogInformation($"Ton provider is changed,current index provider is:{item.IndexerBase.ApiProviderName}");
             }
         }
 

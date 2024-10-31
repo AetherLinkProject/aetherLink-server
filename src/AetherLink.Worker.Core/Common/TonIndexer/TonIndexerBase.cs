@@ -213,7 +213,7 @@ public abstract class TonIndexerBase : ITonIndexerProvider
         var resp = await client.GetAsync(url);
         if (!resp.IsSuccessStatusCode)
         {
-            _logger.LogError($"[Ton provider]  request Error, response message is:{resp}");
+            _logger.LogWarning($"[Ton provider]  request Error, response message is:{resp}");
             throw new HttpRequestException();
         }
 
@@ -241,7 +241,7 @@ public abstract class TonIndexerBase : ITonIndexerProvider
         var resp = await client.PostAsync(url, new StringContent(body, Encoding.Default, "application/json"));
         if (!resp.IsSuccessStatusCode)
         {
-            _logger.LogError($"[Ton Post Message] response error, message is:{resp} ");
+            _logger.LogWarning($"[Ton Post Message] response error, message is:{resp} ");
             throw new HttpRequestException();
         }
 
