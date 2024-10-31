@@ -24,7 +24,6 @@ public interface IStorageProvider
 
 public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDependency
 {
-    private readonly RedisCacheOptions _cacheOptions;
     private readonly ILogger<StorageProvider> _logger;
     private readonly IDistributedCacheSerializer _serializer;
 
@@ -33,8 +32,8 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
     {
         _logger = logger;
         _serializer = serializer;
-        _cacheOptions = optionsAccessor.Value;
-        _logger.LogDebug($"get config: {JsonConvert.SerializeObject(_cacheOptions)}");
+        _logger.LogDebug($"get config: {JsonConvert.SerializeObject(optionsAccessor.Value)}");
+        _logger.LogDebug($"get InstanceName: {optionsAccessor.Value.InstanceName}");
     }
 
     public async Task SetAsync<T>(string key, T data) where T : class => await SetAsync(key, data, null);
