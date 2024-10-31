@@ -28,12 +28,14 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
     private readonly ILogger<StorageProvider> _logger;
     private readonly IDistributedCacheSerializer _serializer;
 
-    public StorageProvider(IOptions<LocalRedisCacheOptions> optionsAccessor, ILogger<StorageProvider> logger,
+    public StorageProvider(IOptionsSnapshot<LocalRedisCacheOptions> optionsAccessor,
+        IOptionsSnapshot<RedisCacheOptions> redisOptions, ILogger<StorageProvider> logger,
         IDistributedCacheSerializer serializer) : base(optionsAccessor)
     {
         _logger = logger;
         _serializer = serializer;
-        _logger.LogDebug($"get config: {JsonConvert.SerializeObject(optionsAccessor.Value)}");
+        _logger.LogDebug($"get local options: {JsonConvert.SerializeObject(optionsAccessor.Value)}");
+        _logger.LogDebug($"get redis options: {JsonConvert.SerializeObject(redisOptions.Value)}");
         _logger.LogDebug($"get InstanceName: {optionsAccessor.Value.InstanceName}");
     }
 
