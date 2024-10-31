@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AetherlinkPriceServer.Options;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using StackExchange.Redis;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
@@ -28,15 +26,11 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
     private readonly ILogger<StorageProvider> _logger;
     private readonly IDistributedCacheSerializer _serializer;
 
-    public StorageProvider(IOptionsSnapshot<LocalRedisCacheOptions> optionsAccessor,
-        IOptionsSnapshot<RedisCacheOptions> redisOptions, ILogger<StorageProvider> logger,
+    public StorageProvider(IOptions<RedisCacheOptions> optionsAccessor, ILogger<StorageProvider> logger,
         IDistributedCacheSerializer serializer) : base(optionsAccessor)
     {
         _logger = logger;
         _serializer = serializer;
-        _logger.LogDebug($"get local options: {JsonConvert.SerializeObject(optionsAccessor.Value)}");
-        _logger.LogDebug($"get redis options: {JsonConvert.SerializeObject(redisOptions.Value)}");
-        _logger.LogDebug($"get InstanceName: {optionsAccessor.Value.InstanceName}");
     }
 
     public async Task SetAsync<T>(string key, T data) where T : class => await SetAsync(key, data, null);

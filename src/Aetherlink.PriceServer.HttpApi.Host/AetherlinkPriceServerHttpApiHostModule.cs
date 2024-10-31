@@ -6,7 +6,6 @@ using AetherlinkPriceServer.Options;
 using AetherlinkPriceServer.Worker;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -46,7 +45,6 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         Configure<TokenPriceSourceOptions>(configuration.GetSection("TokenPriceSource"));
         Configure<HourlyPriceOption>(configuration.GetSection("HourlyPrice"));
         Configure<MetricsReportOption>(configuration.GetSection("MetricsReport"));
-        Configure<LocalRedisCacheOptions>(configuration.GetSection("Redis"));
         ConfigureMetrics(context, configuration);
         ConfigCoinGeckoApi(context);
     }

@@ -6,7 +6,6 @@ using AetherlinkPriceServer.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
@@ -24,7 +23,6 @@ public class HourlyPriceWorker : AsyncPeriodicBackgroundWorkerBase
     {
         _logger = logger;
         _option = option.Value;
-        _logger.LogDebug($"get MetricsReportOption: {JsonConvert.SerializeObject(option.Value)}");
         _priceProvider = priceProvider;
         SetNextWholeHourTimer();
     }

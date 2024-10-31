@@ -4,7 +4,6 @@ using AetherlinkPriceServer.Reporter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 
@@ -21,7 +20,6 @@ public class MetricsReportWorker : AsyncPeriodicBackgroundWorkerBase
     {
         _logger = logger;
         _reporter = reporter;
-        _logger.LogDebug($"get MetricsReportOption: {JsonConvert.SerializeObject(option.Value)}");
         Timer.Period = option.Value.Interval;
     }
 
