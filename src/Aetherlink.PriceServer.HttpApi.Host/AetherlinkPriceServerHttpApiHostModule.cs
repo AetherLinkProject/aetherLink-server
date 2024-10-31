@@ -51,6 +51,7 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         Configure<RedisCacheOptions>(configuration.GetSection("Redis"));
         ConfigureMetrics(context, configuration);
         ConfigCoinGeckoApi(context);
+        ConfigureHangfire(context, configuration);
     }
     
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
