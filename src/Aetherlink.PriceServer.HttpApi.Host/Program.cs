@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
 using Serilog;
 using Serilog.Events;
 
@@ -30,7 +31,10 @@ public class Program
             .WriteTo.Async(c => c.Console())
 #endif
             .CreateLogger();
-
+        configuration.GetReloadToken().RegisterChangeCallback(_ =>
+        {
+            Log.Information($"[Refresh configuration]:{configuration["redis"]}");
+        },null);
         try
         {
             Log.Information("Starting web host.");
