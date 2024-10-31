@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AetherlinkPriceServer.Options;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -27,7 +28,7 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
     private readonly ILogger<StorageProvider> _logger;
     private readonly IDistributedCacheSerializer _serializer;
 
-    public StorageProvider(IOptions<RedisCacheOptions> optionsAccessor, ILogger<StorageProvider> logger,
+    public StorageProvider(IOptions<LocalRedisCacheOptions> optionsAccessor, ILogger<StorageProvider> logger,
         IDistributedCacheSerializer serializer) : base(optionsAccessor)
     {
         _logger = logger;

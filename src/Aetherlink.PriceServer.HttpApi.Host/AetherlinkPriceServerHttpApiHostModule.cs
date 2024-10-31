@@ -46,7 +46,7 @@ public class AetherlinkPriceServerHttpApiHostModule : AbpModule
         Configure<TokenPriceSourceOptions>(configuration.GetSection("TokenPriceSource"));
         Configure<HourlyPriceOption>(configuration.GetSection("HourlyPrice"));
         Configure<MetricsReportOption>(configuration.GetSection("MetricsReport"));
-        Configure<RedisCacheOptions>(configuration.GetSection("Redis"));
+        Configure<LocalRedisCacheOptions>(configuration.GetSection("Redis"));
         ConfigureMetrics(context, configuration);
         ConfigCoinGeckoApi(context);
     }
