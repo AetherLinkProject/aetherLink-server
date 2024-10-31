@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Serilog.Events;
 
 namespace AetherlinkPriceServer;
 
@@ -16,8 +17,18 @@ public class Program
             .AddJsonFile("appsettings.json")
             .Build();
         Log.Logger = new LoggerConfiguration()
-            .ReadFrom.Configuration(configuration)
+#if DEBUG
+            .MinimumLevel.Debug()
+#else
+            .MinimumLevel.Information()
+#endif
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
+            .ReadFrom.Configuration(configuration)
+
+#if DEBUG
+            .WriteTo.Async(c => c.Console())
+#endif
             .CreateLogger();
 
         try
