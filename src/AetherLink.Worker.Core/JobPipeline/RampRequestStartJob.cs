@@ -46,23 +46,6 @@ public class RampRequestStartJob : AsyncBackgroundJob<RampRequestStartJobArgs>, 
                 var receivedTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
                 rampMessageData.RequestReceiveTime = receivedTime;
             }
-            else if (args.RoundId > 0)
-            {
-                // reset new received time to next time window 
-            }
-            else switch (rampMessageData.State)
-            {
-                case RampRequestState.RequestStart:
-                case RampRequestState.Committed:
-                case RampRequestState.Confirmed:
-                    _logger.LogDebug("Request already started.");
-                    return;
-                case RampRequestState.PendingResend:
-                    // reset new received time to resend transaction time
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
 
             rampMessageData.State = RampRequestState.RequestStart;
             await _rampMessageProvider.SetAsync(rampMessageData);
@@ -87,7 +70,8 @@ public class RampRequestStartJob : AsyncBackgroundJob<RampRequestStartJobArgs>, 
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "");
+            _logger.LogError(e, $"[Ramp] Start Ramp request job {args.MessageId} failed");
+            // retried by background job
             throw;
         }
     }

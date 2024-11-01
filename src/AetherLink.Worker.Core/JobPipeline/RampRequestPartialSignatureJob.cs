@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
-using IdGeneratorHelper = Aetherlink.PriceServer.Common.IdGeneratorHelper;
 
 namespace AetherLink.Worker.Core.JobPipeline;
 
@@ -61,7 +60,6 @@ public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPart
             if (args.RoundId < messageData.RoundId)
             {
                 _logger.LogWarning($"The Ramp request {args.MessageId} from leader is too old.");
-
                 return;
             }
 
