@@ -31,13 +31,15 @@ public class RampRequestCancelProcessJob : AsyncBackgroundJob<RampRequestCancelP
             var rampMessageData = await _rampMessageProvider.GetAsync(args.MessageId);
             if (rampMessageData == null)
             {
-                _logger.LogInformation($"[RampRequestCancelProcess] {args.MessageId} not exist");
+                _logger.LogWarning($"[RampRequestCancelProcess] {args.MessageId} not exist");
                 return;
             }
 
             rampMessageData.State = RampRequestState.RequestCanceled;
             await _rampMessageProvider.SetAsync(rampMessageData);
             _schedulerService.CancelScheduler(rampMessageData);
+
+            _logger.LogInformation($"[RampRequestCancelProcess] Ramp request {args.MessageId} cancelled.");
         }
         catch (Exception e)
         {
