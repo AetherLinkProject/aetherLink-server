@@ -40,8 +40,15 @@ public class RampRequestSchedulerJob : IRampRequestSchedulerJob, ITransientDepen
     public async Task Execute(RampMessageDto messageData)
     {
         _logger.LogInformation(
-            $"[RampRequestSchedulerJob] Scheduler message execute. reqId {messageData.MessageId}, roundId:{messageData.RoundId}, reqState:{messageData.State}");
+            $"[RampRequestSchedulerJob] Scheduler message execute. message id {messageData.MessageId}, roundId:{messageData.RoundId}, reqState:{messageData.State}");
         messageData.RoundId++;
+
+        if (messageData.RoundId > _schedulerOptions.RampRequestRetryLimit)
+        {
+            _logger.LogInformation(
+                $"[RampRequestSchedulerJob] Message executed over retry limit, will not retry by round. message id {messageData.MessageId}");
+            return;
+        }
 
         var receiveTime = messageData.RequestReceiveTime;
         while (DateTime.UtcNow > receiveTime) receiveTime = receiveTime.AddMinutes(_schedulerOptions.RetryTimeOut);
