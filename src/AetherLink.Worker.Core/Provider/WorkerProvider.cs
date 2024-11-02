@@ -21,10 +21,12 @@ public interface IWorkerProvider
     public Task<List<RampRequestDto>> SearchRampRequestsAsync(string chainId, long to, long from);
     public Task<List<TransmittedDto>> SearchTransmittedAsync(string chainId, long to, long from);
     public Task<List<RequestCancelledDto>> SearchRequestCanceledAsync(string chainId, long to, long from);
+    public Task<List<RampRequestCancelledDto>> SearchRampRequestCanceledAsync(string chainId, long to, long from);
     public Task HandleJobAsync(OcrLogEventDto logEvent);
     public Task HandleRampRequestAsync(RampRequestDto rampRequest);
     public Task HandleTransmittedLogEventAsync(TransmittedDto transmitted);
     public Task HandleRequestCancelledLogEventAsync(RequestCancelledDto requestCancelled);
+    public Task HandleRampRequestCancelledLogEventAsync(RampRequestCancelledDto rampCancelled);
     public Task<long> GetStartHeightAsync(string chainId);
     public Task<long> GetUnconfirmedStartHeightAsync(string chainId);
     public Task SetLatestSearchHeightAsync(string chainId, long searchHeight);
@@ -65,6 +67,9 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
     public async Task<List<RequestCancelledDto>> SearchRequestCanceledAsync(string chainId, long to, long from)
         => await _aeFinderProvider.SubscribeRequestCancelledAsync(chainId, to, from);
 
+    public async Task<List<RampRequestCancelledDto>> SearchRampRequestCanceledAsync(string chainId, long to, long from)
+        => await _aeFinderProvider.SubscribeRampRequestCancelledAsync(chainId, to, from);
+
     public async Task HandleJobAsync(OcrLogEventDto logEvent)
     {
         if (!_requestJob.TryGetValue(logEvent.RequestTypeIndex, out var request))
@@ -77,7 +82,8 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
     }
 
     public async Task HandleRampRequestAsync(RampRequestDto rampRequest)
-        => await _backgroundJobManager.EnqueueAsync(_objectMapper.Map<RampRequestDto, RampRequestStartJobArgs>(rampRequest));
+        => await _backgroundJobManager.EnqueueAsync(
+            _objectMapper.Map<RampRequestDto, RampRequestStartJobArgs>(rampRequest));
 
     public async Task<long> GetStartHeightAsync(string chainId)
     {
@@ -103,6 +109,10 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
     public async Task HandleRequestCancelledLogEventAsync(RequestCancelledDto requestCancelled)
         => await _backgroundJobManager.EnqueueAsync(
             _objectMapper.Map<RequestCancelledDto, RequestCancelProcessJobArgs>(requestCancelled));
+
+    public async Task HandleRampRequestCancelledLogEventAsync(RampRequestCancelledDto rampCancelled)
+        => await _backgroundJobManager.EnqueueAsync(
+            _objectMapper.Map<RampRequestCancelledDto, RampRequestCancelProcessJobArgs>(rampCancelled));
 
     private static string GetSearchHeightRedisKey(string chainId)
         => IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, chainId);

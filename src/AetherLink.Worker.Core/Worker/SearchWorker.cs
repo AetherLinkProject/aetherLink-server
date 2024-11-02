@@ -55,7 +55,8 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
             ExecuteJobsAsync(chainId, blockLatestHeight, startHeight),
             ExecuteTransmittedAsync(chainId, blockLatestHeight, startHeight),
             ExecuteRequestCanceledAsync(chainId, blockLatestHeight, startHeight),
-            ExecuteRampRequestsAsync(chainId, blockLatestHeight, startHeight)
+            ExecuteRampRequestsAsync(chainId, blockLatestHeight, startHeight),
+            ExecuteRampRequestsCanceledAsync(chainId, blockLatestHeight, startHeight)
         );
 
         _logger.LogDebug("[Search] {chain} search log took {time} ms.", chainId,
@@ -65,7 +66,6 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         _reporter.RecordConfirmBlockHeight(chainId, startHeight, blockLatestHeight);
         await _provider.SetLatestSearchHeightAsync(chainId, blockLatestHeight);
     }
-
 
     private async Task Initialize()
     {
@@ -98,8 +98,7 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         var requests = await _provider.SearchRampRequestsAsync(chainId, to, from);
         var tasks = requests.Select(r => _provider.HandleRampRequestAsync(r));
 
-        // todo: record ramp requests
-        // _reporter.RecordOracleJobAsync(chainId, requests.Count);
+        _reporter.RecordRampJobAsync(chainId, requests.Count);
         _logger.LogDebug("[Search] {chain} found a total of {count} ramp requests.", chainId, requests.Count);
 
         await Task.WhenAll(tasks);
@@ -127,6 +126,19 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         _reporter.RecordCanceledAsync(chainId, cancels.Count);
 
         _logger.LogDebug("[Search] {chain} found a total of {count} canceled.", chainId, cancels.Count);
+
+        await Task.WhenAll(requestCancelsTasks);
+    }
+
+    // search ramp cancelled event
+    private async Task ExecuteRampRequestsCanceledAsync(string chainId, long to, long from)
+    {
+        var cancels = await _provider.SearchRampRequestCanceledAsync(chainId, to, from);
+        var requestCancelsTasks = cancels.Select(requestCancelled =>
+            _provider.HandleRampRequestCancelledLogEventAsync(requestCancelled));
+        _reporter.RecordCanceledAsync(chainId, cancels.Count);
+
+        _logger.LogDebug("[Search] {chain} found a total of {count} ramp canceled.", chainId, cancels.Count);
 
         await Task.WhenAll(requestCancelsTasks);
     }

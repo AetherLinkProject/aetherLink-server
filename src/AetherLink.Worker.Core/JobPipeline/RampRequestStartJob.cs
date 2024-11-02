@@ -46,6 +46,11 @@ public class RampRequestStartJob : AsyncBackgroundJob<RampRequestStartJobArgs>, 
                 var receivedTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
                 rampMessageData.RequestReceiveTime = receivedTime;
             }
+            else if (rampMessageData.State == RampRequestState.RequestCanceled)
+            {
+                _logger.LogWarning($"Ramp request {args.MessageId} canceled");
+                return;
+            }
 
             rampMessageData.State = RampRequestState.RequestStart;
             await _rampMessageProvider.SetAsync(rampMessageData);
