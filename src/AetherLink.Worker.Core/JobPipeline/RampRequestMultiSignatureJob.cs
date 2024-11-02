@@ -54,7 +54,18 @@ public class RampRequestMultiSignatureJob : AsyncBackgroundJob<RampRequestMultiS
         {
             _logger.LogInformation($"Get partial signature {messageId} {epoch} {nodeIndex}");
             var messageData = await _messageProvider.GetAsync(messageId);
-            if (messageData == null) return;
+            if (messageData == null)
+            {
+                _logger.LogWarning($"Ramp request {args.MessageId} not exist.");
+                return;
+            }
+
+            if (messageData.State == RampRequestState.RequestCanceled)
+            {
+                _logger.LogWarning($"Ramp request {args.MessageId} canceled");
+                return;
+            }
+
             var signatureId = IdGeneratorHelper.GenerateId(messageId, epoch, roundId);
 
             if (!string.IsNullOrEmpty(messageData.ResendTransactionId))

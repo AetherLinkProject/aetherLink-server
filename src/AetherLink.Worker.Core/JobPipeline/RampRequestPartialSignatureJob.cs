@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
+using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
@@ -54,6 +55,12 @@ public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPart
 
                 _logger.LogDebug($"The Ramp request {args.MessageId} from leader is not ready now,will try it later.");
                 await _retryProvider.RetryWithIdAsync(args, IdGeneratorHelper.GenerateId(messageId, epoch, roundId));
+                return;
+            }
+
+            if (messageData.State == RampRequestState.RequestCanceled)
+            {
+                _logger.LogWarning($"Ramp request {args.MessageId} canceled");
                 return;
             }
 

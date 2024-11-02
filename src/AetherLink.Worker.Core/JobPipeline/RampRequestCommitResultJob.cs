@@ -35,6 +35,12 @@ public class RampRequestCommitResultJob : AsyncBackgroundJob<RampRequestCommitRe
             return;
         }
 
+        if (messageData.State == RampRequestState.RequestCanceled)
+        {
+            _logger.LogWarning($"Ramp request {args.MessageId} canceled");
+            return;
+        }
+
         // todo: check transaction by targetChainId
 
         messageData.State = RampRequestState.Committed;
