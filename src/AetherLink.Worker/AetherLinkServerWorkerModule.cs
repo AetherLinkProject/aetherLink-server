@@ -84,14 +84,13 @@ namespace AetherLink.Worker
             Configure<ProcessJobOptions>(configuration.GetSection("ProcessJob"));
             Configure<OracleInfoOptions>(configuration.GetSection("OracleChainInfo"));
             Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AetherLinkServer:"; });
-            Configure<TonPublicConfigOptions>(configuration.GetSection("Chains:ChainInfos:Ton"));
+            Configure<TonPublicConfig>(configuration.GetSection("Chains:ChainInfos:Ton"));
             Configure<TonSecretConfigOptions>(configuration.GetSection("OracleChainInfo:ChainConfig:Ton"));
             Configure<TonGetBlockProviderOptions>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:GetBlock"));
             Configure<TonCenterProviderApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:TonCenter"));
             Configure<TonapiProviderApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:TonApi"));
             Configure<ChainStackApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:ChainStack"));
         }
-
 
         private void ConfigureMetrics(ServiceConfigurationContext context, IConfiguration configuration)
         {

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
+using AetherLink.Worker.Core.Provider.TonIndexer;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;

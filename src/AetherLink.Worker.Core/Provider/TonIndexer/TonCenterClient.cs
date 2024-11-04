@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
-namespace AetherLink.Worker.Core.Common.TonIndexer;
+namespace AetherLink.Worker.Core.Provider.TonIndexer;
 
 public class TonCenterClient : TonIndexerBase, ISingletonDependency
 {
@@ -16,7 +16,7 @@ public class TonCenterClient : TonIndexerBase, ISingletonDependency
     private readonly TonCenterRequestLimit _requestLimit;
 
     public TonCenterClient(IOptionsSnapshot<TonCenterProviderApiConfig> snapshotConfig,
-        IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, IHttpClientFactory clientFactory,
+        IOptionsSnapshot<TonPublicConfig> tonPublicOptions, IHttpClientFactory clientFactory,
         ILogger<TonCenterClient> logger) : base(tonPublicOptions, logger)
     {
         _apiConfig = snapshotConfig.Value;
@@ -85,11 +85,9 @@ public class TonCenterRequestLimit
                 return true;
             }
 
-            if (dtNow > _latestExecuteTime)
-            {
-                _latestExecuteTime = dtNow;
-                _latestSecondExecuteCount = 1;
-            }
+            if (dtNow <= _latestExecuteTime) return true;
+            _latestExecuteTime = dtNow;
+            _latestSecondExecuteCount = 1;
 
             return true;
         }

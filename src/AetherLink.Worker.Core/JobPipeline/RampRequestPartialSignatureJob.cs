@@ -70,7 +70,7 @@ public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPart
                 return;
             }
 
-            var partialSig = _tonHelper.ConsensusSign(new()
+            var partialSig = _tonHelper.ConsensusSignature(new()
             {
                 MessageId = messageData.MessageId,
                 SourceChainId = messageData.SourceChainId,

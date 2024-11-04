@@ -4,23 +4,21 @@ using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
-using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
-namespace AetherLink.Worker.Core.Common.TonIndexer;
+namespace AetherLink.Worker.Core.Provider.TonIndexer;
 
-public class ChainStackClient: TonIndexerBase, ISingletonDependency
+public class ChainStackClient : TonIndexerBase, ISingletonDependency
 {
     private readonly ChainStackApiConfig _chainStackConfig;
     private readonly IHttpClientFactory _clientFactory;
     private readonly ChainStackRequestLimit _requestLimit;
-    
+
     public ChainStackClient(IOptionsSnapshot<ChainStackApiConfig> snapshotConfig,
-        IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,
-        IHttpClientFactory clientFactory, IStorageProvider storageProvider, ILogger<ChainStackClient> logger) : base(
-        tonPublicOptions, logger)
+        IOptionsSnapshot<TonPublicConfig> tonPublicOptions, IHttpClientFactory clientFactory,
+        IStorageProvider storageProvider, ILogger<ChainStackClient> logger) : base(tonPublicOptions, logger)
     {
         _chainStackConfig = snapshotConfig.Value;
         _clientFactory = clientFactory;
@@ -47,7 +45,6 @@ public class ChainStackClient: TonIndexerBase, ISingletonDependency
         return client;
     }
 }
-
 
 public class ChainStackRequestLimit
 {

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace AetherLink.Worker.Core.Options;
 
-public class TonPublicConfigOptions
+public class TonPublicConfig
 {
     public string ContractAddress { get; set; }
     public int IndexerPeriod { get; set; }
@@ -20,6 +20,5 @@ public class OracleNodeInfo
 public class TonSecretConfigOptions
 {
     public string TransmitterSecretKey { get; set; }
-
     public string TransmitterFee { get; set; } = "0.015";
 }

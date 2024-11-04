@@ -52,17 +52,17 @@ public class RampRequestMultiSignatureJob : AsyncBackgroundJob<RampRequestMultiS
         var roundId = args.RoundId;
         try
         {
-            _logger.LogInformation($"Get partial signature {messageId} {epoch} {nodeIndex}");
+            _logger.LogInformation($"[Ramp][Leader] Get partial signature {messageId} {epoch} {nodeIndex}");
             var messageData = await _messageProvider.GetAsync(messageId);
             if (messageData == null)
             {
-                _logger.LogWarning($"Ramp request {args.MessageId} not exist.");
+                _logger.LogWarning($"[Ramp][Leader] Ramp request {args.MessageId} not exist.");
                 return;
             }
 
             if (messageData.State == RampRequestState.RequestCanceled)
             {
-                _logger.LogWarning($"Ramp request {args.MessageId} canceled");
+                _logger.LogWarning($"[Ramp][Leader] Ramp request {args.MessageId} canceled");
                 return;
             }
 
@@ -75,7 +75,7 @@ public class RampRequestMultiSignatureJob : AsyncBackgroundJob<RampRequestMultiS
 
             if (_stateProvider.IsFinished(signatureId)) return;
 
-            var metadata = new CrossChainForwardMessageDto
+            var metadata = new ForwardMessageDto
             {
                 MessageId = messageData.MessageId,
                 SourceChainId = messageData.SourceChainId,
@@ -84,16 +84,16 @@ public class RampRequestMultiSignatureJob : AsyncBackgroundJob<RampRequestMultiS
                 Receiver = messageData.Receiver,
                 Message = messageData.Data
             };
-            var checkResult = _tonHelper.CheckSign(metadata, args.Signature, nodeIndex);
+            var checkResult = _tonHelper.ValidateSignature(metadata, args.Signature, nodeIndex);
 
             if (!checkResult)
             {
                 _logger.LogWarning(
-                    $"[Ramp] check {nodeIndex} signature failed, please check signature and data {messageData.Data}.");
+                    $"[Ramp][Leader] Check {nodeIndex} Signature failed, please check signature and data {messageData.Data}.");
                 return;
             }
 
-            _logger.LogDebug($"[Ramp][Leader] signature checked result {checkResult}.");
+            _logger.LogDebug($"[Ramp][Leader] Signature checked result {checkResult}.");
 
             var signatures = ProcessPartialSignature(signatureId, nodeIndex, args.Signature);
 
@@ -165,7 +165,7 @@ public class RampRequestMultiSignatureJob : AsyncBackgroundJob<RampRequestMultiS
         }
     }
 
-    private async Task<string> SendTransactionAsync(CrossChainForwardMessageDto metadata,
+    private async Task<string> SendTransactionAsync(ForwardMessageDto metadata,
         Dictionary<int, byte[]> signatures)
     {
         for (var i = 0; i < RetryConstants.DefaultDelay; i++)
