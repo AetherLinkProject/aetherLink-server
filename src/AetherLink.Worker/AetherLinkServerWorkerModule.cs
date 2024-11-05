@@ -83,6 +83,7 @@ namespace AetherLink.Worker
             Configure<PriceFeedsOptions>(configuration.GetSection("PriceFeeds"));
             Configure<ProcessJobOptions>(configuration.GetSection("ProcessJob"));
             Configure<OracleInfoOptions>(configuration.GetSection("OracleChainInfo"));
+            Configure<TonApiHealthCheckOptions>(configuration.GetSection("TonApiHealthCheck"));
             Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AetherLinkServer:"; });
             Configure<TonPublicConfig>(configuration.GetSection("Chains:ChainInfos:Ton"));
             Configure<TonSecretConfigOptions>(configuration.GetSection("OracleChainInfo:ChainConfig:Ton"));
@@ -119,7 +120,7 @@ namespace AetherLink.Worker
             context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
             context.AddBackgroundWorkerAsync<LogsPoller>();
             context.AddBackgroundWorkerAsync<TonIndexerWorker>();
-            context.AddBackgroundWorkerAsync<TonApiProviderWorker>();
+            context.AddBackgroundWorkerAsync<TonApiHealthCheckWorker>();
         }
 
         private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)

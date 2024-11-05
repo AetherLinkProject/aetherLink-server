@@ -139,14 +139,5 @@ public class TonIndexerRouter : ISingletonDependency
         return null;
     }
 
-    public List<TonIndexerWrapper> GetIndexerApiProviderList()
-    {
-        var result = new List<TonIndexerWrapper>();
-        foreach (var item in _indexerProviderList)
-        {
-            result.Add(item);
-        }
-
-        return result;
-    }
+    public List<TonIndexerWrapper> GetIndexerApiProviderList() => _indexerProviderList;
 }
