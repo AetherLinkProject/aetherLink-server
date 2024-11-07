@@ -15,5 +15,6 @@ public enum SourceType
     CoinMarket,
     GateIo,
     CoinBase,
+    Hamster,
     None = 99
 }

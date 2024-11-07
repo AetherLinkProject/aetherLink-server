@@ -64,5 +64,6 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
         CreateMap<RampRequestMultiSignatureJobArgs, RampRequestCommitResultJobArgs>();
         CreateMap<RampRequestPartialSignatureJobArgs, ReturnPartialSignatureResults>();
         CreateMap<RampRequestPartialSignatureJobArgs, RampRequestMultiSignatureJobArgs>();
+        CreateMap<RampRequestCancelledDto, RampRequestCancelProcessJobArgs>();
     }
 }

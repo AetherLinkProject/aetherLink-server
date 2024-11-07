@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using AetherLink.Worker.Core.Dtos;
-using Org.BouncyCastle.Utilities;
-using Org.BouncyCastle.Utilities.Encoders;
 
-namespace AetherLink.Worker.Core.Common.TonIndexer;
+namespace AetherLink.Worker.Core.Provider.TonIndexer;
 
 public class TransactionsResponse
 {
@@ -49,7 +47,7 @@ public class Transaction
             ExitCode = Description.ComputePh.ExitCode,
             Bounce = InMsg.Bounce,
             Bounced = InMsg.Bounced,
-            OpCode = Convert.ToInt32(InMsg.Opcode,16)
+            OpCode = Convert.ToInt32(InMsg.Opcode, 16)
         };
 
         return tx;
@@ -152,7 +150,7 @@ public class BouncePhase
 
 public class ComputePhase
 {
-    public  bool AccountActivated { get; set; }
+    public bool AccountActivated { get; set; }
     public int ExitArg { get; set; }
     public int ExitCode { get; set; }
     public string GasCredit { get; set; }
@@ -171,8 +169,8 @@ public class ComputePhase
 
 public class CreditPhase
 {
- public string Credit { get; set; }
- public string DueFeesCollected { get; set; }
+    public string Credit { get; set; }
+    public string DueFeesCollected { get; set; }
 }
 
 public class SplitInfo

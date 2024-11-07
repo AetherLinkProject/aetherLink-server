@@ -83,15 +83,15 @@ namespace AetherLink.Worker
             Configure<PriceFeedsOptions>(configuration.GetSection("PriceFeeds"));
             Configure<ProcessJobOptions>(configuration.GetSection("ProcessJob"));
             Configure<OracleInfoOptions>(configuration.GetSection("OracleChainInfo"));
+            Configure<TonApiHealthCheckOptions>(configuration.GetSection("TonApiHealthCheck"));
             Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AetherLinkServer:"; });
-            Configure<TonPublicConfigOptions>(configuration.GetSection("Chains:ChainInfos:Ton"));
+            Configure<TonPublicConfig>(configuration.GetSection("Chains:ChainInfos:Ton"));
             Configure<TonSecretConfigOptions>(configuration.GetSection("OracleChainInfo:ChainConfig:Ton"));
             Configure<TonGetBlockProviderOptions>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:GetBlock"));
             Configure<TonCenterProviderApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:TonCenter"));
             Configure<TonapiProviderApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:TonApi"));
             Configure<ChainStackApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:ChainStack"));
         }
-
 
         private void ConfigureMetrics(ServiceConfigurationContext context, IConfiguration configuration)
         {
@@ -120,7 +120,7 @@ namespace AetherLink.Worker
             context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
             context.AddBackgroundWorkerAsync<LogsPoller>();
             context.AddBackgroundWorkerAsync<TonIndexerWorker>();
-            context.AddBackgroundWorkerAsync<TonApiProviderWorker>();
+            context.AddBackgroundWorkerAsync<TonApiHealthCheckWorker>();
         }
 
         private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)

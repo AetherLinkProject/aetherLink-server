@@ -58,6 +58,16 @@ public class RequestCancelledDto : IndexerBasicDto
 {
 }
 
+public class IndexerRampRequestCancelledListDto
+{
+    public List<RampRequestCancelledDto> RampRequestCancelled { get; set; }
+}
+
+public class RampRequestCancelledDto
+{
+    public string MessageId { get; set; }
+}
+
 // Basic Dto
 public class IndexerBasicDto
 {

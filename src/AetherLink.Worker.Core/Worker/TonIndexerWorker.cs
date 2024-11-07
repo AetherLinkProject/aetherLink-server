@@ -1,11 +1,10 @@
 using System;
 using System.Threading.Tasks;
-using AetherLink.Worker.Core.Common;
-using AetherLink.Worker.Core.Common.TonIndexer;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Provider.TonIndexer;
 using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -19,34 +18,28 @@ namespace AetherLink.Worker.Core.Worker;
 public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly TonHelper _tonHelper;
+    private readonly ISchedulerService _scheduler;
     private readonly ILogger<TonIndexerWorker> _logger;
     private readonly TonIndexerRouter _tonIndexerRouter;
-    private readonly IRampMessageProvider _rampMessageProvider;
-    private readonly IRampRequestSchedulerJob _requestScheduler;
+    private readonly ISchedulerService _requestScheduler;
     private readonly ITonStorageProvider _tonStorageProvider;
-    private readonly ISchedulerService _scheduler;
-    private readonly TonPublicConfigOptions _tonPublicOptions;
+    private readonly TonPublicConfig _tonPublic;
+    private readonly IRampMessageProvider _rampMessageProvider;
 
-    public TonIndexerWorker(AbpAsyncTimer timer, IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,
-        IServiceScopeFactory serviceScopeFactory,
-        TonIndexerRouter tonIndexerRouter, TonHelper tonHelper,
-        ILogger<TonIndexerWorker> logger,
-        IRampMessageProvider rampMessageProvider,
-        ITonStorageProvider tonStorageProvider,
-        IRampRequestSchedulerJob rampRequestSchedulerJob,
-        ISchedulerService scheduler) : base(timer,
-        serviceScopeFactory)
+    public TonIndexerWorker(AbpAsyncTimer timer, IOptionsSnapshot<TonPublicConfig> tonPublicOptions,
+        IServiceScopeFactory serviceScopeFactory, TonIndexerRouter tonIndexerRouter, TonHelper tonHelper,
+        ILogger<TonIndexerWorker> logger, IRampMessageProvider rampMessageProvider, ISchedulerService scheduler,
+        ITonStorageProvider tonStorageProvider, ISchedulerService requestScheduler) : base(timer, serviceScopeFactory)
     {
-        _tonHelper = tonHelper;
         _logger = logger;
-        _tonPublicOptions = tonPublicOptions.Value;
-        _tonIndexerRouter = tonIndexerRouter;
-        _rampMessageProvider = rampMessageProvider;
-        _tonStorageProvider = tonStorageProvider;
-        _requestScheduler = rampRequestSchedulerJob;
         _scheduler = scheduler;
-
-        timer.Period = 1000 * _tonPublicOptions.IndexerPeriod;
+        _tonHelper = tonHelper;
+        _requestScheduler = requestScheduler;
+        _tonIndexerRouter = tonIndexerRouter;
+        _tonStorageProvider = tonStorageProvider;
+        _tonPublic = tonPublicOptions.Value;
+        _rampMessageProvider = rampMessageProvider;
+        timer.Period = 1000 * _tonPublic.IndexerPeriod;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
@@ -178,7 +171,7 @@ public class TonIndexerWorker : AsyncPeriodicBackgroundWorkerBase
         rampMessageData.NextCommitDelayTime = (int)resendMessage.ResendTime;
         rampMessageData.ResendTransactionId = tx.Hash;
         rampMessageData.ResendTransactionBlockHeight = tx.SeqNo;
-        await _requestScheduler.Resend(rampMessageData);
+        _requestScheduler.StartScheduler(rampMessageData, RampSchedulerType.ResendPendingScheduler);
 
         _logger.LogInformation(
             $"[Ton indexer] received resend transaction messageId:{resendMessage.MessageId}, hash:{resendMessage.Hash}, block time:{tx.BlockTime}, resend time:{resendMessage.ResendTime}");

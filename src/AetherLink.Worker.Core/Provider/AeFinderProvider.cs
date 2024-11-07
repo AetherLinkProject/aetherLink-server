@@ -19,6 +19,7 @@ public interface IAeFinderProvider
     public Task<List<RampRequestDto>> SubscribeRampRequestsAsync(string chainId, long to, long from);
     public Task<List<TransmittedDto>> SubscribeTransmittedAsync(string chainId, long to, long from);
     public Task<List<RequestCancelledDto>> SubscribeRequestCancelledAsync(string chainId, long to, long from);
+    public Task<List<RampRequestCancelledDto>> SubscribeRampRequestCancelledAsync(string chainId, long to, long from);
     public Task<List<ChainItemDto>> GetChainSyncStateAsync();
     public Task<string> GetOracleConfigAsync(string chainId);
     public Task<long> GetOracleLatestEpochAsync(string chainId, long blockHeight);
@@ -161,6 +162,34 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         {
             _logger.LogError(e, "[Indexer] SubscribeRequestCancelled failed.");
             return new List<RequestCancelledDto>();
+        }
+    }
+
+    public async Task<List<RampRequestCancelledDto>> SubscribeRampRequestCancelledAsync(string chainId, long to,
+        long from)
+    {
+        try
+        {
+            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerRampRequestCancelledListDto>(GetClient(),
+                new()
+                {
+                    Query =
+                        @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
+                    rampRequestCancelled(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
+                        messageId
+                }
+            }",
+                    Variables = new
+                    {
+                        chainId = chainId, fromBlockHeight = from, toBlockHeight = to
+                    }
+                });
+            return indexerResult != null ? indexerResult.RampRequestCancelled : new List<RampRequestCancelledDto>();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Indexer] SubscribeRequestCancelled failed.");
+            return new List<RampRequestCancelledDto>();
         }
     }
 

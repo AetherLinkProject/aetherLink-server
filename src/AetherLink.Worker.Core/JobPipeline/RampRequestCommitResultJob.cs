@@ -26,10 +26,20 @@ public class RampRequestCommitResultJob : AsyncBackgroundJob<RampRequestCommitRe
     public override async Task ExecuteAsync(RampRequestCommitResultJobArgs args)
     {
         var messageId = args.MessageId;
-        _logger.LogInformation($"get leader ramp commit transaction {args.TransactionId}");
+        _logger.LogInformation($"[Ramp] Get leader ramp commit transaction {args.TransactionId}");
 
         var messageData = await _messageProvider.GetAsync(messageId);
-        if (messageData == null) return;
+        if (messageData == null)
+        {
+            _logger.LogWarning($"[Ramp] Get not exist job {messageId} from leader");
+            return;
+        }
+
+        if (messageData.State == RampRequestState.RequestCanceled)
+        {
+            _logger.LogWarning($"Ramp request {args.MessageId} canceled");
+            return;
+        }
 
         // todo: check transaction by targetChainId
 
@@ -38,6 +48,6 @@ public class RampRequestCommitResultJob : AsyncBackgroundJob<RampRequestCommitRe
         // if successful cancel scheduler else retry.
         _schedulerService.CancelScheduler(messageData);
 
-        _logger.LogInformation($"{args.MessageId} commit successful.");
+        _logger.LogInformation($"[Ramp] Ramp request job {args.MessageId} commit successful.");
     }
 }

@@ -4,13 +4,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
-using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Serilog;
 using Volo.Abp.DependencyInjection;
 
-namespace AetherLink.Worker.Core.Common.TonIndexer;
+namespace AetherLink.Worker.Core.Provider.TonIndexer;
 
 public class GetBlockClient : TonIndexerBase, ISingletonDependency
 {
@@ -19,9 +17,8 @@ public class GetBlockClient : TonIndexerBase, ISingletonDependency
     private readonly RequestLimit _requestLimit;
 
     public GetBlockClient(IOptionsSnapshot<TonGetBlockProviderOptions> snapshotConfig,
-        IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions,
-        IHttpClientFactory clientFactory, IStorageProvider storageProvider, ILogger<GetBlockClient> logger) : base(
-        tonPublicOptions, logger)
+        IOptionsSnapshot<TonPublicConfig> tonPublicOptions, IHttpClientFactory clientFactory,
+        IStorageProvider storageProvider, ILogger<GetBlockClient> logger) : base(tonPublicOptions, logger)
     {
         _getBlockConfig = snapshotConfig.Value;
         _clientFactory = clientFactory;

@@ -12,6 +12,7 @@ public interface IWorkerReporter
     void RecordOracleJobAsync(string chainId, int count);
     void RecordTransmittedAsync(string chainId, int count);
     void RecordCanceledAsync(string chainId, int count);
+    void RecordRampJobAsync(string chainId, int count);
 }
 
 public class WorkerReporter : IWorkerReporter, ISingletonDependency
@@ -40,6 +41,9 @@ public class WorkerReporter : IWorkerReporter, ISingletonDependency
 
     public void RecordOracleJobAsync(string chainId, int count) =>
         _workerGauge.WithLabels(chainId, Definition.OracleJobGaugeLabel).Inc(count);
+
+    public void RecordRampJobAsync(string chainId, int count) =>
+        _workerGauge.WithLabels(chainId, Definition.RampRequestGaugeLabel).Inc(count);
 
     public void RecordTransmittedAsync(string chainId, int count) =>
         _workerGauge.WithLabels(chainId, Definition.TransmittedGaugeLabel).Inc(count);

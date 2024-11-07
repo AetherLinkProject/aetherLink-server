@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
@@ -14,7 +15,7 @@ using TonSdk.Client;
 using TonSdk.Core;
 using TonSdk.Core.Boc;
 
-namespace AetherLink.Worker.Core.Common.TonIndexer;
+namespace AetherLink.Worker.Core.Provider.TonIndexer;
 
 public interface ITonIndexerProvider
 {
@@ -45,7 +46,7 @@ public abstract class TonIndexerBase : ITonIndexerProvider
     public int Weight => ApiWeight;
     public string ApiProviderName => ProviderName;
 
-    protected TonIndexerBase(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, ILogger<TonIndexerBase> logger)
+    protected TonIndexerBase(IOptionsSnapshot<TonPublicConfig> tonPublicOptions, ILogger<TonIndexerBase> logger)
     {
         _logger = logger;
         _contractAddress = tonPublicOptions.Value.ContractAddress;
@@ -213,7 +214,7 @@ public abstract class TonIndexerBase : ITonIndexerProvider
         var resp = await client.GetAsync(url);
         if (!resp.IsSuccessStatusCode)
         {
-            _logger.LogError($"[Ton provider]  request Error, response message is:{resp}");
+            _logger.LogWarning($"[Ton provider]  request Error, response message is:{resp}");
             throw new HttpRequestException();
         }
 
@@ -241,7 +242,7 @@ public abstract class TonIndexerBase : ITonIndexerProvider
         var resp = await client.PostAsync(url, new StringContent(body, Encoding.Default, "application/json"));
         if (!resp.IsSuccessStatusCode)
         {
-            _logger.LogError($"[Ton Post Message] response error, message is:{resp} ");
+            _logger.LogWarning($"[Ton Post Message] response error, message is:{resp} ");
             throw new HttpRequestException();
         }
 

@@ -5,24 +5,25 @@ using AetherLink.Worker.Core.Options;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TonSdk.Core;
 using TonSdk.Core.Boc;
 using Volo.Abp.DependencyInjection;
-using TonSdk.Core;
 
-namespace AetherLink.Worker.Core.Common.TonIndexer;
+namespace AetherLink.Worker.Core.Provider.TonIndexer;
 
-public class TonIndexerRouter:ISingletonDependency
+public class TonIndexerRouter : ISingletonDependency
 {
-    private readonly TonPublicConfigOptions _tonPublicConfigOptions;
+    private readonly TonPublicConfig _tonPublicConfig;
     private readonly List<TonIndexerWrapper> _providerList;
     private readonly List<TonIndexerWrapper> _indexerProviderList;
     private readonly List<TonIndexerWrapper> _commitProviderList;
     private readonly ILogger<TonIndexerRouter> _logger;
 
-    public TonIndexerRouter(IOptionsSnapshot<TonPublicConfigOptions> tonPublicOptions, IEnumerable<ITonIndexerProvider> tonIndexers, ILogger<TonIndexerRouter> logger)
+    public TonIndexerRouter(IOptionsSnapshot<TonPublicConfig> tonPublicOptions,
+        IEnumerable<ITonIndexerProvider> tonIndexers, ILogger<TonIndexerRouter> logger)
     {
         _logger = logger;
-        _tonPublicConfigOptions = tonPublicOptions.Value;
+        _tonPublicConfig = tonPublicOptions.Value;
         var providerList = new List<TonIndexerWrapper>();
         var indexerList = new List<TonIndexerWrapper>();
         var commitList = new List<TonIndexerWrapper>();
@@ -30,27 +31,28 @@ public class TonIndexerRouter:ISingletonDependency
         {
             var indexerWrapper = new TonIndexerWrapper(item);
             providerList.Add(indexerWrapper);
-            if (_tonPublicConfigOptions.IndexerProvider.Contains(item.ApiProviderName))
+            if (_tonPublicConfig.IndexerProvider.Contains(item.ApiProviderName))
             {
                 indexerList.Add(indexerWrapper);
             }
 
-            if (_tonPublicConfigOptions.CommitProvider.Contains(item.ApiProviderName))
+            if (_tonPublicConfig.CommitProvider.Contains(item.ApiProviderName))
             {
                 commitList.Add(indexerWrapper);
             }
         }
-        
-        commitList.Sort((s1,s2)=> s2.IndexerBase.Weight.CompareTo(s1.IndexerBase.Weight));
-        indexerList.Sort((s1,s2)=> s2.IndexerBase.Weight.CompareTo(s1.IndexerBase.Weight));
-        providerList.Sort((s1,s2)=> s2.IndexerBase.Weight.CompareTo(s1.IndexerBase.Weight));
-        
+
+        commitList.Sort((s1, s2) => s2.IndexerBase.Weight.CompareTo(s1.IndexerBase.Weight));
+        indexerList.Sort((s1, s2) => s2.IndexerBase.Weight.CompareTo(s1.IndexerBase.Weight));
+        providerList.Sort((s1, s2) => s2.IndexerBase.Weight.CompareTo(s1.IndexerBase.Weight));
+
         _providerList = providerList;
         _indexerProviderList = indexerList;
         _commitProviderList = commitList;
     }
 
-    public async Task<(List<CrossChainToTonTransactionDto>, TonIndexerDto)> GetSubsequentTransaction(TonIndexerDto tonIndexerDto)
+    public async Task<(List<CrossChainToTonTransactionDto>, TonIndexerDto)> GetSubsequentTransaction(
+        TonIndexerDto tonIndexerDto)
     {
         foreach (var item in _indexerProviderList)
         {
@@ -61,11 +63,14 @@ public class TonIndexerRouter:ISingletonDependency
                 {
                     return result;
                 }
+
+                _logger.LogInformation(
+                    $"Ton provider is changed,current indexer provider is:{item.IndexerBase.ApiProviderName}");
             }
-        }    
-        
+        }
+
         _logger.LogError($"All ton indexer provider are disabled");
-        return (null,null);
+        return (null, null);
     }
 
     [ItemCanBeNull]
@@ -82,9 +87,12 @@ public class TonIndexerRouter:ISingletonDependency
                     _logger.LogDebug($"[Ton Send Transaction] End");
                     return result;
                 }
+
+                _logger.LogInformation(
+                    $"Ton provider is changed,current commit provider is:{item.IndexerBase.ApiProviderName}");
             }
         }
-        
+
         _logger.LogError($"All ton commit provider are disabled");
         return null;
     }
@@ -100,9 +108,12 @@ public class TonIndexerRouter:ISingletonDependency
                 {
                     return result;
                 }
+
+                _logger.LogInformation(
+                    $"Ton provider is changed,current index provider is:{item.IndexerBase.ApiProviderName}");
             }
         }
-        
+
         _logger.LogError($"All ton indexer provider are disabled");
         return null;
     }
@@ -118,6 +129,9 @@ public class TonIndexerRouter:ISingletonDependency
                 {
                     return result;
                 }
+
+                _logger.LogInformation(
+                    $"Ton provider is changed,current index provider is:{item.IndexerBase.ApiProviderName}");
             }
         }
 
@@ -125,15 +139,5 @@ public class TonIndexerRouter:ISingletonDependency
         return null;
     }
 
-    public List<TonIndexerWrapper> GetIndexerApiProviderList()
-    {
-        var result = new List<TonIndexerWrapper>();
-        foreach (var item in _indexerProviderList)
-        {
-            result.Add(item);
-        }
-
-        return result;
-    }
+    public List<TonIndexerWrapper> GetIndexerApiProviderList() => _indexerProviderList;
 }
-

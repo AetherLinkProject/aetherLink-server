@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
+using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
@@ -9,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
-using IdGeneratorHelper = Aetherlink.PriceServer.Common.IdGeneratorHelper;
 
 namespace AetherLink.Worker.Core.JobPipeline;
 
@@ -58,14 +58,19 @@ public class RampRequestPartialSignatureJob : AsyncBackgroundJob<RampRequestPart
                 return;
             }
 
-            if (args.RoundId < messageData.RoundId)
+            if (messageData.State == RampRequestState.RequestCanceled)
             {
-                _logger.LogWarning($"The Ramp request {args.MessageId} from leader is too old.");
-
+                _logger.LogWarning($"Ramp request {args.MessageId} canceled");
                 return;
             }
 
-            var partialSig = _tonHelper.ConsensusSign(new()
+            if (args.RoundId < messageData.RoundId)
+            {
+                _logger.LogWarning($"The Ramp request {args.MessageId} from leader is too old.");
+                return;
+            }
+
+            var partialSig = _tonHelper.ConsensusSignature(new()
             {
                 MessageId = messageData.MessageId,
                 SourceChainId = messageData.SourceChainId,
