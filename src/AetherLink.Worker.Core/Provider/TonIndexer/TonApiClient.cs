@@ -18,25 +18,25 @@ public class TonApiClient : TonIndexerBase, ISingletonDependency
 {
     private readonly IHttpClientFactory _clientFactory;
     private readonly TonapiProviderApiConfig _tonapiProviderApiConfig;
-    private readonly TonPublicConfig _tonPublicConfig;
+    private readonly TonPublicOptions _tonPublicOptions;
     private TonapiRequestLimit _tonapiRequestLimit;
     private readonly ILogger<TonApiClient> _logger;
 
     public TonApiClient(IOptionsSnapshot<TonapiProviderApiConfig> snapshotConfig,
-        IOptionsSnapshot<TonPublicConfig> tonPublicOptions,
+        IOptionsSnapshot<TonPublicOptions> tonPublicOptions,
         IHttpClientFactory clientFactory, ILogger<TonApiClient> logger) : base(
         tonPublicOptions, logger)
     {
         _clientFactory = clientFactory;
         _logger = logger;
-        _tonPublicConfig = tonPublicOptions.Value;
+        _tonPublicOptions = tonPublicOptions.Value;
         _tonapiProviderApiConfig = snapshotConfig.Value;
-        
+
         var limitCount = string.IsNullOrWhiteSpace(_tonapiProviderApiConfig.ApiKey)
             ? _tonapiProviderApiConfig.NoApiKeyPerSecondRequestLimit
             : _tonapiProviderApiConfig.ApiKeyPerSecondRequestLimit;
         _tonapiRequestLimit = new TonapiRequestLimit(limitCount);
-        
+
         ApiWeight = _tonapiProviderApiConfig.Weight;
         ProviderName = TonStringConstants.TonApi;
     }
@@ -53,7 +53,7 @@ public class TonApiClient : TonIndexerBase, ISingletonDependency
         TonIndexerDto tonIndexerDto)
     {
         var path =
-            $"/v2/blockchain/accounts/{_tonPublicConfig.ContractAddress}/transactions?after_lt={tonIndexerDto.LatestTransactionLt}&limit=30&sort_order=asc";
+            $"/v2/blockchain/accounts/{_tonPublicOptions.ContractAddress}/transactions?after_lt={tonIndexerDto.LatestTransactionLt}&limit=30&sort_order=asc";
         var transactionResp = await GetDeserializeRequest<TonApiTransactions>(path);
 
         CrossChainToTonTransactionDto preTx = null;
@@ -133,7 +133,7 @@ public class TonApiClient : TonIndexerBase, ISingletonDependency
 
             return respStr;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogWarning($"[Ton Api Provider] Send Transaction error:{ex}");
             return null;
@@ -155,7 +155,7 @@ public class TonApiClient : TonIndexerBase, ISingletonDependency
     public override async Task<bool> CheckAvailable()
     {
         var path =
-            $"/v2/blockchain/accounts/{_tonPublicConfig.ContractAddress}/transactions?after_lt=0&limit=1&sort_order=asc";
+            $"/v2/blockchain/accounts/{_tonPublicOptions.ContractAddress}/transactions?after_lt=0&limit=1&sort_order=asc";
         await GetDeserializeRequest<TonApiTransactions>(path);
         return true;
     }
@@ -194,7 +194,7 @@ public class TonapiRequestLimit
     {
         _perSecondLimit = perSecondLimit;
     }
-    
+
     public bool TryGetAccess()
     {
         var dtNow = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;

@@ -29,3 +29,9 @@ public enum RampSchedulerType
     CheckCommittedScheduler,
     ResendPendingScheduler
 }
+
+public enum CrossChainSchedulerType
+{
+    CheckCommittedScheduler,
+    ResendPendingScheduler
+}

@@ -57,7 +57,7 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
 
             var redisValue = await RedisDatabase.StringGetAsync(key);
 
-            _logger.LogDebug("[StorageProvider] {key} spec: {spec}", key, redisValue);
+            // _logger.LogDebug("[StorageProvider] {key} spec: {spec}", key, redisValue);
 
             return redisValue.HasValue ? _serializer.Deserialize<T>(redisValue) : null;
         }

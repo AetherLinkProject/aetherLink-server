@@ -38,7 +38,7 @@ public class Program
             builder.Configuration.AddJsonFile("apollosettings.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
-                .UseApollo()
+                // .UseApollo()
                 .UseSerilog();
             await builder.AddApplicationAsync<AetherlinkPriceServerHttpApiHostModule>();
             var app = builder.Build();

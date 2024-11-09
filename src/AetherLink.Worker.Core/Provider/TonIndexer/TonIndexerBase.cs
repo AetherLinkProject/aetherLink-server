@@ -27,13 +27,9 @@ public interface ITonIndexerProvider
         TonIndexerDto tonIndexerDto);
 
     Task<TonBlockInfo> GetLatestBlockInfo();
-
     Task<uint?> GetAddressSeqno(Address address);
-
     Task<string> CommitTransaction(Cell bodyCell);
-
     Task<bool> CheckAvailable();
-
     Task<bool> TryGetRequestAccess();
 }
 
@@ -46,7 +42,7 @@ public abstract class TonIndexerBase : ITonIndexerProvider
     public int Weight => ApiWeight;
     public string ApiProviderName => ProviderName;
 
-    protected TonIndexerBase(IOptionsSnapshot<TonPublicConfig> tonPublicOptions, ILogger<TonIndexerBase> logger)
+    protected TonIndexerBase(IOptionsSnapshot<TonPublicOptions> tonPublicOptions, ILogger<TonIndexerBase> logger)
     {
         _logger = logger;
         _contractAddress = tonPublicOptions.Value.ContractAddress;

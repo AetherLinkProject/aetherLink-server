@@ -21,7 +21,7 @@ service AetherLinkServer {
   // Ramp
   rpc QueryMessageSignatureAsync(QueryMessageSignatureRequest) returns (VoidReply);
   rpc ReturnPartialSignatureResultsAsync(ReturnPartialSignatureResults) returns (VoidReply);
-  rpc RampCommitResultAsync(RampCommitResultRequest) returns (VoidReply);
+  rpc CrossChainReceivedResultCheckAsync(CrossChainReceivedResult) returns (VoidReply);
 }
 
 message QueryObservationRequest {
@@ -59,11 +59,19 @@ message CommitSignatureRequest {
 }
 
 message ReturnPartialSignatureResults {
-  string message_id = 1;
-  int32 round_id = 2;
-  int64 epoch = 3;
-  int32 index = 4;
-  bytes signature = 5;
+  ReportContext report_context = 1;
+  int32 index = 2;
+  bytes signature = 3;
+}
+
+message ReportContext {
+    string message_id = 1;
+    int64 source_chain_id = 2;
+    int64 target_chain_id = 3;
+    string sender = 4;
+    string receiver = 5;
+    int32 round_id = 6;
+    int64 epoch = 7;
 }
 
 message CommitTransmitResultRequest {
@@ -74,10 +82,8 @@ message CommitTransmitResultRequest {
   string transmit_transaction_id = 5;
 }
 
-message RampCommitResultRequest {
-  string message_id = 1;
-  int32 round_id = 2;
-  int64 epoch = 3;
+message CrossChainReceivedResult {
+  ReportContext report_context = 1;
   string commit_transaction_id = 4;
 }
 
@@ -87,9 +93,7 @@ message QueryReportSignatureRequest {
 }
 
 message QueryMessageSignatureRequest {
-  string message_id = 1;
-  int32 round_id = 2;
-  int64 epoch = 3;
+  ReportContext report_context = 1;
 }
 
 message CommitPartialSignatureRequest {
