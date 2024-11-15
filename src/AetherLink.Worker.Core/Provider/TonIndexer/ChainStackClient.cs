@@ -17,7 +17,7 @@ public class ChainStackClient : TonIndexerBase, ISingletonDependency
     private readonly ChainStackRequestLimit _requestLimit;
 
     public ChainStackClient(IOptionsSnapshot<ChainStackApiConfig> snapshotConfig,
-        IOptionsSnapshot<TonPublicConfig> tonPublicOptions, IHttpClientFactory clientFactory,
+        IOptionsSnapshot<TonPublicOptions> tonPublicOptions, IHttpClientFactory clientFactory,
         IStorageProvider storageProvider, ILogger<ChainStackClient> logger) : base(tonPublicOptions, logger)
     {
         _chainStackConfig = snapshotConfig.Value;

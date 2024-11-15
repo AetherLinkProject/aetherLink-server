@@ -78,9 +78,10 @@ public class AetherLinkService : AetherLinkServer.AetherLinkServerBase
         return Task.FromResult(new VoidReply());
     }
 
-    public override Task<VoidReply> RampCommitResultAsync(RampCommitResultRequest request, ServerCallContext context)
+    public override Task<VoidReply> CrossChainReceivedResultCheckAsync(CrossChainReceivedResult request,
+        ServerCallContext context)
     {
-        _requestProcessor.ProcessRampCommitResultAsync(request, context);
+        _requestProcessor.ProcessCrossChainReceivedResultAsync(request, context);
         return Task.FromResult(new VoidReply());
     }
 }

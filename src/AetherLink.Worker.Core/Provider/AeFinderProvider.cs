@@ -89,9 +89,16 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                          sourceChainId,
                          sender,
                          receiver,
-                         data,
+                         message,
                          startTime,
-                         epoch
+                         epoch,
+                         tokenAmount {
+                            targetContractAddress,
+                            targetChainId,
+                            tokenAddress,
+                            originToken,
+                            amount
+                         }
                  }
              }",
                 Variables = new

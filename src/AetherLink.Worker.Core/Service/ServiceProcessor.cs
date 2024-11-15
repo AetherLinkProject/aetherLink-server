@@ -25,7 +25,7 @@ public interface IServiceProcessor
     Task ProcessTransmitResultAsync(BroadcastTransmitResult request, ServerCallContext context);
     Task ProcessMessagePartialSignatureQueryAsync(QueryMessageSignatureRequest request, ServerCallContext context);
     Task ProcessMessagePartialSignatureReturnAsync(ReturnPartialSignatureResults request, ServerCallContext context);
-    Task ProcessRampCommitResultAsync(RampCommitResultRequest request, ServerCallContext context);
+    Task ProcessCrossChainReceivedResultAsync(CrossChainReceivedResult request, ServerCallContext context);
 }
 
 public class ServiceProcessor : IServiceProcessor, ISingletonDependency
@@ -130,7 +130,7 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
         if (!ValidateRequest(context)) return;
 
         await _jobManager.EnqueueAsync(
-            _objectMapper.Map<QueryMessageSignatureRequest, RampRequestPartialSignatureJobArgs>(request));
+            _objectMapper.Map<QueryMessageSignatureRequest, CrossChainPartialSignatureJobArgs>(request));
     }
 
     public async Task ProcessMessagePartialSignatureReturnAsync(ReturnPartialSignatureResults request,
@@ -139,15 +139,15 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
         if (!ValidateRequest(context)) return;
 
         await _jobManager.EnqueueAsync(
-            _objectMapper.Map<ReturnPartialSignatureResults, RampRequestMultiSignatureJobArgs>(request));
+            _objectMapper.Map<ReturnPartialSignatureResults, CrossChainMultiSignatureJobArgs>(request));
     }
 
-    public async Task ProcessRampCommitResultAsync(RampCommitResultRequest request, ServerCallContext context)
+    public async Task ProcessCrossChainReceivedResultAsync(CrossChainReceivedResult request, ServerCallContext context)
     {
         if (!ValidateRequest(context)) return;
 
         await _jobManager.EnqueueAsync(
-            _objectMapper.Map<RampCommitResultRequest, RampRequestCommitResultJobArgs>(request));
+            _objectMapper.Map<CrossChainReceivedResult, CrossChainReceivedResultCheckJobArgs>(request));
     }
 
     public async Task ProcessTransmitResultAsync(BroadcastTransmitResult request, ServerCallContext context)

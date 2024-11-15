@@ -17,7 +17,7 @@ public class GetBlockClient : TonIndexerBase, ISingletonDependency
     private readonly RequestLimit _requestLimit;
 
     public GetBlockClient(IOptionsSnapshot<TonGetBlockProviderOptions> snapshotConfig,
-        IOptionsSnapshot<TonPublicConfig> tonPublicOptions, IHttpClientFactory clientFactory,
+        IOptionsSnapshot<TonPublicOptions> tonPublicOptions, IHttpClientFactory clientFactory,
         IStorageProvider storageProvider, ILogger<GetBlockClient> logger) : base(tonPublicOptions, logger)
     {
         _getBlockConfig = snapshotConfig.Value;

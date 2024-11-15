@@ -6,11 +6,14 @@ using Hangfire.Redis.StackExchange;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using AetherLink.Worker.Core;
+using AetherLink.Worker.Core.ChainHandler;
+using AetherLink.Worker.Core.ChainKeyring;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Common.ContractHandler;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Provider.SearcherProvider;
 using AetherLink.Worker.Core.Service;
 using AetherLink.Worker.Core.Worker;
 using Hangfire.Dashboard;
@@ -69,6 +72,8 @@ namespace AetherLink.Worker
             ConfigureHangfire(context, configuration);
             ConfigureMetrics(context, configuration);
             ConfigureRequestJobs(context);
+            ConfigureChainKeyring(context);
+            ConfigureChainHandler(context);
             ConfigureEventFilter(context);
         }
 
@@ -85,8 +90,8 @@ namespace AetherLink.Worker
             Configure<OracleInfoOptions>(configuration.GetSection("OracleChainInfo"));
             Configure<TonApiHealthCheckOptions>(configuration.GetSection("TonApiHealthCheck"));
             Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AetherLinkServer:"; });
-            Configure<TonPublicConfig>(configuration.GetSection("Chains:ChainInfos:Ton"));
-            Configure<TonSecretConfigOptions>(configuration.GetSection("OracleChainInfo:ChainConfig:Ton"));
+            Configure<TonPublicOptions>(configuration.GetSection("Chains:ChainInfos:Ton"));
+            Configure<TonPrivateOptions>(configuration.GetSection("OracleChainInfo:ChainConfig:Ton"));
             Configure<TonGetBlockProviderOptions>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:GetBlock"));
             Configure<TonCenterProviderApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:TonCenter"));
             Configure<TonapiProviderApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:TonApi"));
@@ -116,9 +121,9 @@ namespace AetherLink.Worker
 
         private void ConfigureBackgroundWorker(ApplicationInitializationContext context)
         {
-            context.AddBackgroundWorkerAsync<SearchWorker>();
-            context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
-            context.AddBackgroundWorkerAsync<LogsPoller>();
+            // context.AddBackgroundWorkerAsync<SearchWorker>();
+            // context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
+            // context.AddBackgroundWorkerAsync<LogsPoller>();
             context.AddBackgroundWorkerAsync<TonIndexerWorker>();
             context.AddBackgroundWorkerAsync<TonApiHealthCheckWorker>();
         }
@@ -158,6 +163,28 @@ namespace AetherLink.Worker
             context.Services.AddSingleton<IRequestJob, DataFeedRequestJobHandler>();
             context.Services.AddSingleton<IRequestJob, AutomationRequestJobHandler>();
         }
+
+        private void ConfigureChainKeyring(ServiceConfigurationContext context)
+        {
+            context.Services.AddSingleton<IChainKeyring, AElfChainKeyring>();
+            context.Services.AddSingleton<IChainKeyring, TonChainKeyring>();
+        }
+
+        private void ConfigureChainHandler(ServiceConfigurationContext context)
+        {
+            // writer
+            context.Services.AddSingleton<IChainWriter, AElfChainWriter>();
+            context.Services.AddSingleton<IChainWriter, TDVVChainWriter>();
+            context.Services.AddSingleton<IChainWriter, TDVWChainWriter>();
+            context.Services.AddSingleton<IChainWriter, TonChainWriter>();
+
+            // reader
+            context.Services.AddSingleton<IChainReader, AElfChainReader>();
+            context.Services.AddSingleton<IChainReader, TDVVChainReader>();
+            context.Services.AddSingleton<IChainReader, TDVWChainReader>();
+            context.Services.AddSingleton<IChainReader, TonChainReader>();
+        }
+
 
         private void ConfigureEventFilter(ServiceConfigurationContext context)
         {

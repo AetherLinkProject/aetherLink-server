@@ -30,9 +30,10 @@ public class RampRequestDto
     public long SourceChainId { get; set; }
     public string Sender { get; set; }
     public string Receiver { get; set; }
-    public string Data { get; set; }
     public long Epoch { get; set; }
     public long StartTime { get; set; }
+    public string Message { get; set; }
+    public TokenAmountDto TokenAmount { get; set; }
 }
 
 // Transmitted event

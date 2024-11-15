@@ -1,4 +1,4 @@
-using AetherLink.Worker.Core.OCR;
+using AetherLink.Worker.Core.Dtos;
 
 namespace AetherLink.Worker.Core.Automation.Args;
 

@@ -24,7 +24,7 @@ public enum UpkeepSchedulerType
     CheckCronUpkeepEndScheduler
 }
 
-public enum RampSchedulerType
+public enum CrossChainSchedulerType
 {
     CheckCommittedScheduler,
     ResendPendingScheduler

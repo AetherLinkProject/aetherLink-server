@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AElf.CSharp.Core;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Provider.SearcherProvider;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
