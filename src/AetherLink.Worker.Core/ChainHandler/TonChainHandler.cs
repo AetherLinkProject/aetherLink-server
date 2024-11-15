@@ -56,7 +56,7 @@ public class TonChainWriter : ChainWriter, ISingletonDependency
             .StoreAddress(receiverAddress)
             .StoreRef(TonHelper.BuildMessageBody(reportContext.SourceChainId,
                 reportContext.TargetChainId, Base64.Decode(reportContext.Sender), receiverAddress,
-                Base64.Decode(crossChainData.Message)))
+                Base64.Decode(crossChainData.Message), crossChainData.TokenAmount))
             .StoreRef(new CellBuilder().StoreDict(ConvertConsensusSignature(signatures)).Build())
             .Build();
 

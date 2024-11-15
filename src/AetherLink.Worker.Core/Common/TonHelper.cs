@@ -1,7 +1,11 @@
 using System.Numerics;
+using System.Text;
+using System.Text.Unicode;
+using AetherLink.Worker.Core.Dtos;
 using Google.Protobuf;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Utilities.Encoders;
+using Ramp;
 using TonSdk.Contracts.Wallet;
 using TonSdk.Core;
 using TonSdk.Core.Boc;
@@ -24,9 +28,9 @@ public static class TonHelper
     }
 
     public static Cell BuildUnsignedCell(BigInteger messageId, long sourceChainId, long targetChainId, byte[] sender,
-        Address receiverAddress, byte[] message)
+        Address receiverAddress, byte[] message, TokenAmountDto tokenAmount)
     {
-        var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message);
+        var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message, tokenAmount);
         var unsignCell = new CellBuilder()
             .StoreInt(messageId, 256)
             .StoreAddress(receiverAddress)
@@ -37,7 +41,7 @@ public static class TonHelper
     }
 
     public static Cell BuildMessageBody(long sourceChainId, long targetChainId, byte[] sender, Address receiverAddress,
-        byte[] message)
+        byte[] message, TokenAmountDto tokenAmount =null)
     {
         return new CellBuilder()
             .StoreUInt(sourceChainId, 64)
@@ -45,8 +49,27 @@ public static class TonHelper
             .StoreRef(new CellBuilder().StoreBytes(sender).Build())
             .StoreRef(new CellBuilder().StoreAddress(receiverAddress).Build())
             .StoreRef(new CellBuilder().StoreBytes(message).Build())
+            .StoreRef(BuildTokenAmountInfo(tokenAmount))
             .Build();
     }
 
     public static Address ConvertAddress(string receiver) => new(ByteString.FromBase64(receiver).ToStringUtf8());
+
+    public static Cell BuildTokenAmountInfo(TokenAmountDto tokenAmountDto = null)
+    {
+        var result = new CellBuilder();
+        if (tokenAmountDto == null)
+        {
+            return result.Build();
+        }
+
+        result.StoreRef(new CellBuilder().StoreBytes( Encoding.UTF8.GetBytes(tokenAmountDto.SwapId)).Build());
+        result.StoreUInt(tokenAmountDto.TargetChainId, 64);
+        result.StoreRef(new CellBuilder().StoreBytes( Encoding.UTF8.GetBytes(tokenAmountDto.TargetContractAddress)).Build());
+        result.StoreRef(new CellBuilder().StoreAddress(new Address(tokenAmountDto.TokenAddress)).Build());
+        result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenAmountDto.OriginToken)).Build());
+        result.StoreUInt(tokenAmountDto.Amount, 64);
+
+        return result.Build();
+    }
 }
