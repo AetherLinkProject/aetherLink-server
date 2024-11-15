@@ -51,8 +51,10 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
             {
                 MessageId = ByteString.CopyFrom(HashHelper.ComputeFrom("test_message_id_2").ToByteArray()).ToBase64(),
                 Sender = Address.FromPublicKey("AAA".HexToByteArray()).ToByteString().ToBase64(),
-                Receiver = Address.FromPublicKey("BBB".HexToByteArray()).ToByteString().ToBase64(),
-                // Receiver = "EQCM07L_gOFQYakjtELvsJoeHXgEHgmNdvnPKwuY8Yv-XQMi",
+                // Receiver = Address.FromPublicKey("BBB".HexToByteArray()).ToByteString().ToBase64(),
+                Receiver = Address.FromBase58("2hzvhqK8FpmRCLnn6zkDG6o4F3kuhHYFYJefvypKVZM8jgQggy").ToByteString()
+                    .ToBase64(),
+                // Receiver = ByteString.CopyFromUtf8("EQCM07L_gOFQYakjtELvsJoeHXgEHgmNdvnPKwuY8Yv-XQMi").ToBase64(),
                 TargetChainId = 9992731,
                 // TargetChainId = 1100,
                 SourceChainId = 1100,
@@ -81,8 +83,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
             {
                 MessageId = request.MessageId,
                 Sender = request.Sender,
-                // Receiver = request.Receiver,
-                Receiver = "EQCM07L_gOFQYakjtELvsJoeHXgEHgmNdvnPKwuY8Yv-XQMi",
+                Receiver = ByteString.CopyFromUtf8("EQCM07L_gOFQYakjtELvsJoeHXgEHgmNdvnPKwuY8Yv-XQMi").ToBase64(),
                 TargetChainId = request.TargetChainId,
                 SourceChainId = request.SourceChainId,
                 Epoch = request.Epoch

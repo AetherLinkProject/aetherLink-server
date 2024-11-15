@@ -41,7 +41,7 @@ public class TonChainWriter : ChainWriter, ISingletonDependency
     public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
         Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
     {
-        var receiverAddress = reportContext.Receiver;
+        var receiverAddress = TonHelper.ConvertAddress(reportContext.Receiver);
         var seqno = await _indexerRouter.GetAddressSeqno(
             TonHelper.GetAddressFromPrivateKey(_privateOptions.TransmitterSecretKey));
         if (seqno == null)
@@ -53,10 +53,10 @@ public class TonChainWriter : ChainWriter, ISingletonDependency
         var bodyCell = new CellBuilder().StoreUInt(TonOpCodeConstants.ForwardTx, 32)
             .StoreInt(new BigInteger(new ReadOnlySpan<byte>
                 (Base64.Decode(reportContext.MessageId)), false, true), 256)
-            .StoreAddress(new Address(receiverAddress))
+            .StoreAddress(receiverAddress)
             .StoreRef(TonHelper.BuildMessageBody(reportContext.SourceChainId,
-                reportContext.TargetChainId, Base64.Decode(reportContext.Sender),
-                new Address(receiverAddress), Base64.Decode(crossChainData.Message)))
+                reportContext.TargetChainId, Base64.Decode(reportContext.Sender), receiverAddress,
+                Base64.Decode(crossChainData.Message)))
             .StoreRef(new CellBuilder().StoreDict(ConvertConsensusSignature(signatures)).Build())
             .Build();
 

@@ -1,4 +1,5 @@
 using System.Numerics;
+using Google.Protobuf;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Utilities.Encoders;
 using TonSdk.Contracts.Wallet;
@@ -46,4 +47,6 @@ public static class TonHelper
             .StoreRef(new CellBuilder().StoreBytes(message).Build())
             .Build();
     }
+
+    public static Address ConvertAddress(string receiver) => new(ByteString.FromBase64(receiver).ToStringUtf8());
 }

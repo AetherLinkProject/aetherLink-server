@@ -3,8 +3,10 @@ using AetherLink.Worker.Core.Dtos;
 using Volo.Abp.DependencyInjection;
 using System;
 using System.Numerics;
+using System.Text;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Options;
+using Google.Protobuf;
 using Microsoft.Extensions.Options;
 using Org.BouncyCastle.Utilities.Encoders;
 using TonSdk.Core;
@@ -34,7 +36,7 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
             reportContext.SourceChainId,
             reportContext.TargetChainId,
             Base64.Decode(reportContext.Sender),
-            new Address(reportContext.Receiver),
+            TonHelper.ConvertAddress(reportContext.Receiver),
             Base64.Decode(report.Message));
 
         return KeyPair.Sign(unsignedCell, Hex.Decode(_privateOptions.TransmitterSecretKey));
@@ -46,7 +48,7 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
         var bodyCell = TonHelper.BuildUnsignedCell(
             new BigInteger(new ReadOnlySpan<byte>(Base64.Decode(reportContext.MessageId)), false, true),
             reportContext.SourceChainId, reportContext.TargetChainId, Base64.Decode(reportContext.Sender),
-            new Address(reportContext.Receiver), Base64.Decode(report.Message));
+            TonHelper.ConvertAddress(reportContext.Receiver), Base64.Decode(report.Message));
 
         var nodeInfo = _publicOption.OracleNodeInfoList.Find(f => f.Index == index);
         if (nodeInfo == null) return false;

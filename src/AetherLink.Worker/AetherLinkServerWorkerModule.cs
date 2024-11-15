@@ -125,7 +125,7 @@ namespace AetherLink.Worker
             // context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
             // context.AddBackgroundWorkerAsync<LogsPoller>();
             context.AddBackgroundWorkerAsync<TonIndexerWorker>();
-            // context.AddBackgroundWorkerAsync<TonApiHealthCheckWorker>();
+            context.AddBackgroundWorkerAsync<TonApiHealthCheckWorker>();
         }
 
         private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
