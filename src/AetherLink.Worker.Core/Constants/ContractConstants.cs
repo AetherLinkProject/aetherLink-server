@@ -8,4 +8,5 @@ public static class ContractConstants
     public const string GetRandomHash = "GetRandomHash";
     public const string GetLatestRound = "GetLatestRound";
     public const string GetTokenSwapInfo = "GetTokenSwapInfo";
+    public const string Commit = "Commit";
 }

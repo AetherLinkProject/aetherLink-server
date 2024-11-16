@@ -25,6 +25,7 @@ public interface IContractProvider
     public Task<GetConfigOutput> GetOracleConfigAsync(string chainId);
     public Task<Int64Value> GetLatestRoundAsync(string chainId);
     public Task<string> SendTransmitAsync(string chainId, TransmitInput transmitInput);
+    public Task<string> SendCommitAsync(string chainId, CommitInput commitInput);
     public Task<long> GetBlockLatestHeightAsync(string chainId);
     public Task<Commitment> GetCommitmentAsync(string chainId, string transactionId);
     public Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId);
@@ -89,6 +90,14 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return "";
         var txRes = await SendTransactionAsync(chainId, await GenerateRawTransactionAsync(ContractConstants.Transmit,
             transmitInput, chainId, chainInfo.OracleContractAddress));
+        return txRes.TransactionId;
+    }
+
+    public async Task<string> SendCommitAsync(string chainId, CommitInput commitInput)
+    {
+        if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return "";
+        var txRes = await SendTransactionAsync(chainId, await GenerateRawTransactionAsync(ContractConstants.Commit,
+            commitInput, chainId, chainInfo.RampContractAddress));
         return txRes.TransactionId;
     }
 

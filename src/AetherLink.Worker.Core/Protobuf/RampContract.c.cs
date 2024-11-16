@@ -197,12 +197,11 @@ namespace AetherLink.Contracts.Ramp {
     static readonly aelf::Marshaller<global::AElf.Types.Address> __Marshaller_aelf_Address = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AElf.Types.Address.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AetherLink.Contracts.Ramp.AddRampSenderInput> __Marshaller_AddRampSenderInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Ramp.AddRampSenderInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AetherLink.Contracts.Ramp.TokenSwapConfig> __Marshaller_TokenSwapConfig = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Ramp.TokenSwapConfig.Parser.ParseFrom);
-    static readonly aelf::Marshaller<global::AElf.Types.Hash> __Marshaller_aelf_Hash = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AElf.Types.Hash.Parser.ParseFrom);
-    static readonly aelf::Marshaller<global::AetherLink.Contracts.Ramp.TokenSwapInfo> __Marshaller_TokenSwapInfo = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Ramp.TokenSwapInfo.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AetherLink.Contracts.Ramp.RampSenderInfo> __Marshaller_RampSenderInfo = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Ramp.RampSenderInfo.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Google.Protobuf.WellKnownTypes.Int64Value> __Marshaller_google_protobuf_Int64Value = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Google.Protobuf.WellKnownTypes.Int64Value.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AetherLink.Contracts.Ramp.SendInput> __Marshaller_SendInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Ramp.SendInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AetherLink.Contracts.Ramp.CommitInput> __Marshaller_CommitInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Ramp.CommitInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::AElf.Types.Hash> __Marshaller_aelf_Hash = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AElf.Types.Hash.Parser.ParseFrom);
     #endregion
 
     #region Methods
@@ -275,13 +274,6 @@ namespace AetherLink.Contracts.Ramp {
         "GetTokenSwapConfig",
         __Marshaller_aelf_Address,
         __Marshaller_TokenSwapConfig);
-
-    static readonly aelf::Method<global::AElf.Types.Hash, global::AetherLink.Contracts.Ramp.TokenSwapInfo> __Method_GetTokenSwapInfo = new aelf::Method<global::AElf.Types.Hash, global::AetherLink.Contracts.Ramp.TokenSwapInfo>(
-        aelf::MethodType.View,
-        __ServiceName,
-        "GetTokenSwapInfo",
-        __Marshaller_aelf_Hash,
-        __Marshaller_TokenSwapInfo);
 
     static readonly aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty> __Method_TransferAdmin = new aelf::Method<global::AElf.Types.Address, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
@@ -406,11 +398,6 @@ namespace AetherLink.Contracts.Ramp {
     //     throw new global::System.NotImplementedException();
     //   }
     //
-    //   public virtual global::AetherLink.Contracts.Ramp.TokenSwapInfo GetTokenSwapInfo(global::AElf.Types.Hash input)
-    //   {
-    //     throw new global::System.NotImplementedException();
-    //   }
-    //
     //   public virtual global::Google.Protobuf.WellKnownTypes.Empty TransferAdmin(global::AElf.Types.Address input)
     //   {
     //     throw new global::System.NotImplementedException();
@@ -462,7 +449,6 @@ namespace AetherLink.Contracts.Ramp {
     //       .AddMethod(__Method_RemoveRampSender, serviceImpl.RemoveRampSender)
     //       .AddMethod(__Method_SetTokenSwapConfig, serviceImpl.SetTokenSwapConfig)
     //       .AddMethod(__Method_GetTokenSwapConfig, serviceImpl.GetTokenSwapConfig)
-    //       .AddMethod(__Method_GetTokenSwapInfo, serviceImpl.GetTokenSwapInfo)
     //       .AddMethod(__Method_TransferAdmin, serviceImpl.TransferAdmin)
     //       .AddMethod(__Method_AcceptAdmin, serviceImpl.AcceptAdmin)
     //       .AddMethod(__Method_GetRampSender, serviceImpl.GetRampSender)
