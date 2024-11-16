@@ -7,6 +7,7 @@ using AElf.Client.Service;
 using AElf.CSharp.Core;
 using AElf.Types;
 using AetherLink.Contracts.Oracle;
+using AetherLink.Contracts.Ramp;
 using AetherLink.Worker.Core.Common.ContractHandler;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
@@ -29,6 +30,7 @@ public interface IContractProvider
     public Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId);
     public Transmitted ParseTransmitted(TransactionResultDto transaction);
     public Task<bool> IsTransactionConfirmed(string chainId, long blockHeight, string blockHash);
+    public Task<string> QueryTokenSwapConfigOnChainAsync(Hash configId);
 
     public Task<string> SendTransmitWithRefHashAsync(string chainId, TransmitInput transmitInput,
         long refBlockNumber, string refBlockHash);
@@ -94,6 +96,15 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     {
         return _options.ChainInfos.TryGetValue(chainId, out _) && blockHash ==
             (await _blockchainClientFactory.GetClient(chainId).GetBlockByHeightAsync(blockHeight))?.BlockHash;
+    }
+
+    public async Task<string> QueryTokenSwapConfigOnChainAsync(Hash configId)
+    {
+        var config = _options.ChainInfos[ContractConstants.MainChainId];
+        var tokenSwapInfo = await CallTransactionAsync<TokenSwapInfo>(ContractConstants.MainChainId,
+            await GenerateRawTransactionAsync(ContractConstants.GetTokenSwapInfo, configId,
+                ContractConstants.MainChainId, config.RampContractAddress));
+        return tokenSwapInfo.SwapId;
     }
 
     public async Task<string> SendTransmitWithRefHashAsync(string chainId, TransmitInput transmitInput,
