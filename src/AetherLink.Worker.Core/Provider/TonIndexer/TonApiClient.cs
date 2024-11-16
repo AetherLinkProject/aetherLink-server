@@ -116,7 +116,7 @@ public class TonApiClient : TonIndexerBase, ISingletonDependency
         try
         {
             var respStr = await PostRequest(path, JsonConvert.SerializeObject(body));
-            
+
             if (string.IsNullOrWhiteSpace(respStr))
             {
                 return null;
@@ -260,6 +260,12 @@ public class TonApiTransaction
     {
         var blockStr = Block.Replace("(", "").Replace(")", "").Split(",");
 
+        string outMsg = null;
+        if (OutMsg != null && OutMsg.Count > 0)
+        {
+            outMsg = OutMsg[0].RawBody;
+        }
+
         return new CrossChainToTonTransactionDto()
         {
             WorkChain = int.Parse(blockStr[0]),
@@ -275,8 +281,9 @@ public class TonApiTransaction
             Success = ActionPhase?.Success ?? false,
             ExitCode = ComputePhase.ExitCode,
             Aborted = Aborted,
-            Bounce = InMsg.Bounce,
-            Bounced = InMsg.Bounced
+            Bounce = InMsg.Bounce ?? false,
+            Bounced = InMsg.Bounced ?? false,
+            OutMessage = outMsg
         };
     }
 }
@@ -294,9 +301,9 @@ public class TonapiMessage
 {
     public string MsgType { get; set; }
     public long CreatedLt { get; set; }
-    public bool IhrDisabled { get; set; }
-    public bool Bounce { get; set; }
-    public bool Bounced { get; set; }
+    public bool? IhrDisabled { get; set; }
+    public bool? Bounce { get; set; }
+    public bool? Bounced { get; set; }
     public long Value { get; set; }
     public long FwdFee { get; set; }
     public long IhrFee { get; set; }
