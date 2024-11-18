@@ -9,5 +9,4 @@ public static class ContractConstants
     public const string GetLatestRound = "GetLatestRound";
     public const string GetTokenSwapInfo = "GetTokenSwapInfo";
     public const string Commit = "Commit";
-    public const string TonEpochStorageKey = "TonEpochStorageKey";
 }
