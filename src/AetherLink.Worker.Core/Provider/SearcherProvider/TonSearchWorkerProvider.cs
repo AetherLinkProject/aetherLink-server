@@ -276,7 +276,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
         var sender = receiveSlice.LoadAddress().ToString();
         var message = Base64.ToBase64String(receiveSlice.LoadRef().Parse().Bits.ToBytes());
         TokenAmountDto tokenAmountDto = null;
-        if (receiveSlice.Refs.Length > 2)
+        if (receiveSlice.Refs.Length > 0)
         {
             var extraDataRefCell = receiveSlice.LoadRef().Parse();
             var tokenTargetChainId = (long)extraDataRefCell.LoadInt(64);
