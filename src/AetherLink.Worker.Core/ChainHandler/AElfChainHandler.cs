@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
+using AetherLink.Worker.Core.Provider;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.ChainHandler;
@@ -10,34 +12,55 @@ namespace AetherLink.Worker.Core.ChainHandler;
 public class AElfChainWriter : ChainWriter, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.AELF;
+    private readonly IContractProvider _contractProvider;
+    private readonly IOracleContractProvider _oracleContractProvider;
+
+    public AElfChainWriter(IOracleContractProvider oracleContractProvider, IContractProvider contractProvider)
+    {
+        _oracleContractProvider = oracleContractProvider;
+        _contractProvider = contractProvider;
+    }
 
     public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
-        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainDat)
-    {
-        return "aelf-123";
-    }
+        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
+        => await _contractProvider.SendCommitAsync(ChainHelper.ConvertChainIdToBase58((int)ChainId),
+            await _oracleContractProvider.GenerateCommitDataAsync(reportContext, signatures, crossChainData));
 }
 
 public class TDVVChainWriter : ChainWriter, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.TDVV;
+    private readonly IContractProvider _contractProvider;
+    private readonly IOracleContractProvider _oracleContractProvider;
+
+    public TDVVChainWriter(IOracleContractProvider oracleContractProvider, IContractProvider contractProvider)
+    {
+        _contractProvider = contractProvider;
+        _oracleContractProvider = oracleContractProvider;
+    }
 
     public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
-        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainDat)
-    {
-        return "tdvv-123";
-    }
+        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
+        => await _contractProvider.SendCommitAsync(ChainHelper.ConvertChainIdToBase58((int)ChainId),
+            await _oracleContractProvider.GenerateCommitDataAsync(reportContext, signatures, crossChainData));
 }
 
 public class TDVWChainWriter : ChainWriter, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.TDVW;
+    private readonly IContractProvider _contractProvider;
+    private readonly IOracleContractProvider _oracleContractProvider;
+
+    public TDVWChainWriter(IOracleContractProvider oracleContractProvider, IContractProvider contractProvider)
+    {
+        _contractProvider = contractProvider;
+        _oracleContractProvider = oracleContractProvider;
+    }
 
     public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
-        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainDat)
-    {
-        return "tdvw-123";
-    }
+        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
+        => await _contractProvider.SendCommitAsync(ChainHelper.ConvertChainIdToBase58((int)ChainId),
+            await _oracleContractProvider.GenerateCommitDataAsync(reportContext, signatures, crossChainData));
 }
 
 // Reader

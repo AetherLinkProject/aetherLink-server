@@ -53,53 +53,52 @@ namespace AetherLink.Contracts.Ramp {
             "bGUucHJvdG9idWYuVGltZXN0YW1wIjoKD1Rva2VuU3dhcENvbmZpZxInCg90",
             "b2tlbl9zd2FwX2xpc3QYASABKAsyDi5Ub2tlblN3YXBMaXN0Ij0KDVRva2Vu",
             "U3dhcExpc3QSLAoUdG9rZW5fc3dhcF9pbmZvX2xpc3QYASADKAsyDi5Ub2tl",
-            "blN3YXBJbmZvIpMBCg1Ub2tlblN3YXBJbmZvEhcKD3RhcmdldF9jaGFpbl9p",
+            "blN3YXBJbmZvIocBCg1Ub2tlblN3YXBJbmZvEhcKD3RhcmdldF9jaGFpbl9p",
             "ZBgBIAEoAxIfChd0YXJnZXRfY29udHJhY3RfYWRkcmVzcxgCIAEoCRIVCg10",
-            "b2tlbl9hZGRyZXNzGAMgASgJEhQKDG9yaWdpbl90b2tlbhgEIAEoCRIbCgdz",
-            "d2FwX2lkGAUgASgLMgouYWVsZi5IYXNoIioKCUNvbmZpZ1NldBIXCgZjb25m",
-            "aWcYASABKAsyBy5Db25maWc6BKC7GAEiPgoPUmFtcFNlbmRlckFkZGVkEiUK",
-            "DnNlbmRlcl9hZGRyZXNzGAEgASgLMg0uYWVsZi5BZGRyZXNzOgSguxgBIkAK",
-            "EVJhbXBTZW5kZXJSZW1vdmVkEiUKDnNlbmRlcl9hZGRyZXNzGAEgASgLMg0u",
-            "YWVsZi5BZGRyZXNzOgSguxgBIjUKFENvbW1pdFJlcG9ydEFjY2VwdGVkEhcK",
-            "BnJlcG9ydBgBIAEoCzIHLlJlcG9ydDoEoLsYASLSAQoNU2VuZFJlcXVlc3Rl",
-            "ZBIeCgptZXNzYWdlX2lkGAEgASgLMgouYWVsZi5IYXNoEhcKD3RhcmdldF9j",
-            "aGFpbl9pZBgCIAEoAxIXCg9zb3VyY2VfY2hhaW5faWQYAyABKAMSEAoIcmVj",
-            "ZWl2ZXIYBCABKAwSDgoGc2VuZGVyGAUgASgMEg8KB21lc3NhZ2UYBiABKAwS",
-            "JwoMdG9rZW5fYW1vdW50GAcgASgLMhEucmFtcC5Ub2tlbkFtb3VudBINCgVl",
-            "cG9jaBgIIAEoAzoEoLsYASI4ChBSZXF1ZXN0Q2FuY2VsbGVkEh4KCm1lc3Nh",
-            "Z2VfaWQYASABKAsyCi5hZWxmLkhhc2g6BKC7GAEiVgoWQWRtaW5UcmFuc2Zl",
-            "clJlcXVlc3RlZBIbCgRmcm9tGAEgASgLMg0uYWVsZi5BZGRyZXNzEhkKAnRv",
-            "GAIgASgLMg0uYWVsZi5BZGRyZXNzOgSguxgBIlAKEEFkbWluVHJhbnNmZXJy",
-            "ZWQSGwoEZnJvbRgBIAEoCzINLmFlbGYuQWRkcmVzcxIZCgJ0bxgCIAEoCzIN",
-            "LmFlbGYuQWRkcmVzczoEoLsYASJuChZUb2tlblN3YXBDb25maWdVcGRhdGVk",
-            "EicKEGNvbnRyYWN0X2FkZHJlc3MYASABKAsyDS5hZWxmLkFkZHJlc3MSJQoN",
-            "VG9rZW5Td2FwTGlzdBgCIAEoCzIOLlRva2VuU3dhcExpc3Q6BKC7GAEyxggK",
-            "DFJhbXBDb250cmFjdBI4CgpJbml0aWFsaXplEhAuSW5pdGlhbGl6ZUlucHV0",
-            "GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASLgoJU2V0Q29uZmlnEgcuQ29u",
-            "ZmlnGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASMwoJR2V0Q29uZmlnEhYu",
-            "Z29vZ2xlLnByb3RvYnVmLkVtcHR5GgcuQ29uZmlnIgWIifcBARI4CghHZXRB",
-            "ZG1pbhIWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRoNLmFlbGYuQWRkcmVzcyIF",
-            "iIn3AQESQwoYU2V0T3JhY2xlQ29udHJhY3RBZGRyZXNzEg0uYWVsZi5BZGRy",
-            "ZXNzGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASSAoYR2V0T3JhY2xlQ29u",
-            "dHJhY3RBZGRyZXNzEhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5Gg0uYWVsZi5B",
-            "ZGRyZXNzIgWIifcBARI+Cg1BZGRSYW1wU2VuZGVyEhMuQWRkUmFtcFNlbmRl",
-            "cklucHV0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASOwoQUmVtb3ZlUmFt",
-            "cFNlbmRlchINLmFlbGYuQWRkcmVzcxoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0",
-            "eSIAEkAKElNldFRva2VuU3dhcENvbmZpZxIQLlRva2VuU3dhcENvbmZpZxoW",
-            "Lmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEjwKEkdldFRva2VuU3dhcENvbmZp",
-            "ZxINLmFlbGYuQWRkcmVzcxoQLlRva2VuU3dhcENvbmZpZyIFiIn3AQESOAoN",
-            "VHJhbnNmZXJBZG1pbhINLmFlbGYuQWRkcmVzcxoWLmdvb2dsZS5wcm90b2J1",
-            "Zi5FbXB0eSIAEj8KC0FjY2VwdEFkbWluEhYuZ29vZ2xlLnByb3RvYnVmLkVt",
-            "cHR5GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASNgoNR2V0UmFtcFNlbmRl",
-            "chINLmFlbGYuQWRkcmVzcxoPLlJhbXBTZW5kZXJJbmZvIgWIifcBARJMCg5H",
-            "ZXRMYXRlc3RFcG9jaBIWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRobLmdvb2ds",
-            "ZS5wcm90b2J1Zi5JbnQ2NFZhbHVlIgWIifcBARIsCgRTZW5kEgouU2VuZElu",
-            "cHV0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASMAoGQ29tbWl0EgwuQ29t",
-            "bWl0SW5wdXQaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiABIuCgZDYW5jZWwS",
-            "Ci5hZWxmLkhhc2gaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiABpAysr2AQth",
-            "Y3MxMi5wcm90b7LM9gErQWV0aGVyTGluay5Db250cmFjdHMuUmFtcC5SYW1w",
-            "Q29udHJhY3RTdGF0ZUIcqgIZQWV0aGVyTGluay5Db250cmFjdHMuUmFtcGIG",
-            "cHJvdG8z"));
+            "b2tlbl9hZGRyZXNzGAMgASgJEhQKDG9yaWdpbl90b2tlbhgEIAEoCRIPCgdz",
+            "d2FwX2lkGAUgASgJIioKCUNvbmZpZ1NldBIXCgZjb25maWcYASABKAsyBy5D",
+            "b25maWc6BKC7GAEiPgoPUmFtcFNlbmRlckFkZGVkEiUKDnNlbmRlcl9hZGRy",
+            "ZXNzGAEgASgLMg0uYWVsZi5BZGRyZXNzOgSguxgBIkAKEVJhbXBTZW5kZXJS",
+            "ZW1vdmVkEiUKDnNlbmRlcl9hZGRyZXNzGAEgASgLMg0uYWVsZi5BZGRyZXNz",
+            "OgSguxgBIjUKFENvbW1pdFJlcG9ydEFjY2VwdGVkEhcKBnJlcG9ydBgBIAEo",
+            "CzIHLlJlcG9ydDoEoLsYASLSAQoNU2VuZFJlcXVlc3RlZBIeCgptZXNzYWdl",
+            "X2lkGAEgASgLMgouYWVsZi5IYXNoEhcKD3RhcmdldF9jaGFpbl9pZBgCIAEo",
+            "AxIXCg9zb3VyY2VfY2hhaW5faWQYAyABKAMSEAoIcmVjZWl2ZXIYBCABKAwS",
+            "DgoGc2VuZGVyGAUgASgMEg8KB21lc3NhZ2UYBiABKAwSJwoMdG9rZW5fYW1v",
+            "dW50GAcgASgLMhEucmFtcC5Ub2tlbkFtb3VudBINCgVlcG9jaBgIIAEoAzoE",
+            "oLsYASI4ChBSZXF1ZXN0Q2FuY2VsbGVkEh4KCm1lc3NhZ2VfaWQYASABKAsy",
+            "Ci5hZWxmLkhhc2g6BKC7GAEiVgoWQWRtaW5UcmFuc2ZlclJlcXVlc3RlZBIb",
+            "CgRmcm9tGAEgASgLMg0uYWVsZi5BZGRyZXNzEhkKAnRvGAIgASgLMg0uYWVs",
+            "Zi5BZGRyZXNzOgSguxgBIlAKEEFkbWluVHJhbnNmZXJyZWQSGwoEZnJvbRgB",
+            "IAEoCzINLmFlbGYuQWRkcmVzcxIZCgJ0bxgCIAEoCzINLmFlbGYuQWRkcmVz",
+            "czoEoLsYASJuChZUb2tlblN3YXBDb25maWdVcGRhdGVkEicKEGNvbnRyYWN0",
+            "X2FkZHJlc3MYASABKAsyDS5hZWxmLkFkZHJlc3MSJQoNVG9rZW5Td2FwTGlz",
+            "dBgCIAEoCzIOLlRva2VuU3dhcExpc3Q6BKC7GAEyxggKDFJhbXBDb250cmFj",
+            "dBI4CgpJbml0aWFsaXplEhAuSW5pdGlhbGl6ZUlucHV0GhYuZ29vZ2xlLnBy",
+            "b3RvYnVmLkVtcHR5IgASLgoJU2V0Q29uZmlnEgcuQ29uZmlnGhYuZ29vZ2xl",
+            "LnByb3RvYnVmLkVtcHR5IgASMwoJR2V0Q29uZmlnEhYuZ29vZ2xlLnByb3Rv",
+            "YnVmLkVtcHR5GgcuQ29uZmlnIgWIifcBARI4CghHZXRBZG1pbhIWLmdvb2ds",
+            "ZS5wcm90b2J1Zi5FbXB0eRoNLmFlbGYuQWRkcmVzcyIFiIn3AQESQwoYU2V0",
+            "T3JhY2xlQ29udHJhY3RBZGRyZXNzEg0uYWVsZi5BZGRyZXNzGhYuZ29vZ2xl",
+            "LnByb3RvYnVmLkVtcHR5IgASSAoYR2V0T3JhY2xlQ29udHJhY3RBZGRyZXNz",
+            "EhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5Gg0uYWVsZi5BZGRyZXNzIgWIifcB",
+            "ARI+Cg1BZGRSYW1wU2VuZGVyEhMuQWRkUmFtcFNlbmRlcklucHV0GhYuZ29v",
+            "Z2xlLnByb3RvYnVmLkVtcHR5IgASOwoQUmVtb3ZlUmFtcFNlbmRlchINLmFl",
+            "bGYuQWRkcmVzcxoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEkAKElNldFRv",
+            "a2VuU3dhcENvbmZpZxIQLlRva2VuU3dhcENvbmZpZxoWLmdvb2dsZS5wcm90",
+            "b2J1Zi5FbXB0eSIAEjwKEkdldFRva2VuU3dhcENvbmZpZxINLmFlbGYuQWRk",
+            "cmVzcxoQLlRva2VuU3dhcENvbmZpZyIFiIn3AQESOAoNVHJhbnNmZXJBZG1p",
+            "bhINLmFlbGYuQWRkcmVzcxoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEj8K",
+            "C0FjY2VwdEFkbWluEhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5GhYuZ29vZ2xl",
+            "LnByb3RvYnVmLkVtcHR5IgASNgoNR2V0UmFtcFNlbmRlchINLmFlbGYuQWRk",
+            "cmVzcxoPLlJhbXBTZW5kZXJJbmZvIgWIifcBARJMCg5HZXRMYXRlc3RFcG9j",
+            "aBIWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRobLmdvb2dsZS5wcm90b2J1Zi5J",
+            "bnQ2NFZhbHVlIgWIifcBARIsCgRTZW5kEgouU2VuZElucHV0GhYuZ29vZ2xl",
+            "LnByb3RvYnVmLkVtcHR5IgASMAoGQ29tbWl0EgwuQ29tbWl0SW5wdXQaFi5n",
+            "b29nbGUucHJvdG9idWYuRW1wdHkiABIuCgZDYW5jZWwSCi5hZWxmLkhhc2ga",
+            "Fi5nb29nbGUucHJvdG9idWYuRW1wdHkiABpAysr2AQthY3MxMi5wcm90b7LM",
+            "9gErQWV0aGVyTGluay5Db250cmFjdHMuUmFtcC5SYW1wQ29udHJhY3RTdGF0",
+            "ZUIcqgIZQWV0aGVyTGluay5Db250cmFjdHMuUmFtcGIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::AElf.Types.CoreReflection.Descriptor, global::AElf.OptionsReflection.Descriptor, global::AElf.Standards.ACS12.Acs12Reflection.Descriptor, global::Oracle.OracleCommonMessageReflection.Descriptor, global::Ramp.RampCommonMessageReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.WrappersReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.TimestampReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
@@ -3244,7 +3243,7 @@ namespace AetherLink.Contracts.Ramp {
       targetContractAddress_ = other.targetContractAddress_;
       tokenAddress_ = other.tokenAddress_;
       originToken_ = other.originToken_;
-      swapId_ = other.swapId_ != null ? other.swapId_.Clone() : null;
+      swapId_ = other.swapId_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -3304,13 +3303,13 @@ namespace AetherLink.Contracts.Ramp {
 
     /// <summary>Field number for the "swap_id" field.</summary>
     public const int SwapIdFieldNumber = 5;
-    private global::AElf.Types.Hash swapId_;
+    private string swapId_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::AElf.Types.Hash SwapId {
+    public string SwapId {
       get { return swapId_; }
       set {
-        swapId_ = value;
+        swapId_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
       }
     }
 
@@ -3333,7 +3332,7 @@ namespace AetherLink.Contracts.Ramp {
       if (TargetContractAddress != other.TargetContractAddress) return false;
       if (TokenAddress != other.TokenAddress) return false;
       if (OriginToken != other.OriginToken) return false;
-      if (!object.Equals(SwapId, other.SwapId)) return false;
+      if (SwapId != other.SwapId) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -3345,7 +3344,7 @@ namespace AetherLink.Contracts.Ramp {
       if (TargetContractAddress.Length != 0) hash ^= TargetContractAddress.GetHashCode();
       if (TokenAddress.Length != 0) hash ^= TokenAddress.GetHashCode();
       if (OriginToken.Length != 0) hash ^= OriginToken.GetHashCode();
-      if (swapId_ != null) hash ^= SwapId.GetHashCode();
+      if (SwapId.Length != 0) hash ^= SwapId.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -3380,9 +3379,9 @@ namespace AetherLink.Contracts.Ramp {
         output.WriteRawTag(34);
         output.WriteString(OriginToken);
       }
-      if (swapId_ != null) {
+      if (SwapId.Length != 0) {
         output.WriteRawTag(42);
-        output.WriteMessage(SwapId);
+        output.WriteString(SwapId);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
@@ -3410,9 +3409,9 @@ namespace AetherLink.Contracts.Ramp {
         output.WriteRawTag(34);
         output.WriteString(OriginToken);
       }
-      if (swapId_ != null) {
+      if (SwapId.Length != 0) {
         output.WriteRawTag(42);
-        output.WriteMessage(SwapId);
+        output.WriteString(SwapId);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
@@ -3436,8 +3435,8 @@ namespace AetherLink.Contracts.Ramp {
       if (OriginToken.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(OriginToken);
       }
-      if (swapId_ != null) {
-        size += 1 + pb::CodedOutputStream.ComputeMessageSize(SwapId);
+      if (SwapId.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(SwapId);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -3463,11 +3462,8 @@ namespace AetherLink.Contracts.Ramp {
       if (other.OriginToken.Length != 0) {
         OriginToken = other.OriginToken;
       }
-      if (other.swapId_ != null) {
-        if (swapId_ == null) {
-          SwapId = new global::AElf.Types.Hash();
-        }
-        SwapId.MergeFrom(other.SwapId);
+      if (other.SwapId.Length != 0) {
+        SwapId = other.SwapId;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -3501,10 +3497,7 @@ namespace AetherLink.Contracts.Ramp {
             break;
           }
           case 42: {
-            if (swapId_ == null) {
-              SwapId = new global::AElf.Types.Hash();
-            }
-            input.ReadMessage(SwapId);
+            SwapId = input.ReadString();
             break;
           }
         }
@@ -3539,10 +3532,7 @@ namespace AetherLink.Contracts.Ramp {
             break;
           }
           case 42: {
-            if (swapId_ == null) {
-              SwapId = new global::AElf.Types.Hash();
-            }
-            input.ReadMessage(SwapId);
+            SwapId = input.ReadString();
             break;
           }
         }

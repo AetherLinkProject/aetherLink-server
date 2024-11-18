@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using AElf;
 using AElf.Types;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Oracle;
+using AetherLink.Contracts.Ramp;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using Google.Protobuf;
@@ -11,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Oracle;
 using Volo.Abp.DependencyInjection;
+using Report = Oracle.Report;
 
 namespace AetherLink.Worker.Core.Provider;
 
@@ -24,6 +28,9 @@ public interface IOracleContractProvider
 
     public Task<TransmitInput> GenerateTransmitDataAsync(string chainId, string requestId, long epoch,
         ByteString result);
+
+    public Task<CommitInput> GenerateCommitDataAsync(ReportContextDto reportContext, Dictionary<int, byte[]> signatures,
+        CrossChainDataDto crossChainData);
 
     public Task<TransmitInput> GenerateTransmitDataByTransactionIdAsync(string chainId, string transactionId,
         long epoch, ByteString result);
@@ -120,6 +127,37 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         transmitData.ReportContext.Add(HashHelper.ComputeFrom(epoch));
         transmitData.ReportContext.Add(HashHelper.ComputeFrom(0));
         return transmitData;
+    }
+
+    public async Task<CommitInput> GenerateCommitDataAsync(ReportContextDto reportContext,
+        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
+    {
+        var commitInput = new CommitInput
+        {
+            Report = new()
+            {
+                ReportContext = new()
+                {
+                    MessageId = HashHelper.ComputeFrom(reportContext.MessageId),
+                    SourceChainId = reportContext.SourceChainId,
+                    TargetChainId = reportContext.TargetChainId,
+                    Sender = ByteString.FromBase64(reportContext.Sender),
+                    Receiver = ByteString.FromBase64(reportContext.Receiver)
+                },
+                Message = ByteString.FromBase64(crossChainData.Message),
+                TokenAmount = new()
+                {
+                    SwapId = crossChainData.TokenAmount.SwapId,
+                    TargetChainId = crossChainData.TokenAmount.TargetChainId,
+                    TargetContractAddress = crossChainData.TokenAmount.TargetContractAddress,
+                    TokenAddress = crossChainData.TokenAmount.TokenAddress,
+                    OriginToken = crossChainData.TokenAmount.OriginToken,
+                }
+            },
+        };
+        var signature = signatures.Values.Select(sig => ByteStringHelper.FromHexString(sig.ToHex())).ToList();
+        commitInput.Signatures.AddRange(signature);
+        return commitInput;
     }
 
     public async Task<TransmitInput> GenerateTransmitDataByTransactionIdAsync(string chainId, string transactionId,

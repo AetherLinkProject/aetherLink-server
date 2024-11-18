@@ -13,4 +13,5 @@ public class ChainInfo
     public string BaseUrl { get; set; }
     public string OracleContractAddress { get; set; }
     public string ConsensusContractAddress { get; set; }
+    public string RampContractAddress { get; set; }
 }
