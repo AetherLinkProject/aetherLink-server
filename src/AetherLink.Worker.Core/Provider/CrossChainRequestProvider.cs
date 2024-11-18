@@ -54,9 +54,9 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 SourceChainId = request.SourceChainId,
                 Epoch = request.Epoch
             },
+            Message = request.Message,
             TokenAmount = await _tokenSwapper.ConstructSwapId(request.TokenAmountInfo),
-            Message = HashHelper.ComputeFrom("Message Data").ToByteString().ToBase64(),
-            StartTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds()
+            StartTime = request.TransactionTime
         });
     }
 

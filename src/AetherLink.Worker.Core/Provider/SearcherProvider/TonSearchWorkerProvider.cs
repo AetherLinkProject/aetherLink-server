@@ -297,6 +297,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
             SourceChainId = 1100,
             TargetChainId = targetChainId,
             TargetContractAddress = targetContractAddress,
+            TransactionTime = tonTransactionDto.BlockTime,
             Message = message,
             TokenAmountInfo = tokenAmountDto,
         };
