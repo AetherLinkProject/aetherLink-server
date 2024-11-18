@@ -3,9 +3,11 @@ using System.Threading.Tasks;
 using AElf;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
+using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider.TonIndexer;
 using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Utilities.Encoders;
 using TonSdk.Core.Boc;
@@ -26,10 +28,11 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
     private readonly IStorageProvider _storageProvider;
     private readonly ILogger<TonSearchWorkerProvider> _logger;
     private readonly ICrossChainRequestProvider _crossChainRequestProvider;
+    private readonly IOptions<TonPublicOptions> _tonPublicOptions;
 
     public TonSearchWorkerProvider(ISchedulerService scheduler, ITonStorageProvider tonStorageProvider,
         TonIndexerRouter tonIndexerRouter, ILogger<TonSearchWorkerProvider> logger, IStorageProvider storageProvider,
-        ICrossChainRequestProvider crossChainRequestProvider)
+        ICrossChainRequestProvider crossChainRequestProvider, IOptions<TonPublicOptions> tonPublicOptions)
     {
         _logger = logger;
         _scheduler = scheduler;
@@ -37,11 +40,16 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
         _tonStorageProvider = tonStorageProvider;
         _storageProvider = storageProvider;
         _crossChainRequestProvider = crossChainRequestProvider;
+        _tonPublicOptions = tonPublicOptions;
     }
 
     public async Task ExecuteSearchAsync()
     {
         var indexerInfo = await _tonStorageProvider.GetTonIndexerInfoAsync();
+        if (indexerInfo.LatestTransactionLt == "0" && _tonPublicOptions.Value.SkipTransactionLt != "0")
+        {
+            indexerInfo.LatestTransactionLt = _tonPublicOptions.Value.SkipTransactionLt;
+        }
 
         var (transactionList, currentIndexerInfo) = await _tonIndexerRouter.GetSubsequentTransaction(indexerInfo);
         var dtNow = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
@@ -181,7 +189,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
         if (epochInfo == null && receiveMessageDto.Epoch != 1)
         {
             _logger.LogWarning(
-            $"[Ton indexer] received receive  transaction hash:{tx.Hash}, this message may be lost, receiveMessageDto is: {JsonConvert.SerializeObject(receiveMessageDto)}");
+                $"[Ton indexer] received receive  transaction hash:{tx.Hash}, this message may be lost, receiveMessageDto is: {JsonConvert.SerializeObject(receiveMessageDto)}");
             return;
         }
 
@@ -191,7 +199,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
                 $"[Ton indexer] received receive  transaction hash:{tx.Hash}, this transaction has been dealed");
             return;
         }
-        
+
         await _crossChainRequestProvider.StartCrossChainRequestFromTon(receiveMessageDto);
         epochInfo ??= new TonReceiveEpochInfoDto();
         epochInfo.EpochId = receiveMessageDto.Epoch;
@@ -275,11 +283,11 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
         var sender = receiveSlice.LoadAddress().ToString();
         var message = Base64.ToBase64String(receiveSlice.LoadRef().Parse().Bits.ToBytes());
         TokenAmountDto tokenAmountDto = null;
-        if (receiveSlice.Refs.Length > 2)
+        if (receiveSlice.Refs.Length > 0)
         {
             var extraDataRefCell = receiveSlice.LoadRef().Parse();
             var tokenTargetChainId = (long)extraDataRefCell.LoadInt(64);
-            var contractAddress =  Base58CheckEncoding.Encode(extraDataRefCell.LoadRef().Parse().Bits.ToBytes());
+            var contractAddress = Base58CheckEncoding.Encode(extraDataRefCell.LoadRef().Parse().Bits.ToBytes());
             var tokenAddress = extraDataRefCell.LoadRef().Parse().LoadAddress().ToString();
             tokenAmountDto = new TokenAmountDto()
             {
