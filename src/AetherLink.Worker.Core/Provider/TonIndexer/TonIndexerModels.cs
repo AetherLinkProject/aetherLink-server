@@ -31,6 +31,12 @@ public class Transaction
 
     public CrossChainToTonTransactionDto ConvertToTonTransactionDto()
     {
+        string outMsg = null;
+        if (OutMsgs != null && OutMsgs.Count > 0)
+        {
+            outMsg = OutMsgs[0].MessageContent.Body;
+        }
+
         var tx = new CrossChainToTonTransactionDto
         {
             WorkChain = BlockRef.Workchain,
@@ -43,10 +49,11 @@ public class Transaction
             PrevHash = PrevTransHash,
             BlockTime = Now,
             Body = InMsg.MessageContent.Body,
+            OutMessage = outMsg,
             Success = Description.ComputePh.Success && Description.Action.Success,
             ExitCode = Description.ComputePh.ExitCode,
-            Bounce = InMsg.Bounce,
-            Bounced = InMsg.Bounced,
+            Bounce = InMsg.Bounce ?? false,
+            Bounced = InMsg.Bounced ?? false,
             OpCode = Convert.ToInt32(InMsg.Opcode, 16)
         };
 
@@ -91,14 +98,14 @@ public class TransactionDescr
 
 public class Message
 {
-    public bool Bounce { get; set; }
-    public bool Bounced { get; set; }
+    public bool? Bounce { get; set; }
+    public bool? Bounced { get; set; }
     public string CreatedAt { get; set; }
     public string CreatedLt { get; set; }
     public string Destination { get; set; }
     public string FwdFee { get; set; }
     public string Hash { get; set; }
-    public bool IhrDisabled { get; set; }
+    public bool? IhrDisabled { get; set; }
     public string IhrFee { get; set; }
     public string ImportFee { get; set; }
     public MessageContent InitState { get; set; }
