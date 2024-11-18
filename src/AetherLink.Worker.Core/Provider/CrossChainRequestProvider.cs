@@ -17,7 +17,7 @@ namespace AetherLink.Worker.Core.Provider;
 
 public interface ICrossChainRequestProvider
 {
-    public Task StartCrossChainRequestFromTon(CrossChainToTonTransactionDto request);
+    public Task StartCrossChainRequestFromTon(ReceiveMessageDto request);
     public Task StartCrossChainRequestFromAELf(RampRequestDto request);
 
     public Task SetAsync(CrossChainDataDto data);
@@ -42,34 +42,25 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         _backgroundJobManager = backgroundJobManager;
     }
 
-    public async Task StartCrossChainRequestFromTon(CrossChainToTonTransactionDto request)
+    public async Task StartCrossChainRequestFromTon(ReceiveMessageDto request)
     {
         _logger.LogDebug("[CrossChainRequestProvider] Start CrossChainRequest From Ton....");
         await _backgroundJobManager.EnqueueAsync(new CrossChainRequestStartArgs
         {
             ReportContext = new()
             {
-                MessageId = ByteString.CopyFrom(HashHelper.ComputeFrom("test_message_id_2").ToByteArray()).ToBase64(),
-                Sender = Address.FromPublicKey("AAA".HexToByteArray()).ToByteString().ToBase64(),
+                MessageId = request.MessageId,
+                Sender = request.Sender,
                 // Receiver = Address.FromPublicKey("BBB".HexToByteArray()).ToByteString().ToBase64(),
-                Receiver = Address.FromBase58("2hzvhqK8FpmRCLnn6zkDG6o4F3kuhHYFYJefvypKVZM8jgQggy").ToByteString()
-                    .ToBase64(),
+                Receiver = request.TargetContractAddress,
                 // Receiver = ByteString.CopyFromUtf8("EQCM07L_gOFQYakjtELvsJoeHXgEHgmNdvnPKwuY8Yv-XQMi").ToBase64(),
-                TargetChainId = 9992731,
+                TargetChainId = request.TargetChainId,
                 // TargetChainId = 1100,
-                SourceChainId = 1100,
-                Epoch = 0
+                SourceChainId = request.SourceChainId,
+                Epoch = request.Epoch
             },
             Message = HashHelper.ComputeFrom("Message Data").ToByteString().ToBase64(),
-            TokenAmount = await _tokenSwapper.ConstructSwapId(new()
-            {
-                TargetChainId = 9992731,
-                // TargetChainId = 1100,
-                TargetContractAddress = "test_target_address",
-                TokenAddress = "test_token_address",
-                OriginToken = "test_origin_token",
-                Amount = 100
-            }),
+            TokenAmount = await _tokenSwapper.ConstructSwapId(request.TokenAmountInfo),
             StartTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds()
         });
     }

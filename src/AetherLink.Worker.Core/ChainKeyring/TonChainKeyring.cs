@@ -37,7 +37,7 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
             reportContext.TargetChainId,
             Base64.Decode(reportContext.Sender),
             TonHelper.ConvertAddress(reportContext.Receiver),
-            Base64.Decode(report.Message));
+            Base64.Decode(report.Message), report.TokenAmount);
 
         return KeyPair.Sign(unsignedCell, Hex.Decode(_privateOptions.TransmitterSecretKey));
     }
@@ -48,7 +48,7 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
         var bodyCell = TonHelper.BuildUnsignedCell(
             new BigInteger(new ReadOnlySpan<byte>(Base64.Decode(reportContext.MessageId)), false, true),
             reportContext.SourceChainId, reportContext.TargetChainId, Base64.Decode(reportContext.Sender),
-            TonHelper.ConvertAddress(reportContext.Receiver), Base64.Decode(report.Message));
+            TonHelper.ConvertAddress(reportContext.Receiver), Base64.Decode(report.Message), report.TokenAmount);
 
         var nodeInfo = _publicOption.OracleNodeInfoList.Find(f => f.Index == index);
         if (nodeInfo == null) return false;
