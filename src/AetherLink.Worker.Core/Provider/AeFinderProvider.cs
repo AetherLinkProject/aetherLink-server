@@ -26,7 +26,7 @@ public interface IAeFinderProvider
     public Task<string> GetRequestCommitmentAsync(string chainId, string requestId);
     public Task<List<TransactionEventDto>> GetTransactionLogEventsAsync(string chainId, long to, long from);
 
-    public Task<TokenAmountDto> GetTokenSwapConfigAsync(long targetChainId, string targetContractAddress,
+    public Task<TokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, string targetContractAddress,
         string tokenAddress, string originToken);
 }
 
@@ -326,15 +326,15 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         }
     }
 
-    public async Task<TokenAmountDto> GetTokenSwapConfigAsync(long targetChainId, string targetContractAddress,
+    public async Task<TokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, string targetContractAddress,
         string tokenAddress, string originToken)
     {
         try
         {
-            var indexerResult = await GraphQLHelper.SendQueryAsync<TokenAmountDto>(GetClient(), new()
+            var indexerResult = await GraphQLHelper.SendQueryAsync<TokenSwapConfigInfo>(GetClient(), new()
             {
                 Query =
-                    @"query($targetChainId:Long!,$targetContractAddress:String!,$tokenAddress:String!,$originToken:String!){
+                    @"query($targetChainId:Long!,$targetContractAddress:String!,$tokenAddress:String,$originToken:String){
                     tokenSwapConfig(input: {targetChainId:$targetChainId,targetContractAddress:$targetContractAddress,tokenAddress:$tokenAddress,originToken:$originToken}){
                             swapId,
                             targetChainId,

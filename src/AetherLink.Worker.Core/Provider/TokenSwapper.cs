@@ -1,6 +1,5 @@
+using System;
 using System.Threading.Tasks;
-using AElf;
-using AetherLink.Contracts.Ramp;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using Microsoft.Extensions.Logging;
@@ -18,15 +17,13 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
     private readonly ILogger<TokenSwapper> _logger;
     private readonly IStorageProvider _storageProvider;
     private readonly IAeFinderProvider _aeFinderProvider;
-    private readonly IContractProvider _contractProvider;
 
     public TokenSwapper(IStorageProvider storageProvider, ILogger<TokenSwapper> logger,
-        IAeFinderProvider aeFinderProvider, IContractProvider contractProvider)
+        IAeFinderProvider aeFinderProvider)
     {
         _logger = logger;
         _storageProvider = storageProvider;
         _aeFinderProvider = aeFinderProvider;
-        _contractProvider = contractProvider;
     }
 
     public async Task<TokenAmountDto> ConstructSwapId(TokenAmountDto tokenAmount)
@@ -38,34 +35,24 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
 
     private async Task<string> GetTokenSwapConfigAsync(TokenAmountDto tokenAmount)
     {
-        var tokenSwapConfigId = GenerateTokenSwapId(tokenAmount);
-        var tokenSwapConfig = await _storageProvider.GetAsync<TokenAmountDto>(tokenSwapConfigId);
-        if (tokenSwapConfig != null)
+        try
         {
-            return tokenSwapConfig.SwapId;
+            var tokenSwapConfigId = GenerateTokenSwapId(tokenAmount);
+            var tokenSwapConfig = await _storageProvider.GetAsync<TokenAmountDto>(tokenSwapConfigId);
+            if (tokenSwapConfig != null) return tokenSwapConfig.SwapId;
+
+            _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
+
+            var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenAmount.TargetChainId,
+                tokenAmount.TargetContractAddress, tokenAmount.TokenAddress, tokenAmount.OriginToken);
+
+            return indexerConfig.TokenSwapConfig.SwapId;
         }
-
-        _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
-
-        var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenAmount.TargetChainId,
-            tokenAmount.TargetContractAddress, tokenAmount.TokenAddress, tokenAmount.OriginToken);
-
-        if (!string.IsNullOrEmpty(indexerConfig.SwapId))
+        catch (Exception e)
         {
-            return indexerConfig.SwapId;
+            _logger.LogError(e, "[TokenSwapper]Get TokenSwapConfig failed.");
+            return "";
         }
-
-        _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
-
-        var contractConfigId = HashHelper.ComputeFrom(new TokenSwapInfo
-        {
-            TargetChainId = tokenAmount.TargetChainId,
-            TargetContractAddress = tokenAmount.TargetContractAddress,
-            OriginToken = tokenAmount.OriginToken,
-            TokenAddress = tokenAmount.TokenAddress
-        });
-
-        return await _contractProvider.QueryTokenSwapConfigOnChainAsync(contractConfigId);
     }
 
     private string GenerateTokenSwapId(TokenAmountDto data) => IdGeneratorHelper.GenerateId(data.TargetChainId,
