@@ -99,8 +99,7 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                             targetContractAddress,
                             targetChainId,
                             tokenAddress,
-                            originToken,
-                            amount
+                            originToken
                          }
                  }
              }",
