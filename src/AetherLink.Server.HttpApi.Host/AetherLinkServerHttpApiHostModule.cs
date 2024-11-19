@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using AetherLink.Server.HttpApi;
+using AetherLink.Server.HttpApi.Options;
+using AetherLink.Server.HttpApi.Worker;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.Extensions.Configuration;
@@ -22,7 +24,6 @@ namespace AetherLink.Server;
 
 [DependsOn(
     typeof(AetherLinkServerHttpApiModule),
-    // typeof(AbpCachingStackExchangeRedisModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpSwashbuckleModule),
     typeof(AbpAutoMapperModule),
@@ -37,6 +38,7 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         ConfigureLocalization();
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
+        Configure<LogEventSearchOptions>(configuration.GetSection("Search"));
     }
 
     private void ConfigureConventionalControllers()
@@ -97,6 +99,15 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseConfiguredEndpoints();
+        
+        ConfigureWorker(context);
+    }
+    
+    private void ConfigureWorker(ApplicationInitializationContext context)
+    {
+        var backgroundWorkerManger = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<AELFLogEventSearchWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<TonLogEventSearchWorker>());
     }
 
     private void ConfigureLocalization()
