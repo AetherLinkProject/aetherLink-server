@@ -80,7 +80,7 @@ public class AElfChainReader : ChainReader, ISingletonDependency
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)
     {
-        return AElf.Types.Address.FromBytes(addressBytes).ToString();
+        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
     }
 }
 

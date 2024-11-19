@@ -92,7 +92,8 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
                 }
                 catch (ProtocolException ex)
                 {
-                    _logger.LogWarning($"[TonIndexer] analysis ton transaction error:{ex.Message} , transaction hash:{tx.Hash}");
+                    _logger.LogWarning(
+                        $"[TonIndexer] analysis ton transaction error:{ex.Message} , transaction hash:{tx.Hash}");
                 }
             }
             else
@@ -210,13 +211,15 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
         {
             _logger.LogWarning(
                 $"[Ton indexer] received receive  transaction hash:{tx.Hash}, this transaction has been dealed");
-            return;
         }
 
         await _crossChainRequestProvider.StartCrossChainRequestFromTon(receiveMessageDto);
         epochInfo ??= new TonReceiveEpochInfoDto();
         epochInfo.EpochId = receiveMessageDto.Epoch;
         await _storageProvider.SetAsync(RedisKeyConstants.TonEpochStorageKey, epochInfo.EpochId);
+
+        _logger.LogInformation(
+            $"[Ton indexer] received receive  transaction hash:{tx.Hash} has send to ");
     }
 
     private ResendMessageDto AnalysisResendTransaction(CrossChainToTonTransactionDto tonTransactionDto)
