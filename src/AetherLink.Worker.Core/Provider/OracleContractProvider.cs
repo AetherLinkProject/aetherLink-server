@@ -141,8 +141,8 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
                     MessageId = HashHelper.ComputeFrom(reportContext.MessageId),
                     SourceChainId = reportContext.SourceChainId,
                     TargetChainId = reportContext.TargetChainId,
-                    Sender = ByteString.FromBase64(reportContext.Sender),
-                    Receiver = ByteString.FromBase64(reportContext.Receiver)
+                    Sender = Address.FromBase58(reportContext.Sender).ToByteString(),
+                    Receiver = Address.FromBase58(reportContext.Receiver).ToByteString()
                 },
                 Message = ByteString.FromBase64(crossChainData.Message),
                 TokenAmount = new()

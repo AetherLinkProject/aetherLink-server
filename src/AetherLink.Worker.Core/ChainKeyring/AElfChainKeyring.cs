@@ -1,4 +1,5 @@
 using AElf;
+using AElf.Types;
 using AetherLink.Contracts.Ramp;
 using AetherLink.Multisignature;
 using AetherLink.Worker.Core.Constants;
@@ -34,8 +35,8 @@ public class AElfChainKeyring : ChainKeyring, ISingletonDependency
                 MessageId = HashHelper.ComputeFrom(reportContext.MessageId),
                 SourceChainId = reportContext.SourceChainId,
                 TargetChainId = reportContext.TargetChainId,
-                Sender = ByteString.FromBase64(reportContext.Sender),
-                Receiver = ByteString.FromBase64(reportContext.Receiver)
+                Sender = Address.FromBase58(reportContext.Sender).ToByteString(),
+                Receiver = Address.FromBase58(reportContext.Receiver).ToByteString()
             },
             Message = ByteString.FromBase64(report.Message),
             TokenAmount = _objectMapper.Map<TokenAmountDto, TokenAmount>(report.TokenAmount)
