@@ -18,7 +18,7 @@ using TonSdk.Core.Boc;
 
 namespace AetherLink.Worker.Core.ChainHandler;
 
-public class TonChainWriter : ChainWriter, ISingletonDependency
+public class TonChainWriter : ChainWriter
 {
     public override long ChainId => ChainIdConstants.TON;
 
@@ -126,5 +126,10 @@ public class TonChainReader : ChainReader, ISingletonDependency
     {
         // todo: use official full node to check transaction result 
         return new() { State = TransactionState.Success };
+    }
+
+    public override string ConvertBytesToAddressStr(byte[] addressBytes)
+    {
+        throw new System.NotImplementedException();
     }
 }

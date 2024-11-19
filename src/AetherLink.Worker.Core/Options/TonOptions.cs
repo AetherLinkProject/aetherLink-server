@@ -5,6 +5,7 @@ namespace AetherLink.Worker.Core.Options;
 public class TonPublicOptions
 {
     public string ContractAddress { get; set; }
+    public string SkipTransactionLt { get; set; } = "0";
     public List<OracleNodeInfo> OracleNodeInfoList { get; set; }
     public List<string> IndexerProvider { get; set; }
     public List<string> CommitProvider { get; set; }

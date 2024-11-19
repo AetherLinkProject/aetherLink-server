@@ -9,7 +9,7 @@ using Volo.Abp.DependencyInjection;
 namespace AetherLink.Worker.Core.ChainHandler;
 
 // Writer
-public class AElfChainWriter : ChainWriter, ISingletonDependency
+public class AElfChainWriter : ChainWriter
 {
     public override long ChainId => ChainIdConstants.AELF;
     private readonly IContractProvider _contractProvider;
@@ -77,6 +77,11 @@ public class AElfChainReader : ChainReader, ISingletonDependency
     {
         return new() { State = TransactionState.Success };
     }
+
+    public override string ConvertBytesToAddressStr(byte[] addressBytes)
+    {
+        return AElf.Types.Address.FromBytes(addressBytes).ToString();
+    }
 }
 
 public class TDVVChainReader : ChainReader, ISingletonDependency
@@ -92,6 +97,11 @@ public class TDVVChainReader : ChainReader, ISingletonDependency
     {
         return new() { State = TransactionState.Success };
     }
+
+    public override string ConvertBytesToAddressStr(byte[] addressBytes)
+    {
+        return AElf.Types.Address.FromBytes(addressBytes).ToString();
+    }
 }
 
 public class TDVWChainReader : ChainReader, ISingletonDependency
@@ -106,5 +116,10 @@ public class TDVWChainReader : ChainReader, ISingletonDependency
     public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
     {
         return new() { State = TransactionState.Success };
+    }
+
+    public override string ConvertBytesToAddressStr(byte[] addressBytes)
+    {
+        return AElf.Types.Address.FromBytes(addressBytes).ToString();
     }
 }
