@@ -55,7 +55,7 @@ public static class TonHelper
 
     public static Address ConvertAddress(string receiver) => new(ByteString.FromBase64(receiver).ToStringUtf8());
 
-    public static Cell BuildTokenAmountInfo(TokenAmountDto tokenAmountDto = null)
+    private static Cell BuildTokenAmountInfo(TokenAmountDto tokenAmountDto = null)
     {
         var result = new CellBuilder();
         if (tokenAmountDto == null)
@@ -68,7 +68,7 @@ public static class TonHelper
         result.StoreRef(new CellBuilder().StoreBytes( Encoding.UTF8.GetBytes(tokenAmountDto.TargetContractAddress)).Build());
         result.StoreRef(new CellBuilder().StoreAddress(new Address(tokenAmountDto.TokenAddress)).Build());
         result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenAmountDto.OriginToken)).Build());
-        result.StoreUInt(tokenAmountDto.Amount, 64);
+        // result.StoreUInt(tokenAmountDto.Amount, 64);
 
         return result.Build();
     }

@@ -7,6 +7,7 @@ using AElf.Client.Service;
 using AElf.CSharp.Core;
 using AElf.Types;
 using AetherLink.Contracts.Oracle;
+using AetherLink.Contracts.Ramp;
 using AetherLink.Worker.Core.Common.ContractHandler;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
@@ -24,12 +25,12 @@ public interface IContractProvider
     public Task<GetConfigOutput> GetOracleConfigAsync(string chainId);
     public Task<Int64Value> GetLatestRoundAsync(string chainId);
     public Task<string> SendTransmitAsync(string chainId, TransmitInput transmitInput);
+    public Task<string> SendCommitAsync(string chainId, CommitInput commitInput);
     public Task<long> GetBlockLatestHeightAsync(string chainId);
     public Task<Commitment> GetCommitmentAsync(string chainId, string transactionId);
     public Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId);
     public Transmitted ParseTransmitted(TransactionResultDto transaction);
     public Task<bool> IsTransactionConfirmed(string chainId, long blockHeight, string blockHash);
-
     public Task<string> SendTransmitWithRefHashAsync(string chainId, TransmitInput transmitInput,
         long refBlockNumber, string refBlockHash);
 }
@@ -87,6 +88,14 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return "";
         var txRes = await SendTransactionAsync(chainId, await GenerateRawTransactionAsync(ContractConstants.Transmit,
             transmitInput, chainId, chainInfo.OracleContractAddress));
+        return txRes.TransactionId;
+    }
+
+    public async Task<string> SendCommitAsync(string chainId, CommitInput commitInput)
+    {
+        if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return "";
+        var txRes = await SendTransactionAsync(chainId, await GenerateRawTransactionAsync(ContractConstants.Commit,
+            commitInput, chainId, chainInfo.RampContractAddress));
         return txRes.TransactionId;
     }
 

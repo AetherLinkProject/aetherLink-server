@@ -13,7 +13,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Org.BouncyCastle.Math.EC.Multiplier;
 using Org.BouncyCastle.Utilities.Encoders;
 using TonSdk.Core.Boc;
 using Volo.Abp.DependencyInjection;
@@ -200,7 +199,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
     private async Task HandleTonReceiveTransaction(CrossChainToTonTransactionDto tx)
     {
         var receiveMessageDto = AnalysisReceiveTransaction(tx);
-        var epochInfo = await _storageProvider.GetAsync<TonReceiveEpochInfoDto>(ContractConstants.TonEpochStorageKey);
+        var epochInfo = await _storageProvider.GetAsync<TonReceiveEpochInfoDto>(RedisKeyConstants.TonEpochStorageKey);
         if (epochInfo == null && receiveMessageDto.Epoch != 1)
         {
             _logger.LogWarning(
@@ -217,7 +216,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
         await _crossChainRequestProvider.StartCrossChainRequestFromTon(receiveMessageDto);
         epochInfo ??= new TonReceiveEpochInfoDto();
         epochInfo.EpochId = receiveMessageDto.Epoch;
-        await _storageProvider.SetAsync(ContractConstants.TonEpochStorageKey, epochInfo.EpochId);
+        await _storageProvider.SetAsync(RedisKeyConstants.TonEpochStorageKey, epochInfo.EpochId);
     }
 
     private ResendMessageDto AnalysisResendTransaction(CrossChainToTonTransactionDto tonTransactionDto)

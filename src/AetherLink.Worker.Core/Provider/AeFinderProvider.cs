@@ -25,6 +25,9 @@ public interface IAeFinderProvider
     public Task<long> GetOracleLatestEpochAsync(string chainId, long blockHeight);
     public Task<string> GetRequestCommitmentAsync(string chainId, string requestId);
     public Task<List<TransactionEventDto>> GetTransactionLogEventsAsync(string chainId, long to, long from);
+
+    public Task<TokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, string targetContractAddress,
+        string tokenAddress, string originToken);
 }
 
 public class AeFinderProvider : IAeFinderProvider, ITransientDependency
@@ -319,6 +322,38 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         catch (Exception e)
         {
             _logger.LogError(e, "[Indexer] SubscribeLogs failed.");
+            throw;
+        }
+    }
+
+    public async Task<TokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, string targetContractAddress,
+        string tokenAddress, string originToken)
+    {
+        try
+        {
+            var indexerResult = await GraphQLHelper.SendQueryAsync<TokenSwapConfigInfo>(GetClient(), new()
+            {
+                Query =
+                    @"query($targetChainId:Long!,$targetContractAddress:String!,$tokenAddress:String,$originToken:String){
+                    tokenSwapConfig(input: {targetChainId:$targetChainId,targetContractAddress:$targetContractAddress,tokenAddress:$tokenAddress,originToken:$originToken}){
+                            swapId,
+                            targetChainId,
+                            targetContractAddress,
+                            tokenAddress,
+                            originToken
+                    }
+                }",
+                Variables = new
+                {
+                    targetChainId = targetChainId, targetContractAddress = targetContractAddress,
+                    tokenAddress = tokenAddress, originToken = originToken
+                }
+            });
+            return indexerResult ?? new();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Indexer] Get TokenSwap config failed.");
             throw;
         }
     }

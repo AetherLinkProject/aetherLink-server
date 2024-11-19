@@ -27,18 +27,16 @@ public interface ICrossChainRequestProvider
 public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientDependency
 {
     private readonly ITokenSwapper _tokenSwapper;
-    private readonly IObjectMapper _objectMapper;
     private readonly IStorageProvider _storageProvider;
     private readonly ILogger<CrossChainRequestProvider> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public CrossChainRequestProvider(IBackgroundJobManager backgroundJobManager, ITokenSwapper tokenSwapper,
-        ILogger<CrossChainRequestProvider> logger, IStorageProvider storageProvider, IObjectMapper objectMapper)
+        ILogger<CrossChainRequestProvider> logger, IStorageProvider storageProvider)
     {
         _logger = logger;
         _tokenSwapper = tokenSwapper;
         _storageProvider = storageProvider;
-        _objectMapper = objectMapper;
         _backgroundJobManager = backgroundJobManager;
     }
 
@@ -51,11 +49,8 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
             {
                 MessageId = request.MessageId,
                 Sender = request.Sender,
-                // Receiver = Address.FromPublicKey("BBB".HexToByteArray()).ToByteString().ToBase64(),
                 Receiver = request.TargetContractAddress,
-                // Receiver = ByteString.CopyFromUtf8("EQCM07L_gOFQYakjtELvsJoeHXgEHgmNdvnPKwuY8Yv-XQMi").ToBase64(),
                 TargetChainId = request.TargetChainId,
-                // TargetChainId = 1100,
                 SourceChainId = request.SourceChainId,
                 Epoch = request.Epoch
             },
@@ -74,7 +69,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
             {
                 MessageId = request.MessageId,
                 Sender = request.Sender,
-                Receiver = ByteString.CopyFromUtf8("EQCM07L_gOFQYakjtELvsJoeHXgEHgmNdvnPKwuY8Yv-XQMi").ToBase64(),
+                Receiver = request.Receiver,
                 TargetChainId = request.TargetChainId,
                 SourceChainId = request.SourceChainId,
                 Epoch = request.Epoch
@@ -82,11 +77,9 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
             Message = request.Message,
             TokenAmount = await _tokenSwapper.ConstructSwapId(new()
             {
-                TargetChainId = 1100,
-                TargetContractAddress = "test_target_address",
-                TokenAddress = "test_token_address",
-                OriginToken = "test_origin_token",
-                Amount = 100
+                TargetChainId = request.TokenAmount.TargetChainId,
+                TargetContractAddress = request.TokenAmount.TargetContractAddress,
+                OriginToken = request.TokenAmount.OriginToken
             }),
             StartTime = request.StartTime
         });
