@@ -13,7 +13,9 @@ using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Oracle;
+using Ramp;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.ObjectMapping;
 using Report = Oracle.Report;
 
 namespace AetherLink.Worker.Core.Provider;
@@ -39,15 +41,17 @@ public interface IOracleContractProvider
 // If there is request-related data loss in Indexer, the transaction results and contract view method will be used as a backup.
 public class OracleContractProvider : IOracleContractProvider, ISingletonDependency
 {
+    private readonly IObjectMapper _objectMapper;
     private readonly IAeFinderProvider _aeFinderProvider;
     private readonly IContractProvider _contractProvider;
     private readonly ILogger<OracleContractProvider> _logger;
     private readonly ConcurrentDictionary<string, Commitment> _commitmentsCache = new();
 
     public OracleContractProvider(AeFinderProvider aeFinderProvider, IContractProvider contractProvider,
-        ILogger<OracleContractProvider> logger)
+        ILogger<OracleContractProvider> logger, IObjectMapper objectMapper)
     {
         _logger = logger;
+        _objectMapper = objectMapper;
         _aeFinderProvider = aeFinderProvider;
         _contractProvider = contractProvider;
     }
@@ -134,27 +138,10 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
     {
         var commitInput = new CommitInput
         {
-            Report = new()
-            {
-                ReportContext = new()
-                {
-                    MessageId = HashHelper.ComputeFrom(reportContext.MessageId),
-                    SourceChainId = reportContext.SourceChainId,
-                    TargetChainId = reportContext.TargetChainId,
-                    Sender = Address.FromBase58(reportContext.Sender).ToByteString(),
-                    Receiver = Address.FromBase58(reportContext.Receiver).ToByteString()
-                },
-                Message = ByteString.FromBase64(crossChainData.Message),
-                TokenAmount = new()
-                {
-                    SwapId = crossChainData.TokenAmount.SwapId,
-                    TargetChainId = crossChainData.TokenAmount.TargetChainId,
-                    TargetContractAddress = crossChainData.TokenAmount.TargetContractAddress,
-                    TokenAddress = crossChainData.TokenAmount.TokenAddress,
-                    OriginToken = crossChainData.TokenAmount.OriginToken,
-                }
-            },
+            Report = AELFHelper.GenerateReport(reportContext, crossChainData.Message,
+                _objectMapper.Map<TokenAmountDto, TokenAmount>(crossChainData.TokenAmount))
         };
+
         var signature = signatures.Values.Select(sig => ByteStringHelper.FromHexString(sig.ToHex())).ToList();
         commitInput.Signatures.AddRange(signature);
         return commitInput;
