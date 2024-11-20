@@ -1,14 +1,10 @@
-﻿using System;
-using System.Threading.Tasks;
-using AetherlinkServer;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 
-namespace AetherLinkServer;
+namespace AetherLink.Server.Silo;
 
 public class Program
 {
@@ -26,35 +22,18 @@ public class Program
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
             .ReadFrom.Configuration(configuration)
-
 #if DEBUG
             .WriteTo.Async(c => c.Console())
 #endif
             .CreateLogger();
-
         try
         {
-            Log.Information("Starting web host.");
-            var builder = WebApplication.CreateBuilder(args);
-            builder.Configuration.AddJsonFile("apollosettings.json");
-            builder.Host.AddAppSettingsSecretsJson()
-                .UseAutofac()
-                .UseOrleansClient()
-                // .UseApollo()
-                .UseSerilog();
-            await builder.AddApplicationAsync<AetherLinkServerHttpApiHostModule>();
-            var app = builder.Build();
-            await app.InitializeApplicationAsync();
-            await app.RunAsync();
+            Log.Information("Starting AetherLinkServer.Silo.");
+            await CreateHostBuilder(args).RunConsoleAsync();
             return 0;
         }
         catch (Exception ex)
         {
-            if (ex is HostAbortedException)
-            {
-                throw;
-            }
-
             Log.Fatal(ex, "Host terminated unexpectedly!");
             return 1;
         }
@@ -63,4 +42,11 @@ public class Program
             Log.CloseAndFlush();
         }
     }
+
+    internal static IHostBuilder CreateHostBuilder(string[] args) => Host.CreateDefaultBuilder(args)
+        .ConfigureServices((hostcontext, services) => { services.AddApplication<AetherLinkServerOrleansSiloModule>(); })
+        .ConfigureAppConfiguration((h, c) => c.AddJsonFile("apollosettings.json"))
+        .UseApollo()
+        .UseAutofac()
+        .UseSerilog();
 }

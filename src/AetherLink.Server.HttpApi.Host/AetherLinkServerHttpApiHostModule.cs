@@ -1,16 +1,13 @@
 using System;
 using System.Linq;
-using AetherLink.Server.Grains;
 using AetherLink.Server.HttpApi;
 using AetherLink.Server.HttpApi.Options;
 using AetherLink.Server.HttpApi.Worker;
-using AethLink.Server.MongoDb;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
@@ -18,18 +15,14 @@ using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.BackgroundWorkers;
-using Orleans;
-using Orleans.Configuration;
-using Orleans.Hosting;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
 using Volo.Abp.Swashbuckle;
 
-namespace AetherLink.Server;
+namespace AetherlinkServer;
 
 [DependsOn(
     typeof(AetherLinkServerHttpApiModule),
-    // typeof(AetherLinkServerMongoDbModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpSwashbuckleModule),
     typeof(AbpAutoMapperModule),
@@ -108,39 +101,6 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
 
         ConfigureWorker(context);
     }
-
-    // private static void ConfigureOrleans(ServiceConfigurationContext context, IConfiguration configuration)
-    // {
-    //     context.Services.AddSingleton<IClusterClient>(o =>
-    //     {
-    //         return new ClientBuilder()
-    //             .ConfigureDefaults()
-    //             .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
-    //             .UseMongoDBClustering(options =>
-    //             {
-    //                 options.DatabaseName = configuration["Orleans:DataBase"];
-    //                 options.Strategy = MongoDBMembershipStrategy.SingleDocument;
-    //             })
-    //             .Configure<ClusterOptions>(options =>
-    //             {
-    //                 options.ClusterId = configuration["Orleans:ClusterId"];
-    //                 options.ServiceId = configuration["Orleans:ServiceId"];
-    //             })
-    //             .Configure<ClientMessagingOptions>(options =>
-    //             {
-    //                 //the default timeout before a request is assumed to have failed.
-    //                 options.ResponseTimeout =
-    //                     TimeSpan.FromSeconds(ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
-    //                         MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
-    //             })
-    //             .ConfigureApplicationParts(parts =>
-    //                 parts.AddApplicationPart(typeof(AetherLinkServerGrainsModule).Assembly).WithReferences())
-    //             .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
-    //             .AddNightingaleMethodFilter(o)
-    //             .Build();
-    //     });
-    // }
-
 
     private void ConfigureWorker(ApplicationInitializationContext context)
     {

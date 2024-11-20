@@ -3,7 +3,7 @@ namespace AetherLink.Server.Grains.Grain;
 public class GrainResultDto<T> : GrainResultDto
 {
     public T Data { get; set; }
-    
+
     public GrainResultDto()
     {
     }

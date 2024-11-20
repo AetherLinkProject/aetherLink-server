@@ -1,6 +1,7 @@
 using AetherLink.Server.Grains;
 using AetherLink.Server.Grains.Grain.Request;
 using AetherLink.Server.HttpApi.Dtos;
+using AwakenServer.Grains;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
