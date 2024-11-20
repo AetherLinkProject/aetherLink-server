@@ -23,7 +23,7 @@ public class CrossChainRequestGrain : Grain<CrossChainRequestState>, ICrossChain
         }
 
         State = _objectMapper.Map<CrossChainRequestGrainDto, CrossChainRequestState>(input);
-        if (State.Id == Guid.Empty) State.Id = this.GetPrimaryKey();
+        if (string.IsNullOrEmpty(State.Id)) State.Id = this.GetPrimaryKey().ToString();
 
         await WriteStateAsync();
 
@@ -39,7 +39,7 @@ public class CrossChainRequestGrain : Grain<CrossChainRequestState>, ICrossChain
         var result = new GrainResultDto<CrossChainRequestGrainDto>();
 
         State = _objectMapper.Map<CrossChainRequestGrainDto, CrossChainRequestState>(input);
-        if (State.Id == Guid.Empty) State.Id = this.GetPrimaryKey();
+        if (string.IsNullOrEmpty(State.Id)) State.Id = this.GetPrimaryKey().ToString();
         State.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
 
         await WriteStateAsync();
@@ -52,7 +52,7 @@ public class CrossChainRequestGrain : Grain<CrossChainRequestState>, ICrossChain
     public async Task<GrainResultDto<CrossChainRequestGrainDto>> GetCrossChainTransaction()
     {
         var result = new GrainResultDto<CrossChainRequestGrainDto>();
-        if (State.Id == Guid.Empty) return result;
+        if (string.IsNullOrEmpty(State.Id)) return result;
         result.Data = _objectMapper.Map<CrossChainRequestState, CrossChainRequestGrainDto>(State);
         result.Success = true;
         return result;
