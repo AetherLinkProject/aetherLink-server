@@ -1,6 +1,6 @@
 namespace AetherLink.Server.Grains.Grain.Request;
 
-public class CrossChainRequestState
+public class CrossChainRequestGrainDto
 {
     public Guid Id { get; set; }
     public string TransactionId { get; set; }
