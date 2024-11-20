@@ -1,3 +1,4 @@
+using AetherLink.Server.Silo.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -28,7 +29,7 @@ public class Program
             .CreateLogger();
         try
         {
-            Log.Information("Starting AetherLinkServer.Silo.");
+            Log.Information("Starting AwakenServer.Silo.");
             await CreateHostBuilder(args).RunConsoleAsync();
             return 0;
         }
@@ -46,7 +47,8 @@ public class Program
     internal static IHostBuilder CreateHostBuilder(string[] args) => Host.CreateDefaultBuilder(args)
         .ConfigureServices((hostcontext, services) => { services.AddApplication<AetherLinkServerOrleansSiloModule>(); })
         .ConfigureAppConfiguration((h, c) => c.AddJsonFile("apollosettings.json"))
-        .UseApollo()
+        // .UseApollo()
+        .UseOrleansSnapshot()
         .UseAutofac()
         .UseSerilog();
 }
