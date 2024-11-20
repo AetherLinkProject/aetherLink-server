@@ -100,7 +100,7 @@ public class TDVVChainReader : ChainReader, ISingletonDependency
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)
     {
-        return AElf.Types.Address.FromBytes(addressBytes).ToString();
+        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
     }
 }
 
@@ -120,6 +120,6 @@ public class TDVWChainReader : ChainReader, ISingletonDependency
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)
     {
-        return AElf.Types.Address.FromBytes(addressBytes).ToString();
+        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
     }
 }
