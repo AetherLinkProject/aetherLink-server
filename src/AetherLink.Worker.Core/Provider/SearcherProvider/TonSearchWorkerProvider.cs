@@ -9,11 +9,13 @@ using AetherLink.Worker.Core.Exceptions;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider.TonIndexer;
 using AetherLink.Worker.Core.Scheduler;
+using Google.Protobuf;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Utilities.Encoders;
+using TonSdk.Core;
 using TonSdk.Core.Boc;
 using Volo.Abp.DependencyInjection;
 
@@ -322,7 +324,9 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
 
             var targetContractAddress =
                 targetChainProvider.ConvertBytesToAddressStr(receiveSlice.LoadRef().Parse().Bits.ToBytes());
-            var sender = receiveSlice.LoadAddress().ToString();
+            var senderTonContractAddress = receiveSlice.LoadAddress();
+            var sender = senderTonContractAddress.ToString(AddressType.Base64,
+                new AddressStringifyOptions(senderTonContractAddress.IsBounceable(), senderTonContractAddress.IsTestOnly(), false));
             var message = Base64.ToBase64String(receiveSlice.LoadRef().Parse().Bits.ToBytes());
 
             TokenAmountDto tokenAmountDto = null;
@@ -332,12 +336,14 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
                 var tokenTargetChainId = (long)extraDataRefCell.LoadInt(64);
                 var contractAddress =
                     targetChainProvider.ConvertBytesToAddressStr(extraDataRefCell.LoadRef().Parse().Bits.ToBytes());
-                var tokenAddress = extraDataRefCell.LoadRef().Parse().LoadAddress().ToString();
+                var tokenAddress = extraDataRefCell.LoadRef().Parse().LoadAddress();
+                var tokenAddressStr = tokenAddress.ToString(AddressType.Base64,
+                    new AddressStringifyOptions(tokenAddress.IsBounceable(), tokenAddress.IsTestOnly(), false));
                 tokenAmountDto = new TokenAmountDto()
                 {
                     TargetChainId = tokenTargetChainId,
                     TargetContractAddress = contractAddress,
-                    TokenAddress = tokenAddress,
+                    TokenAddress = tokenAddressStr,
                 };
             }
 
