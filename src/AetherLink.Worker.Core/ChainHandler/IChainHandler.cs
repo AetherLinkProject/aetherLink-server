@@ -5,7 +5,7 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.ChainHandler;
 
-public interface IChainReader: ISingletonDependency
+public interface IChainReader
 {
     long ChainId { get; }
     Task<byte[]> CallTransactionAsync(byte[] transaction);
@@ -13,7 +13,7 @@ public interface IChainReader: ISingletonDependency
     string ConvertBytesToAddressStr(byte[] addressBytes);
 }
 
-public interface IChainWriter: ISingletonDependency
+public interface IChainWriter
 {
     long ChainId { get; }
 

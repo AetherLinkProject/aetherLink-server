@@ -9,7 +9,7 @@ using Volo.Abp.DependencyInjection;
 namespace AetherLink.Worker.Core.ChainHandler;
 
 // Writer
-public class AElfChainWriter : ChainWriter
+public class AElfChainWriter : ChainWriter, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.AELF;
     private readonly IContractProvider _contractProvider;
