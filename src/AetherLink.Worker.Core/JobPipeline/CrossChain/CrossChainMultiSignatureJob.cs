@@ -2,14 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.ChainKeyring;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
-using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -141,7 +139,7 @@ public class CrossChainMultiSignatureJob : AsyncBackgroundJob<CrossChainMultiSig
         {
             var count = _stateProvider.GetCrossChainMultiSignature(signatureId).Count;
             _logger.LogDebug($"[CrossChain][IsSignatureEnough] {signatureId} has {count} partial signature.");
-            return count > _options.PartialSignaturesThreshold;
+            return count >= _options.PartialSignaturesThreshold;
         }
     }
 
@@ -155,22 +153,4 @@ public class CrossChainMultiSignatureJob : AsyncBackgroundJob<CrossChainMultiSig
             return true;
         }
     }
-
-    // private async Task<string> SendCommitTransactionAsync(ForwardMessageDto metadata,
-    //     Dictionary<int, byte[]> signatures)
-    // {
-    //     for (var i = 0; i < RetryConstants.DefaultDelay; i++)
-    //     {
-    //         var commitTransactionId = await _tonHelper.SendTransaction(metadata, signatures);
-    //         if (!string.IsNullOrEmpty(commitTransactionId)) return commitTransactionId;
-    //
-    //         _logger.LogError(
-    //             $"[Ramp][Leader] {metadata.MessageId} send transaction failed in {i} times, will send it later.");
-    //         Thread.Sleep((i + 1) * 1000 * 2);
-    //     }
-    //
-    //     // If we get here, it means we have exhausted the retry count
-    //     // So we execute the operation one last time, without any retries
-    //     return await _tonHelper.SendTransaction(metadata, signatures);
-    // }
 }

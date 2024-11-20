@@ -33,7 +33,12 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
     {
         try
         {
-            if (tokenAmount == null) return null;
+            if (tokenAmount == null)
+            {
+                _logger.LogWarning("[TokenSwapper] Get empty token amount");
+                return null;
+            }
+            
             var tokenSwapConfigId = GenerateTokenSwapId(tokenAmount);
             var tokenSwapConfig = await _storageProvider.GetAsync<TokenAmountDto>(tokenSwapConfigId);
             if (tokenSwapConfig != null) return tokenSwapConfig;
@@ -52,6 +57,21 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
         }
     }
 
-    private string GenerateTokenSwapId(TokenAmountDto data) => IdGeneratorHelper.GenerateId(data.TargetChainId,
-        data.TargetContractAddress, data.TokenAddress, data.OriginToken);
+    private string GenerateTokenSwapId(TokenAmountDto data)
+    {
+        if (!string.IsNullOrEmpty(data.TokenAddress))
+        {
+            return IdGeneratorHelper.GenerateId(data.TargetChainId,
+                data.TargetContractAddress, data.TokenAddress);
+        }
+
+        if (!string.IsNullOrEmpty(data.OriginToken))
+        {
+            return IdGeneratorHelper.GenerateId(data.TargetChainId,
+                data.TargetContractAddress, data.OriginToken);
+        }
+
+        return IdGeneratorHelper.GenerateId(data.TargetChainId,
+            data.TargetContractAddress, data.TokenAddress, data.OriginToken);
+    }
 }

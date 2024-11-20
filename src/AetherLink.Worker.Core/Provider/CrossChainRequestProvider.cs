@@ -1,17 +1,11 @@
-using System;
 using System.Threading.Tasks;
-using AElf;
-using AElf.Types;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
-using Google.Protobuf;
 using Microsoft.Extensions.Logging;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
-using Volo.Abp.ObjectMapping;
 
 namespace AetherLink.Worker.Core.Provider;
 
