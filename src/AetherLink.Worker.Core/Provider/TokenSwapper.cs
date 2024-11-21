@@ -57,9 +57,15 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
 
             tokenAmount.SwapId = indexerConfig.TokenSwapConfig.SwapId;
             if (string.IsNullOrEmpty(tokenAmount.OriginToken))
+            {
                 tokenAmount.OriginToken = indexerConfig.TokenSwapConfig.OriginToken;
-            if (string.IsNullOrEmpty(tokenAmount.TokenAddress))
-                tokenAmount.TokenAddress = indexerConfig.TokenSwapConfig.TokenAddress;
+                _logger.LogDebug($"[TokenSwapper] need fill OriginToken: {tokenAmount.OriginToken}");
+            }
+
+            if (!string.IsNullOrEmpty(tokenAmount.TokenAddress)) return tokenAmount;
+
+            tokenAmount.TokenAddress = indexerConfig.TokenSwapConfig.TokenAddress;
+            _logger.LogDebug($"[TokenSwapper] need fill TokenAddress: {tokenAmount.TokenAddress}");
             return tokenAmount;
         }
         catch (Exception e)
