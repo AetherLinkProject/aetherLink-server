@@ -12,8 +12,10 @@ public class CrossChainRequestGrain : Grain<CrossChainRequestState>, ICrossChain
         _objectMapper = objectMapper;
     }
 
-    public async Task<GrainResultDto<CrossChainRequestGrainDto>> GetCrossChainTransaction()
+    public async Task<GrainResultDto<CrossChainRequestGrainDto>> GetAsync()
     {
+        await ReadStateAsync();
+
         var result = new GrainResultDto<CrossChainRequestGrainDto>();
         if (string.IsNullOrEmpty(State.Id)) return result;
         var data = _objectMapper.Map<CrossChainRequestState, CrossChainRequestGrainDto>(State);
@@ -28,7 +30,7 @@ public class CrossChainRequestGrain : Grain<CrossChainRequestState>, ICrossChain
         if (string.IsNullOrEmpty(State.Id)) State.Id = this.GetPrimaryKeyString();
 
         await WriteStateAsync();
-        
+
         var data = _objectMapper.Map<CrossChainRequestState, CrossChainRequestGrainDto>(State);
         return new() { Success = true, Data = data };
     }

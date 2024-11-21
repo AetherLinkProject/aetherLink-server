@@ -11,24 +11,20 @@ namespace AetherLink.Server.Silo.MongoDB;
 
 public static class AetherLinkMongoDbSiloExtensions
 {
-    public static ISiloBuilder AddAwakenMongoDBGrainStorage(
-        this ISiloBuilder builder,
-        string name,
+    public static ISiloBuilder AddAetherLinkMongoDBGrainStorage(this ISiloBuilder builder, string name,
         Action<MongoDBGrainStorageOptions> configureOptions)
     {
         return builder.ConfigureServices((Action<IServiceCollection>)(services =>
-            services.AddAwakenMongoDBGrainStorage(name, configureOptions)));
+            services.AddAetherLinkMongoDBGrainStorage(name, configureOptions)));
     }
 
-    public static IServiceCollection AddAwakenMongoDBGrainStorage(
-        this IServiceCollection services,
-        string name,
+    public static IServiceCollection AddAetherLinkMongoDBGrainStorage(this IServiceCollection services, string name,
         Action<MongoDBGrainStorageOptions> configureOptions)
     {
-        return services.AddAwakenMongoDBGrainStorage(name, ob => ob.Configure(configureOptions));
+        return services.AddAetherLinkMongoDBGrainStorage(name, ob => ob.Configure(configureOptions));
     }
 
-    public static IServiceCollection AddAwakenMongoDBGrainStorage(this IServiceCollection services, string name,
+    public static IServiceCollection AddAetherLinkMongoDBGrainStorage(this IServiceCollection services, string name,
         Action<OptionsBuilder<MongoDBGrainStorageOptions>> configureOptions = null)
     {
         configureOptions?.Invoke(services.AddOptions<MongoDBGrainStorageOptions>(name));

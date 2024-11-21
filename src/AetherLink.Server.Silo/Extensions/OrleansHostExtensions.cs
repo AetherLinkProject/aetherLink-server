@@ -88,7 +88,9 @@ public static class OrleansHostExtensions
                 options.ServiceId = Environment.GetEnvironmentVariable("ORLEANS_SERVICE_ID");
             })
             .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); })
-            .AddAwakenMongoDBGrainStorage("Default", (MongoDBGrainStorageOptions op) =>
+            .ConfigureServices(services =>
+                services.AddSingleton<IGrainStateSerializer, AetherLinkJsonGrainStateSerializer>())
+            .AddAetherLinkMongoDBGrainStorage("Default", (MongoDBGrainStorageOptions op) =>
             {
                 op.CollectionPrefix = OrleansConstants.GrainCollectionPrefix;
                 op.DatabaseName = configSection.GetValue<string>("DataBase");
@@ -126,7 +128,7 @@ public static class OrleansHostExtensions
                 options.DatabaseName = configSection.GetValue<string>("DataBase");
                 options.Strategy = MongoDBMembershipStrategy.SingleDocument;
             })
-            .AddAwakenMongoDBGrainStorage("Default", (MongoDBGrainStorageOptions op) =>
+            .AddAetherLinkMongoDBGrainStorage("Default", (MongoDBGrainStorageOptions op) =>
             {
                 op.CollectionPrefix = OrleansConstants.GrainCollectionPrefix;
                 op.DatabaseName = configSection.GetValue<string>("DataBase");

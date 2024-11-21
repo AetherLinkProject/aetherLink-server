@@ -37,6 +37,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherLink.Server.HttpApi",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherLink.Server.HttpApi.Host", "src\AetherLink.Server.HttpApi.Host\AetherLink.Server.HttpApi.Host.csproj", "{C015C971-1362-4BA1-8490-C3180DC245BE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherLink.Indexer", "src\AetherLink.Indexer\AetherLink.Indexer.csproj", "{DF478AF7-C27F-456A-99E7-79EA17833969}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -103,6 +105,10 @@ Global
 		{C015C971-1362-4BA1-8490-C3180DC245BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C015C971-1362-4BA1-8490-C3180DC245BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C015C971-1362-4BA1-8490-C3180DC245BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF478AF7-C27F-456A-99E7-79EA17833969}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF478AF7-C27F-456A-99E7-79EA17833969}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF478AF7-C27F-456A-99E7-79EA17833969}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF478AF7-C27F-456A-99E7-79EA17833969}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -123,6 +129,7 @@ Global
 		{83D8B522-7EF9-4A53-9645-E6100DA7EDB1} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{11DEDC83-6C70-42B5-A45C-8D7BF1BF1E1C} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{C015C971-1362-4BA1-8490-C3180DC245BE} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{DF478AF7-C27F-456A-99E7-79EA17833969} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28315BFD-90E7-4E14-A2EA-F3D23AF4126F}

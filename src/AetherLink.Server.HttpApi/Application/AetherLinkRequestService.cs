@@ -30,7 +30,7 @@ public class AetherLinkRequestService : AetherLinkServerAppService, IAetherLinkR
     {
         var grainId = GrainIdHelper.GenerateGrainId(input.SourceChainId, input.TransactionId);
         var orderGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(grainId);
-        var result = await orderGrain.GetCrossChainTransaction();
+        var result = await orderGrain.GetAsync();
         if (!result.Success) throw new UserFriendlyException("Failed to get cross chain transaction");
         var response = _objectMapper.Map<CrossChainRequestGrainDto, GetCrossChainRequestStatusResponse>(result.Data);
         return new() { Data = response };

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using AetherLink.Indexer;
 using AetherLink.Server.HttpApi;
 using AetherLink.Server.HttpApi.Options;
 using AetherLink.Server.HttpApi.Worker;
