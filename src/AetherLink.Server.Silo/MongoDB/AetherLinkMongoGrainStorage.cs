@@ -1,4 +1,3 @@
-using Awaken.Silo.MongoDB;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans.Providers.MongoDB.Configuration;

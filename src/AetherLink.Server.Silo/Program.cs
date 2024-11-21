@@ -29,7 +29,7 @@ public class Program
             .CreateLogger();
         try
         {
-            Log.Information("Starting AwakenServer.Silo.");
+            Log.Information("Starting AetherLinkServer.Silo.");
             await CreateHostBuilder(args).RunConsoleAsync();
             return 0;
         }

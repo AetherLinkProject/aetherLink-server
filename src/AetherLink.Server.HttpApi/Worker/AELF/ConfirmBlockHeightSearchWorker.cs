@@ -1,4 +1,5 @@
 using AetherLink.Server.Grains.Grain.Indexer;
+using AetherLink.Server.HttpApi.Constants;
 using AetherLink.Server.HttpApi.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -21,8 +22,6 @@ public class ConfirmBlockHeightSearchWorker : AsyncPeriodicBackgroundWorkerBase
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
-    {
-        var client = _clusterClient.GetGrain<IAeFinderGrain>("confirmBlockHeight");
-        await client.UpdateConfirmBlockHeightAsync();
-    }
+        => await _clusterClient.GetGrain<IAeFinderGrain>(GrainKeyConstants.ConfirmBlockHeightGrainKey)
+            .UpdateConfirmBlockHeightAsync();
 }

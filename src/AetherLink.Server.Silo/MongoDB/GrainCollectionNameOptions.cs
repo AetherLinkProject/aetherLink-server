@@ -1,4 +1,4 @@
-namespace Awaken.Silo.MongoDB;
+namespace AetherLink.Server.Silo.MongoDB;
 
 public class GrainCollectionNameOptions
 {

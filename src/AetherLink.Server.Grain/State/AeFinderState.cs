@@ -1,6 +1,10 @@
+using AetherLink.Server.Grains.Grain.Indexer;
+
 namespace AetherLink.Server.Grains.State;
 
+[GenerateSerializer]
 public class AeFinderState
 {
-    public string Id { get; set; }
+    [Id(0)] public string Id { get; set; }
+    public List<AELFChainGrainDto> ChainItems { get; set; }
 }

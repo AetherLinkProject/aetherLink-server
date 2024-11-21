@@ -1,4 +1,4 @@
-namespace AwakenServer.Grains;
+namespace AetherLink.Server.Grains;
 
 public class OrleansConstants
 {

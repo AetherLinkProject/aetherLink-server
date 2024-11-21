@@ -4,6 +4,7 @@ using AetherLink.Indexer;
 using AetherLink.Server.HttpApi;
 using AetherLink.Server.HttpApi.Options;
 using AetherLink.Server.HttpApi.Worker;
+using AetherLink.Server.HttpApi.Worker.AELF;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.Extensions.Configuration;
@@ -39,6 +40,7 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
         Configure<LogEventSearchOptions>(configuration.GetSection("Search"));
+        Configure<AELFOptions>(configuration.GetSection("AELF"));
     }
 
     private void ConfigureConventionalControllers()
@@ -105,9 +107,13 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
 
     private void ConfigureWorker(ApplicationInitializationContext context)
     {
-        var backgroundWorkerManger = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
-        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<AELFLogEventSearchWorker>());
-        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<TonLogEventSearchWorker>());
+        // var backgroundWorkerManger = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
+        // backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<AELFLogEventSearchWorker>());
+        // backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<TonLogEventSearchWorker>());
+
+        context.AddBackgroundWorkerAsync<ConfirmBlockHeightSearchWorker>();
+        context.AddBackgroundWorkerAsync<RequestSearchWorker>();
+        context.AddBackgroundWorkerAsync<CommitSearchWorker>();
     }
 
     private void ConfigureLocalization()
