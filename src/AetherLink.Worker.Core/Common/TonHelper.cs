@@ -61,7 +61,7 @@ public static class TonHelper
             .Build();
     }
 
-    public static Address ConvertAddress(string receiver) => new(ByteString.FromBase64(receiver).ToStringUtf8());
+    public static Address ConvertAddress(string receiver) => new(receiver);
 
     public static Cell ConvertMessageBytesToCell(byte[] message)
     {
