@@ -7,6 +7,7 @@ using AElf.Types;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Oracle;
 using AetherLink.Contracts.Ramp;
+using AetherLink.Indexer.Provider;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using Google.Protobuf;

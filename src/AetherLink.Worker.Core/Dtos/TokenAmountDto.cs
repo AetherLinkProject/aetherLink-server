@@ -9,12 +9,3 @@ public class TokenAmountDto
     public string OriginToken { get; set; }
     public long Amount { get; set; }
 }
-
-public class TokenSwapConfigInfo
-{
-    public TokenSwapConfigDto TokenSwapConfig { get; set; }
-}
-
-public class TokenSwapConfigDto : TokenAmountDto
-{
-}

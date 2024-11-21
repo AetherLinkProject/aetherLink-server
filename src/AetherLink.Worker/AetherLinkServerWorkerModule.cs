@@ -82,7 +82,6 @@ namespace AetherLink.Worker
             Configure<WorkerOptions>(configuration.GetSection("Worker"));
             Configure<ContractOptions>(configuration.GetSection("Chains"));
             Configure<NetworkOptions>(configuration.GetSection("Network"));
-            Configure<AeFinderOptions>(configuration.GetSection("AeFinder"));
             Configure<HangfireOptions>(configuration.GetSection("Hangfire"));
             Configure<SchedulerOptions>(configuration.GetSection("Scheduler"));
             Configure<PriceFeedsOptions>(configuration.GetSection("PriceFeeds"));

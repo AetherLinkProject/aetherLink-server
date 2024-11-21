@@ -28,8 +28,7 @@ public class AElfChainKeyring : ChainKeyring, ISingletonDependency
     }
 
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
-        => AELFHelper.OffChainSign(reportContext, report,
-            _objectMapper.Map<TokenAmountDto, TokenAmount>(report.TokenAmount), _chainConfig);
+        => AELFHelper.OffChainSign(reportContext, report, _chainConfig);
 
     public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
         byte[] sign)
@@ -52,8 +51,7 @@ public class TDVWChainKeyring : ChainKeyring, ISingletonDependency
     }
 
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
-        => AELFHelper.OffChainSign(reportContext, report,
-            _objectMapper.Map<TokenAmountDto, TokenAmount>(report.TokenAmount), _chainConfig);
+        => AELFHelper.OffChainSign(reportContext, report, _chainConfig);
 
     public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
         byte[] sign)
@@ -76,8 +74,7 @@ public class TDVVChainKeyring : ChainKeyring, ISingletonDependency
     }
 
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
-        => AELFHelper.OffChainSign(reportContext, report,
-            _objectMapper.Map<TokenAmountDto, TokenAmount>(report.TokenAmount), _chainConfig);
+        => AELFHelper.OffChainSign(reportContext, report, _chainConfig);
 
     public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
         byte[] sign)

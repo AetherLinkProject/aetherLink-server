@@ -112,7 +112,7 @@ public class CrossChainPartialSignatureJob : AsyncBackgroundJob<CrossChainPartia
                 epoch, roundId);
 
             _logger.LogInformation(
-                $"[CrossChain][Follower] {messageId}-{epoch} Send signature to leader, Waiting for transmitted.");
+                $"[CrossChain][Follower] Node:{nodeIndex} {messageId}-{epoch} Send signature to leader, Waiting for transmitted.");
         }
         catch (Exception e)
         {

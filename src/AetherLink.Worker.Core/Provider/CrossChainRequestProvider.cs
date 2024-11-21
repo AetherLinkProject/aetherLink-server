@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using AetherLink.Indexer.Dtos;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;

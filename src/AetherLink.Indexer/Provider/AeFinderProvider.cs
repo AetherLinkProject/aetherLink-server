@@ -97,7 +97,6 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                          tokenAmount {
                             targetContractAddress,
                             targetChainId,
-                            tokenAddress,
                             originToken,
                             amount
                          }

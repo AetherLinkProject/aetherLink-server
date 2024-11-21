@@ -46,7 +46,7 @@ public class CrossChainMultiSignatureJob : AsyncBackgroundJob<CrossChainMultiSig
 
     public override async Task ExecuteAsync(CrossChainMultiSignatureJobArgs args)
     {
-        _logger.LogDebug($"[CrossChain] Get follower partial signature{JsonSerializer.Serialize(args)}");
+        _logger.LogDebug($"[CrossChain] Get follower {args.Index} partial signature{JsonSerializer.Serialize(args)}");
 
         var reportContext = args.ReportContext;
         var messageId = reportContext.MessageId;
