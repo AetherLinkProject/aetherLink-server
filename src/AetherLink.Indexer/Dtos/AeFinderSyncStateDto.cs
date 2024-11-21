@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AetherLink.Worker.Core.Dtos;
+namespace AetherLink.Indexer.Dtos;
 
 public class AeFinderSyncStateDto
 {

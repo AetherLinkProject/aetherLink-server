@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AetherLink.Indexer.Provider;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using Microsoft.Extensions.Logging;
@@ -38,7 +39,7 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
                 _logger.LogWarning("[TokenSwapper] Get empty token amount");
                 return null;
             }
-            
+
             var tokenSwapConfigId = GenerateTokenSwapId(tokenAmount);
             var tokenSwapConfig = await _storageProvider.GetAsync<TokenAmountDto>(tokenSwapConfigId);
             if (tokenSwapConfig != null) return tokenSwapConfig;
@@ -48,7 +49,18 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
             var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenAmount.TargetChainId,
                 tokenAmount.TargetContractAddress, tokenAmount.TokenAddress, tokenAmount.OriginToken);
 
-            return _objectMapper.Map<TokenSwapConfigDto, TokenAmountDto>(indexerConfig.TokenSwapConfig);
+            if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.SwapId))
+            {
+                _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
+                return tokenAmount;
+            }
+
+            tokenAmount.SwapId = indexerConfig.TokenSwapConfig.SwapId;
+            if (string.IsNullOrEmpty(tokenAmount.OriginToken))
+                tokenAmount.OriginToken = indexerConfig.TokenSwapConfig.OriginToken;
+            if (string.IsNullOrEmpty(tokenAmount.TokenAddress))
+                tokenAmount.OriginToken = indexerConfig.TokenSwapConfig.TokenAddress;
+            return tokenAmount;
         }
         catch (Exception e)
         {

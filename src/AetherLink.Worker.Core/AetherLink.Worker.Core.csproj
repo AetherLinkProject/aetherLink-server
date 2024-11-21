@@ -46,6 +46,7 @@
     </Target>
 
     <ItemGroup>
+        <ProjectReference Include="..\AetherLink.Indexer\AetherLink.Indexer.csproj" />
         <ProjectReference Include="..\AetherLink.Metric\AetherLink.Metric.csproj" />
         <ProjectReference Include="..\AetherLink.Multisignature\AetherLink.Multisignature.csproj" />
     </ItemGroup>

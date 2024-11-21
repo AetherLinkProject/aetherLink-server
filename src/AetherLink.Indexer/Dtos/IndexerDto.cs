@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace AetherLink.Worker.Core.Dtos;
+namespace AetherLink.Indexer.Dtos;
 
 // Job event
 public class IndexerLogEventListDto
@@ -33,7 +33,15 @@ public class RampRequestDto
     public long Epoch { get; set; }
     public long StartTime { get; set; }
     public string Message { get; set; }
-    public TokenAmountDto TokenAmount { get; set; }
+    public IndexerTokenAmountDto TokenAmount { get; set; }
+}
+
+public class IndexerTokenAmountDto
+{
+    public long TargetChainId { get; set; }
+    public string TargetContractAddress { get; set; }
+    public string OriginToken { get; set; }
+    public long Amount { get; set; }
 }
 
 // Transmitted event
@@ -47,6 +55,19 @@ public class TransmittedDto : IndexerBasicDto
     public string TransactionId { get; set; }
     public long Epoch { get; set; }
     public long StartTime { get; set; }
+}
+
+public class IndexerRequestCommitListDto
+{
+    public List<RampCommitReportAcceptedDto> RampCommitReport { get; set; }
+}
+
+public class RampCommitReportAcceptedDto
+{
+    public long SourceChainId { get; set; }
+    public long TargetChainId { get; set; }
+    public string TransactionId { get; set; }
+    public string MessageId { get; set; }
 }
 
 // Cancelled event
@@ -94,4 +115,51 @@ public class TransactionEventDto
     public string ContractAddress { get; set; }
     public string EventName { get; set; }
     public int Index { get; set; }
+}
+
+public class RequestCommitmentRecord
+{
+    public CommitmentDto RequestCommitment { get; set; }
+}
+
+public class CommitmentDto
+{
+    public string ChainId { get; set; }
+    public string RequestId { get; set; }
+    public string Commitment { get; set; }
+}
+
+public class OracleLatestEpochRecord
+{
+    public OracleLatestEpochDto OracleLatestEpoch { get; set; }
+}
+
+public class OracleLatestEpochDto
+{
+    public string ChainId { get; set; }
+    public long Epoch { get; set; }
+}
+
+public class OracleConfigDigestRecord
+{
+    public ConfigDigestDto OracleConfigDigest { get; set; }
+}
+
+public class ConfigDigestDto
+{
+    public string ConfigDigest { get; set; }
+}
+
+public class IndexerTokenSwapConfigInfo
+{
+    public TokenSwapConfigDto TokenSwapConfig { get; set; }
+}
+
+public class TokenSwapConfigDto
+{
+    public string SwapId { get; set; }
+    public long TargetChainId { get; set; }
+    public string TargetContractAddress { get; set; }
+    public string TokenAddress { get; set; }
+    public string OriginToken { get; set; }
 }

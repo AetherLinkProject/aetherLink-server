@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.CSharp.Core;
+using AetherLink.Indexer.Provider;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Provider.SearcherProvider;

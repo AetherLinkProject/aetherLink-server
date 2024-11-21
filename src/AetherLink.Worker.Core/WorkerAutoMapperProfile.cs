@@ -1,3 +1,4 @@
+using AetherLink.Indexer.Dtos;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;

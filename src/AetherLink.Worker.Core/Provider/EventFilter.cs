@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
+using AetherLink.Indexer.Dtos;
 using AetherLink.Worker.Core.Constants;
-using AetherLink.Worker.Core.Dtos;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Provider;

@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Automation;
+using AetherLink.Indexer.Dtos;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Automation.Providers;
 using AetherLink.Worker.Core.Dtos;

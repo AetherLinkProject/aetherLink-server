@@ -1,4 +1,5 @@
 ﻿using AElf.ExceptionHandler;
+using AetherLink.Indexer;
 using AetherLink.Metric;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Provider.TonIndexer;
@@ -12,6 +13,7 @@ namespace AetherLink.Worker.Core;
 
 [DependsOn(
     typeof(AbpAutoMapperModule),
+    typeof(AetherLinkIndexerModule),
     typeof(AetherLinkMetricModule),
     typeof(AOPExceptionModule)
 )]
@@ -29,14 +31,14 @@ public class AetherLinkServerWorkerCoreModule : AbpModule
         context.Services.AddTransient<IResetLogTriggerSchedulerJob, ResetLogTriggerSchedulerJob>();
         context.Services.AddTransient<IPriceFeedsProvider, PriceFeedsProvider>();
         context.Services.AddSingleton<ISchedulerService, SchedulerService>();
-        context.Services.AddTransient<IAeFinderProvider, AeFinderProvider>();
+        // context.Services.AddTransient<IAeFinderProvider, AeFinderProvider>();
         // Reporter
         context.Services.AddSingleton<IWorkerReporter, WorkerReporter>();
         context.Services.AddSingleton<IVRFReporter, VRFReporter>();
         context.Services.AddSingleton<IDataFeedsReporter, DataFeedsReporter>();
         context.Services.AddSingleton<IReportReporter, ReportReporter>();
         context.Services.AddSingleton<IMultiSignatureReporter, MultiSignatureReporter>();
-        
+
         // ton
         context.Services.AddSingleton<ITonIndexerProvider, TonCenterClient>();
         context.Services.AddSingleton<ITonIndexerProvider, GetBlockClient>();

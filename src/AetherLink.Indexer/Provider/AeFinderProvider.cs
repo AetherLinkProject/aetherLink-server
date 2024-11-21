@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AetherLink.Worker.Core.Common;
-using AetherLink.Worker.Core.Dtos;
-using AetherLink.Worker.Core.Options;
+using AetherLink.Indexer.Dtos;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -11,13 +9,14 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
-namespace AetherLink.Worker.Core.Provider;
+namespace AetherLink.Indexer.Provider;
 
 public interface IAeFinderProvider
 {
     public Task<List<OcrLogEventDto>> SubscribeLogsAsync(string chainId, long to, long from);
     public Task<List<RampRequestDto>> SubscribeRampRequestsAsync(string chainId, long to, long from);
     public Task<List<TransmittedDto>> SubscribeTransmittedAsync(string chainId, long to, long from);
+    public Task<List<RampCommitReportAcceptedDto>> SubscribeRampCommitReportAsync(string chainId, long to, long from);
     public Task<List<RequestCancelledDto>> SubscribeRequestCancelledAsync(string chainId, long to, long from);
     public Task<List<RampRequestCancelledDto>> SubscribeRampRequestCancelledAsync(string chainId, long to, long from);
     public Task<List<ChainItemDto>> GetChainSyncStateAsync();
@@ -26,7 +25,7 @@ public interface IAeFinderProvider
     public Task<string> GetRequestCommitmentAsync(string chainId, string requestId);
     public Task<List<TransactionEventDto>> GetTransactionLogEventsAsync(string chainId, long to, long from);
 
-    public Task<TokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, string targetContractAddress,
+    public Task<IndexerTokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, string targetContractAddress,
         string tokenAddress, string originToken);
 }
 
@@ -98,7 +97,8 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                          tokenAmount {
                             targetContractAddress,
                             targetChainId,
-                            originToken
+                            originToken,
+                            amount
                          }
                  }
              }",
@@ -143,6 +143,36 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         {
             _logger.LogError(e, "[Indexer] SubscribeTransmitted failed.");
             return new List<TransmittedDto>();
+        }
+    }
+
+    public async Task<List<RampCommitReportAcceptedDto>> SubscribeRampCommitReportAsync(string chainId, long to,
+        long from)
+    {
+        try
+        {
+            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerRequestCommitListDto>(GetClient(), new()
+            {
+                Query =
+                    @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
+                    rampCommitReport(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
+                        sourceChainId,
+                        targetChainId,
+                        transactionId,
+                        messageId
+                }
+            }",
+                Variables = new
+                {
+                    chainId = chainId, fromBlockHeight = from, toBlockHeight = to
+                }
+            });
+            return indexerResult != null ? indexerResult.RampCommitReport : new();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Indexer] Subscribe RampCommitted log failed.");
+            return new();
         }
     }
 
@@ -324,12 +354,12 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         }
     }
 
-    public async Task<TokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, string targetContractAddress,
-        string tokenAddress, string originToken)
+    public async Task<IndexerTokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId,
+        string targetContractAddress, string tokenAddress, string originToken)
     {
         try
         {
-            var indexerResult = await GraphQLHelper.SendQueryAsync<TokenSwapConfigInfo>(GetClient(), new()
+            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerTokenSwapConfigInfo>(GetClient(), new()
             {
                 Query =
                     @"query($targetChainId:Long!,$targetContractAddress:String!,$tokenAddress:String,$originToken:String){
