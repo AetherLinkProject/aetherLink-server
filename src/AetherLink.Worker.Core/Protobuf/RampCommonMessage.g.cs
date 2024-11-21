@@ -27,15 +27,15 @@ namespace Ramp {
             "ChlyYW1wX2NvbW1vbl9tZXNzYWdlLnByb3RvEgRyYW1wGg9hZWxmL2NvcmUu",
             "cHJvdG8aEmFlbGYvb3B0aW9ucy5wcm90bxoLYWNzMTIucHJvdG8aG2dvb2ds",
             "ZS9wcm90b2J1Zi9lbXB0eS5wcm90bxoeZ29vZ2xlL3Byb3RvYnVmL3dyYXBw",
-            "ZXJzLnByb3RvGh9nb29nbGUvcHJvdG9idWYvdGltZXN0YW1wLnByb3RvIoUB",
+            "ZXJzLnByb3RvGh9nb29nbGUvcHJvdG9idWYvdGltZXN0YW1wLnByb3RvIpUB",
             "CgtUb2tlbkFtb3VudBIPCgdzd2FwX2lkGAEgASgJEhcKD3RhcmdldF9jaGFp",
             "bl9pZBgCIAEoAxIfChd0YXJnZXRfY29udHJhY3RfYWRkcmVzcxgDIAEoCRIV",
-            "Cg10b2tlbl9hZGRyZXNzGAQgASgJEhQKDG9yaWdpbl90b2tlbhgFIAEoCWIG",
-            "cHJvdG8z"));
+            "Cg10b2tlbl9hZGRyZXNzGAQgASgJEhQKDG9yaWdpbl90b2tlbhgFIAEoCRIO",
+            "CgZhbW91bnQYBiABKANiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::AElf.Types.CoreReflection.Descriptor, global::AElf.OptionsReflection.Descriptor, global::AElf.Standards.ACS12.Acs12Reflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.WrappersReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.TimestampReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Ramp.TokenAmount), global::Ramp.TokenAmount.Parser, new[]{ "SwapId", "TargetChainId", "TargetContractAddress", "TokenAddress", "OriginToken" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::Ramp.TokenAmount), global::Ramp.TokenAmount.Parser, new[]{ "SwapId", "TargetChainId", "TargetContractAddress", "TokenAddress", "OriginToken", "Amount" }, null, null, null, null)
           }));
     }
     #endregion
@@ -81,6 +81,7 @@ namespace Ramp {
       targetContractAddress_ = other.targetContractAddress_;
       tokenAddress_ = other.tokenAddress_;
       originToken_ = other.originToken_;
+      amount_ = other.amount_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -150,6 +151,18 @@ namespace Ramp {
       }
     }
 
+    /// <summary>Field number for the "amount" field.</summary>
+    public const int AmountFieldNumber = 6;
+    private long amount_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public long Amount {
+      get { return amount_; }
+      set {
+        amount_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -170,6 +183,7 @@ namespace Ramp {
       if (TargetContractAddress != other.TargetContractAddress) return false;
       if (TokenAddress != other.TokenAddress) return false;
       if (OriginToken != other.OriginToken) return false;
+      if (Amount != other.Amount) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -182,6 +196,7 @@ namespace Ramp {
       if (TargetContractAddress.Length != 0) hash ^= TargetContractAddress.GetHashCode();
       if (TokenAddress.Length != 0) hash ^= TokenAddress.GetHashCode();
       if (OriginToken.Length != 0) hash ^= OriginToken.GetHashCode();
+      if (Amount != 0L) hash ^= Amount.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -220,6 +235,10 @@ namespace Ramp {
         output.WriteRawTag(42);
         output.WriteString(OriginToken);
       }
+      if (Amount != 0L) {
+        output.WriteRawTag(48);
+        output.WriteInt64(Amount);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -250,6 +269,10 @@ namespace Ramp {
         output.WriteRawTag(42);
         output.WriteString(OriginToken);
       }
+      if (Amount != 0L) {
+        output.WriteRawTag(48);
+        output.WriteInt64(Amount);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -274,6 +297,9 @@ namespace Ramp {
       }
       if (OriginToken.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(OriginToken);
+      }
+      if (Amount != 0L) {
+        size += 1 + pb::CodedOutputStream.ComputeInt64Size(Amount);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -301,6 +327,9 @@ namespace Ramp {
       }
       if (other.OriginToken.Length != 0) {
         OriginToken = other.OriginToken;
+      }
+      if (other.Amount != 0L) {
+        Amount = other.Amount;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -337,6 +366,10 @@ namespace Ramp {
             OriginToken = input.ReadString();
             break;
           }
+          case 48: {
+            Amount = input.ReadInt64();
+            break;
+          }
         }
       }
     #endif
@@ -370,6 +403,10 @@ namespace Ramp {
           }
           case 42: {
             OriginToken = input.ReadString();
+            break;
+          }
+          case 48: {
+            Amount = input.ReadInt64();
             break;
           }
         }
