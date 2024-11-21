@@ -77,6 +77,11 @@ public class AElfChainReader : ChainReader, ISingletonDependency
     {
         return new() { State = TransactionState.Success };
     }
+
+    public override string ConvertBytesToAddressStr(byte[] addressBytes)
+    {
+        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
+    }
 }
 
 public class TDVVChainReader : ChainReader, ISingletonDependency
@@ -92,6 +97,11 @@ public class TDVVChainReader : ChainReader, ISingletonDependency
     {
         return new() { State = TransactionState.Success };
     }
+
+    public override string ConvertBytesToAddressStr(byte[] addressBytes)
+    {
+        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
+    }
 }
 
 public class TDVWChainReader : ChainReader, ISingletonDependency
@@ -106,5 +116,10 @@ public class TDVWChainReader : ChainReader, ISingletonDependency
     public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
     {
         return new() { State = TransactionState.Success };
+    }
+
+    public override string ConvertBytesToAddressStr(byte[] addressBytes)
+    {
+        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
     }
 }

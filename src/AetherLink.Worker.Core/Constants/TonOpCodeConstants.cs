@@ -4,6 +4,8 @@ public class TonEnvConstants
 {
     public const long ResendMaxWaitSeconds = 30;
     public const int PullTransactionMinWaitSecond = 3;
+    public const int MaxTransferByteCount = 1024 * 2;
+    public const int PerCellStorageBytesCount = 32 * 3;
 }
 
 public class TonOpCodeConstants

@@ -84,7 +84,7 @@ message CommitTransmitResultRequest {
 
 message CrossChainReceivedResult {
   ReportContext report_context = 1;
-  string commit_transaction_id = 4;
+  string commit_transaction_id = 2;
 }
 
 message QueryReportSignatureRequest {

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Dtos;
+using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.ChainHandler;
 
@@ -9,6 +10,7 @@ public interface IChainReader
     long ChainId { get; }
     Task<byte[]> CallTransactionAsync(byte[] transaction);
     Task<TransactionResultDto> GetTransactionResultAsync(string transactionId);
+    string ConvertBytesToAddressStr(byte[] addressBytes);
 }
 
 public interface IChainWriter
@@ -24,6 +26,7 @@ public abstract class ChainReader : IChainReader
     public abstract long ChainId { get; }
     public abstract Task<byte[]> CallTransactionAsync(byte[] transaction);
     public abstract Task<TransactionResultDto> GetTransactionResultAsync(string transactionId);
+    public abstract string ConvertBytesToAddressStr(byte[] addressBytes);
 }
 
 public abstract class ChainWriter : IChainWriter

@@ -1,13 +1,22 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf;
+using AetherLink.Worker.Core.ChainHandler;
+using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
+using AetherLink.Worker.Core.Exceptions;
+using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider.TonIndexer;
 using AetherLink.Worker.Core.Scheduler;
+using Google.Protobuf;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Org.BouncyCastle.Utilities.Encoders;
+using TonSdk.Core;
 using TonSdk.Core.Boc;
 using Volo.Abp.DependencyInjection;
 
@@ -26,10 +35,13 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
     private readonly IStorageProvider _storageProvider;
     private readonly ILogger<TonSearchWorkerProvider> _logger;
     private readonly ICrossChainRequestProvider _crossChainRequestProvider;
+    private readonly IOptions<TonPublicOptions> _tonPublicOptions;
+    private readonly IServiceProvider _serviceProvider;
 
     public TonSearchWorkerProvider(ISchedulerService scheduler, ITonStorageProvider tonStorageProvider,
         TonIndexerRouter tonIndexerRouter, ILogger<TonSearchWorkerProvider> logger, IStorageProvider storageProvider,
-        ICrossChainRequestProvider crossChainRequestProvider)
+        ICrossChainRequestProvider crossChainRequestProvider, IOptions<TonPublicOptions> tonPublicOptions,
+        IServiceProvider serviceProvider)
     {
         _logger = logger;
         _scheduler = scheduler;
@@ -37,11 +49,17 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
         _tonStorageProvider = tonStorageProvider;
         _storageProvider = storageProvider;
         _crossChainRequestProvider = crossChainRequestProvider;
+        _tonPublicOptions = tonPublicOptions;
+        _serviceProvider = serviceProvider;
     }
 
     public async Task ExecuteSearchAsync()
     {
         var indexerInfo = await _tonStorageProvider.GetTonIndexerInfoAsync();
+        if (indexerInfo.LatestTransactionLt == "0" && _tonPublicOptions.Value.SkipTransactionLt != "0")
+        {
+            indexerInfo.LatestTransactionLt = _tonPublicOptions.Value.SkipTransactionLt;
+        }
 
         var (transactionList, currentIndexerInfo) = await _tonIndexerRouter.GetSubsequentTransaction(indexerInfo);
         var dtNow = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
@@ -58,19 +76,27 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
             var tx = transactionList[i];
             if (!tx.Aborted && !tx.Bounced && tx.ExitCode == 0)
             {
-                switch (tx.OpCode)
+                try
                 {
-                    case TonOpCodeConstants.ForwardTx:
-                        await TonForwardTxHandle(tx);
-                        break;
-                    case TonOpCodeConstants.ReceiveTx:
-                        await HandleTonReceiveTransaction(tx);
-                        break;
-                    case TonOpCodeConstants.ResendTx:
-                        await HandleTonResendTx(tx);
-                        break;
-                    default:
-                        continue;
+                    switch (tx.OpCode)
+                    {
+                        case TonOpCodeConstants.ForwardTx:
+                            await TonForwardTxHandle(tx);
+                            break;
+                        case TonOpCodeConstants.ReceiveTx:
+                            await HandleTonReceiveTransaction(tx);
+                            break;
+                        case TonOpCodeConstants.ResendTx:
+                            await HandleTonResendTx(tx);
+                            break;
+                        default:
+                            continue;
+                    }
+                }
+                catch (ProtocolException ex)
+                {
+                    _logger.LogWarning(
+                        $"[TonIndexer] analysis ton transaction error:{ex.Message} , transaction hash:{tx.Hash}");
                 }
             }
             else
@@ -181,125 +207,165 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
         if (epochInfo == null && receiveMessageDto.Epoch != 1)
         {
             _logger.LogWarning(
-            $"[Ton indexer] received receive  transaction hash:{tx.Hash}, this message may be lost, receiveMessageDto is: {JsonConvert.SerializeObject(receiveMessageDto)}");
-            return;
+                $"[Ton indexer] received receive  transaction hash:{tx.Hash}, this message may be lost, receiveMessageDto is: {JsonConvert.SerializeObject(receiveMessageDto)}");
         }
 
         if (epochInfo != null && receiveMessageDto.Epoch < epochInfo.EpochId)
         {
             _logger.LogWarning(
                 $"[Ton indexer] received receive  transaction hash:{tx.Hash}, this transaction has been dealed");
-            return;
         }
-        
+
         await _crossChainRequestProvider.StartCrossChainRequestFromTon(receiveMessageDto);
         epochInfo ??= new TonReceiveEpochInfoDto();
         epochInfo.EpochId = receiveMessageDto.Epoch;
         await _storageProvider.SetAsync(RedisKeyConstants.TonEpochStorageKey, epochInfo.EpochId);
+
+        _logger.LogInformation(
+            $"[Ton indexer] received receive  transaction hash:{tx.Hash} has send to ");
     }
 
     private ResendMessageDto AnalysisResendTransaction(CrossChainToTonTransactionDto tonTransactionDto)
     {
-        var body = Cell.From(tonTransactionDto.Body);
-        var bodySlice = body.Parse();
-        var opCode = bodySlice.LoadInt(32);
-        if (opCode != TonOpCodeConstants.ResendTx)
+        try
         {
-            _logger.LogError("[TonSearchWorkerProvider] Analysis Resend Transaction OpCode Error");
-            return null;
+            var body = Cell.From(tonTransactionDto.Body);
+            var bodySlice = body.Parse();
+            var opCode = bodySlice.LoadInt(32);
+            if (opCode != TonOpCodeConstants.ResendTx)
+            {
+                _logger.LogError("[TonSearchWorkerProvider] Analysis Resend Transaction OpCode Error");
+                return null;
+            }
+
+            var messageId = bodySlice.LoadBytes(32);
+            var messageIdStr = Base64.ToBase64String(messageId);
+            var result = new ResendMessageDto
+            {
+                MessageId = messageIdStr,
+                TargetBlockHeight = tonTransactionDto.SeqNo,
+                Hash = tonTransactionDto.Hash,
+                TargetBlockGeneratorTime = tonTransactionDto.BlockTime,
+            };
+
+            if (bodySlice.LoadUInt(8) != TonResendTypeConstants.IntervalSeconds) return result;
+            var intervalSeconds = (long)bodySlice.LoadUInt(32);
+            result.ResendTime = intervalSeconds;
+            result.CheckCommitTime =
+                intervalSeconds + tonTransactionDto.BlockTime + TonEnvConstants.ResendMaxWaitSeconds;
+
+            return result;
         }
-
-        var messageId = bodySlice.LoadBytes(32);
-        var messageIdStr = Base64.ToBase64String(messageId);
-        var result = new ResendMessageDto
+        catch (Exception ex)
         {
-            MessageId = messageIdStr,
-            TargetBlockHeight = tonTransactionDto.SeqNo,
-            Hash = tonTransactionDto.Hash,
-            TargetBlockGeneratorTime = tonTransactionDto.BlockTime,
-        };
-
-        if (bodySlice.LoadUInt(8) != TonResendTypeConstants.IntervalSeconds) return result;
-        var intervalSeconds = (long)bodySlice.LoadUInt(32);
-        result.ResendTime = intervalSeconds;
-        result.CheckCommitTime = intervalSeconds + tonTransactionDto.BlockTime + TonEnvConstants.ResendMaxWaitSeconds;
-
-        return result;
+            throw new ProtocolException($"AnalysisResendTransaction Error ex:{ex}");
+        }
     }
 
     private ForwardMessageDto AnalysisForwardTransaction(CrossChainToTonTransactionDto tonTransactionDto)
     {
-        var inMessageBody = Cell.From(tonTransactionDto.Body);
-        var inMessageBodySlice = inMessageBody.Parse();
-        var opCode = inMessageBodySlice.LoadUInt(32);
-        if (opCode != TonOpCodeConstants.ForwardTx)
+        try
         {
-            _logger.LogError("[TonSearchWorkerProvider] Analysis ForwardTransaction OpCode Error");
-            return null;
+            var inMessageBody = Cell.From(tonTransactionDto.Body);
+            var inMessageBodySlice = inMessageBody.Parse();
+            var opCode = inMessageBodySlice.LoadUInt(32);
+            if (opCode != TonOpCodeConstants.ForwardTx)
+            {
+                _logger.LogError("[TonSearchWorkerProvider] Analysis ForwardTransaction OpCode Error");
+                return null;
+            }
+
+            var messageId = inMessageBodySlice.LoadBytes(32);
+            var messageIdStr = Base64.ToBase64String(messageId);
+            var targetAddr = inMessageBodySlice.LoadAddress();
+            var targetAddrStr = targetAddr?.ToString();
+
+            var proxyBody = inMessageBodySlice.LoadRef();
+            var proxyBodySlice = proxyBody.Parse();
+
+            var sourceChainId = proxyBodySlice.LoadUInt(64);
+            var targetChainId = proxyBodySlice.LoadUInt(64);
+            var sender = proxyBodySlice.LoadRef();
+            var senderStr = Base64.ToBase64String(sender.Parse().Bits.ToBytes());
+            var receive = proxyBodySlice.LoadRef();
+            var receiveStr = Base64.ToBase64String(receive.Parse().Bits.ToBytes());
+            var proxyMessage = proxyBodySlice.LoadRef();
+            var proxyMessageStr = Base64.ToBase64String(proxyMessage.Parse().Bits.ToBytes());
+
+            return new ForwardMessageDto
+            {
+                MessageId = messageIdStr,
+                SourceChainId = (long)sourceChainId,
+                TargetChainId = (long)targetChainId,
+                Sender = senderStr,
+                Receiver = targetAddrStr,
+                Message = proxyMessageStr
+            };
         }
-
-        var messageId = inMessageBodySlice.LoadBytes(32);
-        var messageIdStr = Base64.ToBase64String(messageId);
-        var targetAddr = inMessageBodySlice.LoadAddress();
-        var targetAddrStr = targetAddr?.ToString();
-
-        var proxyBody = inMessageBodySlice.LoadRef();
-        var proxyBodySlice = proxyBody.Parse();
-
-        var sourceChainId = proxyBodySlice.LoadUInt(64);
-        var targetChainId = proxyBodySlice.LoadUInt(64);
-        var sender = proxyBodySlice.LoadRef();
-        var senderStr = Base64.ToBase64String(sender.Parse().Bits.ToBytes());
-        var receive = proxyBodySlice.LoadRef();
-        var receiveStr = Base64.ToBase64String(receive.Parse().Bits.ToBytes());
-        var proxyMessage = proxyBodySlice.LoadRef();
-        var proxyMessageStr = Base64.ToBase64String(proxyMessage.Parse().Bits.ToBytes());
-
-        return new ForwardMessageDto
+        catch (Exception e)
         {
-            MessageId = messageIdStr,
-            SourceChainId = (long)sourceChainId,
-            TargetChainId = (long)targetChainId,
-            Sender = senderStr,
-            Receiver = targetAddrStr,
-            Message = proxyMessageStr
-        };
+            throw new ProtocolException($"AnalysisForwardTransaction error,err:{e.Message}");
+        }
     }
 
     private ReceiveMessageDto AnalysisReceiveTransaction(CrossChainToTonTransactionDto tonTransactionDto)
     {
-        var receiveSlice = Cell.From(tonTransactionDto.OutMessage).Parse();
-        var epochId = (long)receiveSlice.LoadInt(64);
-        var targetChainId = (long)receiveSlice.LoadInt(64);
-        var targetContractAddress = Base58CheckEncoding.Encode(receiveSlice.LoadRef().Parse().Bits.ToBytes());
-        var sender = receiveSlice.LoadAddress().ToString();
-        var message = Base64.ToBase64String(receiveSlice.LoadRef().Parse().Bits.ToBytes());
-        TokenAmountDto tokenAmountDto = null;
-        if (receiveSlice.Refs.Length > 2)
+        try
         {
-            var extraDataRefCell = receiveSlice.LoadRef().Parse();
-            var tokenTargetChainId = (long)extraDataRefCell.LoadInt(64);
-            var contractAddress =  Base58CheckEncoding.Encode(extraDataRefCell.LoadRef().Parse().Bits.ToBytes());
-            var tokenAddress = extraDataRefCell.LoadRef().Parse().LoadAddress().ToString();
-            tokenAmountDto = new TokenAmountDto()
+            var receiveSlice = Cell.From(tonTransactionDto.OutMessage).Parse();
+            var epochId = (long)receiveSlice.LoadInt(64);
+            var targetChainId = (long)receiveSlice.LoadInt(64);
+
+            var targetChainProvider = _serviceProvider.GetServices<IChainReader>()
+                .FirstOrDefault(f => f.ChainId == targetChainId);
+            if (targetChainProvider == null)
             {
-                TargetChainId = tokenTargetChainId,
-                TargetContractAddress = contractAddress,
-                TokenAddress = tokenAddress,
+                throw new Exception($"[TonIndexer] IChainReader target chainId:{targetChainId} not support");
+            }
+
+            var targetContractAddress =
+                targetChainProvider.ConvertBytesToAddressStr(receiveSlice.LoadRef().Parse().Bits.ToBytes());
+            var senderTonContractAddress = receiveSlice.LoadAddress();
+            var sender = senderTonContractAddress.ToString(AddressType.Base64,
+                new AddressStringifyOptions(senderTonContractAddress.IsBounceable(), senderTonContractAddress.IsTestOnly(), false));
+            var message = Base64.ToBase64String( TonHelper.ConvertMessageCellToBytes(receiveSlice.LoadRef()));
+
+            TokenAmountDto tokenAmountDto = null;
+            if (receiveSlice.Refs.Length > 0)
+            {
+                var extraDataRefCell = receiveSlice.LoadRef().Parse();
+                var tokenTargetChainId = (long)extraDataRefCell.LoadInt(64);
+                var contractAddress =
+                    targetChainProvider.ConvertBytesToAddressStr(extraDataRefCell.LoadRef().Parse().Bits.ToBytes());
+                var tokenAddress = extraDataRefCell.LoadRef().Parse().LoadAddress();
+                var tokenAddressStr = tokenAddress.ToString(AddressType.Base64,
+                    new AddressStringifyOptions(tokenAddress.IsBounceable(), tokenAddress.IsTestOnly(), false));
+                var amount = (long) extraDataRefCell.LoadUInt(256);
+                tokenAmountDto = new TokenAmountDto()
+                {
+                    TargetChainId = tokenTargetChainId,
+                    TargetContractAddress = contractAddress,
+                    TokenAddress = tokenAddressStr,
+                    Amount = amount
+                };
+            }
+
+            return new ReceiveMessageDto()
+            {
+                MessageId = tonTransactionDto.Hash,
+                Sender = sender,
+                Epoch = epochId,
+                SourceChainId = 1100,
+                TargetChainId = targetChainId,
+                TargetContractAddress = targetContractAddress,
+                TransactionTime = tonTransactionDto.BlockTime,
+                Message = message,
+                TokenAmountInfo = tokenAmountDto,
             };
         }
-
-        return new ReceiveMessageDto()
+        catch (Exception e)
         {
-            MessageId = tonTransactionDto.Hash,
-            Sender = sender,
-            Epoch = epochId,
-            SourceChainId = 1100,
-            TargetChainId = targetChainId,
-            TargetContractAddress = targetContractAddress,
-            TransactionTime = tonTransactionDto.BlockTime,
-            Message = message,
-            TokenAmountInfo = tokenAmountDto,
-        };
+            throw new ProtocolException($"AnalysisReceiveTransaction Error error messag:{e.Message} ");
+        }
     }
 }

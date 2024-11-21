@@ -243,7 +243,7 @@ public class TonApiTransaction
     public string StateUpdateOld { get; set; }
     public string StateUpdateNew { get; set; }
     public TonapiMessage InMsg { get; set; }
-    public List<TonapiMessage> OutMsg { get; set; }
+    public List<TonapiMessage> OutMsgs { get; set; }
     public string Block { get; set; }
     public string PrevTransHash { get; set; }
     public long PrevTransLt { get; set; }
@@ -261,9 +261,9 @@ public class TonApiTransaction
         var blockStr = Block.Replace("(", "").Replace(")", "").Split(",");
 
         string outMsg = null;
-        if (OutMsg != null && OutMsg.Count > 0)
+        if (OutMsgs != null && OutMsgs.Count > 0)
         {
-            outMsg = OutMsg[0].RawBody;
+            outMsg = OutMsgs[0].RawBody;
         }
 
         return new CrossChainToTonTransactionDto()
