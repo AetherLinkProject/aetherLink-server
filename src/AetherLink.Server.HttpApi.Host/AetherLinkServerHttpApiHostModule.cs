@@ -107,10 +107,6 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
 
     private void ConfigureWorker(ApplicationInitializationContext context)
     {
-        // var backgroundWorkerManger = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
-        // backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<AELFLogEventSearchWorker>());
-        // backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<TonLogEventSearchWorker>());
-
         context.AddBackgroundWorkerAsync<ConfirmBlockHeightSearchWorker>();
         context.AddBackgroundWorkerAsync<RequestSearchWorker>();
         context.AddBackgroundWorkerAsync<CommitSearchWorker>();
