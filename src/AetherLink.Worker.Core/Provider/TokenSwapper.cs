@@ -59,7 +59,7 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
             if (string.IsNullOrEmpty(tokenAmount.OriginToken))
                 tokenAmount.OriginToken = indexerConfig.TokenSwapConfig.OriginToken;
             if (string.IsNullOrEmpty(tokenAmount.TokenAddress))
-                tokenAmount.OriginToken = indexerConfig.TokenSwapConfig.TokenAddress;
+                tokenAmount.TokenAddress = indexerConfig.TokenSwapConfig.TokenAddress;
             return tokenAmount;
         }
         catch (Exception e)
