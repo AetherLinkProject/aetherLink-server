@@ -5,6 +5,7 @@ using AetherLink.Server.HttpApi;
 using AetherLink.Server.HttpApi.Options;
 using AetherLink.Server.HttpApi.Worker;
 using AetherLink.Server.HttpApi.Worker.AELF;
+using AetherLink.Server.HttpApi.Worker.Ton;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.Extensions.Configuration;
@@ -110,6 +111,7 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         context.AddBackgroundWorkerAsync<ConfirmBlockHeightSearchWorker>();
         context.AddBackgroundWorkerAsync<RequestSearchWorker>();
         context.AddBackgroundWorkerAsync<CommitSearchWorker>();
+        context.AddBackgroundWorkerAsync<TransactionSearchWorker>();
     }
 
     private void ConfigureLocalization()

@@ -90,7 +90,7 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task HandleRampRequestAsync(AELFRampRequestGrainDto requestData)
     {
         _logger.LogDebug($"[RequestSearchWorker] Start to create cross chain request for {requestData.MessageId}");
-        var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(requestData.MessageId);
+        var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(requestData.TransactionId);
         var result = await requestGrain.UpdateAsync(new()
         {
             Id = requestData.MessageId,
@@ -100,6 +100,12 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
             Status = CrossChainStatus.Started.ToString()
         });
 
-        _logger.LogDebug($"[RequestSearchWorker] Update {requestData.MessageId} started {result.Success}");
+        _logger.LogDebug($"[RequestSearchWorker] Update {requestData.TransactionId} started {result.Success}");
+
+        var transactionIdGrainClient = _clusterClient.GetGrain<ITransactionIdGrain>(requestData.MessageId);
+        var transactionIdUpdateResult =
+            await transactionIdGrainClient.UpdateAsync(new() { GrainId = requestData.TransactionId });
+        _logger.LogDebug(
+            $"[RequestSearchWorker] Update {requestData.TransactionId} messageId {requestData.MessageId} started {transactionIdUpdateResult.Success}");
     }
 }
