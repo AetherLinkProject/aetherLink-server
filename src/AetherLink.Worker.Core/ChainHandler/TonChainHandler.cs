@@ -4,6 +4,7 @@ using Volo.Abp.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using AElf;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
@@ -55,7 +56,7 @@ public class TonChainWriter : ChainWriter
                 (Base64.Decode(reportContext.MessageId)), false, true), 256)
             .StoreAddress(receiverAddress)
             .StoreRef(TonHelper.BuildMessageBody(reportContext.SourceChainId,
-                reportContext.TargetChainId, Base64.Decode(reportContext.Sender), receiverAddress,
+                reportContext.TargetChainId, Base58CheckEncoding.Decode(reportContext.Sender), receiverAddress,
                 Base64.Decode(crossChainData.Message), crossChainData.TokenAmount))
             .StoreRef(new CellBuilder().StoreDict(ConvertConsensusSignature(signatures)).Build())
             .Build();
