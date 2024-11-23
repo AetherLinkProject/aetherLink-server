@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AetherLink.Indexer.Dtos;
 using AetherLink.Indexer.Provider;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
@@ -41,30 +42,34 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
             }
 
             var tokenSwapConfigId = GenerateTokenSwapId(tokenAmount);
-            var tokenSwapConfig = await _storageProvider.GetAsync<TokenAmountDto>(tokenSwapConfigId);
-            if (tokenSwapConfig != null) return tokenSwapConfig;
-
-            _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
-
-            var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenAmount.TargetChainId,
-                tokenAmount.TargetContractAddress, tokenAmount.TokenAddress, tokenAmount.OriginToken);
-
-            if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.SwapId))
+            var tokenSwapConfig = await _storageProvider.GetAsync<TokenSwapConfigDto>(tokenSwapConfigId);
+            if (tokenSwapConfig == null)
             {
-                _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
-                return tokenAmount;
+                _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
+
+                var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenAmount.TargetChainId,
+                    tokenAmount.TargetContractAddress, tokenAmount.TokenAddress, tokenAmount.OriginToken);
+
+                if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.SwapId))
+                {
+                    _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
+                    return tokenAmount;
+                }
+
+                tokenSwapConfig = indexerConfig.TokenSwapConfig;
+                await _storageProvider.SetAsync(tokenSwapConfigId, tokenSwapConfig);
             }
 
-            tokenAmount.SwapId = indexerConfig.TokenSwapConfig.SwapId;
+            tokenAmount.SwapId = tokenSwapConfig.SwapId;
             if (string.IsNullOrEmpty(tokenAmount.OriginToken))
             {
-                tokenAmount.OriginToken = indexerConfig.TokenSwapConfig.OriginToken;
+                tokenAmount.OriginToken = tokenSwapConfig.OriginToken;
                 _logger.LogDebug($"[TokenSwapper] need fill OriginToken: {tokenAmount.OriginToken}");
             }
 
             if (!string.IsNullOrEmpty(tokenAmount.TokenAddress)) return tokenAmount;
 
-            tokenAmount.TokenAddress = indexerConfig.TokenSwapConfig.TokenAddress;
+            tokenAmount.TokenAddress = tokenSwapConfig.TokenAddress;
             _logger.LogDebug($"[TokenSwapper] need fill TokenAddress: {tokenAmount.TokenAddress}");
             return tokenAmount;
         }
