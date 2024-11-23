@@ -2,15 +2,6 @@ using System.Collections.Generic;
 
 namespace AetherLink.Indexer.Dtos;
 
-public class TonIndexerDto
-{
-    public long BlockHeight { get; set; }
-    public string LatestTransactionHash { get; set; }
-    public string LatestTransactionLt { get; set; } = "0";
-    public int SkipCount { get; set; }
-    public long IndexerTime { get; set; }
-}
-
 public class TonCenterGetTransactionsResponseDto
 {
     public List<TonTransactionDto> Transactions { get; set; }

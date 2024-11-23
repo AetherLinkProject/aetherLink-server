@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using AetherLink.Indexer.Dtos;
-
 namespace AetherLink.Indexer;
 
 public class AeFinderOptions
@@ -13,7 +10,6 @@ public class AeFinderOptions
 public class TonIndexerOption
 {
     public string ContractAddress { get; set; }
-    public string Skip { get; set; } = "0";
     public string Url { get; set; }
-    public string ApiKey { get; set; }
+    public string LatestTransactionLt { get; set; } = "28227653000001";
 }

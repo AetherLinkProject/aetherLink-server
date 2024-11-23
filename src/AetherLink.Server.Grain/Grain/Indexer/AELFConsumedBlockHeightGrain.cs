@@ -17,6 +17,6 @@ public class AELFConsumedBlockHeightGrain : Grain<AELFConsumedBlockHeightState>,
         await WriteStateAsync();
     }
 
-    public async Task<GrainResultDto<long>> GetConsumedHeightAsync() =>
-        new() { Success = true, Data = State.BlockHeight };
+    public async Task<GrainResultDto<long>> GetConsumedHeightAsync()
+        => new() { Success = true, Data = State.BlockHeight };
 }

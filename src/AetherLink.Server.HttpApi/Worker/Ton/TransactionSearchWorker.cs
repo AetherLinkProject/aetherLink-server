@@ -1,4 +1,3 @@
-using AetherLink.Server.Grains;
 using AetherLink.Server.Grains.Grain.Indexer;
 using AetherLink.Server.Grains.Grain.Request;
 using AetherLink.Server.HttpApi.Constants;
@@ -42,12 +41,6 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task HandlerTonTransactionAsync(TonTransactionGrainDto transaction)
     {
         _logger.LogDebug($"[TonSearchWorker] Get TON transaction traceId: {transaction.TraceId}");
-        // todo get messageId
-
-        // var crossChainRequest = GenerateCrossChainRequestGrain(transaction);
-        // var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(crossChainRequest.Id);
-        // var result = await requestGrain.UpdateAsync(crossChainRequest);
-        // _logger.LogDebug($"[TonSearchWorker] Update {crossChainRequest.Id} started {result.Success}");
 
         switch (transaction.InMsg.Opcode)
         {

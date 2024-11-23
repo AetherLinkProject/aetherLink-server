@@ -34,8 +34,14 @@ public class TonIndexerProvider : ITonIndexerProvider, ITransientDependency
     {
         try
         {
+            latestTransactionLt = string.IsNullOrEmpty(latestTransactionLt)
+                ? _option.LatestTransactionLt
+                : latestTransactionLt;
+
+            _logger.LogDebug($"[TonIndexerProvider] Search transaction from {latestTransactionLt}");
+
             var path =
-                $"/api/v3/transactions?account={_option.ContractAddress}&start_lt={latestTransactionLt}&limit=30&sort_order=asc";
+                $"/api/v3/transactions?account={_option.ContractAddress}&start_lt={latestTransactionLt}&limit=30&offset=0&sort=asc";
             var resultStr = await _httpClient.GetAsync(_option.Url + path, new());
 
             var serializeSetting = new JsonSerializerSettings
@@ -44,21 +50,6 @@ public class TonIndexerProvider : ITonIndexerProvider, ITransientDependency
                 JsonConvert.DeserializeObject<TonCenterGetTransactionsResponseDto>(resultStr, serializeSetting);
 
             _logger.LogDebug($"[TonIndexerProvider] {JsonSerializer.Serialize(result)}");
-            // var skipCount = tonIndexerDto.SkipCount;
-            // var latestTransactionLt = tonIndexerDto.LatestTransactionLt;
-
-            // transactions has been order by asc 
-            // foreach (var transaction in result.Transactions)
-            // {
-            //     if (transaction.Hash == tonIndexerDto.LatestTransactionHash) continue;
-            //     // var opCode = string.IsNullOrEmpty(transaction.InMsg.OpCode)
-            //     //     ? 0
-            //     //     : Convert.ToInt32(transaction.InMsg.OpCode, 16);
-            //     latestTransactionLt = transaction.Lt.ToString() == latestTransactionLt
-            //         ? latestTransactionLt
-            //         : transaction.Lt.ToString();
-            //     skipCount = transaction.Lt.ToString() == latestTransactionLt ? skipCount + 1 : 0;
-            // }
 
             return result.Transactions;
         }

@@ -26,15 +26,23 @@ public class TonIndexerGrain : Grain<TonIndexerState>, ITonIndexerGrain
 
     public async Task<GrainResultDto<List<TonTransactionGrainDto>>> SearchTonTransactionsAsync()
     {
-        // var transactions = await _indexer.SubscribeTransactionAsync(State.LatestTransactionLt);
-        var transactions = await _indexer.SubscribeTransactionAsync(28227653000001.ToString());
+        if (string.IsNullOrEmpty(State.Id)) State.Id = this.GetPrimaryKeyString();
+
+        var currentTransactionLt = State.LatestTransactionLt;
+        var transactions = await _indexer.SubscribeTransactionAsync(currentTransactionLt);
 
         _logger.LogDebug($"[TonIndexerGrain] Get total {transactions.Count} Ton transaction");
 
-        if (transactions.Count == 0) return new() { Message = "Empty data", Data = new() };
+        if (!transactions.Any() ||
+            (transactions.Count == 1 && transactions[0].Lt.ToString() == State.LatestTransactionLt))
+            return new() { Message = "Empty data", Data = new() };
+
+        var latestTransactionLt = transactions.Last().Lt.ToString();
+        State.LatestTransactionLt = latestTransactionLt;
+        _logger.LogInformation($"[TonIndexerGrain] Update LatestTransactionLt to {latestTransactionLt}");
 
         await WriteStateAsync();
-        
+
         return new() { Data = _mapper.Map<List<TonTransactionDto>, List<TonTransactionGrainDto>>(transactions) };
     }
 }
