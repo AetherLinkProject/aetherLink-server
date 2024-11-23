@@ -219,7 +219,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
         await _crossChainRequestProvider.StartCrossChainRequestFromTon(receiveMessageDto);
         epochInfo ??= new TonReceiveEpochInfoDto();
         epochInfo.EpochId = receiveMessageDto.Epoch;
-        await _storageProvider.SetAsync(RedisKeyConstants.TonEpochStorageKey, epochInfo.EpochId);
+        await _storageProvider.SetAsync(RedisKeyConstants.TonEpochStorageKey, epochInfo);
 
         _logger.LogInformation(
             $"[Ton indexer] received receive  transaction hash:{tx.Hash} has send to ");
