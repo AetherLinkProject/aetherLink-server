@@ -140,7 +140,7 @@ public static class TonHelper
             return result.Build();
         }
 
-        result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenAmountDto.SwapId)).Build());
+        result.StoreRef(new CellBuilder().StoreBytes(Base64.Decode(tokenAmountDto.SwapId)).Build());
         result.StoreUInt(tokenAmountDto.TargetChainId, 64);
         result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenAmountDto.TargetContractAddress))
             .Build());
