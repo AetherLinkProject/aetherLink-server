@@ -9,8 +9,5 @@ public class AetherLinkServerGrainsModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<AetherLinkServerGrainsModule>(); });
-
-        // base.ConfigureServices(context);
-        // Configure<AbpAutoMapperOptions>(options => options.AddMaps<AetherLinkServerGrainsModule>());
     }
 }

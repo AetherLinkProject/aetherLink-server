@@ -2,8 +2,5 @@ namespace AetherLink.Server.Grains;
 
 public static class GrainIdHelper
 {
-    public static string GenerateGrainId(params object[] ids)
-    {
-        return ids.JoinAsString("-");
-    }
+    public static string GenerateGrainId(params object[] ids) => ids.JoinAsString("-");
 }

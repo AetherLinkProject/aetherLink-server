@@ -3,6 +3,13 @@ using Volo.Abp.ObjectMapping;
 
 namespace AetherLink.Server.Grains.Grain.Request;
 
+public interface ICrossChainRequestGrain : IGrainWithStringKey
+{
+    Task<GrainResultDto<CrossChainRequestGrainDto>> GetAsync();
+    Task<GrainResultDto<CrossChainRequestGrainDto>> CreateAsync(CrossChainRequestGrainDto input);
+    Task<GrainResultDto<CrossChainRequestGrainDto>> UpdateAsync(CrossChainRequestGrainDto input);
+}
+
 public class CrossChainRequestGrain : Grain<CrossChainRequestState>, ICrossChainRequestGrain
 {
     private readonly IObjectMapper _objectMapper;

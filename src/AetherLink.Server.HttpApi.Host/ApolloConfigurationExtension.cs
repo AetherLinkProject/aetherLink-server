@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
-namespace AetherLink.Server;
+namespace AetherLinkServer;
 
 public static class ApolloConfigurationExtension
 {

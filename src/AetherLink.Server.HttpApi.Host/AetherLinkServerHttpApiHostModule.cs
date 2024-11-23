@@ -1,9 +1,7 @@
 using System;
 using System.Linq;
-using AetherLink.Indexer;
 using AetherLink.Server.HttpApi;
 using AetherLink.Server.HttpApi.Options;
-using AetherLink.Server.HttpApi.Worker;
 using AetherLink.Server.HttpApi.Worker.AELF;
 using AetherLink.Server.HttpApi.Worker.Ton;
 using Microsoft.AspNetCore.Builder;
@@ -22,7 +20,7 @@ using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
 using Volo.Abp.Swashbuckle;
 
-namespace AetherlinkServer;
+namespace AetherLinkServer;
 
 [DependsOn(
     typeof(AetherLinkServerHttpApiModule),
@@ -40,8 +38,8 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         ConfigureLocalization();
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
-        Configure<LogEventSearchOptions>(configuration.GetSection("Search"));
         Configure<AELFOptions>(configuration.GetSection("AELF"));
+        Configure<TonOptions>(configuration.GetSection("Ton"));
     }
 
     private void ConfigureConventionalControllers()

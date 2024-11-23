@@ -39,6 +39,7 @@ public class TonIndexerGrain : Grain<TonIndexerState>, ITonIndexerGrain
 
         var latestTransactionLt = transactions.Last().Lt.ToString();
         State.LatestTransactionLt = latestTransactionLt;
+        
         _logger.LogInformation($"[TonIndexerGrain] Update LatestTransactionLt to {latestTransactionLt}");
 
         await WriteStateAsync();

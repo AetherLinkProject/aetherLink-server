@@ -19,8 +19,8 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
     private readonly ILogger<CommitSearchWorker> _logger;
 
     public CommitSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        IOptionsSnapshot<AELFOptions> options, IClusterClient clusterClient,
-        ILogger<CommitSearchWorker> logger) : base(timer, serviceScopeFactory)
+        IOptionsSnapshot<AELFOptions> options, IClusterClient clusterClient, ILogger<CommitSearchWorker> logger) : base(
+        timer, serviceScopeFactory)
     {
         _logger = logger;
         _options = options.Value;

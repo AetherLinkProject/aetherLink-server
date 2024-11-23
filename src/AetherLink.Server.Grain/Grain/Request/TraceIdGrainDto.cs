@@ -1,4 +1,4 @@
-namespace AetherLink.Server.Grains.Grain.Indexer;
+namespace AetherLink.Server.Grains.Grain.Request;
 
 [GenerateSerializer]
 public class TraceIdGrainDto

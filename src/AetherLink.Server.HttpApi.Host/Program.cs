@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using AetherlinkServer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,7 +39,7 @@ public class Program
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
                 .UseOrleansClient()
-                // .UseApollo()
+                .UseApollo()
                 .UseSerilog();
             await builder.AddApplicationAsync<AetherLinkServerHttpApiHostModule>();
             var app = builder.Build();

@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using AetherLink.Server.HttpApi.Application;
 using AetherLink.Server.HttpApi.Dtos;
 using Microsoft.AspNetCore.Mvc;

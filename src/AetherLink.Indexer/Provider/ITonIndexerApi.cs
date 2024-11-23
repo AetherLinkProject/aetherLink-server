@@ -41,7 +41,7 @@ public class TonIndexerProvider : ITonIndexerProvider, ITransientDependency
             _logger.LogDebug($"[TonIndexerProvider] Search transaction from {latestTransactionLt}");
 
             var path =
-                $"/api/v3/transactions?account={_option.ContractAddress}&start_lt={latestTransactionLt}&limit=30&offset=0&sort=asc";
+                $"/api/v3/transactions?account={_option.ContractAddress}&start_lt={latestTransactionLt}&limit=100&offset=0&sort=asc";
             var resultStr = await _httpClient.GetAsync(_option.Url + path, new());
 
             var serializeSetting = new JsonSerializerSettings

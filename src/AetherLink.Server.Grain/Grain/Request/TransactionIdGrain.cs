@@ -1,6 +1,6 @@
 using AetherLink.Server.Grains.State;
 
-namespace AetherLink.Server.Grains.Grain.Indexer;
+namespace AetherLink.Server.Grains.Grain.Request;
 
 public interface ITransactionIdGrain : IGrainWithStringKey
 {
