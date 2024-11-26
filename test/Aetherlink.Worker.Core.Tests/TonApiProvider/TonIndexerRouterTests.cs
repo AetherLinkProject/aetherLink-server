@@ -67,7 +67,7 @@ public class TonIndexerRouterTests : AetherlinkTestBase<AetherlinkWorkerCoreTest
             }
         );
 
-        result.TryGetRequestAccess().Returns(false);
+        result.TryGetRequestAccess().Returns(true);
 
         return result;
     }
