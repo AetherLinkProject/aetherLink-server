@@ -68,4 +68,11 @@ public static class AELFHelper
             _ => ChainHandler.TransactionState.Fail
         };
     }
+
+    public static ChainConfig GetChainConfig(long chainId, OracleInfoOptions options)
+    {
+        return options.ChainConfig.TryGetValue(ChainHelper.ConvertChainIdToBase58((int)chainId), out var chainConfig)
+            ? chainConfig
+            : null;
+    }
 }

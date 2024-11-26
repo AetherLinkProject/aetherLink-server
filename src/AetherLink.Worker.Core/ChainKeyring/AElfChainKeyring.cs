@@ -19,12 +19,10 @@ public class AElfChainKeyring : ChainKeyring, ISingletonDependency
     public override long ChainId => ChainIdConstants.AELF;
 
     private readonly ChainConfig _chainConfig;
-    private readonly IObjectMapper _objectMapper;
 
-    public AElfChainKeyring(IOptionsSnapshot<OracleInfoOptions> oracleOptions, IObjectMapper objectMapper)
+    public AElfChainKeyring(IOptionsSnapshot<OracleInfoOptions> oracleOptions)
     {
-        _objectMapper = objectMapper;
-        _chainConfig = oracleOptions.Value.ChainConfig[ChainHelper.ConvertChainIdToBase58((int)ChainIdConstants.AELF)];
+        _chainConfig = AELFHelper.GetChainConfig(ChainId, oracleOptions.Value);
     }
 
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
@@ -42,12 +40,10 @@ public class TDVWChainKeyring : ChainKeyring, ISingletonDependency
     public override long ChainId => ChainIdConstants.TDVW;
 
     private readonly ChainConfig _chainConfig;
-    private readonly IObjectMapper _objectMapper;
 
-    public TDVWChainKeyring(IOptionsSnapshot<OracleInfoOptions> oracleOptions, IObjectMapper objectMapper)
+    public TDVWChainKeyring(IOptionsSnapshot<OracleInfoOptions> oracleOptions)
     {
-        _objectMapper = objectMapper;
-        _chainConfig = oracleOptions.Value.ChainConfig[ChainHelper.ConvertChainIdToBase58((int)ChainIdConstants.TDVW)];
+        _chainConfig = AELFHelper.GetChainConfig(ChainId, oracleOptions.Value);
     }
 
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
@@ -65,12 +61,10 @@ public class TDVVChainKeyring : ChainKeyring, ISingletonDependency
     public override long ChainId => ChainIdConstants.TDVV;
 
     private readonly ChainConfig _chainConfig;
-    private readonly IObjectMapper _objectMapper;
 
-    public TDVVChainKeyring(IOptionsSnapshot<OracleInfoOptions> oracleOptions, IObjectMapper objectMapper)
+    public TDVVChainKeyring(IOptionsSnapshot<OracleInfoOptions> oracleOptions)
     {
-        _objectMapper = objectMapper;
-        _chainConfig = oracleOptions.Value.ChainConfig[ChainHelper.ConvertChainIdToBase58((int)ChainIdConstants.TDVV)];
+        _chainConfig = AELFHelper.GetChainConfig(ChainId, oracleOptions.Value);
     }
 
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
