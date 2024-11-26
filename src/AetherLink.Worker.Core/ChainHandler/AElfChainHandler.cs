@@ -107,10 +107,11 @@ public class TDVVChainReader : ChainReader, ISingletonDependency
         throw new System.NotImplementedException();
     }
 
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
+    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
     {
-        return new() { State = TransactionState.Success };
-    }
+        State = await AELFHelper.GetTransactionResultAsync(_contractProvider,
+            ChainHelper.ConvertChainIdToBase58((int)ChainId), transactionId)
+    };
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)
     {
@@ -133,10 +134,11 @@ public class TDVWChainReader : ChainReader, ISingletonDependency
         throw new System.NotImplementedException();
     }
 
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
+    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)=> new()
     {
-        return new() { State = TransactionState.Success };
-    }
+        State = await AELFHelper.GetTransactionResultAsync(_contractProvider,
+            ChainHelper.ConvertChainIdToBase58((int)ChainId), transactionId)
+    };
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)
     {
