@@ -3,8 +3,10 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.CSharp.Core;
+using AetherLink.Indexer.Provider;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
+using AetherLink.Worker.Core.Provider.SearcherProvider;
 using AetherLink.Worker.Core.Reporter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -22,10 +24,12 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
     private readonly ILogger<SearchWorker> _logger;
     private readonly IAeFinderProvider _aeFinderProvider;
     private readonly ConcurrentDictionary<string, long> _heightMap = new();
+    private readonly ICrossChainRequestProvider _crossChainRequestProvider;
 
     public SearchWorker(AbpAsyncTimer timer, IOptionsSnapshot<WorkerOptions> workerOptions, IWorkerProvider provider,
         IServiceScopeFactory serviceScopeFactory, ILogger<SearchWorker> logger, IWorkerReporter reporter,
-        IAeFinderProvider aeFinderProvider) : base(timer, serviceScopeFactory)
+        IAeFinderProvider aeFinderProvider, ICrossChainRequestProvider crossChainRequestProvider) : base(timer,
+        serviceScopeFactory)
     {
         _logger = logger;
         _reporter = reporter;
@@ -33,6 +37,7 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         _options = workerOptions.Value;
         Timer.Period = _options.SearchTimer;
         _aeFinderProvider = aeFinderProvider;
+        _crossChainRequestProvider = crossChainRequestProvider;
         Initialize().GetAwaiter().GetResult();
     }
 
@@ -96,7 +101,8 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task ExecuteRampRequestsAsync(string chainId, long to, long from)
     {
         var requests = await _provider.SearchRampRequestsAsync(chainId, to, from);
-        var tasks = requests.Select(r => _provider.HandleRampRequestAsync(r));
+        // var tasks = requests.Select(r => _provider.HandleRampRequestAsync(r));
+        var tasks = requests.Select(r => _crossChainRequestProvider.StartCrossChainRequestFromAELf(r));
 
         _reporter.RecordRampJobAsync(chainId, requests.Count);
         _logger.LogDebug("[Search] {chain} found a total of {count} ramp requests.", chainId, requests.Count);

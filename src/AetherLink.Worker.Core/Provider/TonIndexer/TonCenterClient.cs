@@ -16,7 +16,7 @@ public class TonCenterClient : TonIndexerBase, ISingletonDependency
     private readonly TonCenterRequestLimit _requestLimit;
 
     public TonCenterClient(IOptionsSnapshot<TonCenterProviderApiConfig> snapshotConfig,
-        IOptionsSnapshot<TonPublicConfig> tonPublicOptions, IHttpClientFactory clientFactory,
+        IOptionsSnapshot<TonPublicOptions> tonPublicOptions, IHttpClientFactory clientFactory,
         ILogger<TonCenterClient> logger) : base(tonPublicOptions, logger)
     {
         _apiConfig = snapshotConfig.Value;

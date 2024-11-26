@@ -11,6 +11,11 @@ public class TonIndexerDto
     public long IndexerTime { get; set; }
 }
 
+public class TonReceiveEpochInfoDto
+{
+    public long EpochId { get; set; } = 0;
+}
+
 public class CrossChainToTonTransactionDto
 {
     public int WorkChain { get; set; }
@@ -22,7 +27,8 @@ public class CrossChainToTonTransactionDto
     public long BlockTime { get; set; }
     public string TransactionLt { get; set; }
     public int OpCode { get; set; }
-
+    public string OutMessage { get; set; }
+    
     /// <summary>
     /// base64 encode
     /// </summary>

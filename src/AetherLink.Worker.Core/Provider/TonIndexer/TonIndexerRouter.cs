@@ -13,17 +13,17 @@ namespace AetherLink.Worker.Core.Provider.TonIndexer;
 
 public class TonIndexerRouter : ISingletonDependency
 {
-    private readonly TonPublicConfig _tonPublicConfig;
+    private readonly TonPublicOptions _tonPublicOptions;
     private readonly List<TonIndexerWrapper> _providerList;
     private readonly List<TonIndexerWrapper> _indexerProviderList;
     private readonly List<TonIndexerWrapper> _commitProviderList;
     private readonly ILogger<TonIndexerRouter> _logger;
 
-    public TonIndexerRouter(IOptionsSnapshot<TonPublicConfig> tonPublicOptions,
+    public TonIndexerRouter(IOptionsSnapshot<TonPublicOptions> tonPublicOptions,
         IEnumerable<ITonIndexerProvider> tonIndexers, ILogger<TonIndexerRouter> logger)
     {
         _logger = logger;
-        _tonPublicConfig = tonPublicOptions.Value;
+        _tonPublicOptions = tonPublicOptions.Value;
         var providerList = new List<TonIndexerWrapper>();
         var indexerList = new List<TonIndexerWrapper>();
         var commitList = new List<TonIndexerWrapper>();
@@ -31,12 +31,12 @@ public class TonIndexerRouter : ISingletonDependency
         {
             var indexerWrapper = new TonIndexerWrapper(item);
             providerList.Add(indexerWrapper);
-            if (_tonPublicConfig.IndexerProvider.Contains(item.ApiProviderName))
+            if (_tonPublicOptions.IndexerProvider.Contains(item.ApiProviderName))
             {
                 indexerList.Add(indexerWrapper);
             }
 
-            if (_tonPublicConfig.CommitProvider.Contains(item.ApiProviderName))
+            if (_tonPublicOptions.CommitProvider.Contains(item.ApiProviderName))
             {
                 commitList.Add(indexerWrapper);
             }

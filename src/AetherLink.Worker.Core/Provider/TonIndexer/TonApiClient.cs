@@ -18,25 +18,25 @@ public class TonApiClient : TonIndexerBase, ISingletonDependency
 {
     private readonly IHttpClientFactory _clientFactory;
     private readonly TonapiProviderApiConfig _tonapiProviderApiConfig;
-    private readonly TonPublicConfig _tonPublicConfig;
+    private readonly TonPublicOptions _tonPublicOptions;
     private TonapiRequestLimit _tonapiRequestLimit;
     private readonly ILogger<TonApiClient> _logger;
 
     public TonApiClient(IOptionsSnapshot<TonapiProviderApiConfig> snapshotConfig,
-        IOptionsSnapshot<TonPublicConfig> tonPublicOptions,
+        IOptionsSnapshot<TonPublicOptions> tonPublicOptions,
         IHttpClientFactory clientFactory, ILogger<TonApiClient> logger) : base(
         tonPublicOptions, logger)
     {
         _clientFactory = clientFactory;
         _logger = logger;
-        _tonPublicConfig = tonPublicOptions.Value;
+        _tonPublicOptions = tonPublicOptions.Value;
         _tonapiProviderApiConfig = snapshotConfig.Value;
-        
+
         var limitCount = string.IsNullOrWhiteSpace(_tonapiProviderApiConfig.ApiKey)
             ? _tonapiProviderApiConfig.NoApiKeyPerSecondRequestLimit
             : _tonapiProviderApiConfig.ApiKeyPerSecondRequestLimit;
         _tonapiRequestLimit = new TonapiRequestLimit(limitCount);
-        
+
         ApiWeight = _tonapiProviderApiConfig.Weight;
         ProviderName = TonStringConstants.TonApi;
     }
@@ -53,7 +53,7 @@ public class TonApiClient : TonIndexerBase, ISingletonDependency
         TonIndexerDto tonIndexerDto)
     {
         var path =
-            $"/v2/blockchain/accounts/{_tonPublicConfig.ContractAddress}/transactions?after_lt={tonIndexerDto.LatestTransactionLt}&limit=30&sort_order=asc";
+            $"/v2/blockchain/accounts/{_tonPublicOptions.ContractAddress}/transactions?after_lt={tonIndexerDto.LatestTransactionLt}&limit=30&sort_order=asc";
         var transactionResp = await GetDeserializeRequest<TonApiTransactions>(path);
 
         CrossChainToTonTransactionDto preTx = null;
@@ -116,7 +116,7 @@ public class TonApiClient : TonIndexerBase, ISingletonDependency
         try
         {
             var respStr = await PostRequest(path, JsonConvert.SerializeObject(body));
-            
+
             if (string.IsNullOrWhiteSpace(respStr))
             {
                 return null;
@@ -133,7 +133,7 @@ public class TonApiClient : TonIndexerBase, ISingletonDependency
 
             return respStr;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogWarning($"[Ton Api Provider] Send Transaction error:{ex}");
             return null;
@@ -155,7 +155,7 @@ public class TonApiClient : TonIndexerBase, ISingletonDependency
     public override async Task<bool> CheckAvailable()
     {
         var path =
-            $"/v2/blockchain/accounts/{_tonPublicConfig.ContractAddress}/transactions?after_lt=0&limit=1&sort_order=asc";
+            $"/v2/blockchain/accounts/{_tonPublicOptions.ContractAddress}/transactions?after_lt=0&limit=1&sort_order=asc";
         await GetDeserializeRequest<TonApiTransactions>(path);
         return true;
     }
@@ -194,7 +194,7 @@ public class TonapiRequestLimit
     {
         _perSecondLimit = perSecondLimit;
     }
-    
+
     public bool TryGetAccess()
     {
         var dtNow = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
@@ -243,7 +243,7 @@ public class TonApiTransaction
     public string StateUpdateOld { get; set; }
     public string StateUpdateNew { get; set; }
     public TonapiMessage InMsg { get; set; }
-    public List<TonapiMessage> OutMsg { get; set; }
+    public List<TonapiMessage> OutMsgs { get; set; }
     public string Block { get; set; }
     public string PrevTransHash { get; set; }
     public long PrevTransLt { get; set; }
@@ -260,6 +260,12 @@ public class TonApiTransaction
     {
         var blockStr = Block.Replace("(", "").Replace(")", "").Split(",");
 
+        string outMsg = null;
+        if (OutMsgs != null && OutMsgs.Count > 0)
+        {
+            outMsg = OutMsgs[0].RawBody;
+        }
+
         return new CrossChainToTonTransactionDto()
         {
             WorkChain = int.Parse(blockStr[0]),
@@ -275,8 +281,9 @@ public class TonApiTransaction
             Success = ActionPhase?.Success ?? false,
             ExitCode = ComputePhase.ExitCode,
             Aborted = Aborted,
-            Bounce = InMsg.Bounce,
-            Bounced = InMsg.Bounced
+            Bounce = InMsg.Bounce ?? false,
+            Bounced = InMsg.Bounced ?? false,
+            OutMessage = outMsg
         };
     }
 }
@@ -294,9 +301,9 @@ public class TonapiMessage
 {
     public string MsgType { get; set; }
     public long CreatedLt { get; set; }
-    public bool IhrDisabled { get; set; }
-    public bool Bounce { get; set; }
-    public bool Bounced { get; set; }
+    public bool? IhrDisabled { get; set; }
+    public bool? Bounce { get; set; }
+    public bool? Bounced { get; set; }
     public long Value { get; set; }
     public long FwdFee { get; set; }
     public long IhrFee { get; set; }
