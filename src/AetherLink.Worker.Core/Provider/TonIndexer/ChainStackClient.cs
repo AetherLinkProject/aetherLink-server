@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,6 +7,8 @@ using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using TonSdk.Core.Boc;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Provider.TonIndexer;
@@ -27,7 +30,36 @@ public class ChainStackClient : TonIndexerBase, ISingletonDependency
         ApiWeight = _chainStackConfig.Weight;
         ProviderName = TonStringConstants.ChainStack;
     }
+    
+    public override async Task<string> CommitTransaction(Cell bodyCell)
+    {
+        var path = "/message";
+        var body = new Dictionary<string, string>()
+        {
+            {
+                "boc",
+                bodyCell.ToString("base64")
+            }
+        };
+        try
+        {
+            var result =
+                await PostDeserializeRequest<Dictionary<String, String>>(path, JsonConvert.SerializeObject(body));
+            if (result.TryGetValue(TonStringConstants.MessageValue, out var transaction) == false)
+            {
+                _logger.LogError(
+                    $"[Ton Api Provider] Send Transaction response no transactionId:{JsonConvert.SerializeObject(result)}");
+                return null;
+            }
 
+            return transaction;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"[Ton Api Provider] Send Transaction error:{ex}");
+            throw;
+        }
+    }
     public override async Task<bool> TryGetRequestAccess()
     {
         return await _requestLimit.TryApplyAccess();

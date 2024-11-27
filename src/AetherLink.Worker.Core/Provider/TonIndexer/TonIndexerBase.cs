@@ -36,7 +36,7 @@ public interface ITonIndexerProvider
 public abstract class TonIndexerBase : ITonIndexerProvider
 {
     private readonly string _contractAddress;
-    private readonly ILogger<TonIndexerBase> _logger;
+    protected readonly ILogger<TonIndexerBase> _logger;
     protected int ApiWeight { get; init; }
     protected string ProviderName { get; init; }
     public int Weight => ApiWeight;
@@ -166,7 +166,7 @@ public abstract class TonIndexerBase : ITonIndexerProvider
 
     public virtual async Task<string> CommitTransaction(Cell bodyCell)
     {
-        var path = "/message";
+        var path = "/sendBoc";
         var body = new Dictionary<string, string>()
         {
             {
@@ -176,16 +176,14 @@ public abstract class TonIndexerBase : ITonIndexerProvider
         };
         try
         {
-            var result =
-                await PostDeserializeRequest<Dictionary<String, String>>(path, JsonConvert.SerializeObject(body));
-            if (result.TryGetValue(TonStringConstants.MessageValue, out var transaction) == false)
+            var result =  await PostRequest(path, JsonConvert.SerializeObject(body));
+            if (result.Contains("ok"))
             {
-                _logger.LogError(
-                    $"[Ton Api Provider] Send Transaction response no transactionId:{JsonConvert.SerializeObject(result)}");
-                return null;
+                return bodyCell.Hash.ToString("base64");
             }
-
-            return transaction;
+            
+            _logger.LogWarning($"[Ton Api Provider] Send Transaction response not contain ok result is:{result}");
+            return null;
         }
         catch (Exception ex)
         {
