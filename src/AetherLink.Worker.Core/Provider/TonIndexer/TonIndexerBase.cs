@@ -178,14 +178,20 @@ public abstract class TonIndexerBase : ITonIndexerProvider
         {
             var result =
                 await PostDeserializeRequest<Dictionary<String, String>>(path, JsonConvert.SerializeObject(body));
-            return result.TryGetValue(TonStringConstants.MessageValue, out var transaction) ? transaction : null;
+            if (result.TryGetValue(TonStringConstants.MessageValue, out var transaction) == false)
+            {
+                _logger.LogError(
+                    $"[Ton Api Provider] Send Transaction response no transactionId:{JsonConvert.SerializeObject(result)}");
+                return null;
+            }
+
+            return transaction;
         }
         catch (Exception ex)
         {
             _logger.LogError($"[Ton Api Provider] Send Transaction error:{ex}");
+            throw;
         }
-
-        return null;
     }
 
     public virtual async Task<bool> CheckAvailable()
