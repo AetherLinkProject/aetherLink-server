@@ -54,7 +54,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         };
         crossChainRequestStartArgs.TokenAmount =
             await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenAmountInfo);
-        await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs, BackgroundJobPriority.High);
+        await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
     }
 
     public async Task StartCrossChainRequestFromAELf(RampRequestDto request)
@@ -82,7 +82,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 OriginToken = request.TokenAmount.OriginToken
             });
 
-        await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs, BackgroundJobPriority.High);
+        await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
     }
 
     public async Task SetAsync(CrossChainDataDto data)
