@@ -129,7 +129,13 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
                 break;
         }
 
-        if (DateTime.UtcNow > overTime) return;
+        if (DateTime.UtcNow > overTime)
+        {
+            _logger.LogWarning(
+                $"[SchedulerService] Cross chain scheduler {schedulerName} time {overTime} is over.");
+            return;
+        }
+
         _logger.LogInformation(
             $"[SchedulerService] Registry cross chain scheduler {schedulerName} OverTime:{overTime}");
         JobManager.Initialize(registry);

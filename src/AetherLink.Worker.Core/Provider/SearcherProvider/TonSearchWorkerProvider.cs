@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf;
 using AetherLink.Worker.Core.ChainHandler;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
@@ -10,7 +9,6 @@ using AetherLink.Worker.Core.Exceptions;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider.TonIndexer;
 using AetherLink.Worker.Core.Scheduler;
-using Google.Protobuf;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

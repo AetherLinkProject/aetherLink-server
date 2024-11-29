@@ -25,8 +25,8 @@ public interface IAeFinderProvider
     public Task<string> GetRequestCommitmentAsync(string chainId, string requestId);
     public Task<List<TransactionEventDto>> GetTransactionLogEventsAsync(string chainId, long to, long from);
 
-    public Task<IndexerTokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, string targetContractAddress,
-        string tokenAddress, string originToken);
+    public Task<IndexerTokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, long sourceChainId,
+        string targetContractAddress, string tokenAddress, string originToken);
 }
 
 public class AeFinderProvider : IAeFinderProvider, ITransientDependency
@@ -354,7 +354,7 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         }
     }
 
-    public async Task<IndexerTokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId,
+    public async Task<IndexerTokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, long sourceChainId,
         string targetContractAddress, string tokenAddress, string originToken)
     {
         try
@@ -362,10 +362,11 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
             var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerTokenSwapConfigInfo>(GetClient(), new()
             {
                 Query =
-                    @"query($targetChainId:Long!,$targetContractAddress:String!,$tokenAddress:String,$originToken:String){
-                    tokenSwapConfig(input: {targetChainId:$targetChainId,targetContractAddress:$targetContractAddress,tokenAddress:$tokenAddress,originToken:$originToken}){
+                    @"query($targetChainId:Long!,$sourceChainId:Long!,$targetContractAddress:String!,$tokenAddress:String,$originToken:String){
+                    tokenSwapConfig(input: {targetChainId:$targetChainId,sourceChainId:$sourceChainId,targetContractAddress:$targetContractAddress,tokenAddress:$tokenAddress,originToken:$originToken}){
                             swapId,
                             targetChainId,
+                            sourceChainId,
                             targetContractAddress,
                             tokenAddress,
                             originToken
@@ -373,8 +374,9 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                 }",
                 Variables = new
                 {
-                    targetChainId = targetChainId, targetContractAddress = targetContractAddress,
-                    tokenAddress = tokenAddress, originToken = originToken
+                    targetChainId = targetChainId, sourceChainId = sourceChainId,
+                    targetContractAddress = targetContractAddress, tokenAddress = tokenAddress,
+                    originToken = originToken
                 }
             });
             return indexerResult ?? new();
