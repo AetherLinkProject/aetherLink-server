@@ -73,6 +73,8 @@ public class CrossChainSchedulerJob : ICrossChainSchedulerJob, ITransientDepende
             data.RequestReceiveTime =
                 data.ResendTransactionBlockTime.AddMinutes(data.NextCommitDelayTime);
             await _crossChainRequestProvider.SetAsync(data);
+            _logger.LogDebug(
+                $"[CrossChainSchedulerJob] Get resend request {data.ReportContext.MessageId} at {data.RequestReceiveTime}");
 
             var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
                 _objectMapper.Map<CrossChainDataDto, CrossChainRequestStartArgs>(data), BackgroundJobPriority.High);
