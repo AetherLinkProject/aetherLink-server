@@ -38,7 +38,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
     public async Task StartCrossChainRequestFromTon(ReceiveMessageDto request)
     {
         _logger.LogDebug("[CrossChainRequestProvider] Start CrossChainRequest From Ton....");
-        await _backgroundJobManager.EnqueueAsync(new CrossChainRequestStartArgs
+        var crossChainRequestStartArgs = new CrossChainRequestStartArgs
         {
             ReportContext = new()
             {
@@ -50,15 +50,17 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 Epoch = request.Epoch
             },
             Message = request.Message,
-            TokenAmount = await _tokenSwapper.ConstructSwapId(request.TokenAmountInfo),
             StartTime = request.TransactionTime
-        });
+        };
+        crossChainRequestStartArgs.TokenAmount =
+            await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenAmountInfo);
+        await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs, BackgroundJobPriority.High);
     }
 
     public async Task StartCrossChainRequestFromAELf(RampRequestDto request)
     {
         _logger.LogDebug($"[CrossChainRequestProvider] Start CrossChainRequest From {request.ChainId}....");
-        await _backgroundJobManager.EnqueueAsync(new CrossChainRequestStartArgs
+        var crossChainRequestStartArgs = new CrossChainRequestStartArgs
         {
             ReportContext = new()
             {
@@ -70,14 +72,17 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 Epoch = request.Epoch
             },
             Message = request.Message,
-            TokenAmount = await _tokenSwapper.ConstructSwapId(new()
+            StartTime = request.StartTime
+        };
+        crossChainRequestStartArgs.TokenAmount = await _tokenSwapper.ConstructSwapId(
+            crossChainRequestStartArgs.ReportContext, new()
             {
                 TargetChainId = request.TokenAmount.TargetChainId,
                 TargetContractAddress = request.TokenAmount.TargetContractAddress,
                 OriginToken = request.TokenAmount.OriginToken
-            }),
-            StartTime = request.StartTime
-        });
+            });
+
+        await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs, BackgroundJobPriority.High);
     }
 
     public async Task SetAsync(CrossChainDataDto data)

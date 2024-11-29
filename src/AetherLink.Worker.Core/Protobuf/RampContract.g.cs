@@ -53,52 +53,53 @@ namespace AetherLink.Contracts.Ramp {
             "bGUucHJvdG9idWYuVGltZXN0YW1wIjoKD1Rva2VuU3dhcENvbmZpZxInCg90",
             "b2tlbl9zd2FwX2xpc3QYASABKAsyDi5Ub2tlblN3YXBMaXN0Ij0KDVRva2Vu",
             "U3dhcExpc3QSLAoUdG9rZW5fc3dhcF9pbmZvX2xpc3QYASADKAsyDi5Ub2tl",
-            "blN3YXBJbmZvIocBCg1Ub2tlblN3YXBJbmZvEhcKD3RhcmdldF9jaGFpbl9p",
-            "ZBgBIAEoAxIfChd0YXJnZXRfY29udHJhY3RfYWRkcmVzcxgCIAEoCRIVCg10",
-            "b2tlbl9hZGRyZXNzGAMgASgJEhQKDG9yaWdpbl90b2tlbhgEIAEoCRIPCgdz",
-            "d2FwX2lkGAUgASgJIioKCUNvbmZpZ1NldBIXCgZjb25maWcYASABKAsyBy5D",
-            "b25maWc6BKC7GAEiPgoPUmFtcFNlbmRlckFkZGVkEiUKDnNlbmRlcl9hZGRy",
-            "ZXNzGAEgASgLMg0uYWVsZi5BZGRyZXNzOgSguxgBIkAKEVJhbXBTZW5kZXJS",
-            "ZW1vdmVkEiUKDnNlbmRlcl9hZGRyZXNzGAEgASgLMg0uYWVsZi5BZGRyZXNz",
-            "OgSguxgBIjUKFENvbW1pdFJlcG9ydEFjY2VwdGVkEhcKBnJlcG9ydBgBIAEo",
-            "CzIHLlJlcG9ydDoEoLsYASLSAQoNU2VuZFJlcXVlc3RlZBIeCgptZXNzYWdl",
-            "X2lkGAEgASgLMgouYWVsZi5IYXNoEhcKD3RhcmdldF9jaGFpbl9pZBgCIAEo",
-            "AxIXCg9zb3VyY2VfY2hhaW5faWQYAyABKAMSEAoIcmVjZWl2ZXIYBCABKAwS",
-            "DgoGc2VuZGVyGAUgASgMEg8KB21lc3NhZ2UYBiABKAwSJwoMdG9rZW5fYW1v",
-            "dW50GAcgASgLMhEucmFtcC5Ub2tlbkFtb3VudBINCgVlcG9jaBgIIAEoAzoE",
-            "oLsYASI4ChBSZXF1ZXN0Q2FuY2VsbGVkEh4KCm1lc3NhZ2VfaWQYASABKAsy",
-            "Ci5hZWxmLkhhc2g6BKC7GAEiVgoWQWRtaW5UcmFuc2ZlclJlcXVlc3RlZBIb",
-            "CgRmcm9tGAEgASgLMg0uYWVsZi5BZGRyZXNzEhkKAnRvGAIgASgLMg0uYWVs",
-            "Zi5BZGRyZXNzOgSguxgBIlAKEEFkbWluVHJhbnNmZXJyZWQSGwoEZnJvbRgB",
-            "IAEoCzINLmFlbGYuQWRkcmVzcxIZCgJ0bxgCIAEoCzINLmFlbGYuQWRkcmVz",
-            "czoEoLsYASJuChZUb2tlblN3YXBDb25maWdVcGRhdGVkEicKEGNvbnRyYWN0",
-            "X2FkZHJlc3MYASABKAsyDS5hZWxmLkFkZHJlc3MSJQoNVG9rZW5Td2FwTGlz",
-            "dBgCIAEoCzIOLlRva2VuU3dhcExpc3Q6BKC7GAEyxggKDFJhbXBDb250cmFj",
-            "dBI4CgpJbml0aWFsaXplEhAuSW5pdGlhbGl6ZUlucHV0GhYuZ29vZ2xlLnBy",
-            "b3RvYnVmLkVtcHR5IgASLgoJU2V0Q29uZmlnEgcuQ29uZmlnGhYuZ29vZ2xl",
-            "LnByb3RvYnVmLkVtcHR5IgASMwoJR2V0Q29uZmlnEhYuZ29vZ2xlLnByb3Rv",
-            "YnVmLkVtcHR5GgcuQ29uZmlnIgWIifcBARI4CghHZXRBZG1pbhIWLmdvb2ds",
-            "ZS5wcm90b2J1Zi5FbXB0eRoNLmFlbGYuQWRkcmVzcyIFiIn3AQESQwoYU2V0",
-            "T3JhY2xlQ29udHJhY3RBZGRyZXNzEg0uYWVsZi5BZGRyZXNzGhYuZ29vZ2xl",
-            "LnByb3RvYnVmLkVtcHR5IgASSAoYR2V0T3JhY2xlQ29udHJhY3RBZGRyZXNz",
-            "EhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5Gg0uYWVsZi5BZGRyZXNzIgWIifcB",
-            "ARI+Cg1BZGRSYW1wU2VuZGVyEhMuQWRkUmFtcFNlbmRlcklucHV0GhYuZ29v",
-            "Z2xlLnByb3RvYnVmLkVtcHR5IgASOwoQUmVtb3ZlUmFtcFNlbmRlchINLmFl",
-            "bGYuQWRkcmVzcxoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEkAKElNldFRv",
-            "a2VuU3dhcENvbmZpZxIQLlRva2VuU3dhcENvbmZpZxoWLmdvb2dsZS5wcm90",
-            "b2J1Zi5FbXB0eSIAEjwKEkdldFRva2VuU3dhcENvbmZpZxINLmFlbGYuQWRk",
-            "cmVzcxoQLlRva2VuU3dhcENvbmZpZyIFiIn3AQESOAoNVHJhbnNmZXJBZG1p",
-            "bhINLmFlbGYuQWRkcmVzcxoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEj8K",
-            "C0FjY2VwdEFkbWluEhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5GhYuZ29vZ2xl",
-            "LnByb3RvYnVmLkVtcHR5IgASNgoNR2V0UmFtcFNlbmRlchINLmFlbGYuQWRk",
-            "cmVzcxoPLlJhbXBTZW5kZXJJbmZvIgWIifcBARJMCg5HZXRMYXRlc3RFcG9j",
-            "aBIWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRobLmdvb2dsZS5wcm90b2J1Zi5J",
-            "bnQ2NFZhbHVlIgWIifcBARIsCgRTZW5kEgouU2VuZElucHV0GhYuZ29vZ2xl",
-            "LnByb3RvYnVmLkVtcHR5IgASMAoGQ29tbWl0EgwuQ29tbWl0SW5wdXQaFi5n",
-            "b29nbGUucHJvdG9idWYuRW1wdHkiABIuCgZDYW5jZWwSCi5hZWxmLkhhc2ga",
-            "Fi5nb29nbGUucHJvdG9idWYuRW1wdHkiABpAysr2AQthY3MxMi5wcm90b7LM",
-            "9gErQWV0aGVyTGluay5Db250cmFjdHMuUmFtcC5SYW1wQ29udHJhY3RTdGF0",
-            "ZUIcqgIZQWV0aGVyTGluay5Db250cmFjdHMuUmFtcGIGcHJvdG8z"));
+            "blN3YXBJbmZvIqABCg1Ub2tlblN3YXBJbmZvEhcKD3RhcmdldF9jaGFpbl9p",
+            "ZBgBIAEoAxIXCg9zb3VyY2VfY2hhaW5faWQYAiABKAMSHwoXdGFyZ2V0X2Nv",
+            "bnRyYWN0X2FkZHJlc3MYAyABKAkSFQoNdG9rZW5fYWRkcmVzcxgEIAEoCRIU",
+            "CgxvcmlnaW5fdG9rZW4YBSABKAkSDwoHc3dhcF9pZBgGIAEoCSIqCglDb25m",
+            "aWdTZXQSFwoGY29uZmlnGAEgASgLMgcuQ29uZmlnOgSguxgBIj4KD1JhbXBT",
+            "ZW5kZXJBZGRlZBIlCg5zZW5kZXJfYWRkcmVzcxgBIAEoCzINLmFlbGYuQWRk",
+            "cmVzczoEoLsYASJAChFSYW1wU2VuZGVyUmVtb3ZlZBIlCg5zZW5kZXJfYWRk",
+            "cmVzcxgBIAEoCzINLmFlbGYuQWRkcmVzczoEoLsYASI1ChRDb21taXRSZXBv",
+            "cnRBY2NlcHRlZBIXCgZyZXBvcnQYASABKAsyBy5SZXBvcnQ6BKC7GAEi4QEK",
+            "DVNlbmRSZXF1ZXN0ZWQSHgoKbWVzc2FnZV9pZBgBIAEoCzIKLmFlbGYuSGFz",
+            "aBIXCg90YXJnZXRfY2hhaW5faWQYAiABKAMSFwoPc291cmNlX2NoYWluX2lk",
+            "GAMgASgDEhAKCHJlY2VpdmVyGAQgASgMEh0KBnNlbmRlchgFIAEoCzINLmFl",
+            "bGYuQWRkcmVzcxIPCgdtZXNzYWdlGAYgASgMEicKDHRva2VuX2Ftb3VudBgH",
+            "IAEoCzIRLnJhbXAuVG9rZW5BbW91bnQSDQoFZXBvY2gYCCABKAM6BKC7GAEi",
+            "OAoQUmVxdWVzdENhbmNlbGxlZBIeCgptZXNzYWdlX2lkGAEgASgLMgouYWVs",
+            "Zi5IYXNoOgSguxgBIlYKFkFkbWluVHJhbnNmZXJSZXF1ZXN0ZWQSGwoEZnJv",
+            "bRgBIAEoCzINLmFlbGYuQWRkcmVzcxIZCgJ0bxgCIAEoCzINLmFlbGYuQWRk",
+            "cmVzczoEoLsYASJQChBBZG1pblRyYW5zZmVycmVkEhsKBGZyb20YASABKAsy",
+            "DS5hZWxmLkFkZHJlc3MSGQoCdG8YAiABKAsyDS5hZWxmLkFkZHJlc3M6BKC7",
+            "GAEibgoWVG9rZW5Td2FwQ29uZmlnVXBkYXRlZBInChBjb250cmFjdF9hZGRy",
+            "ZXNzGAEgASgLMg0uYWVsZi5BZGRyZXNzEiUKDVRva2VuU3dhcExpc3QYAiAB",
+            "KAsyDi5Ub2tlblN3YXBMaXN0OgSguxgBMsYICgxSYW1wQ29udHJhY3QSOAoK",
+            "SW5pdGlhbGl6ZRIQLkluaXRpYWxpemVJbnB1dBoWLmdvb2dsZS5wcm90b2J1",
+            "Zi5FbXB0eSIAEi4KCVNldENvbmZpZxIHLkNvbmZpZxoWLmdvb2dsZS5wcm90",
+            "b2J1Zi5FbXB0eSIAEjMKCUdldENvbmZpZxIWLmdvb2dsZS5wcm90b2J1Zi5F",
+            "bXB0eRoHLkNvbmZpZyIFiIn3AQESOAoIR2V0QWRtaW4SFi5nb29nbGUucHJv",
+            "dG9idWYuRW1wdHkaDS5hZWxmLkFkZHJlc3MiBYiJ9wEBEkMKGFNldE9yYWNs",
+            "ZUNvbnRyYWN0QWRkcmVzcxINLmFlbGYuQWRkcmVzcxoWLmdvb2dsZS5wcm90",
+            "b2J1Zi5FbXB0eSIAEkgKGEdldE9yYWNsZUNvbnRyYWN0QWRkcmVzcxIWLmdv",
+            "b2dsZS5wcm90b2J1Zi5FbXB0eRoNLmFlbGYuQWRkcmVzcyIFiIn3AQESPgoN",
+            "QWRkUmFtcFNlbmRlchITLkFkZFJhbXBTZW5kZXJJbnB1dBoWLmdvb2dsZS5w",
+            "cm90b2J1Zi5FbXB0eSIAEjsKEFJlbW92ZVJhbXBTZW5kZXISDS5hZWxmLkFk",
+            "ZHJlc3MaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiABJAChJTZXRUb2tlblN3",
+            "YXBDb25maWcSEC5Ub2tlblN3YXBDb25maWcaFi5nb29nbGUucHJvdG9idWYu",
+            "RW1wdHkiABI8ChJHZXRUb2tlblN3YXBDb25maWcSDS5hZWxmLkFkZHJlc3Ma",
+            "EC5Ub2tlblN3YXBDb25maWciBYiJ9wEBEjgKDVRyYW5zZmVyQWRtaW4SDS5h",
+            "ZWxmLkFkZHJlc3MaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiABI/CgtBY2Nl",
+            "cHRBZG1pbhIWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRoWLmdvb2dsZS5wcm90",
+            "b2J1Zi5FbXB0eSIAEjYKDUdldFJhbXBTZW5kZXISDS5hZWxmLkFkZHJlc3Ma",
+            "Dy5SYW1wU2VuZGVySW5mbyIFiIn3AQESTAoOR2V0TGF0ZXN0RXBvY2gSFi5n",
+            "b29nbGUucHJvdG9idWYuRW1wdHkaGy5nb29nbGUucHJvdG9idWYuSW50NjRW",
+            "YWx1ZSIFiIn3AQESLAoEU2VuZBIKLlNlbmRJbnB1dBoWLmdvb2dsZS5wcm90",
+            "b2J1Zi5FbXB0eSIAEjAKBkNvbW1pdBIMLkNvbW1pdElucHV0GhYuZ29vZ2xl",
+            "LnByb3RvYnVmLkVtcHR5IgASLgoGQ2FuY2VsEgouYWVsZi5IYXNoGhYuZ29v",
+            "Z2xlLnByb3RvYnVmLkVtcHR5IgAaQMrK9gELYWNzMTIucHJvdG+yzPYBK0Fl",
+            "dGhlckxpbmsuQ29udHJhY3RzLlJhbXAuUmFtcENvbnRyYWN0U3RhdGVCHKoC",
+            "GUFldGhlckxpbmsuQ29udHJhY3RzLlJhbXBiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::AElf.Types.CoreReflection.Descriptor, global::AElf.OptionsReflection.Descriptor, global::AElf.Standards.ACS12.Acs12Reflection.Descriptor, global::Oracle.OracleCommonMessageReflection.Descriptor, global::Ramp.RampCommonMessageReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.WrappersReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.TimestampReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
@@ -114,7 +115,7 @@ namespace AetherLink.Contracts.Ramp {
             new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.Ramp.MessageInfo), global::AetherLink.Contracts.Ramp.MessageInfo.Parser, new[]{ "MessageId", "SourceChainId", "TargetChainId", "Sender", "Receiver", "Message", "TokenAmount", "Created" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.Ramp.TokenSwapConfig), global::AetherLink.Contracts.Ramp.TokenSwapConfig.Parser, new[]{ "TokenSwapList" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.Ramp.TokenSwapList), global::AetherLink.Contracts.Ramp.TokenSwapList.Parser, new[]{ "TokenSwapInfoList" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.Ramp.TokenSwapInfo), global::AetherLink.Contracts.Ramp.TokenSwapInfo.Parser, new[]{ "TargetChainId", "TargetContractAddress", "TokenAddress", "OriginToken", "SwapId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.Ramp.TokenSwapInfo), global::AetherLink.Contracts.Ramp.TokenSwapInfo.Parser, new[]{ "TargetChainId", "SourceChainId", "TargetContractAddress", "TokenAddress", "OriginToken", "SwapId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.Ramp.ConfigSet), global::AetherLink.Contracts.Ramp.ConfigSet.Parser, new[]{ "Config" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.Ramp.RampSenderAdded), global::AetherLink.Contracts.Ramp.RampSenderAdded.Parser, new[]{ "SenderAddress" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::AetherLink.Contracts.Ramp.RampSenderRemoved), global::AetherLink.Contracts.Ramp.RampSenderRemoved.Parser, new[]{ "SenderAddress" }, null, null, null, null),
@@ -3240,6 +3241,7 @@ namespace AetherLink.Contracts.Ramp {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public TokenSwapInfo(TokenSwapInfo other) : this() {
       targetChainId_ = other.targetChainId_;
+      sourceChainId_ = other.sourceChainId_;
       targetContractAddress_ = other.targetContractAddress_;
       tokenAddress_ = other.tokenAddress_;
       originToken_ = other.originToken_;
@@ -3265,8 +3267,20 @@ namespace AetherLink.Contracts.Ramp {
       }
     }
 
+    /// <summary>Field number for the "source_chain_id" field.</summary>
+    public const int SourceChainIdFieldNumber = 2;
+    private long sourceChainId_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public long SourceChainId {
+      get { return sourceChainId_; }
+      set {
+        sourceChainId_ = value;
+      }
+    }
+
     /// <summary>Field number for the "target_contract_address" field.</summary>
-    public const int TargetContractAddressFieldNumber = 2;
+    public const int TargetContractAddressFieldNumber = 3;
     private string targetContractAddress_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -3278,7 +3292,7 @@ namespace AetherLink.Contracts.Ramp {
     }
 
     /// <summary>Field number for the "token_address" field.</summary>
-    public const int TokenAddressFieldNumber = 3;
+    public const int TokenAddressFieldNumber = 4;
     private string tokenAddress_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -3290,7 +3304,7 @@ namespace AetherLink.Contracts.Ramp {
     }
 
     /// <summary>Field number for the "origin_token" field.</summary>
-    public const int OriginTokenFieldNumber = 4;
+    public const int OriginTokenFieldNumber = 5;
     private string originToken_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -3302,7 +3316,7 @@ namespace AetherLink.Contracts.Ramp {
     }
 
     /// <summary>Field number for the "swap_id" field.</summary>
-    public const int SwapIdFieldNumber = 5;
+    public const int SwapIdFieldNumber = 6;
     private string swapId_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -3329,6 +3343,7 @@ namespace AetherLink.Contracts.Ramp {
         return true;
       }
       if (TargetChainId != other.TargetChainId) return false;
+      if (SourceChainId != other.SourceChainId) return false;
       if (TargetContractAddress != other.TargetContractAddress) return false;
       if (TokenAddress != other.TokenAddress) return false;
       if (OriginToken != other.OriginToken) return false;
@@ -3341,6 +3356,7 @@ namespace AetherLink.Contracts.Ramp {
     public override int GetHashCode() {
       int hash = 1;
       if (TargetChainId != 0L) hash ^= TargetChainId.GetHashCode();
+      if (SourceChainId != 0L) hash ^= SourceChainId.GetHashCode();
       if (TargetContractAddress.Length != 0) hash ^= TargetContractAddress.GetHashCode();
       if (TokenAddress.Length != 0) hash ^= TokenAddress.GetHashCode();
       if (OriginToken.Length != 0) hash ^= OriginToken.GetHashCode();
@@ -3367,20 +3383,24 @@ namespace AetherLink.Contracts.Ramp {
         output.WriteRawTag(8);
         output.WriteInt64(TargetChainId);
       }
+      if (SourceChainId != 0L) {
+        output.WriteRawTag(16);
+        output.WriteInt64(SourceChainId);
+      }
       if (TargetContractAddress.Length != 0) {
-        output.WriteRawTag(18);
+        output.WriteRawTag(26);
         output.WriteString(TargetContractAddress);
       }
       if (TokenAddress.Length != 0) {
-        output.WriteRawTag(26);
+        output.WriteRawTag(34);
         output.WriteString(TokenAddress);
       }
       if (OriginToken.Length != 0) {
-        output.WriteRawTag(34);
+        output.WriteRawTag(42);
         output.WriteString(OriginToken);
       }
       if (SwapId.Length != 0) {
-        output.WriteRawTag(42);
+        output.WriteRawTag(50);
         output.WriteString(SwapId);
       }
       if (_unknownFields != null) {
@@ -3397,20 +3417,24 @@ namespace AetherLink.Contracts.Ramp {
         output.WriteRawTag(8);
         output.WriteInt64(TargetChainId);
       }
+      if (SourceChainId != 0L) {
+        output.WriteRawTag(16);
+        output.WriteInt64(SourceChainId);
+      }
       if (TargetContractAddress.Length != 0) {
-        output.WriteRawTag(18);
+        output.WriteRawTag(26);
         output.WriteString(TargetContractAddress);
       }
       if (TokenAddress.Length != 0) {
-        output.WriteRawTag(26);
+        output.WriteRawTag(34);
         output.WriteString(TokenAddress);
       }
       if (OriginToken.Length != 0) {
-        output.WriteRawTag(34);
+        output.WriteRawTag(42);
         output.WriteString(OriginToken);
       }
       if (SwapId.Length != 0) {
-        output.WriteRawTag(42);
+        output.WriteRawTag(50);
         output.WriteString(SwapId);
       }
       if (_unknownFields != null) {
@@ -3425,6 +3449,9 @@ namespace AetherLink.Contracts.Ramp {
       int size = 0;
       if (TargetChainId != 0L) {
         size += 1 + pb::CodedOutputStream.ComputeInt64Size(TargetChainId);
+      }
+      if (SourceChainId != 0L) {
+        size += 1 + pb::CodedOutputStream.ComputeInt64Size(SourceChainId);
       }
       if (TargetContractAddress.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(TargetContractAddress);
@@ -3452,6 +3479,9 @@ namespace AetherLink.Contracts.Ramp {
       }
       if (other.TargetChainId != 0L) {
         TargetChainId = other.TargetChainId;
+      }
+      if (other.SourceChainId != 0L) {
+        SourceChainId = other.SourceChainId;
       }
       if (other.TargetContractAddress.Length != 0) {
         TargetContractAddress = other.TargetContractAddress;
@@ -3484,19 +3514,23 @@ namespace AetherLink.Contracts.Ramp {
             TargetChainId = input.ReadInt64();
             break;
           }
-          case 18: {
-            TargetContractAddress = input.ReadString();
+          case 16: {
+            SourceChainId = input.ReadInt64();
             break;
           }
           case 26: {
-            TokenAddress = input.ReadString();
+            TargetContractAddress = input.ReadString();
             break;
           }
           case 34: {
-            OriginToken = input.ReadString();
+            TokenAddress = input.ReadString();
             break;
           }
           case 42: {
+            OriginToken = input.ReadString();
+            break;
+          }
+          case 50: {
             SwapId = input.ReadString();
             break;
           }
@@ -3519,19 +3553,23 @@ namespace AetherLink.Contracts.Ramp {
             TargetChainId = input.ReadInt64();
             break;
           }
-          case 18: {
-            TargetContractAddress = input.ReadString();
+          case 16: {
+            SourceChainId = input.ReadInt64();
             break;
           }
           case 26: {
-            TokenAddress = input.ReadString();
+            TargetContractAddress = input.ReadString();
             break;
           }
           case 34: {
-            OriginToken = input.ReadString();
+            TokenAddress = input.ReadString();
             break;
           }
           case 42: {
+            OriginToken = input.ReadString();
+            break;
+          }
+          case 50: {
             SwapId = input.ReadString();
             break;
           }
@@ -4375,7 +4413,7 @@ namespace AetherLink.Contracts.Ramp {
       targetChainId_ = other.targetChainId_;
       sourceChainId_ = other.sourceChainId_;
       receiver_ = other.receiver_;
-      sender_ = other.sender_;
+      sender_ = other.sender_ != null ? other.sender_.Clone() : null;
       message_ = other.message_;
       tokenAmount_ = other.tokenAmount_ != null ? other.tokenAmount_.Clone() : null;
       epoch_ = other.epoch_;
@@ -4438,13 +4476,13 @@ namespace AetherLink.Contracts.Ramp {
 
     /// <summary>Field number for the "sender" field.</summary>
     public const int SenderFieldNumber = 5;
-    private pb::ByteString sender_ = pb::ByteString.Empty;
+    private global::AElf.Types.Address sender_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public pb::ByteString Sender {
+    public global::AElf.Types.Address Sender {
       get { return sender_; }
       set {
-        sender_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+        sender_ = value;
       }
     }
 
@@ -4503,7 +4541,7 @@ namespace AetherLink.Contracts.Ramp {
       if (TargetChainId != other.TargetChainId) return false;
       if (SourceChainId != other.SourceChainId) return false;
       if (Receiver != other.Receiver) return false;
-      if (Sender != other.Sender) return false;
+      if (!object.Equals(Sender, other.Sender)) return false;
       if (Message != other.Message) return false;
       if (!object.Equals(TokenAmount, other.TokenAmount)) return false;
       if (Epoch != other.Epoch) return false;
@@ -4518,7 +4556,7 @@ namespace AetherLink.Contracts.Ramp {
       if (TargetChainId != 0L) hash ^= TargetChainId.GetHashCode();
       if (SourceChainId != 0L) hash ^= SourceChainId.GetHashCode();
       if (Receiver.Length != 0) hash ^= Receiver.GetHashCode();
-      if (Sender.Length != 0) hash ^= Sender.GetHashCode();
+      if (sender_ != null) hash ^= Sender.GetHashCode();
       if (Message.Length != 0) hash ^= Message.GetHashCode();
       if (tokenAmount_ != null) hash ^= TokenAmount.GetHashCode();
       if (Epoch != 0L) hash ^= Epoch.GetHashCode();
@@ -4556,9 +4594,9 @@ namespace AetherLink.Contracts.Ramp {
         output.WriteRawTag(34);
         output.WriteBytes(Receiver);
       }
-      if (Sender.Length != 0) {
+      if (sender_ != null) {
         output.WriteRawTag(42);
-        output.WriteBytes(Sender);
+        output.WriteMessage(Sender);
       }
       if (Message.Length != 0) {
         output.WriteRawTag(50);
@@ -4598,9 +4636,9 @@ namespace AetherLink.Contracts.Ramp {
         output.WriteRawTag(34);
         output.WriteBytes(Receiver);
       }
-      if (Sender.Length != 0) {
+      if (sender_ != null) {
         output.WriteRawTag(42);
-        output.WriteBytes(Sender);
+        output.WriteMessage(Sender);
       }
       if (Message.Length != 0) {
         output.WriteRawTag(50);
@@ -4636,8 +4674,8 @@ namespace AetherLink.Contracts.Ramp {
       if (Receiver.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeBytesSize(Receiver);
       }
-      if (Sender.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeBytesSize(Sender);
+      if (sender_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Sender);
       }
       if (Message.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeBytesSize(Message);
@@ -4675,8 +4713,11 @@ namespace AetherLink.Contracts.Ramp {
       if (other.Receiver.Length != 0) {
         Receiver = other.Receiver;
       }
-      if (other.Sender.Length != 0) {
-        Sender = other.Sender;
+      if (other.sender_ != null) {
+        if (sender_ == null) {
+          Sender = new global::AElf.Types.Address();
+        }
+        Sender.MergeFrom(other.Sender);
       }
       if (other.Message.Length != 0) {
         Message = other.Message;
@@ -4725,7 +4766,10 @@ namespace AetherLink.Contracts.Ramp {
             break;
           }
           case 42: {
-            Sender = input.ReadBytes();
+            if (sender_ == null) {
+              Sender = new global::AElf.Types.Address();
+            }
+            input.ReadMessage(Sender);
             break;
           }
           case 50: {
@@ -4778,7 +4822,10 @@ namespace AetherLink.Contracts.Ramp {
             break;
           }
           case 42: {
-            Sender = input.ReadBytes();
+            if (sender_ == null) {
+              Sender = new global::AElf.Types.Address();
+            }
+            input.ReadMessage(Sender);
             break;
           }
           case 50: {
