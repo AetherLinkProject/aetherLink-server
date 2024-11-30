@@ -45,7 +45,7 @@ public class CrossChainSchedulerJob : ICrossChainSchedulerJob, ITransientDepende
             var reportContext = data.ReportContext;
             _logger.LogInformation(
                 $"[CrossChainSchedulerJob] Scheduler message execute. messageId {reportContext.MessageId}, roundId:{reportContext.RoundId}, reqState:{data.State}");
-            data.ReportContext.RoundId.Add(1);
+            data.ReportContext.RoundId++;
 
             var receiveTime = data.RequestReceiveTime;
             while (DateTime.UtcNow > receiveTime) receiveTime = receiveTime.AddMinutes(_schedulerOptions.RetryTimeOut);
@@ -54,7 +54,7 @@ public class CrossChainSchedulerJob : ICrossChainSchedulerJob, ITransientDepende
             await _crossChainRequestProvider.SetAsync(data);
 
             var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
-                _objectMapper.Map<CrossChainDataDto, CrossChainRequestStartArgs>(data), BackgroundJobPriority.High);
+                _objectMapper.Map<CrossChainDataDto, CrossChainRequestStartArgs>(data));
             _logger.LogInformation(
                 $"[CrossChainSchedulerJob] Message {reportContext.MessageId} timeout, will starting in new round:{data.ReportContext.RoundId}, hangfireId:{hangfireJobId}");
         }
