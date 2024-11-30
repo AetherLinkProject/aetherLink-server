@@ -32,6 +32,7 @@ public interface IContractProvider
     public Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId);
     public Transmitted ParseTransmitted(TransactionResultDto transaction);
     public Task<bool> IsTransactionConfirmed(string chainId, long blockHeight, string blockHash);
+
     public Task<string> SendTransmitWithRefHashAsync(string chainId, TransmitInput transmitInput,
         long refBlockNumber, string refBlockHash);
 }
@@ -102,9 +103,12 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     public async Task<string> SendCommitAsync(string chainId, CommitInput commitInput)
     {
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return "";
-        var txRes = await SendTransactionAsync(chainId, await GenerateRawTransactionAsync(ContractConstants.Commit,
-            commitInput, chainId, chainInfo.RampContractAddress));
-        return txRes.TransactionId;
+        var rawTransaction = await GenerateRawTransactionAsync(ContractConstants.Commit,
+            commitInput, chainId, chainInfo.RampContractAddress);
+        var txRes = await SendTransactionAsync(chainId, rawTransaction);
+        var transactionId = txRes.TransactionId;
+        _logger.LogDebug($"[ContractProvider] {transactionId} rawTransaction: {rawTransaction}");
+        return transactionId;
     }
 
     public async Task<bool> IsTransactionConfirmed(string chainId, long blockHeight, string blockHash)
