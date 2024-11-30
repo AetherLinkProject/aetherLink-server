@@ -103,12 +103,9 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     public async Task<string> SendCommitAsync(string chainId, CommitInput commitInput)
     {
         if (!_options.ChainInfos.TryGetValue(chainId, out var chainInfo)) return "";
-        var rawTransaction = await GenerateRawTransactionAsync(ContractConstants.Commit,
-            commitInput, chainId, chainInfo.RampContractAddress);
-        var txRes = await SendTransactionAsync(chainId, rawTransaction);
-        var transactionId = txRes.TransactionId;
-        _logger.LogDebug($"[ContractProvider] {transactionId} rawTransaction: {rawTransaction}");
-        return transactionId;
+        var txRes = await SendTransactionAsync(chainId, await GenerateRawTransactionAsync(ContractConstants.Commit,
+            commitInput, chainId, chainInfo.RampContractAddress));
+        return txRes.TransactionId;
     }
 
     public async Task<bool> IsTransactionConfirmed(string chainId, long blockHeight, string blockHash)
@@ -155,8 +152,12 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     }
 
     private async Task<SendTransactionOutput> SendTransactionAsync(string chainId, string rawTx)
-        => await _blockchainClientFactory.GetClient(chainId)
+    {
+        var result = await _blockchainClientFactory.GetClient(chainId)
             .SendTransactionAsync(new SendTransactionInput { RawTransaction = rawTx });
+        _logger.LogDebug($"[ContractProvider] {result.TransactionId} rawTransaction: {rawTx}");
+        return result;
+    }
 
     private async Task<string> GenerateRawTransactionAsync(string methodName, IMessage param, string chainId,
         string contractAddress)
