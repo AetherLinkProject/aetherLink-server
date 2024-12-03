@@ -32,7 +32,9 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
     {
         try
         {
-            if (tokenAmount == null)
+            if (tokenAmount == null || tokenAmount.TargetChainId == 0 ||
+                string.IsNullOrEmpty(tokenAmount.TokenAddress) ||
+                string.IsNullOrEmpty(tokenAmount.TargetContractAddress))
             {
                 _logger.LogWarning("[TokenSwapper] Get empty token amount");
                 return null;
