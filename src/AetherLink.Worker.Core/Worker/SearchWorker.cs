@@ -101,7 +101,6 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task ExecuteRampRequestsAsync(string chainId, long to, long from)
     {
         var requests = await _provider.SearchRampRequestsAsync(chainId, to, from);
-        // var tasks = requests.Select(r => _provider.HandleRampRequestAsync(r));
         var tasks = requests.Select(r => _crossChainRequestProvider.StartCrossChainRequestFromAELf(r));
 
         _reporter.RecordRampJobAsync(chainId, requests.Count);

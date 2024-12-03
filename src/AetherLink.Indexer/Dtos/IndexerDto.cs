@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using JetBrains.Annotations;
 
 namespace AetherLink.Indexer.Dtos;
 
@@ -33,7 +34,7 @@ public class RampRequestDto
     public long Epoch { get; set; }
     public long StartTime { get; set; }
     public string Message { get; set; }
-    public IndexerTokenAmountDto TokenAmount { get; set; }
+    [CanBeNull] public IndexerTokenAmountDto TokenAmount { get; set; }
 }
 
 public class IndexerTokenAmountDto
