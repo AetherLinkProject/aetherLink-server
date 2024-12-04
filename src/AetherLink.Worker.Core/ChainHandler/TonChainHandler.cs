@@ -4,11 +4,13 @@ using Volo.Abp.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Text;
 using AElf;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider.TonIndexer;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Org.BouncyCastle.Utilities.Encoders;
@@ -51,13 +53,23 @@ public class TonChainWriter : ChainWriter
             return null;
         }
 
+
+        // TODO: for error message test
+        var metaMsg = "error message";
+        var byMsg = ByteString.CopyFrom(Encoding.UTF8.GetBytes(metaMsg));
+        var errMsg = Base64.Decode(byMsg.ToBase64());
+
         var bodyCell = new CellBuilder().StoreUInt(TonOpCodeConstants.ForwardTx, 32)
             .StoreInt(new BigInteger(new ReadOnlySpan<byte>
                 (Base64.Decode(reportContext.MessageId)), false, true), 256)
             .StoreAddress(receiverAddress)
             .StoreRef(TonHelper.BuildMessageBody(reportContext.SourceChainId,
                 reportContext.TargetChainId, Base58CheckEncoding.Decode(reportContext.Sender), receiverAddress,
-                Base64.Decode(crossChainData.Message), crossChainData.TokenAmount))
+
+                // TODO: for error message test
+                Base64.Decode(errMsg), crossChainData.TokenAmount))
+
+            // Base64.Decode(crossChainData.Message), crossChainData.TokenAmount))
             .StoreRef(new CellBuilder().StoreDict(ConvertConsensusSignature(signatures)).Build())
             .Build();
 
