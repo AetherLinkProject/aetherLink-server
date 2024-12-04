@@ -40,6 +40,10 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
 
             var tokenSwapConfigId = GenerateTokenSwapId(reportContext, tokenAmount);
             var tokenSwapConfig = await _storageProvider.GetAsync<TokenSwapConfigDto>(tokenSwapConfigId);
+            
+            // TODO: for test, will remove
+            tokenSwapConfig = null;
+            
             if (tokenSwapConfig == null)
             {
                 _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
