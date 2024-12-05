@@ -12,7 +12,7 @@ jobs:
     runs-on: aetherlink-server-runner
     strategy:
       matrix:
-        servicename: [AetherLink.Worker,Aetherlink.PriceServer.HttpApi.Host,AetherLink.Server.Silo,AetherLink.Server.HttpApi.Host]
+        servicename: [ AetherLink.Worker,Aetherlink.PriceServer.HttpApi.Host,AetherLink.Server.DbMigrator,AetherLink.Server.Silo,AetherLink.Server.HttpApi.Host ]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -30,7 +30,7 @@ jobs:
     runs-on: aetherlink-server-runner
     strategy:
       matrix:
-        servicename: [AetherLink.Worker,Aetherlink.PriceServer.HttpApi.Host,AetherLink.Server.Silo,AetherLink.Server.HttpApi.Host]
+        servicename: [ AetherLink.Worker,Aetherlink.PriceServer.HttpApi.Host,AetherLink.Server.DbMigrator,AetherLink.Server.Silo,AetherLink.Server.HttpApi.Host ]
     permissions:
       contents: read
     outputs:

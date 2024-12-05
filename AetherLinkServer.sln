@@ -41,6 +41,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherLink.Indexer", "src\A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aetherlink.Worker.Core.Tests", "test\Aetherlink.Worker.Core.Tests\Aetherlink.Worker.Core.Tests.csproj", "{13092FE0-3CCA-40D8-AA0F-C827EC8C373F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherLink.Server.DbMigrator", "src\AetherLink.Server.DbMigrator\AetherLink.Server.DbMigrator.csproj", "{9EAD92F4-2127-4C2A-B45D-790866B988F3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AetherLink.Server.Domain", "src\AetherLink.Server.Domain\AetherLink.Server.Domain.csproj", "{957FE60B-85E0-4D24-92FB-2E352159D5F2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -115,6 +119,14 @@ Global
 		{13092FE0-3CCA-40D8-AA0F-C827EC8C373F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{13092FE0-3CCA-40D8-AA0F-C827EC8C373F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{13092FE0-3CCA-40D8-AA0F-C827EC8C373F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9EAD92F4-2127-4C2A-B45D-790866B988F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9EAD92F4-2127-4C2A-B45D-790866B988F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9EAD92F4-2127-4C2A-B45D-790866B988F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9EAD92F4-2127-4C2A-B45D-790866B988F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{957FE60B-85E0-4D24-92FB-2E352159D5F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{957FE60B-85E0-4D24-92FB-2E352159D5F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{957FE60B-85E0-4D24-92FB-2E352159D5F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{957FE60B-85E0-4D24-92FB-2E352159D5F2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -137,6 +149,8 @@ Global
 		{C015C971-1362-4BA1-8490-C3180DC245BE} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{DF478AF7-C27F-456A-99E7-79EA17833969} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{13092FE0-3CCA-40D8-AA0F-C827EC8C373F} = {04DBDB01-70F4-4E06-B468-8F87850B22BE}
+		{9EAD92F4-2127-4C2A-B45D-790866B988F3} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{957FE60B-85E0-4D24-92FB-2E352159D5F2} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28315BFD-90E7-4E14-A2EA-F3D23AF4126F}
