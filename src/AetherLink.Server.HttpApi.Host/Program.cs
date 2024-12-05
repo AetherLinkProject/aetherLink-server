@@ -38,8 +38,8 @@ public class Program
             builder.Configuration.AddJsonFile("apollosettings.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
-                .UseOrleansClient()
                 .UseApollo()
+                .UseOrleansClient()
                 .UseSerilog();
             await builder.AddApplicationAsync<AetherLinkServerHttpApiHostModule>();
             var app = builder.Build();
