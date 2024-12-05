@@ -1,9 +1,10 @@
-﻿using Volo.Abp.AutoMapper;
+﻿using AetherLinkServer;
+using Volo.Abp.AutoMapper;
 using Volo.Abp.Modularity;
 
 namespace AetherLink.Server.Grains;
 
-[DependsOn(typeof(AbpAutoMapperModule))]
+[DependsOn(typeof(AetherLinkServerDomainModule), typeof(AbpAutoMapperModule))]
 public class AetherLinkServerGrainsModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)

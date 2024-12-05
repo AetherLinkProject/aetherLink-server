@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Volo.Abp;
 
-namespace AetherLink.Server.DbMigrator
+namespace AetherLinkServer.DbMigrator
 {
     public class DbMigratorHostedService : IHostedService
     {

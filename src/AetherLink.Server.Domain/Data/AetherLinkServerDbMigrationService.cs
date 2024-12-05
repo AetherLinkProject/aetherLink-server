@@ -103,13 +103,12 @@ namespace AetherLinkServer.Data
             _logger.Information($"Executing {(tenant == null ? "host" : tenant.Name + " tenant")} database seed...");
 
             await _dataSeeder.SeedAsync(new DataSeedContext(tenant?.Id)
-                .WithProperty(IdentityDataSeedContributor.AdminEmailPropertyName,
-                    IdentityDataSeedContributor.AdminEmailDefaultValue)
-                .WithProperty(IdentityDataSeedContributor.AdminPasswordPropertyName,
-                    IdentityDataSeedContributor.AdminPasswordDefaultValue)
+                .WithProperty(IdentityDataSeedContributor.AdminEmailPropertyName, IdentityDataSeedContributor.AdminEmailDefaultValue)
+                .WithProperty(IdentityDataSeedContributor.AdminPasswordPropertyName, IdentityDataSeedContributor.AdminPasswordDefaultValue)
             );
         }
 
+        [ExceptionHandler(typeof(Exception), ReturnDefault = ReturnDefault.Default)]
         public virtual async Task<bool> AddInitialMigrationIfNotExist()
         {
             if (!DbMigrationsProjectExists())
@@ -164,7 +163,7 @@ namespace AetherLinkServer.Data
             var procStartInfo = new ProcessStartInfo(fileName,
                 $"{argumentPrefix} \"abp create-migration-and-run-migrator \"{GetEntityFrameworkCoreProjectFolderPath()}\"\""
             );
-
+            
             Process.Start(procStartInfo);
         }
 
