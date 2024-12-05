@@ -87,6 +87,6 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
         // CrossChain from aelf chain, TokenAddress is empty 
         var temp = !string.IsNullOrEmpty(data.TokenAddress) ? data.TokenAddress : data.OriginToken;
         return IdGeneratorHelper.GenerateId(data.TargetChainId, reportContext.SourceChainId,
-            data.TargetContractAddress, temp, data.OriginToken);
+            data.TargetContractAddress, temp);
     }
 }
