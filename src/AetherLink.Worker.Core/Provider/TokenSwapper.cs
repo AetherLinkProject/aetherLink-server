@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using AetherLink.Indexer.Dtos;
 using AetherLink.Indexer.Provider;
@@ -51,7 +52,7 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
                 if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.SwapId))
                 {
                     _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
-                    return tokenAmount;
+                    throw new InvalidDataException("Could not find token swap config");
                 }
 
                 tokenSwapConfig = indexerConfig.TokenSwapConfig;
