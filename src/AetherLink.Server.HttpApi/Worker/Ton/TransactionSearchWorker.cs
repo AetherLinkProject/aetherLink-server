@@ -96,13 +96,13 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         if (requestGrainData != null)
         {
             _logger.LogWarning(
-                $"[TonSearchWorker] Transaction: {transaction.Hash}, TraceId: {transaction.TraceId} is exist, no need create");
+                $"[TonSearchWorker] Transaction: {transaction.Hash}, TraceId: {transaction.TraceId} is existed, no need create");
             return;
         }
         
         if (transaction.OutMsgs == null)
         {
-            _logger.LogWarning($"[TonSearchWorker] Invalid out messages");
+            _logger.LogWarning("[TonSearchWorker] Invalid out messages");
             return;
         }
 
