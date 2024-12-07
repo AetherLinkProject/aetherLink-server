@@ -21,7 +21,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\AetherLink.Indexer\AetherLink.Indexer.csproj" />
-      <ProjectReference Include="..\AetherLink.Server.Domain\AetherLink.Server.Domain.csproj" />
     </ItemGroup>
 
 </Project>
