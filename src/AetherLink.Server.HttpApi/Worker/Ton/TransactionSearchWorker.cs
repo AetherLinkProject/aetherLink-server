@@ -92,6 +92,14 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task CreateRequestAsync(TonTransactionGrainDto transaction)
     {
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(transaction.Hash);
+        var requestGrainData = await requestGrain.GetAsync();
+        if (requestGrainData != null)
+        {
+            _logger.LogWarning(
+                $"[TonSearchWorker] Transaction: {transaction.Hash}, TraceId: {transaction.TraceId} is exist, no need create");
+            return;
+        }
+        
         if (transaction.OutMsgs == null)
         {
             _logger.LogWarning($"[TonSearchWorker] Invalid out messages");
