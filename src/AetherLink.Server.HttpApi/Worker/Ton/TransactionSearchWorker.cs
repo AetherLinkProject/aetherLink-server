@@ -41,7 +41,8 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
     private async Task HandlerTonTransactionAsync(TonTransactionGrainDto transaction)
     {
-        _logger.LogDebug($"[TonSearchWorker] Get TON transaction traceId: {transaction.TraceId}");
+        _logger.LogDebug(
+            $"[TonSearchWorker] Get TON transaction traceId: {transaction.TraceId}, OpCode: {transaction.InMsg.Opcode}");
 
         switch (transaction.InMsg.Opcode)
         {
@@ -64,11 +65,12 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var bodySlice = Cell.From(transaction.InMsg.MessageContent.Body).Parse();
         var _ = bodySlice.LoadUInt(32);
         var messageId = Base64.ToBase64String(bodySlice.LoadBytes(32));
+        _logger.LogDebug($"[TonSearchWorker] Get messageId: {messageId} transaction.");
         var transactionIdGrainClient = _clusterClient.GetGrain<ITransactionIdGrain>(messageId);
         var transactionIdGrainResponse = await transactionIdGrainClient.GetAsync();
         if (!transactionIdGrainResponse.Success)
         {
-            _logger.LogDebug($"MessageId {messageId} not exist, no need to update.");
+            _logger.LogDebug($"[TonSearchWorker] MessageId {messageId} not exist, no need to update.");
             return;
         }
 
@@ -77,7 +79,7 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var response = await requestGrain.GetAsync();
         if (!response.Success)
         {
-            _logger.LogWarning($"TransactionId grain {grainId} not exist, no need to update.");
+            _logger.LogWarning($"[TonSearchWorker] TransactionId grain {grainId} not exist, no need to update.");
             return;
         }
 
