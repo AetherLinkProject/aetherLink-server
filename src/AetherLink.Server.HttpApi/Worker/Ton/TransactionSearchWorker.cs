@@ -65,12 +65,20 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var bodySlice = Cell.From(transaction.InMsg.MessageContent.Body).Parse();
         var _ = bodySlice.LoadUInt(32);
         var messageId = Base64.ToBase64String(bodySlice.LoadBytes(32));
+        
         _logger.LogDebug($"[TonSearchWorker] Get messageId: {messageId} transaction.");
+        
         var transactionIdGrainClient = _clusterClient.GetGrain<ITransactionIdGrain>(messageId);
         var transactionIdGrainResponse = await transactionIdGrainClient.GetAsync();
         if (!transactionIdGrainResponse.Success)
         {
-            _logger.LogDebug($"[TonSearchWorker] MessageId {messageId} not exist, no need to update.");
+            _logger.LogDebug($"[TonSearchWorker] Get TransactionIdGrain {messageId} failed.");
+            return;
+        }
+
+        if (transactionIdGrainResponse.Data == null)
+        {
+            _logger.LogWarning($"[TonSearchWorker] TransactionId grain {messageId} not exist, no need to update.");
             return;
         }
 
@@ -79,15 +87,25 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var response = await requestGrain.GetAsync();
         if (!response.Success)
         {
-            _logger.LogWarning($"[TonSearchWorker] TransactionId grain {grainId} not exist, no need to update.");
+            _logger.LogWarning($"[TonSearchWorker] Get crossChainRequestGrain {grainId} failed.");
             return;
         }
 
-        var crossChainRequestData = response.Data;
-        crossChainRequestData.Status = transaction.InMsg.Opcode == TonOpCodeConstants.Forward
-            ? CrossChainStatus.Committed.ToString()
-            : CrossChainStatus.PendingResend.ToString();
+        var crossChainRequestData = new CrossChainRequestGrainDto
+        {
+            Status = transaction.InMsg.Opcode == TonOpCodeConstants.Forward
+                ? CrossChainStatus.Committed.ToString()
+                : CrossChainStatus.PendingResend.ToString()
+        };
 
+        if (response.Data == null)
+        {
+            _logger.LogWarning($"[TonSearchWorker] TransactionId grain {grainId} not exist, no need to update.");
+            await requestGrain.CreateAsync(crossChainRequestData);
+            return;
+        }
+
+        crossChainRequestData = response.Data;
         var result = await requestGrain.UpdateAsync(crossChainRequestData);
         _logger.LogDebug($"[TonSearchWorker] Update {grainId} request {result.Success}");
     }
