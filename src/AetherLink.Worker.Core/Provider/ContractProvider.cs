@@ -87,9 +87,17 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
     public async Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId)
     {
-        var result = await _blockchainClientFactory.GetClient(chainId).GetTransactionResultAsync(transactionId);
-        _logger.LogDebug($"[ContractProvider]{result.TransactionId} status: {result.Status} err: {result.Error}");
-        return result;
+        try
+        {
+            var result = await _blockchainClientFactory.GetClient(chainId).GetTransactionResultAsync(transactionId);
+            _logger.LogDebug($"[ContractProvider]{result.TransactionId} status: {result.Status} err: {result.Error}");
+            return result;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"[ContractProvider] Get {transactionId} result failed");
+            return null;
+        }
     }
 
     public async Task<string> SendTransmitAsync(string chainId, TransmitInput transmitInput)
