@@ -127,16 +127,16 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         {
             SourceChainId = 1100,
             TargetChainId = targetChainId,
-            MessageId = transaction.Hash,
+            MessageId = messageId,
             Status = CrossChainStatus.Started.ToString()
         };
 
         var result = await requestGrain.CreateAsync(crossChainRequestData);
-        _logger.LogDebug($"[TonSearchWorker] Create {transaction.Hash} request {result.Success}");
+        _logger.LogDebug($"[TonSearchWorker] Create {messageId} request {result.Success}");
 
         var traceIdGrain = _clusterClient.GetGrain<ITraceIdGrain>(transaction.TraceId);
-        var traceCreatedResult = await traceIdGrain.UpdateAsync(new() { GrainId = transaction.Hash });
+        var traceCreatedResult = await traceIdGrain.UpdateAsync(new() { GrainId = messageId });
         _logger.LogDebug(
-            $"[TonSearchWorker] Create {transaction.Hash} request traceId {transaction.TraceId} {traceCreatedResult.Success}");
+            $"[TonSearchWorker] Create {messageId} request traceId {transaction.TraceId} {traceCreatedResult.Success}");
     }
 }
