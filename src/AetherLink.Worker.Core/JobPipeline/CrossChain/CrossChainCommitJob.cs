@@ -70,7 +70,7 @@ public class CrossChainCommitJob : AsyncBackgroundJob<CrossChainCommitJobArgs>, 
         for (var i = 0; i < RetryConstants.DefaultDelay; i++)
         {
             _logger.LogDebug(
-                $"[CrossChain][Leader] Get message ready to send, MateData: {JsonSerializer.Serialize(reportContext)}, Signature: {string.Join(", ", partialSignatures.Select(kvp => $"Key: {kvp.Key}, Value: {Convert.ToBase64String(kvp.Value)}"))}");
+                $"[CrossChain][Leader] Get message ready to send, MateData: {JsonSerializer.Serialize(reportContext)},CrossChainDataDto: {JsonSerializer.Serialize(crossChainData)} Signature: {string.Join(", ", partialSignatures.Select(kvp => $"Key: {kvp.Key}, Value: {Convert.ToBase64String(kvp.Value)}"))}");
 
             var transactionId =
                 await writer.SendCommitTransactionAsync(reportContext, partialSignatures, crossChainData);
