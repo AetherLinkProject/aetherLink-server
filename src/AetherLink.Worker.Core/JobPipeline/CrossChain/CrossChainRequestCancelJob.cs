@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Dtos;
+using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.Logging;
@@ -37,7 +38,7 @@ public class CrossChainRequestCancelJob : IAsyncBackgroundJob<CrossChainRequestC
 
             rampMessageData.State = CrossChainState.RequestCanceled;
             await _crossChainRequestProvider.SetAsync(rampMessageData);
-            _schedulerService.CancelScheduler(rampMessageData);
+            _schedulerService.CancelAllSchedule(rampMessageData);
 
             _logger.LogInformation($"[CrossChainRequestCancel] Request {args.MessageId} cancelled.");
         }

@@ -24,6 +24,7 @@ public interface ISchedulerService
     public void CancelLogUpkeep(LogTriggerDto upkeep);
     public void CancelCronUpkeep(JobDto job);
     public void CancelAllSchedule(JobDto job);
+    public void CancelAllSchedule(CrossChainDataDto job);
     public void CancelLogUpkeepAllSchedule(LogUpkeepInfoDto upkeep);
     public DateTime UpdateBlockTime(DateTime blockStartTime);
 }
@@ -110,7 +111,15 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         DateTime overTime;
         var registry = new Registry();
         var schedulerName = GenerateScheduleName(crossChainData.ReportContext.MessageId, type);
-        CancelSchedulerByName(schedulerName);
+       
+        if (type == CrossChainSchedulerType.ResendPendingScheduler)
+        {
+            CancelAllSchedule(crossChainData);
+        }
+        else
+        {
+            CancelSchedulerByName(schedulerName);
+        }
 
         switch (type)
         {
@@ -205,6 +214,14 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         foreach (SchedulerType schedulerType in Enum.GetValues(typeof(SchedulerType)))
         {
             CancelSchedulerByName(GenerateScheduleName(job.ChainId, job.RequestId, schedulerType));
+        }
+    }
+
+    public void CancelAllSchedule(CrossChainDataDto crossChainData)
+    {
+        foreach (CrossChainSchedulerType schedulerType in Enum.GetValues(typeof(CrossChainSchedulerType)))
+        {
+            CancelSchedulerByName(GenerateScheduleName(crossChainData.ReportContext.MessageId, schedulerType));
         }
     }
 

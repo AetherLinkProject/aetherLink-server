@@ -1,4 +1,4 @@
-namespace AetherLink.Worker.Core.JobPipeline.CrossChain;
+namespace AetherLink.Worker.Core.JobPipeline.Args;
 
 public class CrossChainRequestCancelJobArgs
 {
