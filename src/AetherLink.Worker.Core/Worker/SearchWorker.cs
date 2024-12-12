@@ -61,6 +61,7 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
             ExecuteTransmittedAsync(chainId, blockLatestHeight, startHeight),
             ExecuteRequestCanceledAsync(chainId, blockLatestHeight, startHeight),
             ExecuteRampRequestsAsync(chainId, blockLatestHeight, startHeight),
+            ExecuteRampManuallyExecutedAsync(chainId, blockLatestHeight, startHeight),
             ExecuteRampRequestsCanceledAsync(chainId, blockLatestHeight, startHeight)
         );
 
@@ -146,5 +147,19 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         _logger.LogDebug("[Search] {chain} found a total of {count} ramp canceled.", chainId, cancels.Count);
 
         await Task.WhenAll(requestCancelsTasks);
+    }
+
+    // search ramp manually executed event 
+    private async Task ExecuteRampManuallyExecutedAsync(string chainId, long to, long from)
+    {
+        var manuallyExecutes = await _provider.SearchRampManuallyExecutedAsync(chainId, to, from);
+        var requestManuallyExecutedTasks = manuallyExecutes.Select(requestCancelled =>
+            _provider.HandleRampRequestManuallyExecutedLogEventAsync(requestCancelled));
+        _reporter.RecordManuallyExecutedAsync(chainId, manuallyExecutes.Count);
+
+        _logger.LogDebug("[Search] {chain} found a total of {count} ramp manually executed.", chainId,
+            manuallyExecutes.Count);
+
+        await Task.WhenAll(requestManuallyExecutedTasks);
     }
 }

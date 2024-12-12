@@ -55,6 +55,7 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         _resetCronUpkeepScheduler = resetCronUpkeepScheduler;
         ListenForStart();
         ListenForEnd();
+        ListenForError();
     }
 
     public void StartScheduler(JobDto job, SchedulerType type)
@@ -111,7 +112,7 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         DateTime overTime;
         var registry = new Registry();
         var schedulerName = GenerateScheduleName(crossChainData.ReportContext.MessageId, type);
-       
+
         if (type == CrossChainSchedulerType.ResendPendingScheduler)
         {
             CancelAllSchedule(crossChainData);
@@ -288,6 +289,12 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
     private void ListenForEnd()
     {
         JobManager.JobEnd += info => _logger.LogInformation("{Name}: ended", info.Name);
+    }
+
+    private void ListenForError()
+    {
+        JobManager.JobException +=
+            info => _logger.LogError("An error just happened with a scheduled job: " + info.Exception);
     }
 
     private static string GenerateScheduleName(string chainId, string id, object type)

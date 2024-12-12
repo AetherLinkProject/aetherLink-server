@@ -91,6 +91,18 @@ public class RampRequestCancelledDto
     public string MessageId { get; set; }
 }
 
+public class IndexerRampRequestManuallyExecutedListDto
+{
+    public List<RampRequestManuallyExecutedDto> RampRequestManuallyExecuted { get; set; }
+}
+
+public class RampRequestManuallyExecutedDto
+{
+    public string MessageId { get; set; }
+    public string TransactionId { get; set; }
+    public long StartTime { get; set; }
+}
+
 // Basic Dto
 public class IndexerBasicDto
 {

@@ -27,6 +27,9 @@ public interface IAeFinderProvider
 
     public Task<IndexerTokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, long sourceChainId,
         string targetContractAddress, string tokenAddress, string originToken);
+
+    public Task<List<RampRequestManuallyExecutedDto>> SubscribeRampRequestManuallyExecutedAsync(string chainId, long to,
+        long from);
 }
 
 public class AeFinderProvider : IAeFinderProvider, ITransientDependency
@@ -228,6 +231,38 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         {
             _logger.LogError(e, "[Indexer] SubscribeRequestCancelled failed.");
             return new List<RampRequestCancelledDto>();
+        }
+    }
+
+    public async Task<List<RampRequestManuallyExecutedDto>> SubscribeRampRequestManuallyExecutedAsync(string chainId,
+        long to, long from)
+    {
+        try
+        {
+            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerRampRequestManuallyExecutedListDto>(
+                GetClient(), new()
+                {
+                    Query =
+                        @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
+                    rampRequestManuallyExecuted(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
+                        messageId,
+                        transactionId,
+                        startTime
+                        }
+                    }",
+                    Variables = new
+                    {
+                        chainId = chainId, fromBlockHeight = from, toBlockHeight = to
+                    }
+                });
+            return indexerResult != null
+                ? indexerResult.RampRequestManuallyExecuted
+                : new List<RampRequestManuallyExecutedDto>();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Indexer] SubscribeRequestCancelled failed.");
+            return new List<RampRequestManuallyExecutedDto>();
         }
     }
 

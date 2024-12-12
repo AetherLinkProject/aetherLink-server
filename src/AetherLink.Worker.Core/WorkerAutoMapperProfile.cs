@@ -62,6 +62,7 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
         CreateMap<CrossChainMultiSignatureJobArgs, CrossChainCommitJobArgs>();
         CreateMap<CrossChainCommitJobArgs, CrossChainReceivedResultCheckJobArgs>();
         CreateMap<RampRequestCancelledDto, CrossChainRequestCancelJobArgs>();
+        CreateMap<RampRequestManuallyExecutedDto, CrossChainRequestManuallyExecuteJobArgs>();
         CreateCrossChainGrpcMap();
     }
 
