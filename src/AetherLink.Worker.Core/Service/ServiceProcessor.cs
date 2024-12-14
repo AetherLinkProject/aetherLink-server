@@ -23,6 +23,9 @@ public interface IServiceProcessor
     Task ProcessReportSignatureAsync(QueryReportSignatureRequest request, ServerCallContext context);
     Task ProcessPartialSignatureAsync(CommitPartialSignatureRequest request, ServerCallContext context);
     Task ProcessTransmitResultAsync(BroadcastTransmitResult request, ServerCallContext context);
+    Task ProcessMessagePartialSignatureQueryAsync(QueryMessageSignatureRequest request, ServerCallContext context);
+    Task ProcessMessagePartialSignatureReturnAsync(ReturnPartialSignatureResults request, ServerCallContext context);
+    Task ProcessCrossChainReceivedResultAsync(CrossChainReceivedResult request, ServerCallContext context);
 }
 
 public class ServiceProcessor : IServiceProcessor, ISingletonDependency
@@ -119,6 +122,32 @@ public class ServiceProcessor : IServiceProcessor, ISingletonDependency
             Index = request.Index,
             Payload = request.Payload.ToByteArray()
         });
+    }
+
+    public async Task ProcessMessagePartialSignatureQueryAsync(QueryMessageSignatureRequest request,
+        ServerCallContext context)
+    {
+        if (!ValidateRequest(context)) return;
+
+        await _jobManager.EnqueueAsync(
+            _objectMapper.Map<QueryMessageSignatureRequest, CrossChainPartialSignatureJobArgs>(request));
+    }
+
+    public async Task ProcessMessagePartialSignatureReturnAsync(ReturnPartialSignatureResults request,
+        ServerCallContext context)
+    {
+        if (!ValidateRequest(context)) return;
+
+        await _jobManager.EnqueueAsync(
+            _objectMapper.Map<ReturnPartialSignatureResults, CrossChainMultiSignatureJobArgs>(request));
+    }
+
+    public async Task ProcessCrossChainReceivedResultAsync(CrossChainReceivedResult request, ServerCallContext context)
+    {
+        if (!ValidateRequest(context)) return;
+
+        await _jobManager.EnqueueAsync(
+            _objectMapper.Map<CrossChainReceivedResult, CrossChainReceivedResultCheckJobArgs>(request));
     }
 
     public async Task ProcessTransmitResultAsync(BroadcastTransmitResult request, ServerCallContext context)

@@ -17,11 +17,14 @@ public interface ISchedulerService
 {
     public void StartScheduler(JobDto job, SchedulerType type);
     public void StartScheduler(LogTriggerDto upkeep);
+    public void StartScheduler(CrossChainDataDto crossChainData, CrossChainSchedulerType type);
     public void StartCronUpkeepScheduler(JobDto job);
     public void CancelScheduler(JobDto job, SchedulerType type);
+    public void CancelScheduler(CrossChainDataDto crossChainData);
     public void CancelLogUpkeep(LogTriggerDto upkeep);
     public void CancelCronUpkeep(JobDto job);
     public void CancelAllSchedule(JobDto job);
+    public void CancelAllSchedule(CrossChainDataDto job);
     public void CancelLogUpkeepAllSchedule(LogUpkeepInfoDto upkeep);
     public DateTime UpdateBlockTime(DateTime blockStartTime);
 }
@@ -29,8 +32,9 @@ public interface ISchedulerService
 public class SchedulerService : ISchedulerService, ISingletonDependency
 {
     private readonly SchedulerOptions _options;
-    private readonly object _upkeepSchedulesLock = new();
     private readonly ILogger<SchedulerService> _logger;
+    private readonly object _upkeepSchedulesLock = new();
+    private readonly ICrossChainSchedulerJob _crossChainScheduler;
     private readonly IResetRequestSchedulerJob _resetRequestScheduler;
     private readonly IObservationCollectSchedulerJob _observationScheduler;
     private readonly IResetLogTriggerSchedulerJob _resetLogTriggerScheduler;
@@ -39,16 +43,19 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
 
     public SchedulerService(IResetRequestSchedulerJob resetRequestScheduler, ILogger<SchedulerService> logger,
         IOptionsSnapshot<SchedulerOptions> schedulerOptions, IObservationCollectSchedulerJob observationScheduler,
-        IResetLogTriggerSchedulerJob resetLogTriggerScheduler, IResetCronUpkeepSchedulerJob resetCronUpkeepScheduler)
+        IResetLogTriggerSchedulerJob resetLogTriggerScheduler, IResetCronUpkeepSchedulerJob resetCronUpkeepScheduler,
+        ICrossChainSchedulerJob crossChainScheduler)
     {
         _logger = logger;
         _options = schedulerOptions.Value;
+        _crossChainScheduler = crossChainScheduler;
         _observationScheduler = observationScheduler;
         _resetRequestScheduler = resetRequestScheduler;
         _resetLogTriggerScheduler = resetLogTriggerScheduler;
         _resetCronUpkeepScheduler = resetCronUpkeepScheduler;
         ListenForStart();
         ListenForEnd();
+        ListenForError();
     }
 
     public void StartScheduler(JobDto job, SchedulerType type)
@@ -99,6 +106,51 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         JobManager.Initialize(registry);
     }
 
+    public void StartScheduler(CrossChainDataDto crossChainData, CrossChainSchedulerType type)
+    {
+        JobManager.UseUtcTime();
+        DateTime overTime;
+        var registry = new Registry();
+        var schedulerName = GenerateScheduleName(crossChainData.ReportContext.MessageId, type);
+
+        if (type == CrossChainSchedulerType.ResendPendingScheduler)
+        {
+            CancelAllSchedule(crossChainData);
+        }
+        else
+        {
+            CancelSchedulerByName(schedulerName);
+        }
+
+        switch (type)
+        {
+            case CrossChainSchedulerType.CheckCommittedScheduler:
+                overTime = crossChainData.RequestReceiveTime.AddMinutes(_options.CheckCommittedTimeoutWindow);
+                registry.Schedule(() => _crossChainScheduler.Execute(crossChainData)).WithName(schedulerName)
+                    .NonReentrant().ToRunOnceAt(overTime);
+                break;
+            case CrossChainSchedulerType.ResendPendingScheduler:
+                overTime = crossChainData.ResendTransactionBlockTime.AddMinutes(crossChainData.NextCommitDelayTime);
+                registry.Schedule(() => _crossChainScheduler.Resend(crossChainData)).WithName(schedulerName)
+                    .NonReentrant().ToRunOnceAt(overTime);
+                break;
+            default:
+                overTime = DateTime.MinValue;
+                break;
+        }
+
+        if (DateTime.UtcNow > overTime)
+        {
+            _logger.LogWarning(
+                $"[SchedulerService] Cross chain scheduler {schedulerName} time {overTime} is over.");
+            return;
+        }
+
+        _logger.LogInformation(
+            $"[SchedulerService] Registry cross chain scheduler {schedulerName} OverTime:{overTime}");
+        JobManager.Initialize(registry);
+    }
+
     public void StartCronUpkeepScheduler(JobDto job)
     {
         JobManager.UseUtcTime();
@@ -135,6 +187,10 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
     public void CancelScheduler(JobDto job, SchedulerType type)
         => CancelSchedulerByName(GenerateScheduleName(job.ChainId, job.RequestId, type));
 
+    public void CancelScheduler(CrossChainDataDto crossChainData)
+        => CancelSchedulerByName(GenerateScheduleName(crossChainData.ReportContext.MessageId,
+            CrossChainSchedulerType.CheckCommittedScheduler));
+
     public void CancelLogUpkeep(LogTriggerDto upkeep)
     {
         lock (_upkeepSchedulesLock)
@@ -159,6 +215,14 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         foreach (SchedulerType schedulerType in Enum.GetValues(typeof(SchedulerType)))
         {
             CancelSchedulerByName(GenerateScheduleName(job.ChainId, job.RequestId, schedulerType));
+        }
+    }
+
+    public void CancelAllSchedule(CrossChainDataDto crossChainData)
+    {
+        foreach (CrossChainSchedulerType schedulerType in Enum.GetValues(typeof(CrossChainSchedulerType)))
+        {
+            CancelSchedulerByName(GenerateScheduleName(crossChainData.ReportContext.MessageId, schedulerType));
         }
     }
 
@@ -227,11 +291,16 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         JobManager.JobEnd += info => _logger.LogInformation("{Name}: ended", info.Name);
     }
 
-    private static string GenerateScheduleName(string chainId, string requestId, SchedulerType scheduleType)
-        => IdGeneratorHelper.GenerateId(chainId, requestId, scheduleType);
+    private void ListenForError()
+    {
+        JobManager.JobException +=
+            info => _logger.LogError("An error just happened with a scheduled job: " + info.Exception);
+    }
 
-    private static string GenerateScheduleName(string chainId, string requestId, UpkeepSchedulerType type)
-        => IdGeneratorHelper.GenerateId(chainId, requestId, type);
+    private static string GenerateScheduleName(string chainId, string id, object type)
+        => IdGeneratorHelper.GenerateId(chainId, id, type);
+
+    private static string GenerateScheduleName(string id, object type) => IdGeneratorHelper.GenerateId(id, type);
 
     private static string GenerateScheduleName(LogTriggerDto trigger)
         => IdGeneratorHelper.GenerateId(trigger.Context.ChainId, trigger.Context.RequestId,

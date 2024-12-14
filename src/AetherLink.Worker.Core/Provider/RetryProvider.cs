@@ -52,7 +52,11 @@ public class RetryProvider : IRetryProvider, ISingletonDependency
         long delayDelta = 0)
     {
         _retryCount.TryGetValue(id, out var time);
-        if (!untilFailed && time > _processJobOptions.RetryCount) return;
+        if (!untilFailed && time > _processJobOptions.RetryCount)
+        {
+            _logger.LogDebug($"[RetryProvider] Request {id} is over time {time}");
+            return;
+        }
 
         var delay = backOff ? Math.Pow(delayDelta.Add(time), 2) : delayDelta.Add(time);
         _retryCount[id] = time.Add(1);

@@ -1,16 +1,23 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using AElf;
 using AElf.Types;
 using System.Threading.Tasks;
 using AetherLink.Contracts.Oracle;
+using AetherLink.Contracts.Ramp;
+using AetherLink.Indexer.Provider;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Oracle;
+using Ramp;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.ObjectMapping;
+using Report = Oracle.Report;
 
 namespace AetherLink.Worker.Core.Provider;
 
@@ -25,6 +32,9 @@ public interface IOracleContractProvider
     public Task<TransmitInput> GenerateTransmitDataAsync(string chainId, string requestId, long epoch,
         ByteString result);
 
+    public Task<CommitInput> GenerateCommitDataAsync(ReportContextDto reportContext, Dictionary<int, byte[]> signatures,
+        CrossChainDataDto crossChainData);
+
     public Task<TransmitInput> GenerateTransmitDataByTransactionIdAsync(string chainId, string transactionId,
         long epoch, ByteString result);
 }
@@ -32,15 +42,17 @@ public interface IOracleContractProvider
 // If there is request-related data loss in Indexer, the transaction results and contract view method will be used as a backup.
 public class OracleContractProvider : IOracleContractProvider, ISingletonDependency
 {
+    private readonly IObjectMapper _objectMapper;
     private readonly IAeFinderProvider _aeFinderProvider;
     private readonly IContractProvider _contractProvider;
     private readonly ILogger<OracleContractProvider> _logger;
     private readonly ConcurrentDictionary<string, Commitment> _commitmentsCache = new();
 
     public OracleContractProvider(AeFinderProvider aeFinderProvider, IContractProvider contractProvider,
-        ILogger<OracleContractProvider> logger)
+        ILogger<OracleContractProvider> logger, IObjectMapper objectMapper)
     {
         _logger = logger;
+        _objectMapper = objectMapper;
         _aeFinderProvider = aeFinderProvider;
         _contractProvider = contractProvider;
     }
@@ -120,6 +132,20 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         transmitData.ReportContext.Add(HashHelper.ComputeFrom(epoch));
         transmitData.ReportContext.Add(HashHelper.ComputeFrom(0));
         return transmitData;
+    }
+
+    public async Task<CommitInput> GenerateCommitDataAsync(ReportContextDto reportContext,
+        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
+    {
+        var commitInput = new CommitInput
+        {
+            Report = AELFHelper.GenerateReport(reportContext, crossChainData.Message,
+                _objectMapper.Map<TokenAmountDto, TokenAmount>(crossChainData.TokenAmount))
+        };
+
+        var signature = signatures.Values.Select(sig => ByteStringHelper.FromHexString(sig.ToHex())).ToList();
+        commitInput.Signatures.AddRange(signature);
+        return commitInput;
     }
 
     public async Task<TransmitInput> GenerateTransmitDataByTransactionIdAsync(string chainId, string transactionId,

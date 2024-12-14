@@ -1,7 +1,10 @@
+using AetherLink.Indexer.Dtos;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
+using AetherLink.Worker.Core.JobPipeline.CrossChain;
 using AutoMapper;
+using Ramp;
 
 namespace AetherLink.Worker.Core;
 
@@ -17,19 +20,14 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
         CreateMap<RequestStartProcessJobArgs, JobDto>()
             .ForMember(t => t.TransactionBlockTime, m => m.MapFrom(f => f.StartTime));
         CreateMap<GenerateMultiSignatureJobArgs, TransmitResultProcessJobArgs>();
-
         CreateMap<CollectObservationJobArgs, DataMessageDto>();
         CreateMap<CollectObservationJobArgs, PlainDataFeedsDto>();
         CreateMap<CollectObservationJobArgs, GenerateReportJobArgs>();
         CreateMap<CollectObservationJobArgs, CommitObservationRequest>();
-
         CreateMap<GeneratePartialSignatureJobArgs, GenerateMultiSignatureJobArgs>();
         CreateMap<GeneratePartialSignatureJobArgs, CommitSignatureRequest>();
-
         CreateMap<GenerateReportJobArgs, GeneratePartialSignatureJobArgs>();
-
         CreateMap<RequestStartProcessJobArgs, CollectObservationJobArgs>();
-
         CreateMap<GenerateMultiSignatureJobArgs, CommitTransmitResultRequest>();
 
         // VRF
@@ -56,5 +54,74 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
             .ForMember(t => t.TransactionId, m => m.MapFrom(f => f.TransmitTransactionId));
         CreateMap<CommitSignatureRequest, GenerateMultiSignatureJobArgs>();
         CreateMap<CommitObservationRequest, GenerateReportJobArgs>();
+
+        // CrossChain
+        CreateMap<CrossChainRequestStartArgs, CrossChainDataDto>();
+        CreateMap<CrossChainDataDto, CrossChainRequestStartArgs>();
+        CreateMap<CrossChainPartialSignatureJobArgs, CrossChainMultiSignatureJobArgs>();
+        CreateMap<CrossChainMultiSignatureJobArgs, CrossChainCommitJobArgs>();
+        CreateMap<CrossChainCommitJobArgs, CrossChainReceivedResultCheckJobArgs>();
+        CreateMap<RampRequestCancelledDto, CrossChainRequestCancelJobArgs>();
+        CreateMap<RampRequestManuallyExecutedDto, CrossChainRequestManuallyExecuteJobArgs>();
+        CreateCrossChainGrpcMap();
+    }
+
+    private void CreateCrossChainGrpcMap()
+    {
+        // CrossChain GRPC
+        CreateMap<CrossChainRequestStartArgs, QueryMessageSignatureRequest>()
+            .ForPath(t => t.ReportContext.MessageId, m => m.MapFrom(f => f.ReportContext.MessageId))
+            .ForPath(t => t.ReportContext.SourceChainId, m => m.MapFrom(f => f.ReportContext.SourceChainId))
+            .ForPath(t => t.ReportContext.TargetChainId, m => m.MapFrom(f => f.ReportContext.TargetChainId))
+            .ForPath(t => t.ReportContext.Sender, m => m.MapFrom(f => f.ReportContext.Sender))
+            .ForPath(t => t.ReportContext.Receiver, m => m.MapFrom(f => f.ReportContext.Receiver))
+            .ForPath(t => t.ReportContext.Epoch, m => m.MapFrom(f => f.ReportContext.Epoch))
+            .ForPath(t => t.ReportContext.RoundId, m => m.MapFrom(f => f.ReportContext.RoundId));
+        CreateMap<QueryMessageSignatureRequest, CrossChainPartialSignatureJobArgs>()
+            .ForPath(t => t.ReportContext.MessageId, m => m.MapFrom(f => f.ReportContext.MessageId))
+            .ForPath(t => t.ReportContext.SourceChainId, m => m.MapFrom(f => f.ReportContext.SourceChainId))
+            .ForPath(t => t.ReportContext.TargetChainId, m => m.MapFrom(f => f.ReportContext.TargetChainId))
+            .ForPath(t => t.ReportContext.Sender, m => m.MapFrom(f => f.ReportContext.Sender))
+            .ForPath(t => t.ReportContext.Receiver, m => m.MapFrom(f => f.ReportContext.Receiver))
+            .ForPath(t => t.ReportContext.Epoch, m => m.MapFrom(f => f.ReportContext.Epoch))
+            .ForPath(t => t.ReportContext.RoundId, m => m.MapFrom(f => f.ReportContext.RoundId));
+        CreateMap<CrossChainPartialSignatureJobArgs, ReturnPartialSignatureResults>()
+            .ForPath(t => t.ReportContext.MessageId, m => m.MapFrom(f => f.ReportContext.MessageId))
+            .ForPath(t => t.ReportContext.SourceChainId, m => m.MapFrom(f => f.ReportContext.SourceChainId))
+            .ForPath(t => t.ReportContext.TargetChainId, m => m.MapFrom(f => f.ReportContext.TargetChainId))
+            .ForPath(t => t.ReportContext.Sender, m => m.MapFrom(f => f.ReportContext.Sender))
+            .ForPath(t => t.ReportContext.Receiver, m => m.MapFrom(f => f.ReportContext.Receiver))
+            .ForPath(t => t.ReportContext.Epoch, m => m.MapFrom(f => f.ReportContext.Epoch))
+            .ForPath(t => t.ReportContext.RoundId, m => m.MapFrom(f => f.ReportContext.RoundId));
+        CreateMap<ReturnPartialSignatureResults, CrossChainMultiSignatureJobArgs>()
+            .ForPath(t => t.ReportContext.MessageId, m => m.MapFrom(f => f.ReportContext.MessageId))
+            .ForPath(t => t.ReportContext.SourceChainId, m => m.MapFrom(f => f.ReportContext.SourceChainId))
+            .ForPath(t => t.ReportContext.TargetChainId, m => m.MapFrom(f => f.ReportContext.TargetChainId))
+            .ForPath(t => t.ReportContext.Sender, m => m.MapFrom(f => f.ReportContext.Sender))
+            .ForPath(t => t.ReportContext.Receiver, m => m.MapFrom(f => f.ReportContext.Receiver))
+            .ForPath(t => t.ReportContext.Epoch, m => m.MapFrom(f => f.ReportContext.Epoch))
+            .ForPath(t => t.ReportContext.RoundId, m => m.MapFrom(f => f.ReportContext.RoundId));
+        CreateMap<CrossChainCommitJobArgs, CrossChainReceivedResult>()
+            .ForPath(t => t.ReportContext.MessageId, m => m.MapFrom(f => f.ReportContext.MessageId))
+            .ForPath(t => t.ReportContext.SourceChainId, m => m.MapFrom(f => f.ReportContext.SourceChainId))
+            .ForPath(t => t.ReportContext.TargetChainId, m => m.MapFrom(f => f.ReportContext.TargetChainId))
+            .ForPath(t => t.ReportContext.Sender, m => m.MapFrom(f => f.ReportContext.Sender))
+            .ForPath(t => t.ReportContext.Receiver, m => m.MapFrom(f => f.ReportContext.Receiver))
+            .ForPath(t => t.ReportContext.Epoch, m => m.MapFrom(f => f.ReportContext.Epoch))
+            .ForPath(t => t.ReportContext.RoundId, m => m.MapFrom(f => f.ReportContext.RoundId));
+        CreateMap<CrossChainReceivedResult, CrossChainReceivedResultCheckJobArgs>()
+            .ForPath(t => t.ReportContext.MessageId, m => m.MapFrom(f => f.ReportContext.MessageId))
+            .ForPath(t => t.ReportContext.SourceChainId, m => m.MapFrom(f => f.ReportContext.SourceChainId))
+            .ForPath(t => t.ReportContext.TargetChainId, m => m.MapFrom(f => f.ReportContext.TargetChainId))
+            .ForPath(t => t.ReportContext.Sender, m => m.MapFrom(f => f.ReportContext.Sender))
+            .ForPath(t => t.ReportContext.Receiver, m => m.MapFrom(f => f.ReportContext.Receiver))
+            .ForPath(t => t.ReportContext.Epoch, m => m.MapFrom(f => f.ReportContext.Epoch))
+            .ForPath(t => t.ReportContext.RoundId, m => m.MapFrom(f => f.ReportContext.RoundId));
+        CreateMap<TokenAmountDto, TokenAmount>()
+            .ForPath(t => t.SwapId, m => m.MapFrom(f => f.SwapId))
+            .ForPath(t => t.TokenAddress, m => m.MapFrom(f => f.TokenAddress))
+            .ForPath(t => t.TargetChainId, m => m.MapFrom(f => f.TargetChainId))
+            .ForPath(t => t.TargetContractAddress, m => m.MapFrom(f => f.TargetContractAddress))
+            .ForPath(t => t.OriginToken, m => m.MapFrom(f => f.OriginToken));
     }
 }

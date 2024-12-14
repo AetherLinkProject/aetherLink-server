@@ -42,6 +42,19 @@ public class GetTokenPriceListRequestDto : AuthDto, IValidatableObject
     }
 }
 
+public class GetLatestTokenPriceListRequestDto : AuthDto, IValidatableObject
+{
+    [Required] public List<string> TokenPairs { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (!TokenPairs.All(TokenPairHelper.IsValidTokenPair))
+        {
+            yield return new ValidationResult("Invalid TokenPairs input");
+        }
+    }
+}
+
 public class GetAggregatedTokenPriceRequestDto : AuthDto, IValidatableObject
 {
     [Required] public string TokenPair { get; set; }
@@ -99,6 +112,11 @@ public class PriceForLast24HoursResponseDto
 public class PriceListResponseDto
 {
     public string Source { get; set; }
+    public List<PriceDto> Prices { get; set; }
+}
+
+public class LatestPriceListResponseDto
+{
     public List<PriceDto> Prices { get; set; }
 }
 

@@ -1,0 +1,181 @@
+{
+  "Worker": {
+    "SearchTimer": 5000,
+    "UnconfirmedTimer": 5000,
+    "PollerTimer": 5000
+  },
+  "Chains": {
+    "ChainInfos": {
+      "AELF": {
+        "BaseUrl": "http://192.168.71.200:8000",
+        "OracleContractAddress": "HhfWgMGcmfEtumd93yPgyjqz3CcUA1k4G6twhdF9qcY9kao31",
+        "ConsensusContractAddress": "pGa4e5hNGsgkfjEGm72TEvbF7aRDqKBd4LuXtab4ucMbXLcgJ"
+      },
+      "tDVV": {
+        "BaseUrl": "http://192.168.71.207:8000",
+        "OracleContractAddress": "HhfWgMGcmfEtumd93yPgyjqz3CcUA1k4G6twhdF9qcY9kao31",
+        "ConsensusContractAddress": "BNPFPPwQ3DE9rwxzdY61Q2utU9FZx9KYUnrYHQqCR6N4LLhUE"
+      },
+      "tDVW": {
+        "BaseUrl": "https://tdvw-test-node.aelf.io",
+        "OracleContractAddress": "21Fh7yog1B741yioZhNAFbs3byJ97jvBmbGAPPZKZpHHog5aEg",
+        "ConsensusContractAddress": "2KPUA5wG78nnNmK9JsRWbFiEFUEfei9WKniZuKaVziDKZRwchM"
+      },
+      "Ton": {
+        "SkipTransactionLt": "28166025000001",
+        "ContractAddress": "EQBCOuvczf29HIGNxrJdsmTKIabHQ1j4dW2ojlYkcru3IOYy",
+        "IndexerPeriod": 3,
+        "OracleNodeInfoList": [
+          {
+            "Index": 0,
+            "PublicKey": "5fea19d573652b9fb3df9948f674ca7f97d432a604704e869a0dfae4807e4bb2"
+          },
+          {
+            "Index": 1,
+            "PublicKey": "b9b4e6b4938de45af8331cf65bc3c409962cd84e8fb4847efcb27ee7c5cec18a"
+          },
+          {
+            "Index": 2,
+            "PublicKey": "e4fb357194f0bf168af81c3e092ab4d76d690e7704f17e1a53caa15744e0e301"
+          },
+          {
+            "Index": 3,
+            "PublicKey": "18ab74c4e4fbf8fd1cf80562f95bec1d2caf2ecaabb440d0294209c08b282bcd"
+          },
+          {
+            "Index": 4,
+            "PublicKey": "769475fd62667d0d515e13df62dd0fb60d1653a3b6491c921bc7e30030dff2aa"
+          }
+        ],
+        "IndexerProvider": [
+          "GetBlock",
+          "TonApi",
+          "ChainStack"
+        ],
+        "CommitProvider": [
+          "TonCenter"
+        ],
+        "Indexer": {
+          "TonCenter": {
+            "Url": "https://testnet.toncenter.com/api/v3/",
+            "ApiKey": ""
+          },
+          "GetBlock": {
+            "Url": "https://go.getblock.io/",
+            "Weight": 10,
+            "ApiKey": ""
+          },
+          "TonApi": {
+            "Url": "https://testnet.tonapi.io",
+            "Weight": 80,
+            "ApiKey": ""
+          },
+          "ChainStack": {
+            "Url": "https://ton-testnet.core.chainstack.com/",
+            "Weight": 40,
+            "ApiKey": ""
+          }
+        }
+      }
+    }
+  },
+  "Redis": {
+    "Configuration": "127.0.0.1:6383"
+  },
+  "Serilog": {
+    "MinimumLevel": {
+      "Default": "Debug",
+      "Override": {
+        "Default": "Warning",
+        "System": "Warning",
+        "Microsoft": "Warning",
+        "Quartz": "Warning"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "RollingFile",
+        "Args": {
+          "pathFormat": "Logs/log-{Date}.log",
+          "retainedFileCountLimit": 15
+        }
+      }
+    ]
+  },
+  "AeFinder": {
+    "BaseUrl": "https://gcptest-indexer-api.aefinder.io"
+  },
+  "Hangfire": {
+    "RedisStorage": {
+      "Host": "127.0.0.1:6383",
+      "Prefix": "hangfire"
+    },
+    "WorkerCount": 10
+  },
+  "Network": {
+    "ListenPort": 8005,
+    "Index": 4,
+    "Domains": [
+      "172.17.0.3:8001",
+      "172.17.0.3:8002",
+      "172.17.0.3:8003",
+      "172.17.0.3:8004",
+      "172.17.0.3:8005"
+    ]
+  },
+  "OracleChainInfo": {
+    "ChainConfig": {
+      "AELF": {
+        "ObservationsThreshold": 5,
+        "PartialSignaturesThreshold": 4,
+        "VRFSecret": "e749247cb0d90bc743d98407cda2868eb71abc6aacf8867435aeeab2c42d41ba",
+        "TransmitterSecret": "e749247cb0d90bc743d98407cda2868eb71abc6aacf8867435aeeab2c42d41ba",
+        "SignerSecret": "c50e6dfcf82714d993d8774957a7262a05231bcf5b1ae4807cc6c70e8baa9efe",
+        "DistPublicKey": [
+          "04ca0d826e4a334733e035c660d1b68a220927b6c1d6c418754fe588da2cb2c86bb4d386817c9043d8685987e94970c2144bdc4270a1afeaad9cb8fdc0f2f9d1a5",
+          "04e25853beb3b74e794d598f9bb25ec58d7e8eadec3f36efcf54b5f3f965f01156f5d9c1f415cc213b6e68ee039c168df6a299aa5623c5afbfc26554dcc273518c",
+          "0450958ca0e90f669f0d186ae667858af8d538dadecddf8288fd7d14b4ae7f825ed56c8876fe469d6fcc260a4c279a74129fceeae1f5224f6d6b554bfec4744aef",
+          "041fadc29d40636641a483ecc1eaeb045434f47ab2ec4d13872a88b9f555186297ce941ac89b5709f611fba896550c204e962f4ac089680480782349a7ee64c9ff",
+          "04adf64d8d58c85201f65ae3573beaf2480a3a3fec6251ae70208e058110ef6ebf78c131c9ba82f98183590221c03ed2216dbce83b15a5546e6eeb161d6296f1d3"
+        ]
+      },
+      "tDVW": {
+        "ObservationsThreshold": 5,
+        "PartialSignaturesThreshold": 4,
+        "VRFSecret": "cc306cf5bf9ebc1cfbf330876f9ac2d7b7e4dab02e073784bd2a1cf2eb22e9b2",
+        "TransmitterSecret": "cc306cf5bf9ebc1cfbf330876f9ac2d7b7e4dab02e073784bd2a1cf2eb22e9b2",
+        "SignerSecret": "5f11cd53b7b76fa9589060bc6aa48f24caccb7af8668795064f5e4b83da27109",
+        "DistPublicKey": [
+          "04011367fc0587e430ac00eb07c9b704bb464806420ce6afa011d9723f08c8d70fcb2a9e1f5e0934f9a409d70530455e32ac92c4742e2db13731449394cc53e3f4",
+          "04fbb60f8f8855cc80f18025f63f3c2036703429f99da0511a2d1a060ebffed2230151db751e79eb51edff645ce60a8e2eced1162b536863337544c06c4171a160",
+          "041bef0f6f39c1fdd294fc87196ac11adcd2883ca43d6f1e89a01f767dfe101239c40c7c9b1e75fad123d64a53aa005e3391c32cdc3d15359774e13179e2ec64be",
+          "04c37d382c6597d2c280d6ef6c78918a897481e2f0396654fc9c5e4966f6616dfb109e38af84d6febae3c074767b84ef61ef0aee98904415d84ed667e763abc1bd",
+          "04a6837391e17af4f8b00e15dc563e6598b131c2621498e1e42a28c5d423601808cbe1c4533ec4203a3189367aeb35534c4646ed77ec5edf389e1ca5cdbd639231"
+        ]
+      },
+      "tDVV": {
+        "ObservationsThreshold": 5,
+        "PartialSignaturesThreshold": 4,
+        "VRFSecret": "e749247cb0d90bc743d98407cda2868eb71abc6aacf8867435aeeab2c42d41ba",
+        "TransmitterSecret": "e749247cb0d90bc743d98407cda2868eb71abc6aacf8867435aeeab2c42d41ba",
+        "SignerSecret": "c50e6dfcf82714d993d8774957a7262a05231bcf5b1ae4807cc6c70e8baa9efe",
+        "DistPublicKey": [
+          "04ca0d826e4a334733e035c660d1b68a220927b6c1d6c418754fe588da2cb2c86bb4d386817c9043d8685987e94970c2144bdc4270a1afeaad9cb8fdc0f2f9d1a5",
+          "04e25853beb3b74e794d598f9bb25ec58d7e8eadec3f36efcf54b5f3f965f01156f5d9c1f415cc213b6e68ee039c168df6a299aa5623c5afbfc26554dcc273518c",
+          "0450958ca0e90f669f0d186ae667858af8d538dadecddf8288fd7d14b4ae7f825ed56c8876fe469d6fcc260a4c279a74129fceeae1f5224f6d6b554bfec4744aef",
+          "041fadc29d40636641a483ecc1eaeb045434f47ab2ec4d13872a88b9f555186297ce941ac89b5709f611fba896550c204e962f4ac089680480782349a7ee64c9ff",
+          "04adf64d8d58c85201f65ae3573beaf2480a3a3fec6251ae70208e058110ef6ebf78c131c9ba82f98183590221c03ed2216dbce83b15a5546e6eeb161d6296f1d3"
+        ]
+      },
+      "Ton": {
+        "TransmitterSecretKey": "63b0ecd02c9647a82172b872aa7af8284c914ea95b01c37f4654a77e6a62dfc2"
+      }
+    }
+  },
+  "Metrics": {
+    "Port": 9005
+  },
+  "TokenPrice": {
+    "BaseUrl": "http://127.0.0.1:19001"
+  }
+}

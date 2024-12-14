@@ -57,9 +57,31 @@ public class AetherLinkService : AetherLinkServer.AetherLinkServerBase
         return Task.FromResult(new VoidReply());
     }
 
-    public override Task<VoidReply> BroadcastTransmitResultAsync(BroadcastTransmitResult request, ServerCallContext context)
+    public override Task<VoidReply> BroadcastTransmitResultAsync(BroadcastTransmitResult request,
+        ServerCallContext context)
     {
         _requestProcessor.ProcessTransmitResultAsync(request, context);
+        return Task.FromResult(new VoidReply());
+    }
+
+    public override Task<VoidReply> QueryMessageSignatureAsync(QueryMessageSignatureRequest request,
+        ServerCallContext context)
+    {
+        _requestProcessor.ProcessMessagePartialSignatureQueryAsync(request, context);
+        return Task.FromResult(new VoidReply());
+    }
+
+    public override Task<VoidReply> ReturnPartialSignatureResultsAsync(ReturnPartialSignatureResults request,
+        ServerCallContext context)
+    {
+        _requestProcessor.ProcessMessagePartialSignatureReturnAsync(request, context);
+        return Task.FromResult(new VoidReply());
+    }
+
+    public override Task<VoidReply> CrossChainReceivedResultCheckAsync(CrossChainReceivedResult request,
+        ServerCallContext context)
+    {
+        _requestProcessor.ProcessCrossChainReceivedResultAsync(request, context);
         return Task.FromResult(new VoidReply());
     }
 }

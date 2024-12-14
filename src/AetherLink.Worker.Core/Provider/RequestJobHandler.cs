@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
+using AetherLink.Indexer.Dtos;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Constants;
-using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;

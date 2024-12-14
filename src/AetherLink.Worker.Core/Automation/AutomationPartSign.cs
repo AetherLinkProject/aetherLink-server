@@ -7,6 +7,7 @@ using AetherLink.Worker.Core.Automation.Providers;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline;
+using AetherLink.Worker.Core.JobPipeline.DataFeeds;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
 using Google.Protobuf;
@@ -129,7 +130,7 @@ public class AutomationPartSign : AsyncBackgroundJob<ReportSignatureRequestArgs>
 
         if (localRound > argRoundId || argEpoch < localEpoch)
         {
-            _logger.LogInformation("[Automation] {RequestId} is not match, epoch:{epoch} round:{Round}.", argRequestId,
+            _logger.LogInformation("[Automation] {RequestId} is not match, epoch:{epoch} round:{RoundId}.", argRequestId,
                 localEpoch, localRound);
             return false;
         }

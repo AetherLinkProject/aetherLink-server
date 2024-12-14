@@ -19,8 +19,8 @@ public interface IResetRequestSchedulerJob
 
 public class ResetRequestSchedulerJob : IResetRequestSchedulerJob, ITransientDependency
 {
-    private readonly IObjectMapper _objectMapper;
     private readonly IJobProvider _jobProvider;
+    private readonly IObjectMapper _objectMapper;
     private readonly SchedulerOptions _schedulerOptions;
     private readonly ILogger<ResetRequestSchedulerJob> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;

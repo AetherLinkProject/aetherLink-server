@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AetherLink.Indexer.Dtos;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Automation.Providers;
 using AetherLink.Worker.Core.Common;
@@ -11,7 +12,6 @@ using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NUglify.Helpers;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 
