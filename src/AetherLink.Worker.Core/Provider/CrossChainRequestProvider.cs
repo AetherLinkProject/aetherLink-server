@@ -14,6 +14,7 @@ namespace AetherLink.Worker.Core.Provider;
 public interface ICrossChainRequestProvider
 {
     public Task StartCrossChainRequestFromTon(ReceiveMessageDto request);
+    public Task StartCrossChainRequestFromEvm(EvmReceivedMessageDto request);
     public Task StartCrossChainRequestFromAELf(RampRequestDto request);
 
     public Task SetAsync(CrossChainDataDto data);
@@ -37,6 +38,36 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
     }
 
     public async Task StartCrossChainRequestFromTon(ReceiveMessageDto request)
+    {
+        try
+        {
+            _logger.LogDebug("[CrossChainRequestProvider] Start CrossChainRequest From Ton....");
+            var crossChainRequestStartArgs = new CrossChainRequestStartArgs
+            {
+                ReportContext = new()
+                {
+                    MessageId = request.MessageId,
+                    Sender = request.Sender,
+                    Receiver = request.TargetContractAddress,
+                    TargetChainId = request.TargetChainId,
+                    SourceChainId = request.SourceChainId,
+                    Epoch = request.Epoch
+                },
+                Message = request.Message,
+                StartTime = request.TransactionTime
+            };
+            crossChainRequestStartArgs.TokenAmount =
+                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenAmountInfo);
+            await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,
+                $"[CrossChainRequestProvider] Start cross chain request from ton failed, messageId: {request.MessageId}");
+        }
+    }
+
+    public async Task StartCrossChainRequestFromEvm(EvmReceivedMessageDto request)
     {
         try
         {

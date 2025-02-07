@@ -58,6 +58,7 @@ namespace AetherLink.Worker
             context.Services.AddSingleton<IRetryProvider, RetryProvider>();
             context.Services.AddSingleton<IStateProvider, StateProvider>();
             context.Services.AddSingleton<IWorkerProvider, WorkerProvider>();
+            context.Services.AddSingleton<IEvmSearchServer, EvmSearchServer>();
             context.Services.AddSingleton<IContractProvider, ContractProvider>();
             context.Services.AddSingleton<ITonStorageProvider, TonStorageProvider>();
             context.Services.AddSingleton<IRecurringJobManager, RecurringJobManager>();
@@ -116,15 +117,19 @@ namespace AetherLink.Worker
 
             ConfigureBackgroundWorker(context);
             AsyncHelper.RunSync(async () => { await context.ServiceProvider.GetService<IServer>().StartAsync(); });
+            AsyncHelper.RunSync(async () =>
+            {
+                await context.ServiceProvider.GetService<IEvmSearchServer>().StartAsync();
+            });
         }
 
         private void ConfigureBackgroundWorker(ApplicationInitializationContext context)
         {
-            context.AddBackgroundWorkerAsync<LogsPoller>();
-            context.AddBackgroundWorkerAsync<SearchWorker>();
-            context.AddBackgroundWorkerAsync<TonIndexerWorker>();
-            context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
-            context.AddBackgroundWorkerAsync<TonApiHealthCheckWorker>();
+            // context.AddBackgroundWorkerAsync<LogsPoller>();
+            // context.AddBackgroundWorkerAsync<SearchWorker>();
+            // context.AddBackgroundWorkerAsync<TonIndexerWorker>();
+            // context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
+            // context.AddBackgroundWorkerAsync<TonApiHealthCheckWorker>();
         }
 
         private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
