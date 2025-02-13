@@ -61,7 +61,7 @@ public class UnconfirmedWorker : AsyncPeriodicBackgroundWorkerBase
         _unconfirmedHeightMap[chainId] = maxHeight == startHeight ? maxHeight - 1 : maxHeight;
         await _provider.SetLatestUnconfirmedHeightAsync(chainId, _unconfirmedHeightMap[chainId]);
 
-        _logger.LogInformation(
+        _logger.LogDebug(
             $"[Unconfirmed] {chainId} has processed up to block height {bestChainHeight}, and LIB is at block height {libHeight}.");
     }
 
