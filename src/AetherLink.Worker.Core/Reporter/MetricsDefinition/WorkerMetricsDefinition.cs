@@ -7,6 +7,7 @@ public class WorkerMetricsDefinition
     public const string RampRequestGaugeLabel = "ramp_request";
     public const string TransmittedGaugeLabel = "transmitted";
     public const string CanceledGaugeLabel = "canceled";
+    public const string ManuallyExecutedGaugeLabel = "manually_executed";
     public static readonly string[] SearchGaugeLabels = { "chain_id", "type" };
 
     public const string SearchBlockHeightGaugeName = "search_block_height";

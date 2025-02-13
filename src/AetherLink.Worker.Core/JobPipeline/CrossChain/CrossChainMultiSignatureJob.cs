@@ -76,7 +76,12 @@ public class CrossChainMultiSignatureJob : AsyncBackgroundJob<CrossChainMultiSig
                 signatureId = IdGeneratorHelper.GenerateId(signatureId, crossChainData.ResendTransactionId);
             }
 
-            if (_stateProvider.IsFinished(signatureId)) return;
+            if (_stateProvider.IsFinished(signatureId))
+            {
+                _logger.LogWarning($"[CrossChain][Leader] Ramp request {signatureId} is finished");
+                return;
+            }
+
             if (!_offChainKeyring.TryGetValue(reportContext.TargetChainId, out var signer))
             {
                 _logger.LogWarning($"[CrossChain] Unknown target chain id: {reportContext.TargetChainId}");
@@ -106,9 +111,7 @@ public class CrossChainMultiSignatureJob : AsyncBackgroundJob<CrossChainMultiSig
                 return;
             }
 
-            _logger.LogDebug("=================  MultiSignature generate success ===============");
-
-            _logger.LogInformation($"[CrossChain][Leader] {messageId} MultiSignature generate success.");
+            _logger.LogInformation($"[CrossChain][Leader] {signatureId} MultiSignature generate success.");
 
             var commitArgs = _objectMapper.Map<CrossChainMultiSignatureJobArgs, CrossChainCommitJobArgs>(args);
             commitArgs.PartialSignatures = signatures;
@@ -126,7 +129,6 @@ public class CrossChainMultiSignatureJob : AsyncBackgroundJob<CrossChainMultiSig
         lock (_processLock)
         {
             var currentDict = _stateProvider.GetCrossChainMultiSignature(signatureId) ?? new Dictionary<int, byte[]>();
-
             currentDict[nodeIndex] = signature;
             _stateProvider.SetCrossChainMultiSignature(signatureId, currentDict);
             return currentDict;
@@ -142,7 +144,6 @@ public class CrossChainMultiSignatureJob : AsyncBackgroundJob<CrossChainMultiSig
             return count >= _options.PartialSignaturesThreshold;
         }
     }
-
 
     private bool TryProcessFinishedFlag(string signatureId)
     {

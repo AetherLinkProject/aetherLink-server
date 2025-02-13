@@ -24,6 +24,7 @@ public interface ISchedulerService
     public void CancelLogUpkeep(LogTriggerDto upkeep);
     public void CancelCronUpkeep(JobDto job);
     public void CancelAllSchedule(JobDto job);
+    public void CancelAllSchedule(CrossChainDataDto job);
     public void CancelLogUpkeepAllSchedule(LogUpkeepInfoDto upkeep);
     public DateTime UpdateBlockTime(DateTime blockStartTime);
 }
@@ -54,6 +55,7 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         _resetCronUpkeepScheduler = resetCronUpkeepScheduler;
         ListenForStart();
         ListenForEnd();
+        ListenForError();
     }
 
     public void StartScheduler(JobDto job, SchedulerType type)
@@ -110,7 +112,15 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         DateTime overTime;
         var registry = new Registry();
         var schedulerName = GenerateScheduleName(crossChainData.ReportContext.MessageId, type);
-        CancelSchedulerByName(schedulerName);
+
+        if (type == CrossChainSchedulerType.ResendPendingScheduler)
+        {
+            CancelAllSchedule(crossChainData);
+        }
+        else
+        {
+            CancelSchedulerByName(schedulerName);
+        }
 
         switch (type)
         {
@@ -129,7 +139,13 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
                 break;
         }
 
-        if (DateTime.UtcNow > overTime) return;
+        if (DateTime.UtcNow > overTime)
+        {
+            _logger.LogWarning(
+                $"[SchedulerService] Cross chain scheduler {schedulerName} time {overTime} is over.");
+            return;
+        }
+
         _logger.LogInformation(
             $"[SchedulerService] Registry cross chain scheduler {schedulerName} OverTime:{overTime}");
         JobManager.Initialize(registry);
@@ -202,6 +218,14 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
         }
     }
 
+    public void CancelAllSchedule(CrossChainDataDto crossChainData)
+    {
+        foreach (CrossChainSchedulerType schedulerType in Enum.GetValues(typeof(CrossChainSchedulerType)))
+        {
+            CancelSchedulerByName(GenerateScheduleName(crossChainData.ReportContext.MessageId, schedulerType));
+        }
+    }
+
     public void CancelLogUpkeepAllSchedule(LogUpkeepInfoDto upkeep)
     {
         lock (_upkeepSchedulesLock)
@@ -265,6 +289,12 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
     private void ListenForEnd()
     {
         JobManager.JobEnd += info => _logger.LogInformation("{Name}: ended", info.Name);
+    }
+
+    private void ListenForError()
+    {
+        JobManager.JobException +=
+            info => _logger.LogError("An error just happened with a scheduled job: " + info.Exception);
     }
 
     private static string GenerateScheduleName(string chainId, string id, object type)

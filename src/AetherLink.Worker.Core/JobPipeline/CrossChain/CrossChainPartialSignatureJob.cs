@@ -58,8 +58,6 @@ public class CrossChainPartialSignatureJob : AsyncBackgroundJob<CrossChainPartia
 
                 _logger.LogDebug(
                     $"[CrossChain] The request {messageId} from leader is not ready now, will try it later.");
-                await _retryProvider.RetryWithIdAsync(args,
-                    IdGeneratorHelper.GenerateId(messageId, epoch, roundId));
                 return;
             }
 

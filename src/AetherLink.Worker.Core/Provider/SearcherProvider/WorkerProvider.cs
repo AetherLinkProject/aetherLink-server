@@ -7,7 +7,6 @@ using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
-using AetherLink.Worker.Core.JobPipeline.CrossChain;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -29,10 +28,14 @@ public interface IWorkerProvider
     public Task HandleTransmittedLogEventAsync(TransmittedDto transmitted);
     public Task HandleRequestCancelledLogEventAsync(RequestCancelledDto requestCancelled);
     public Task HandleRampRequestCancelledLogEventAsync(RampRequestCancelledDto rampCancelled);
+    public Task HandleRampRequestManuallyExecutedLogEventAsync(RampRequestManuallyExecutedDto manuallyExecuted);
     public Task<long> GetStartHeightAsync(string chainId);
     public Task<long> GetUnconfirmedStartHeightAsync(string chainId);
     public Task SetLatestSearchHeightAsync(string chainId, long searchHeight);
     public Task SetLatestUnconfirmedHeightAsync(string chainId, long unconfirmedHeight);
+
+    public Task<List<RampRequestManuallyExecutedDto>> SearchRampManuallyExecutedAsync(string chainId, long to,
+        long from);
 }
 
 public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependency
@@ -71,6 +74,9 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
 
     public async Task<List<RampRequestCancelledDto>> SearchRampRequestCanceledAsync(string chainId, long to, long from)
         => await _aeFinderProvider.SubscribeRampRequestCancelledAsync(chainId, to, from);
+
+    public async Task<List<RampRequestManuallyExecutedDto>> SearchRampManuallyExecutedAsync(string chainId, long to,
+        long from) => await _aeFinderProvider.SubscribeRampRequestManuallyExecutedAsync(chainId, to, from);
 
     public async Task HandleJobAsync(OcrLogEventDto logEvent)
     {
@@ -111,6 +117,11 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
     public async Task HandleRampRequestCancelledLogEventAsync(RampRequestCancelledDto rampCancelled)
         => await _backgroundJobManager.EnqueueAsync(
             _objectMapper.Map<RampRequestCancelledDto, CrossChainRequestCancelJobArgs>(rampCancelled));
+
+    public async Task HandleRampRequestManuallyExecutedLogEventAsync(RampRequestManuallyExecutedDto manuallyExecuted)
+        => await _backgroundJobManager.EnqueueAsync(
+            _objectMapper
+                .Map<RampRequestManuallyExecutedDto, CrossChainRequestManuallyExecuteJobArgs>(manuallyExecuted));
 
     private static string GetSearchHeightRedisKey(string chainId)
         => IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, chainId);

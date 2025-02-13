@@ -136,7 +136,7 @@ public class TonApiClient : TonIndexerBase, ISingletonDependency
         catch (Exception ex)
         {
             _logger.LogWarning($"[Ton Api Provider] Send Transaction error:{ex}");
-            return null;
+            throw;
         }
     }
 

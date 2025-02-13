@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using JetBrains.Annotations;
 
 namespace AetherLink.Indexer.Dtos;
 
@@ -33,7 +34,7 @@ public class RampRequestDto
     public long Epoch { get; set; }
     public long StartTime { get; set; }
     public string Message { get; set; }
-    public IndexerTokenAmountDto TokenAmount { get; set; }
+    [CanBeNull] public IndexerTokenAmountDto TokenAmount { get; set; }
 }
 
 public class IndexerTokenAmountDto
@@ -88,6 +89,18 @@ public class IndexerRampRequestCancelledListDto
 public class RampRequestCancelledDto
 {
     public string MessageId { get; set; }
+}
+
+public class IndexerRampRequestManuallyExecutedListDto
+{
+    public List<RampRequestManuallyExecutedDto> RampRequestManuallyExecuted { get; set; }
+}
+
+public class RampRequestManuallyExecutedDto
+{
+    public string MessageId { get; set; }
+    public string TransactionId { get; set; }
+    public long StartTime { get; set; }
 }
 
 // Basic Dto
@@ -159,6 +172,7 @@ public class TokenSwapConfigDto
 {
     public string SwapId { get; set; }
     public long TargetChainId { get; set; }
+    public long SourceChainId { get; set; }
     public string TargetContractAddress { get; set; }
     public string TokenAddress { get; set; }
     public string OriginToken { get; set; }

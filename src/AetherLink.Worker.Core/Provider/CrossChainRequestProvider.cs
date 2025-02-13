@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using AetherLink.Indexer.Dtos;
 using AetherLink.Worker.Core.Common;
@@ -37,47 +38,68 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
 
     public async Task StartCrossChainRequestFromTon(ReceiveMessageDto request)
     {
-        _logger.LogDebug("[CrossChainRequestProvider] Start CrossChainRequest From Ton....");
-        await _backgroundJobManager.EnqueueAsync(new CrossChainRequestStartArgs
+        try
         {
-            ReportContext = new()
+            _logger.LogDebug("[CrossChainRequestProvider] Start CrossChainRequest From Ton....");
+            var crossChainRequestStartArgs = new CrossChainRequestStartArgs
             {
-                MessageId = request.MessageId,
-                Sender = request.Sender,
-                Receiver = request.TargetContractAddress,
-                TargetChainId = request.TargetChainId,
-                SourceChainId = request.SourceChainId,
-                Epoch = request.Epoch
-            },
-            Message = request.Message,
-            TokenAmount = await _tokenSwapper.ConstructSwapId(request.TokenAmountInfo),
-            StartTime = request.TransactionTime
-        });
+                ReportContext = new()
+                {
+                    MessageId = request.MessageId,
+                    Sender = request.Sender,
+                    Receiver = request.TargetContractAddress,
+                    TargetChainId = request.TargetChainId,
+                    SourceChainId = request.SourceChainId,
+                    Epoch = request.Epoch
+                },
+                Message = request.Message,
+                StartTime = request.TransactionTime
+            };
+            crossChainRequestStartArgs.TokenAmount =
+                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenAmountInfo);
+            await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,
+                $"[CrossChainRequestProvider] Start cross chain request from ton failed, messageId: {request.MessageId}");
+        }
     }
 
     public async Task StartCrossChainRequestFromAELf(RampRequestDto request)
     {
-        _logger.LogDebug($"[CrossChainRequestProvider] Start CrossChainRequest From {request.ChainId}....");
-        await _backgroundJobManager.EnqueueAsync(new CrossChainRequestStartArgs
+        try
         {
-            ReportContext = new()
+            _logger.LogDebug($"[CrossChainRequestProvider] Start CrossChainRequest From {request.ChainId}....");
+            var crossChainRequestStartArgs = new CrossChainRequestStartArgs
             {
-                MessageId = request.MessageId,
-                Sender = request.Sender,
-                Receiver = request.Receiver,
-                TargetChainId = request.TargetChainId,
-                SourceChainId = request.SourceChainId,
-                Epoch = request.Epoch
-            },
-            Message = request.Message,
-            TokenAmount = await _tokenSwapper.ConstructSwapId(new()
-            {
-                TargetChainId = request.TokenAmount.TargetChainId,
-                TargetContractAddress = request.TokenAmount.TargetContractAddress,
-                OriginToken = request.TokenAmount.OriginToken
-            }),
-            StartTime = request.StartTime
-        });
+                ReportContext = new()
+                {
+                    MessageId = request.MessageId,
+                    Sender = request.Sender,
+                    Receiver = request.Receiver,
+                    TargetChainId = request.TargetChainId,
+                    SourceChainId = request.SourceChainId,
+                    Epoch = request.Epoch
+                },
+                Message = request.Message,
+                StartTime = request.StartTime
+            };
+            crossChainRequestStartArgs.TokenAmount = await _tokenSwapper.ConstructSwapId(
+                crossChainRequestStartArgs.ReportContext, new()
+                {
+                    TargetChainId = request.TokenAmount.TargetChainId,
+                    TargetContractAddress = request.TokenAmount.TargetContractAddress,
+                    OriginToken = request.TokenAmount.OriginToken
+                });
+
+            await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,
+                $"[CrossChainRequestProvider] Start cross chain request from aelf failed, transactionId: {request.TransactionId} messageId: {request.MessageId}");
+        }
     }
 
     public async Task SetAsync(CrossChainDataDto data)

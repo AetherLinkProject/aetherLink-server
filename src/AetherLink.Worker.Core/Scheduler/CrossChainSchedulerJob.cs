@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AElf.CSharp.Core;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Options;
@@ -39,34 +40,50 @@ public class CrossChainSchedulerJob : ICrossChainSchedulerJob, ITransientDepende
 
     public async Task Execute(CrossChainDataDto data)
     {
-        var reportContext = data.ReportContext;
-        _logger.LogInformation(
-            $"[CrossChainSchedulerJob] Scheduler message execute. reqId {reportContext.MessageId}, roundId:{reportContext.RoundId}, reqState:{data.State}");
-        data.ReportContext.RoundId++;
+        try
+        {
+            var reportContext = data.ReportContext;
+            _logger.LogInformation(
+                $"[CrossChainSchedulerJob] Scheduler message execute. messageId {reportContext.MessageId}, roundId:{reportContext.RoundId}, reqState:{data.State}");
+            data.ReportContext.RoundId++;
 
-        var receiveTime = data.RequestReceiveTime;
-        while (DateTime.UtcNow > receiveTime) receiveTime = receiveTime.AddMinutes(_schedulerOptions.RetryTimeOut);
-        data.RequestReceiveTime = receiveTime;
+            var receiveTime = data.RequestReceiveTime;
+            while (DateTime.UtcNow > receiveTime) receiveTime = receiveTime.AddMinutes(_schedulerOptions.RetryTimeOut);
+            data.RequestReceiveTime = receiveTime;
 
-        await _crossChainRequestProvider.SetAsync(data);
+            await _crossChainRequestProvider.SetAsync(data);
 
-        var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
-            _objectMapper.Map<CrossChainDataDto, CrossChainRequestStartArgs>(data));
-        _logger.LogInformation(
-            $"[CrossChainSchedulerJob] Message {reportContext.MessageId} timeout, will starting in new round:{data.ReportContext.RoundId}, hangfireId:{hangfireJobId}");
+            var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
+                _objectMapper.Map<CrossChainDataDto, CrossChainRequestStartArgs>(data));
+            _logger.LogInformation(
+                $"[CrossChainSchedulerJob] Message {reportContext.MessageId} timeout, will starting in new round:{data.ReportContext.RoundId}, hangfireId:{hangfireJobId}");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[CrossChainSchedulerJob] Reset cross chain job failed.");
+        }
     }
 
     public async Task Resend(CrossChainDataDto data)
     {
-        data.ReportContext.RoundId = 0;
-        data.State = CrossChainState.PendingResend;
-        data.RequestReceiveTime =
-            data.ResendTransactionBlockTime.AddMinutes(data.NextCommitDelayTime);
-        await _crossChainRequestProvider.SetAsync(data);
+        try
+        {
+            data.ReportContext.RoundId = 0;
+            data.State = CrossChainState.PendingResend;
+            data.RequestReceiveTime =
+                data.ResendTransactionBlockTime.AddMinutes(data.NextCommitDelayTime);
+            await _crossChainRequestProvider.SetAsync(data);
+            _logger.LogDebug(
+                $"[CrossChainSchedulerJob] Get resend request {data.ReportContext.MessageId} at {data.RequestReceiveTime}");
 
-        var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
-            _objectMapper.Map<CrossChainDataDto, CrossChainRequestStartArgs>(data));
-        _logger.LogInformation(
-            $"[CrossChainSchedulerJob] Message {data.ReportContext.MessageId} time to resend, hangfireId:{hangfireJobId}");
+            var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
+                _objectMapper.Map<CrossChainDataDto, CrossChainRequestStartArgs>(data), BackgroundJobPriority.High);
+            _logger.LogInformation(
+                $"[CrossChainSchedulerJob] Message {data.ReportContext.MessageId} time to resend, hangfireId:{hangfireJobId}");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[CrossChainSchedulerJob] Resend cross chain job failed.");
+        }
     }
 }

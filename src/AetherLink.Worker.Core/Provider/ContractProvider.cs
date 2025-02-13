@@ -13,6 +13,7 @@ using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Oracle;
 using Volo.Abp.DependencyInjection;
@@ -31,6 +32,7 @@ public interface IContractProvider
     public Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId);
     public Transmitted ParseTransmitted(TransactionResultDto transaction);
     public Task<bool> IsTransactionConfirmed(string chainId, long blockHeight, string blockHash);
+
     public Task<string> SendTransmitWithRefHashAsync(string chainId, TransmitInput transmitInput,
         long refBlockNumber, string refBlockHash);
 }
@@ -39,11 +41,14 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 {
     private readonly ContractOptions _options;
     private readonly OracleInfoOptions _oracleOptions;
+    private readonly ILogger<ContractProvider> _logger;
     private readonly IBlockchainClientFactory<AElfClient> _blockchainClientFactory;
 
     public ContractProvider(IBlockchainClientFactory<AElfClient> blockchainClientFactory,
-        IOptionsSnapshot<ContractOptions> contractOptions, IOptionsSnapshot<OracleInfoOptions> oracleOptions)
+        IOptionsSnapshot<ContractOptions> contractOptions, IOptionsSnapshot<OracleInfoOptions> oracleOptions,
+        ILogger<ContractProvider> logger)
     {
+        _logger = logger;
         _options = contractOptions.Value;
         _oracleOptions = oracleOptions.Value;
         _blockchainClientFactory = blockchainClientFactory;
@@ -81,7 +86,19 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             .Commitment);
 
     public async Task<TransactionResultDto> GetTxResultAsync(string chainId, string transactionId)
-        => await _blockchainClientFactory.GetClient(chainId).GetTransactionResultAsync(transactionId);
+    {
+        try
+        {
+            var result = await _blockchainClientFactory.GetClient(chainId).GetTransactionResultAsync(transactionId);
+            _logger.LogDebug($"[ContractProvider]{result.TransactionId} status: {result.Status} err: {result.Error}");
+            return result;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"[ContractProvider] Get {transactionId} result failed");
+            return null;
+        }
+    }
 
     public async Task<string> SendTransmitAsync(string chainId, TransmitInput transmitInput)
     {
@@ -143,8 +160,12 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     }
 
     private async Task<SendTransactionOutput> SendTransactionAsync(string chainId, string rawTx)
-        => await _blockchainClientFactory.GetClient(chainId)
+    {
+        var result = await _blockchainClientFactory.GetClient(chainId)
             .SendTransactionAsync(new SendTransactionInput { RawTransaction = rawTx });
+        _logger.LogDebug($"[ContractProvider] {result.TransactionId} rawTransaction: {rawTx}");
+        return result;
+    }
 
     private async Task<string> GenerateRawTransactionAsync(string methodName, IMessage param, string chainId,
         string contractAddress)

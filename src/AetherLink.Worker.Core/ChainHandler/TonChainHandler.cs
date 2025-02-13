@@ -126,7 +126,7 @@ public class TonChainReader : ChainReader, ISingletonDependency
     public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
     {
         // todo: use official full node to check transaction result 
-        return new() { State = TransactionState.Success };
+        return new() { State = TransactionState.NotExist };
     }
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)

@@ -25,8 +25,11 @@ public interface IAeFinderProvider
     public Task<string> GetRequestCommitmentAsync(string chainId, string requestId);
     public Task<List<TransactionEventDto>> GetTransactionLogEventsAsync(string chainId, long to, long from);
 
-    public Task<IndexerTokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, string targetContractAddress,
-        string tokenAddress, string originToken);
+    public Task<IndexerTokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, long sourceChainId,
+        string targetContractAddress, string tokenAddress, string originToken);
+
+    public Task<List<RampRequestManuallyExecutedDto>> SubscribeRampRequestManuallyExecutedAsync(string chainId, long to,
+        long from);
 }
 
 public class AeFinderProvider : IAeFinderProvider, ITransientDependency
@@ -231,6 +234,38 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         }
     }
 
+    public async Task<List<RampRequestManuallyExecutedDto>> SubscribeRampRequestManuallyExecutedAsync(string chainId,
+        long to, long from)
+    {
+        try
+        {
+            var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerRampRequestManuallyExecutedListDto>(
+                GetClient(), new()
+                {
+                    Query =
+                        @"query($chainId:String!,$fromBlockHeight:Long!,$toBlockHeight:Long!){
+                    rampRequestManuallyExecuted(input: {chainId:$chainId,fromBlockHeight:$fromBlockHeight,toBlockHeight:$toBlockHeight}){
+                        messageId,
+                        transactionId,
+                        startTime
+                        }
+                    }",
+                    Variables = new
+                    {
+                        chainId = chainId, fromBlockHeight = from, toBlockHeight = to
+                    }
+                });
+            return indexerResult != null
+                ? indexerResult.RampRequestManuallyExecuted
+                : new List<RampRequestManuallyExecutedDto>();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "[Indexer] SubscribeRequestCancelled failed.");
+            return new List<RampRequestManuallyExecutedDto>();
+        }
+    }
+
     public async Task<List<ChainItemDto>> GetChainSyncStateAsync()
     {
         var result = await _httpClient.GetAsync<AeFinderSyncStateDto>(_options.BaseUrl + _options.SyncStateUri, new());
@@ -354,7 +389,7 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         }
     }
 
-    public async Task<IndexerTokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId,
+    public async Task<IndexerTokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, long sourceChainId,
         string targetContractAddress, string tokenAddress, string originToken)
     {
         try
@@ -362,10 +397,11 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
             var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerTokenSwapConfigInfo>(GetClient(), new()
             {
                 Query =
-                    @"query($targetChainId:Long!,$targetContractAddress:String!,$tokenAddress:String,$originToken:String){
-                    tokenSwapConfig(input: {targetChainId:$targetChainId,targetContractAddress:$targetContractAddress,tokenAddress:$tokenAddress,originToken:$originToken}){
+                    @"query($targetChainId:Long!,$sourceChainId:Long!,$targetContractAddress:String!,$tokenAddress:String,$originToken:String){
+                    tokenSwapConfig(input: {targetChainId:$targetChainId,sourceChainId:$sourceChainId,targetContractAddress:$targetContractAddress,tokenAddress:$tokenAddress,originToken:$originToken}){
                             swapId,
                             targetChainId,
+                            sourceChainId,
                             targetContractAddress,
                             tokenAddress,
                             originToken
@@ -373,8 +409,9 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                 }",
                 Variables = new
                 {
-                    targetChainId = targetChainId, targetContractAddress = targetContractAddress,
-                    tokenAddress = tokenAddress, originToken = originToken
+                    targetChainId = targetChainId, sourceChainId = sourceChainId,
+                    targetContractAddress = targetContractAddress, tokenAddress = tokenAddress,
+                    originToken = originToken
                 }
             });
             return indexerResult ?? new();

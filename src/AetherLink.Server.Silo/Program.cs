@@ -47,7 +47,7 @@ public class Program
     internal static IHostBuilder CreateHostBuilder(string[] args) => Host.CreateDefaultBuilder(args)
         .ConfigureServices((hostcontext, services) => { services.AddApplication<AetherLinkServerOrleansSiloModule>(); })
         .ConfigureAppConfiguration((h, c) => c.AddJsonFile("apollosettings.json"))
-        // .UseApollo()
+        .UseApollo()
         .UseOrleansSnapshot()
         .UseAutofac()
         .UseSerilog();

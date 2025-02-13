@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf;
 using AetherLink.Worker.Core.ChainHandler;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
@@ -10,7 +9,6 @@ using AetherLink.Worker.Core.Exceptions;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider.TonIndexer;
 using AetherLink.Worker.Core.Scheduler;
-using Google.Protobuf;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -327,8 +325,9 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
                 targetChainProvider.ConvertBytesToAddressStr(receiveSlice.LoadRef().Parse().Bits.ToBytes());
             var senderTonContractAddress = receiveSlice.LoadAddress();
             var sender = senderTonContractAddress.ToString(AddressType.Base64,
-                new AddressStringifyOptions(senderTonContractAddress.IsBounceable(), senderTonContractAddress.IsTestOnly(), false));
-            var message = Base64.ToBase64String( TonHelper.ConvertMessageCellToBytes(receiveSlice.LoadRef()));
+                new AddressStringifyOptions(senderTonContractAddress.IsBounceable(),
+                    senderTonContractAddress.IsTestOnly(), false));
+            var message = Base64.ToBase64String(TonHelper.ConvertMessageCellToBytes(receiveSlice.LoadRef()));
 
             TokenAmountDto tokenAmountDto = null;
             if (receiveSlice.Refs.Length > 0)
@@ -340,7 +339,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
                 var tokenAddress = extraDataRefCell.LoadRef().Parse().LoadAddress();
                 var tokenAddressStr = tokenAddress.ToString(AddressType.Base64,
                     new AddressStringifyOptions(tokenAddress.IsBounceable(), tokenAddress.IsTestOnly(), false));
-                var amount = (long) extraDataRefCell.LoadUInt(256);
+                var amount = (long)extraDataRefCell.LoadUInt(256);
                 tokenAmountDto = new TokenAmountDto()
                 {
                     TargetChainId = tokenTargetChainId,
@@ -358,7 +357,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
                 SourceChainId = 1100,
                 TargetChainId = targetChainId,
                 TargetContractAddress = targetContractAddress,
-                TransactionTime = tonTransactionDto.BlockTime,
+                TransactionTime = tonTransactionDto.BlockTime * 1000,
                 Message = message,
                 TokenAmountInfo = tokenAmountDto,
             };

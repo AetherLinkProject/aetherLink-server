@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using AetherLink.Indexer.Dtos;
 using AetherLink.Indexer.Provider;
@@ -6,54 +7,52 @@ using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
-using Volo.Abp.ObjectMapping;
 
 namespace AetherLink.Worker.Core.Provider;
 
 public interface ITokenSwapper
 {
-    public Task<TokenAmountDto> ConstructSwapId(TokenAmountDto tokenAmount);
+    public Task<TokenAmountDto> ConstructSwapId(ReportContextDto reportContext, TokenAmountDto tokenAmount);
 }
 
 public class TokenSwapper : ITokenSwapper, ITransientDependency
 {
-    private readonly IObjectMapper _objectMapper;
     private readonly ILogger<TokenSwapper> _logger;
     private readonly IStorageProvider _storageProvider;
     private readonly IAeFinderProvider _aeFinderProvider;
 
-    public TokenSwapper(IStorageProvider storageProvider, ILogger<TokenSwapper> logger,
-        IAeFinderProvider aeFinderProvider, IObjectMapper objectMapper)
+    public TokenSwapper(IStorageProvider storageProvider, IAeFinderProvider aeFinderProvider,
+        ILogger<TokenSwapper> logger)
     {
         _logger = logger;
-        _objectMapper = objectMapper;
         _storageProvider = storageProvider;
         _aeFinderProvider = aeFinderProvider;
     }
 
-    public async Task<TokenAmountDto> ConstructSwapId(TokenAmountDto tokenAmount)
+    public async Task<TokenAmountDto> ConstructSwapId(ReportContextDto reportContext, TokenAmountDto tokenAmount)
     {
         try
         {
-            if (tokenAmount == null)
+            if (tokenAmount == null || string.IsNullOrEmpty(tokenAmount.TargetContractAddress))
             {
                 _logger.LogWarning("[TokenSwapper] Get empty token amount");
                 return null;
             }
 
-            var tokenSwapConfigId = GenerateTokenSwapId(tokenAmount);
+            var tokenSwapConfigId = GenerateTokenSwapId(reportContext, tokenAmount);
             var tokenSwapConfig = await _storageProvider.GetAsync<TokenSwapConfigDto>(tokenSwapConfigId);
             if (tokenSwapConfig == null)
             {
                 _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
 
                 var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenAmount.TargetChainId,
-                    tokenAmount.TargetContractAddress, tokenAmount.TokenAddress, tokenAmount.OriginToken);
+                    reportContext.SourceChainId, tokenAmount.TargetContractAddress, tokenAmount.TokenAddress,
+                    tokenAmount.OriginToken);
 
                 if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.SwapId))
                 {
                     _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
-                    return tokenAmount;
+                    throw new InvalidDataException("Could not find token swap config");
                 }
 
                 tokenSwapConfig = indexerConfig.TokenSwapConfig;
@@ -76,25 +75,15 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
         catch (Exception e)
         {
             _logger.LogError(e, "[TokenSwapper]Get TokenSwapConfig failed.");
-            return tokenAmount;
+            throw;
         }
     }
 
-    private string GenerateTokenSwapId(TokenAmountDto data)
+    private string GenerateTokenSwapId(ReportContextDto reportContext, TokenAmountDto data)
     {
-        if (!string.IsNullOrEmpty(data.TokenAddress))
-        {
-            return IdGeneratorHelper.GenerateId(data.TargetChainId,
-                data.TargetContractAddress, data.TokenAddress);
-        }
-
-        if (!string.IsNullOrEmpty(data.OriginToken))
-        {
-            return IdGeneratorHelper.GenerateId(data.TargetChainId,
-                data.TargetContractAddress, data.OriginToken);
-        }
-
-        return IdGeneratorHelper.GenerateId(data.TargetChainId,
-            data.TargetContractAddress, data.TokenAddress, data.OriginToken);
+        // CrossChain from aelf chain, TokenAddress is empty 
+        var temp = !string.IsNullOrEmpty(data.TokenAddress) ? data.TokenAddress : data.OriginToken;
+        return IdGeneratorHelper.GenerateId(data.TargetChainId, reportContext.SourceChainId,
+            data.TargetContractAddress, temp);
     }
 }

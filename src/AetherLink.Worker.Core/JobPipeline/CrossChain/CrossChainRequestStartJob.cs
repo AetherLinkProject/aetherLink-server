@@ -45,10 +45,11 @@ public class CrossChainRequestStartJob : AsyncBackgroundJob<CrossChainRequestSta
             var crossChainData = await _crossChainRequestProvider.GetAsync(args.ReportContext.MessageId);
             if (crossChainData == null)
             {
-                _logger.LogDebug($"[CrossChain] Get new cross chain request {reportContext.MessageId}");
                 crossChainData = _objectMapper.Map<CrossChainRequestStartArgs, CrossChainDataDto>(args);
                 var receivedTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
                 crossChainData.RequestReceiveTime = receivedTime;
+                _logger.LogDebug(
+                    $"[CrossChain] Get new CrossChain request {reportContext.MessageId} at {receivedTime}");
             }
             else if (crossChainData.State == CrossChainState.RequestCanceled)
             {
