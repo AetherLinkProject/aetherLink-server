@@ -29,7 +29,7 @@ public class HourlyPriceWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        _logger.LogInformation("HourlyPriceWorker ...");
+        _logger.LogInformation("[HourlyPriceWorker] Executing...");
 
         var time = DateTime.Now;
 

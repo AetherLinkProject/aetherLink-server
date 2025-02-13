@@ -10,6 +10,7 @@ using AetherLink.Worker.Core.Provider;
 using AetherLink.Worker.Core.Scheduler;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 
@@ -20,16 +21,19 @@ public class TransmittedEventProcessJob : AsyncBackgroundJob<TransmittedEventPro
     private readonly IJobProvider _jobProvider;
     private readonly IStorageProvider _storageProvider;
     private readonly ISchedulerService _schedulerService;
+    private readonly IDataMessageProvider _dataMessageProvider;
     private readonly ILogger<TransmittedEventProcessJob> _logger;
     private readonly IOracleContractProvider _oracleContractProvider;
 
     public TransmittedEventProcessJob(ISchedulerService schedulerService, ILogger<TransmittedEventProcessJob> logger,
-        IOracleContractProvider oracleContractProvider, IJobProvider jobProvider, IStorageProvider storageProvider)
+        IOracleContractProvider oracleContractProvider, IJobProvider jobProvider, IStorageProvider storageProvider,
+        IDataMessageProvider dataMessageProvider)
     {
         _logger = logger;
         _jobProvider = jobProvider;
         _storageProvider = storageProvider;
         _schedulerService = schedulerService;
+        _dataMessageProvider = dataMessageProvider;
         _oracleContractProvider = oracleContractProvider;
     }
 
@@ -62,6 +66,18 @@ public class TransmittedEventProcessJob : AsyncBackgroundJob<TransmittedEventPro
             {
                 _logger.LogDebug("[Transmitted] {name} not need update.", argId);
                 return;
+            }
+
+            // when leader transmit successfully, set new data as old data
+            if (commitment.RequestTypeIndex == RequestTypeConst.Datafeeds)
+            {
+                var jobSpec = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec).DataFeedsJobSpec;
+                if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
+                {
+                    var plainData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
+                    plainData.OldData = plainData.NewData;
+                    await _dataMessageProvider.SetAsync(plainData);
+                }
             }
 
             if (commitment.RequestTypeIndex == RequestTypeConst.Automation) _schedulerService.CancelCronUpkeep(job);

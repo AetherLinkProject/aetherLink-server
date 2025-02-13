@@ -19,6 +19,7 @@ public class Query
         };
     }
 
+    
     [Name("ocrJobEvents")]
     public static async Task<List<OcrJobEventDto>> JobsQueryAsync([FromServices] ITransactionProvider provider,
         OcrLogEventInput input)
