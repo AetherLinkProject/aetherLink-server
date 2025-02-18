@@ -24,14 +24,14 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
 {
     private readonly ILogger<EvmSearchServer> _logger;
     private readonly IInfuraRpcProvider _indexerProvider;
-    private readonly ICrossChainRequestProvider _crossChainRequestProvider;
+    private readonly ICrossChainRequestProvider _crossChainProvider;
 
     public EvmSearchServer(IInfuraRpcProvider indexerProvider, ILogger<EvmSearchServer> logger,
-        ICrossChainRequestProvider crosschainRequestProvider)
+        ICrossChainRequestProvider crossChainProvider)
     {
         _logger = logger;
         _indexerProvider = indexerProvider;
-        _crossChainRequestProvider = crosschainRequestProvider;
+        _crossChainProvider = crossChainProvider;
     }
 
     public Task StartAsync()
@@ -52,26 +52,25 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
     {
         try
         {
-            // await _indexerProvider.SubscribeAndRunAsync<SendEventDTO>(
-            //     eventData =>
-            //     {
-            //         _logger.LogInformation("[EvmSearchServer] Received Event --> ");
-            //         _crossChainRequestProvider.StartCrossChainRequestFromEvm(
-            //             GenerateEvmReceivedMessage(eventData));
-            //     });
+            await _indexerProvider.SubscribeAndRunAsync<SendEventDTO>(
+                eventData =>
+                {
+                    _logger.LogInformation("[EvmSearchServer] Received Event --> ");
+                    _crossChainProvider.StartCrossChainRequestFromEvm(GenerateEvmReceivedMessage(eventData));
+                });
 
             _logger.LogInformation("[EvmSearchServer] Start handler cross chain request... ");
-            await _crossChainRequestProvider.StartCrossChainRequestFromEvm(new()
-            {
-                MessageId = "testReceivedMessage",
-                Sender = "test_evm_address",
-                Epoch = 0,
-                SourceChainId = ChainIdConstants.EVM,
-                TargetChainId = ChainIdConstants.AELF,
-                Receiver = "test_aelf_address",
-                TransactionTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds(),
-                Message = ""
-            });
+            // await _crossChainProvider.StartCrossChainRequestFromEvm(new()
+            // {
+            //     MessageId = "testReceivedMessage",
+            //     Sender = "test_evm_address",
+            //     Epoch = 0,
+            //     SourceChainId = ChainIdConstants.EVM,
+            //     TargetChainId = ChainIdConstants.AELF,
+            //     Receiver = "test_aelf_address",
+            //     TransactionTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds(),
+            //     Message = ""
+            // });
         }
         catch (Exception e)
         {
@@ -88,7 +87,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
                 eventData =>
                 {
                     _logger.LogInformation("[EvmSearchServer] Received transmit Event --> ");
-                    // _crossChainRequestProvider.StartCrossChainRequestFromEvm(GenerateEvmReceivedMessage(eventData));
+                    // _crossChainProvider.StartCrossChainRequestFromEvm(GenerateEvmReceivedMessage(eventData));
                 });
         }
         catch (Exception e)

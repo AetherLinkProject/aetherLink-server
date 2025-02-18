@@ -37,7 +37,15 @@ public class InfuraRpcProvider : IInfuraRpcProvider, ISingletonDependency
         try
         {
             await SubscribeToEventsAsync(client, onEventDecoded);
-            await KeepClientAliveAsync(client);
+
+            while (true) //pinging to keep alive infura
+            {
+                var handler = new EthBlockNumberObservableHandler(client);
+                handler.GetResponseAsObservable()
+                    .Subscribe(x => _logger.LogDebug($"[InfuraRpcProvider] BlockHeight: {x.Value}"));
+                await handler.SendRequestAsync();
+                await Task.Delay(NetworkConstants.DefaultEvmApiDelay);
+            }
         }
         catch (Exception ex)
         {
@@ -52,8 +60,7 @@ public class InfuraRpcProvider : IInfuraRpcProvider, ISingletonDependency
     }
 
     private async Task SubscribeToEventsAsync<TEventDTO>(StreamingWebSocketClient client,
-        Action<EventLog<TEventDTO>> onEventDecoded)
-        where TEventDTO : IEventDTO, new()
+        Action<EventLog<TEventDTO>> onEventDecoded) where TEventDTO : IEventDTO, new()
     {
         var eventSubscription = new EthLogsObservableSubscription(client);
         var eventFilterInput = Event<TEventDTO>.GetEventABI().CreateFilterInput(_options.ContractAddress);
@@ -87,31 +94,5 @@ public class InfuraRpcProvider : IInfuraRpcProvider, ISingletonDependency
         await eventSubscription.SubscribeAsync(eventFilterInput);
 
         _logger.LogDebug("[InfuraRpcProvider] Successfully subscribed to contract events.");
-    }
-
-    private async Task KeepClientAliveAsync(StreamingWebSocketClient client)
-    {
-        var blockNumberHandler = new EthBlockNumberObservableHandler(client);
-
-        blockNumberHandler
-            .GetResponseAsObservable()
-            .Subscribe(blockNumber =>
-                _logger.LogDebug($"[InfuraRpcProvider] Current BlockHeight: {blockNumber.Value}"));
-
-        while (client.IsStarted)
-        {
-            try
-            {
-                await blockNumberHandler.SendRequestAsync();
-                await Task.Delay(NetworkConstants.DefaultEvmApiDelay); // 使用延迟代替阻塞线程
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[InfuraRpcProvider] Keep-alive process encountered an error.");
-                break;
-            }
-        }
-
-        _logger.LogWarning("[InfuraRpcProvider] WebSocket client is no longer running.");
     }
 }
