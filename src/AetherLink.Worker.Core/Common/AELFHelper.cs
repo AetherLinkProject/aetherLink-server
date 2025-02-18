@@ -39,6 +39,40 @@ public static class AELFHelper
         return multiSignature.GeneratePartialSignature().Signature;
     }
 
+    public static bool OffChainVerify(ReportContextDto reportContext, CrossChainReportDto report,
+        int index, byte[] sign, ChainConfig chainConfig)
+    {
+        var msg = GenerateMessage(reportContext, report);
+        var multiSignature = new MultiSignature(ByteArrayHelper.HexStringToByteArray(chainConfig.SignerSecret), msg,
+            chainConfig.DistPublicKey, chainConfig.PartialSignaturesThreshold);
+        return multiSignature.ProcessPartialSignature(new()
+        {
+            Signature = sign,
+            Index = index
+        });
+    }
+
+    private static byte[] GenerateMessage(ReportContextDto reportContext, CrossChainReportDto report)
+    {
+        var rpcTokenAmount = new TokenAmount();
+        if (report.TokenAmount != null)
+        {
+            var temp = report.TokenAmount;
+            rpcTokenAmount = new()
+            {
+                SwapId = temp.SwapId,
+                TargetChainId = temp.TargetChainId,
+                TargetContractAddress = temp.TargetContractAddress,
+                TokenAddress = temp.TokenAddress,
+                OriginToken = temp.OriginToken,
+                Amount = temp.Amount
+            };
+        }
+
+        var reportData = GenerateReport(reportContext, report.Message, rpcTokenAmount);
+        return HashHelper.ComputeFrom(reportData.ToByteArray()).ToByteArray();
+    }
+
     public static Report GenerateReport(ReportContextDto reportContext, string message, TokenAmount tokenAmount)
     {
         return new()
