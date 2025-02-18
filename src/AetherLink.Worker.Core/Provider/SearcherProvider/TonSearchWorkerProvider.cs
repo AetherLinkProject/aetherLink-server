@@ -363,7 +363,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
         }
         catch (Exception e)
         {
-            throw new ProtocolException($"AnalysisReceiveTransaction Error error messag:{e.Message} ");
+            throw new ProtocolException($"AnalysisReceiveTransaction Error error message:{e.Message} ");
         }
     }
 }

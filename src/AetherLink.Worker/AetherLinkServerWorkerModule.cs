@@ -81,6 +81,7 @@ namespace AetherLink.Worker
         private void ConfigureOptions(IConfiguration configuration)
         {
             Configure<WorkerOptions>(configuration.GetSection("Worker"));
+            Configure<EvmOptions>(configuration.GetSection("EvmOptions"));
             Configure<ContractOptions>(configuration.GetSection("Chains"));
             Configure<NetworkOptions>(configuration.GetSection("Network"));
             Configure<HangfireOptions>(configuration.GetSection("Hangfire"));

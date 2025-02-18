@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AetherLink.Worker.Core.Common;
@@ -13,18 +14,13 @@ namespace AetherLink.Worker.Core.ChainHandler;
 public class EvmChainWriter : ChainWriter, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.EVM;
-    private readonly IContractProvider _contractProvider;
+    private readonly IEvmProvider _evmContractProvider;
 
-    public override Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
-        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainDat)
+    public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
+        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
     {
-        // var tx = await PerformSendTransactionAsync("SetGasPrice", input, chainId);
-        // return new SendTransactionResult
-        // {
-        //     Transaction = tx,
-        //     TransactionResult = await PerformGetTransactionResultAsync(tx.GetHash().ToHex(), chainId)
-        // };
-        throw new System.NotImplementedException();
+        var signature = EvmHelper.AggregateSignatures(signatures.Values.ToList());
+        return await _evmContractProvider.TransmitAsync(reportContext, crossChainData, signature);
     }
 }
 
