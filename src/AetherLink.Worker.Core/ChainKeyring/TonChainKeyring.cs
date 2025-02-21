@@ -33,12 +33,13 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
     {
         var unsignedCell = TonHelper.BuildUnsignedCell(
-            new BigInteger(new ReadOnlySpan<byte>(Base64.Decode(reportContext.MessageId)), false, true),
+            Base64.Decode(reportContext.MessageId),
             reportContext.SourceChainId,
             reportContext.TargetChainId,
             Base58CheckEncoding.Decode(reportContext.Sender),
             TonHelper.ConvertAddress(reportContext.Receiver),
-            Base64.Decode(report.Message), report.TokenAmount);
+            Base64.Decode(report.Message),
+            report.TokenAmount);
 
         return KeyPair.Sign(unsignedCell, Hex.Decode(_privateOptions.TransmitterSecretKey));
     }
@@ -47,9 +48,13 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
         byte[] sign)
     {
         var bodyCell = TonHelper.BuildUnsignedCell(
-            new BigInteger(new ReadOnlySpan<byte>(Base64.Decode(reportContext.MessageId)), false, true),
-            reportContext.SourceChainId, reportContext.TargetChainId, Base58CheckEncoding.Decode(reportContext.Sender),
-            TonHelper.ConvertAddress(reportContext.Receiver), Base64.Decode(report.Message), report.TokenAmount);
+            Base64.Decode(reportContext.MessageId),
+            reportContext.SourceChainId,
+            reportContext.TargetChainId,
+            Base58CheckEncoding.Decode(reportContext.Sender),
+            TonHelper.ConvertAddress(reportContext.Receiver),
+            Base64.Decode(report.Message),
+            report.TokenAmount);
 
         var nodeInfo = _publicOption.OracleNodeInfoList.Find(f => f.Index == index);
         if (nodeInfo == null) return false;

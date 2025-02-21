@@ -35,13 +35,13 @@ public static class TonHelper
         return new WalletV4(new() { PublicKey = keyPair.PublicKey });
     }
 
-    public static Cell BuildUnsignedCell(BigInteger messageId, long sourceChainId, long targetChainId, byte[] sender,
+    public static Cell BuildUnsignedCell(byte[] messageIdBytes, long sourceChainId, long targetChainId, byte[] sender,
         Address receiverAddress, byte[] message, TokenAmountDto tokenAmount)
     {
         var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message, tokenAmount);
         var unsignCell = new CellBuilder()
             // .StoreInt(messageId, 256)
-            .StoreInt((Int128)messageId, 128)
+            .StoreBytes(Ensure128ByteArray(messageIdBytes))
             .StoreAddress(receiverAddress)
             .StoreRef(body)
             .Build();
@@ -49,21 +49,24 @@ public static class TonHelper
         return unsignCell;
     }
 
-    private static BigInteger Ensure128BitBigInteger(BigInteger value)
+    private static byte[] Ensure128ByteArray(byte[] bytes)
     {
-        if (value < 0) value = -value;
-        var bytes = value.ToByteArray();
         switch (bytes.Length)
         {
             case > 16:
-                bytes = bytes.Take(16).ToArray();
-                break;
+                // Trim to 16 bytes
+                return bytes.Take(16).ToArray();
             case < 16:
-                bytes = Enumerable.Repeat((byte)0, 16 - bytes.Length).Concat(bytes).ToArray();
-                break;
+            {
+                // Pad with leading zeros to 16 bytes
+                var padded = new byte[16];
+                Array.Copy(bytes, 0, padded, 16 - bytes.Length, bytes.Length);
+                return padded;
+            }
+            default:
+                // If already 16 bytes, return as-is
+                return bytes;
         }
-
-        return new BigInteger(bytes, isUnsigned: true, isBigEndian: false);
     }
 
     public static Cell BuildMessageBody(long sourceChainId, long targetChainId, byte[] sender, Address receiverAddress,
