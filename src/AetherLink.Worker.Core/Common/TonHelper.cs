@@ -59,9 +59,12 @@ public static class TonHelper
 
     private static BigInteger Ensure128ByteArray(string base64MessageId)
     {
+        // Step 1: Base64 -> Byte Array
         var messageIdBytes = ByteString.FromBase64(base64MessageId).ToByteArray();
+
         switch (messageIdBytes.Length)
         {
+            // Step 2: Adjust to 16 bytes
             case > 16:
                 messageIdBytes = messageIdBytes.Take(16).ToArray();
                 break;
@@ -74,7 +77,19 @@ public static class TonHelper
             }
         }
 
-        return new BigInteger(messageIdBytes, true, true);
+        // Console.WriteLine($"Debug: messageIdBytes (Original, Hex): {BitConverter.ToString(messageIdBytes)}");
+
+        // Step 3: Reverse bytes (Little-Endian)
+        var reversedBytes = messageIdBytes.Reverse().ToArray();
+        // Console.WriteLine(
+        //     $"Debug: messageIdBytes (Reversed, Hex - Little Endian): {BitConverter.ToString(reversedBytes)}");
+
+        // Step 4: Convert to BigInteger
+        var bigInt = new BigInteger(reversedBytes, isBigEndian: true);
+        // Console.WriteLine($"Debug: BigInteger Value: {bigInt}");
+        // Console.WriteLine($"Debug: BigInteger BitLength: {bigInt.GetBitLength()}");
+
+        return bigInt;
     }
 
     public static Cell BuildMessageBody(long sourceChainId, long targetChainId, byte[] sender, Address receiverAddress,
