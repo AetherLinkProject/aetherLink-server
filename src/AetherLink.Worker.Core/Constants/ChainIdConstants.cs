@@ -8,4 +8,5 @@ public static class ChainIdConstants
     public const long TON = 1100;
     public const long BSC = 56;
     public const long EVM = 1;
+    public const long SEPOLIA = 11155111;
 }

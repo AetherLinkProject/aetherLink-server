@@ -24,6 +24,23 @@ public class EvmChainKeyring : ChainKeyring, ISingletonDependency
         byte[] sign) => true;
 }
 
+public class SEPOLIAChainKeyring : ChainKeyring, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.SEPOLIA;
+    private readonly ChainConfig _chainConfig;
+
+    public SEPOLIAChainKeyring(IOptionsSnapshot<OracleInfoOptions> oracleOptions)
+    {
+        _chainConfig = EvmHelper.GetChainConfig(ChainId, oracleOptions.Value);
+    }
+
+    public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
+        => EvmHelper.OffChainSign(reportContext, report, _chainConfig);
+
+    public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
+        byte[] sign) => true;
+}
+
 public class BscChainKeyring : ChainKeyring, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.BSC;
