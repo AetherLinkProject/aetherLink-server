@@ -332,7 +332,8 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
             if (receiveSlice.Refs.Length > 0)
             {
                 var extraDataRefCell = receiveSlice.LoadRef().Parse();
-                var tokenTargetChainId = (long)extraDataRefCell.LoadInt(64);
+                // var tokenTargetChainId = (long)extraDataRefCell.LoadInt(64);
+                var tokenTargetChainId = (long)extraDataRefCell.LoadInt(32);
                 var contractAddress =
                     targetChainProvider.ConvertBytesToAddressStr(extraDataRefCell.LoadRef().Parse().Bits.ToBytes());
                 var tokenAddress = extraDataRefCell.LoadRef().Parse().LoadAddress();

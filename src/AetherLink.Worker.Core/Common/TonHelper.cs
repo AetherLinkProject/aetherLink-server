@@ -40,7 +40,8 @@ public static class TonHelper
     {
         var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message, tokenAmount);
         var unsignCell = new CellBuilder()
-            .StoreInt(messageId, 256)
+            // .StoreInt(messageId, 256)
+            .StoreInt(Ensure128BitBigInteger(messageId), 128)
             .StoreAddress(receiverAddress)
             .StoreRef(body)
             .Build();
@@ -48,12 +49,29 @@ public static class TonHelper
         return unsignCell;
     }
 
+    private static BigInteger Ensure128BitBigInteger(BigInteger value)
+    {
+        if (value < 0) value = -value;
+        var bytes = value.ToByteArray();
+        switch (bytes.Length)
+        {
+            case > 16:
+                bytes = bytes.Take(16).ToArray();
+                break;
+            case < 16:
+                bytes = Enumerable.Repeat((byte)0, 16 - bytes.Length).Concat(bytes).ToArray();
+                break;
+        }
+
+        return new BigInteger(bytes, isUnsigned: true, isBigEndian: false);
+    }
+
     public static Cell BuildMessageBody(long sourceChainId, long targetChainId, byte[] sender, Address receiverAddress,
         byte[] message, TokenAmountDto tokenAmount = null)
     {
         return new CellBuilder()
-            .StoreUInt(sourceChainId, 64)
-            .StoreUInt(targetChainId, 64)
+            .StoreUInt((int)sourceChainId, 32)
+            .StoreUInt((int)targetChainId, 32)
             .StoreRef(new CellBuilder().StoreBytes(sender).Build())
             .StoreRef(new CellBuilder().StoreAddress(receiverAddress).Build())
             .StoreRef(ConvertMessageBytesToCell(message))
@@ -131,7 +149,7 @@ public static class TonHelper
 
         return result.Concat(refBytes).ToArray();
     }
-    
+
     private static Cell BuildTokenAmountInfo(TokenAmountDto tokenAmountDto = null)
     {
         var result = new CellBuilder();
@@ -150,5 +168,4 @@ public static class TonHelper
 
         return result.Build();
     }
-
 }
