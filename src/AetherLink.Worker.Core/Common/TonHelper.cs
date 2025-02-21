@@ -41,7 +41,7 @@ public static class TonHelper
         var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message, tokenAmount);
         var unsignCell = new CellBuilder()
             // .StoreInt(messageId, 256)
-            .StoreInt(Ensure128BitBigInteger(messageId), 128)
+            .StoreInt((Int128)messageId, 128)
             .StoreAddress(receiverAddress)
             .StoreRef(body)
             .Build();
