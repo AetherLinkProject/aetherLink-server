@@ -40,7 +40,8 @@ public static class TonHelper
     {
         var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message, tokenAmount);
         var unsignCell = new CellBuilder()
-            .StoreInt(messageId, 256)
+            // .StoreInt(messageId, 256)
+            .StoreInt(messageId, 128)
             .StoreAddress(receiverAddress)
             .StoreRef(body)
             .Build();
@@ -52,8 +53,8 @@ public static class TonHelper
         byte[] message, TokenAmountDto tokenAmount = null)
     {
         return new CellBuilder()
-            .StoreUInt(sourceChainId, 64)
-            .StoreUInt(targetChainId, 64)
+            .StoreUInt(sourceChainId, 32)
+            .StoreUInt(targetChainId, 32)
             .StoreRef(new CellBuilder().StoreBytes(sender).Build())
             .StoreRef(new CellBuilder().StoreAddress(receiverAddress).Build())
             .StoreRef(ConvertMessageBytesToCell(message))
