@@ -1,16 +1,11 @@
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using Volo.Abp.DependencyInjection;
-using System;
-using System.Numerics;
-using System.Text;
 using AElf;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Options;
-using Google.Protobuf;
 using Microsoft.Extensions.Options;
 using Org.BouncyCastle.Utilities.Encoders;
-using TonSdk.Core;
 using TonSdk.Core.Crypto;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
@@ -33,7 +28,8 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
     {
         var unsignedCell = TonHelper.BuildUnsignedCell(
-            new BigInteger(new ReadOnlySpan<byte>(Base64.Decode(reportContext.MessageId)), false, true),
+            reportContext.MessageId,
+            // new BigInteger(new ReadOnlySpan<byte>(Base64.Decode(reportContext.MessageId)), false, true),
             reportContext.SourceChainId,
             reportContext.TargetChainId,
             Base58CheckEncoding.Decode(reportContext.Sender),
@@ -48,7 +44,8 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
         byte[] sign)
     {
         var bodyCell = TonHelper.BuildUnsignedCell(
-            new BigInteger(new ReadOnlySpan<byte>(Base64.Decode(reportContext.MessageId)), false, true),
+            reportContext.MessageId,
+            // new BigInteger(new ReadOnlySpan<byte>(Base64.Decode(reportContext.MessageId)), false, true),
             reportContext.SourceChainId,
             reportContext.TargetChainId,
             Base58CheckEncoding.Decode(reportContext.Sender),

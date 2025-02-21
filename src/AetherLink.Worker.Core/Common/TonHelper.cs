@@ -2,21 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices.JavaScript;
 using System.Text;
-using System.Text.Unicode;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Exceptions;
 using Google.Protobuf;
-using GraphQL.Introspection;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Utilities.Encoders;
-using Ramp;
 using TonSdk.Contracts.Wallet;
 using TonSdk.Core;
 using TonSdk.Core.Boc;
-using Virgil.Crypto;
 using KeyPair = TonSdk.Core.Crypto.KeyPair;
 
 namespace AetherLink.Worker.Core.Common;
@@ -49,24 +44,37 @@ public static class TonHelper
         return unsignCell;
     }
 
-    private static byte[] Ensure128ByteArray(byte[] bytes)
+    public static Cell BuildUnsignedCell(string base64MessageId, long sourceChainId, long targetChainId, byte[] sender,
+        Address receiverAddress, byte[] message, TokenAmountDto tokenAmount)
     {
-        switch (bytes.Length)
+        var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message, tokenAmount);
+        var unsignedCell = new CellBuilder()
+            .StoreInt(Ensure128ByteArray(base64MessageId), 128)
+            .StoreAddress(receiverAddress)
+            .StoreRef(body)
+            .Build();
+
+        return unsignedCell;
+    }
+
+    private static BigInteger Ensure128ByteArray(string base64MessageId)
+    {
+        var messageIdBytes = ByteString.FromBase64(base64MessageId).ToByteArray();
+        switch (messageIdBytes.Length)
         {
             case > 16:
-                // Trim to 16 bytes
-                return bytes.Take(16).ToArray();
+                messageIdBytes = messageIdBytes.Take(16).ToArray();
+                break;
             case < 16:
             {
-                // Pad with leading zeros to 16 bytes
-                var padded = new byte[16];
-                Array.Copy(bytes, 0, padded, 16 - bytes.Length, bytes.Length);
-                return padded;
+                var paddedBytes = new byte[16];
+                Array.Copy(messageIdBytes, 0, paddedBytes, 16 - messageIdBytes.Length, messageIdBytes.Length);
+                messageIdBytes = paddedBytes;
+                break;
             }
-            default:
-                // If already 16 bytes, return as-is
-                return bytes;
         }
+
+        return new BigInteger(messageIdBytes, isUnsigned: true, isBigEndian: false);
     }
 
     public static Cell BuildMessageBody(long sourceChainId, long targetChainId, byte[] sender, Address receiverAddress,
