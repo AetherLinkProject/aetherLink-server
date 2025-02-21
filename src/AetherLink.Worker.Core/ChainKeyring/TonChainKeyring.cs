@@ -33,7 +33,7 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
     {
         var unsignedCell = TonHelper.BuildUnsignedCell(
-            Base64.Decode(reportContext.MessageId),
+            new BigInteger(new ReadOnlySpan<byte>(Base64.Decode(reportContext.MessageId)), false, true),
             reportContext.SourceChainId,
             reportContext.TargetChainId,
             Base58CheckEncoding.Decode(reportContext.Sender),
@@ -48,7 +48,7 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
         byte[] sign)
     {
         var bodyCell = TonHelper.BuildUnsignedCell(
-            Base64.Decode(reportContext.MessageId),
+            new BigInteger(new ReadOnlySpan<byte>(Base64.Decode(reportContext.MessageId)), false, true),
             reportContext.SourceChainId,
             reportContext.TargetChainId,
             Base58CheckEncoding.Decode(reportContext.Sender),

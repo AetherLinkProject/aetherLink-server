@@ -35,13 +35,13 @@ public static class TonHelper
         return new WalletV4(new() { PublicKey = keyPair.PublicKey });
     }
 
-    public static Cell BuildUnsignedCell(byte[] messageIdBytes, long sourceChainId, long targetChainId, byte[] sender,
+    public static Cell BuildUnsignedCell(BigInteger messageId, long sourceChainId, long targetChainId, byte[] sender,
         Address receiverAddress, byte[] message, TokenAmountDto tokenAmount)
     {
         var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message, tokenAmount);
         var unsignCell = new CellBuilder()
-            // .StoreInt(messageId, 256)
-            .StoreBytes(Ensure128ByteArray(messageIdBytes))
+            .StoreInt(messageId, 256)
+            // .StoreInt((Int128)messageId, 128)
             .StoreAddress(receiverAddress)
             .StoreRef(body)
             .Build();
