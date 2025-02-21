@@ -74,7 +74,7 @@ public static class TonHelper
             }
         }
 
-        return new BigInteger(messageIdBytes, isUnsigned: true, isBigEndian: false);
+        return new BigInteger(messageIdBytes, true, true);
     }
 
     public static Cell BuildMessageBody(long sourceChainId, long targetChainId, byte[] sender, Address receiverAddress,
