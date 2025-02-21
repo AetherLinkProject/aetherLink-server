@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using AElf;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Exceptions;
@@ -49,12 +50,33 @@ public static class TonHelper
     {
         var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message, tokenAmount);
         var unsignedCell = new CellBuilder()
-            .StoreInt(Ensure128ByteArray(base64MessageId), 128)
+            .StoreInt(new BigInteger(Build128MessageId(base64MessageId), isUnsigned: true, isBigEndian: false), 128)
+            // .StoreInt(Ensure128ByteArray(base64MessageId), 128)
             .StoreAddress(receiverAddress)
             .StoreRef(body)
             .Build();
 
         return unsignedCell;
+    }
+
+    private static byte[] Build128MessageId(string base64MessageId)
+    {
+        var hashByte = ByteString.FromBase64(base64MessageId).ToByteArray();
+        var byteArray = ByteArrayHelper.HexStringToByteArray(hashByte.ToHex());
+        const int targetLength = 16;
+        switch (byteArray.Length)
+        {
+            case > targetLength:
+                return byteArray.Take(targetLength).ToArray();
+            case < targetLength:
+            {
+                var paddedBytes = new byte[targetLength];
+                Array.Copy(byteArray, 0, paddedBytes, targetLength - byteArray.Length, byteArray.Length);
+                return paddedBytes;
+            }
+            default:
+                return byteArray;
+        }
     }
 
     private static BigInteger Ensure128ByteArray(string base64MessageId)
