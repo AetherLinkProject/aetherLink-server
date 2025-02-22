@@ -20,5 +20,5 @@ public class OracleNodeInfo
 public class TonPrivateOptions
 {
     public string TransmitterSecretKey { get; set; }
-    public string TransmitterFee { get; set; } = "0.015";
+    public string TransmitterFee { get; set; } = "0.02";
 }
