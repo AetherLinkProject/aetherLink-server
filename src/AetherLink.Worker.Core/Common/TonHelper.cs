@@ -2,22 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices.JavaScript;
 using System.Text;
-using System.Text.Unicode;
+using AElf;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Exceptions;
 using Google.Protobuf;
-using GraphQL.Introspection;
 using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Utilities.Encoders;
-using Ramp;
 using TonSdk.Contracts.Wallet;
 using TonSdk.Core;
 using TonSdk.Core.Boc;
-using Virgil.Crypto;
-using KeyPair = TonSdk.Core.Crypto.KeyPair;
+using TonSdk.Core.Crypto;
 
 namespace AetherLink.Worker.Core.Common;
 
@@ -35,43 +32,95 @@ public static class TonHelper
         return new WalletV4(new() { PublicKey = keyPair.PublicKey });
     }
 
-    public static Cell BuildUnsignedCell(BigInteger messageId, long sourceChainId, long targetChainId, byte[] sender,
-        Address receiverAddress, byte[] message, TokenAmountDto tokenAmount)
+    public static HashmapE<int, byte[]> ConvertConsensusSignature(Dictionary<int, byte[]> consensusInfo)
     {
-        var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message, tokenAmount);
-        var unsignCell = new CellBuilder()
-            // .StoreInt(messageId, 256)
-            .StoreInt(Ensure128BitBigInteger(messageId), 128)
-            .StoreAddress(receiverAddress)
-            .StoreRef(body)
-            .Build();
-
-        return unsignCell;
-    }
-
-    private static BigInteger Ensure128BitBigInteger(BigInteger value)
-    {
-        if (value < 0) value = -value;
-        var bytes = value.ToByteArray();
-        switch (bytes.Length)
+        var hashMapSerializer = new HashmapSerializers<int, byte[]>
         {
-            case > 16:
-                bytes = bytes.Take(16).ToArray();
-                break;
-            case < 16:
-                bytes = Enumerable.Repeat((byte)0, 16 - bytes.Length).Concat(bytes).ToArray();
-                break;
+            Key = (key) =>
+            {
+                var cell = new CellBuilder().StoreInt(new BigInteger(key), 256).Build();
+                return cell.Parse().LoadBits(256);
+            },
+
+            Value = (value) => new CellBuilder().StoreRef(new CellBuilder().StoreBytes(value).Build()).Build()
+        };
+
+        var hashmap = new HashmapE<int, byte[]>(new HashmapOptions<int, byte[]>
+        {
+            KeySize = 256,
+            Serializers = hashMapSerializer,
+        });
+
+        foreach (var (nodeIndex, signature) in consensusInfo)
+        {
+            hashmap.Set(nodeIndex, signature);
         }
 
-        return new BigInteger(bytes, isUnsigned: true, isBigEndian: false);
+        return hashmap;
     }
 
-    public static Cell BuildMessageBody(long sourceChainId, long targetChainId, byte[] sender, Address receiverAddress,
+    public static CellBuilder PopulateMetadata(CellBuilder builder, ReportContextDto context, CrossChainDataDto meta)
+        => PopulateMetadata(builder, context, meta.Message, meta.TokenAmount);
+
+    public static CellBuilder PopulateMetadata(CellBuilder builder, ReportContextDto context, string message,
+        TokenAmountDto tokenAmount)
+    {
+        var receiverAddress = new Address(context.Receiver);
+        var sender = Base58CheckEncoding.Decode(context.Sender);
+        var messageByte = Base64.Decode(message);
+        var body = BuildMessageBody(
+            context.SourceChainId,
+            context.TargetChainId,
+            sender,
+            receiverAddress,
+            messageByte,
+            tokenAmount);
+        var messageId = Ensure128ByteArray(context.MessageId);
+        return builder.StoreInt(messageId, TonMetaDataConstants.MessageIdBitsSize)
+            .StoreAddress(receiverAddress)
+            .StoreRef(body);
+    }
+
+    public static bool VerifySignature(string publicKey, Cell metaData, byte[] signature)
+    {
+        var publicKeyParameters = new Ed25519PublicKeyParameters(Hex.Decode(publicKey));
+        var signer = new Ed25519Signer();
+        signer.Init(false, publicKeyParameters);
+        var hash = metaData.Hash.ToBytes();
+        signer.BlockUpdate(hash, 0, hash.Length);
+
+        return signer.VerifySignature(signature);
+    }
+
+    private static BigInteger Ensure128ByteArray(string base64MessageId)
+    {
+        var messageIdBytes = ByteString.FromBase64(base64MessageId).ToByteArray();
+        switch (messageIdBytes.Length)
+        {
+            case > 16:
+                messageIdBytes = messageIdBytes.Take(16).ToArray();
+                break;
+            case < 16:
+            {
+                var paddedBytes = new byte[16];
+                Array.Copy(messageIdBytes, 0, paddedBytes, 16 - messageIdBytes.Length, messageIdBytes.Length);
+                messageIdBytes = paddedBytes;
+                break;
+            }
+        }
+
+        var reversedBytes = messageIdBytes.Reverse().ToArray();
+        var bigInt = new BigInteger(reversedBytes, isBigEndian: true);
+
+        return bigInt;
+    }
+
+    private static Cell BuildMessageBody(long sourceChainId, long targetChainId, byte[] sender, Address receiverAddress,
         byte[] message, TokenAmountDto tokenAmount = null)
     {
         return new CellBuilder()
-            .StoreUInt((int)sourceChainId, 32)
-            .StoreUInt((int)targetChainId, 32)
+            .StoreUInt((int)sourceChainId, TonMetaDataConstants.ChainIdIntSize)
+            .StoreUInt((int)targetChainId, TonMetaDataConstants.ChainIdIntSize)
             .StoreRef(new CellBuilder().StoreBytes(sender).Build())
             .StoreRef(new CellBuilder().StoreAddress(receiverAddress).Build())
             .StoreRef(ConvertMessageBytesToCell(message))
@@ -79,9 +128,29 @@ public static class TonHelper
             .Build();
     }
 
-    public static Address ConvertAddress(string receiver) => new(receiver);
+    public static byte[] ConvertMessageCellToBytes(Cell messageCell)
+    {
+        var cellSlice = messageCell.Parse();
+        var bitLength = cellSlice.LoadUInt(16);
+        var result = cellSlice.LoadBits((int)bitLength).ToBytes();
+        var refCount = (int)cellSlice.LoadUInt(8);
+        if (refCount == 0)
+        {
+            return result;
+        }
 
-    public static Cell ConvertMessageBytesToCell(byte[] message)
+        if (refCount != 1)
+        {
+            throw new ProtocolException("Ton Protocol analysis message error");
+        }
+
+        var refBody = cellSlice.LoadRef();
+        var refBytes = ConvertMessageCellToBytes(refBody);
+
+        return result.Concat(refBytes).ToArray();
+    }
+
+    private static Cell ConvertMessageBytesToCell(byte[] message)
     {
         var totalCellCount = message.Length / TonEnvConstants.PerCellStorageBytesCount;
         if (message.Length % TonEnvConstants.PerCellStorageBytesCount > 0)
@@ -128,28 +197,6 @@ public static class TonHelper
         return tempCellRef.Build();
     }
 
-    public static byte[] ConvertMessageCellToBytes(Cell messageCell)
-    {
-        var cellSlice = messageCell.Parse();
-        var bitLength = cellSlice.LoadUInt(16);
-        var result = cellSlice.LoadBits((int)bitLength).ToBytes();
-        var refCount = (int)cellSlice.LoadUInt(8);
-        if (refCount == 0)
-        {
-            return result;
-        }
-
-        if (refCount != 1)
-        {
-            throw new ProtocolException("Ton Protocol analysis message error");
-        }
-
-        var refBody = cellSlice.LoadRef();
-        var refBytes = ConvertMessageCellToBytes(refBody);
-
-        return result.Concat(refBytes).ToArray();
-    }
-
     private static Cell BuildTokenAmountInfo(TokenAmountDto tokenAmountDto = null)
     {
         var result = new CellBuilder();
@@ -159,12 +206,12 @@ public static class TonHelper
         }
 
         result.StoreRef(new CellBuilder().StoreBytes(Base64.Decode(tokenAmountDto.SwapId)).Build());
-        result.StoreUInt(tokenAmountDto.TargetChainId, 64);
+        result.StoreUInt(tokenAmountDto.TargetChainId, TonMetaDataConstants.ChainIdIntSize);
         result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenAmountDto.TargetContractAddress))
             .Build());
         result.StoreRef(new CellBuilder().StoreAddress(new Address(tokenAmountDto.TokenAddress)).Build());
         result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenAmountDto.OriginToken)).Build());
-        result.StoreUInt(tokenAmountDto.Amount, 256);
+        result.StoreUInt(tokenAmountDto.Amount, TonMetaDataConstants.AmountUIntSize);
 
         return result.Build();
     }

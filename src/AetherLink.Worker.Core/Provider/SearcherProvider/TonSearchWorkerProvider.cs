@@ -329,32 +329,42 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
             var message = Base64.ToBase64String(TonHelper.ConvertMessageCellToBytes(receiveSlice.LoadRef()));
 
             TokenAmountDto tokenAmountDto = null;
-            if (receiveSlice.Refs.Length > 0)
-            {
-                var extraDataRefCell = receiveSlice.LoadRef().Parse();
-                // var tokenTargetChainId = (long)extraDataRefCell.LoadInt(64);
-                var tokenTargetChainId = (long)extraDataRefCell.LoadInt(32);
-                var contractAddress =
-                    targetChainProvider.ConvertBytesToAddressStr(extraDataRefCell.LoadRef().Parse().Bits.ToBytes());
-                var tokenAddress = extraDataRefCell.LoadRef().Parse().LoadAddress();
-                var tokenAddressStr = tokenAddress.ToString(AddressType.Base64,
-                    new AddressStringifyOptions(tokenAddress.IsBounceable(), tokenAddress.IsTestOnly(), false));
-                var amount = (long)extraDataRefCell.LoadUInt(256);
-                tokenAmountDto = new TokenAmountDto()
+            if (receiveSlice.Refs.Length <= 0)
+                return new()
                 {
-                    TargetChainId = tokenTargetChainId,
-                    TargetContractAddress = contractAddress,
-                    TokenAddress = tokenAddressStr,
-                    Amount = amount
+                    MessageId = tonTransactionDto.Hash,
+                    Sender = sender,
+                    Epoch = epochId,
+                    SourceChainId = ChainIdConstants.TON,
+                    TargetChainId = targetChainId,
+                    TargetContractAddress = targetContractAddress,
+                    TransactionTime = tonTransactionDto.BlockTime * 1000,
+                    Message = message,
+                    TokenAmountInfo = tokenAmountDto,
                 };
-            }
 
-            return new ReceiveMessageDto()
+            var extraDataRefCell = receiveSlice.LoadRef().Parse();
+            var tokenTargetChainId = (long)extraDataRefCell.LoadInt(TonMetaDataConstants.ChainIdIntSize);
+            var contractAddress =
+                targetChainProvider.ConvertBytesToAddressStr(extraDataRefCell.LoadRef().Parse().Bits.ToBytes());
+            var tokenAddress = extraDataRefCell.LoadRef().Parse().LoadAddress();
+            var tokenAddressStr = tokenAddress.ToString(AddressType.Base64,
+                new AddressStringifyOptions(tokenAddress.IsBounceable(), tokenAddress.IsTestOnly(), false));
+            var amount = (long)extraDataRefCell.LoadUInt(TonMetaDataConstants.AmountUIntSize);
+            tokenAmountDto = new TokenAmountDto
+            {
+                TargetChainId = tokenTargetChainId,
+                TargetContractAddress = contractAddress,
+                TokenAddress = tokenAddressStr,
+                Amount = amount
+            };
+
+            return new()
             {
                 MessageId = tonTransactionDto.Hash,
                 Sender = sender,
                 Epoch = epochId,
-                SourceChainId = 1100,
+                SourceChainId = ChainIdConstants.TON,
                 TargetChainId = targetChainId,
                 TargetContractAddress = targetContractAddress,
                 TransactionTime = tonTransactionDto.BlockTime * 1000,
