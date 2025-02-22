@@ -50,8 +50,8 @@ public static class TonHelper
     {
         var body = BuildMessageBody(sourceChainId, targetChainId, sender, receiverAddress, message, tokenAmount);
         var unsignedCell = new CellBuilder()
-            .StoreInt(new BigInteger(Build128MessageId(base64MessageId), isUnsigned: true, isBigEndian: false), 128)
-            // .StoreInt(Ensure128ByteArray(base64MessageId), 128)
+            // .StoreInt(new BigInteger(Build128MessageId(base64MessageId), isUnsigned: true, isBigEndian: false), 128)
+            .StoreInt(Ensure128ByteArray(base64MessageId), 128)
             .StoreAddress(receiverAddress)
             .StoreRef(body)
             .Build();
@@ -79,7 +79,7 @@ public static class TonHelper
         }
     }
 
-    private static BigInteger Ensure128ByteArray(string base64MessageId)
+    public static BigInteger Ensure128ByteArray(string base64MessageId)
     {
         // Step 1: Base64 -> Byte Array
         var messageIdBytes = ByteString.FromBase64(base64MessageId).ToByteArray();

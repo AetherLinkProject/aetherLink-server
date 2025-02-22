@@ -52,14 +52,16 @@ public class TonChainWriter : ChainWriter
         }
 
         var bodyCell = new CellBuilder().StoreUInt(TonOpCodeConstants.ForwardTx, 32)
-            .StoreInt(new BigInteger(new ReadOnlySpan<byte>
-                (Base64.Decode(reportContext.MessageId)), false, true), 256)
+            // .StoreInt(new BigInteger(new ReadOnlySpan<byte>
+            //     (Base64.Decode(reportContext.MessageId)), false, true), 256)
+            .StoreInt(TonHelper.Ensure128ByteArray(reportContext.MessageId), 128)
             .StoreAddress(receiverAddress)
             .StoreRef(TonHelper.BuildMessageBody(reportContext.SourceChainId,
                 reportContext.TargetChainId, Base58CheckEncoding.Decode(reportContext.Sender), receiverAddress,
                 Base64.Decode(crossChainData.Message), crossChainData.TokenAmount))
             .StoreRef(new CellBuilder().StoreDict(ConvertConsensusSignature(signatures)).Build())
             .Build();
+
 
         var msg = _wallet.CreateTransferMessage(new[]
         {
