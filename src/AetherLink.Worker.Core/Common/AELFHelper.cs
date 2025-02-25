@@ -9,6 +9,7 @@ using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using Google.Protobuf;
 using Ramp;
+using TokenAmount = Ramp.TokenAmount;
 
 namespace AetherLink.Worker.Core.Common;
 

@@ -67,19 +67,19 @@ public class CrossChainCommitJob : AsyncBackgroundJob<CrossChainCommitJobArgs>, 
     private async Task<string> TryToSendTransactionAsync(IChainWriter writer, ReportContextDto reportContext,
         Dictionary<int, byte[]> partialSignatures, CrossChainDataDto crossChainData)
     {
-        for (var i = 0; i < RetryConstants.DefaultDelay; i++)
-        {
-            _logger.LogDebug(
-                $"[CrossChain][Leader] Get message ready to send, MateData: {JsonSerializer.Serialize(reportContext)},CrossChainDataDto: {JsonSerializer.Serialize(crossChainData)} Signature: {string.Join(", ", partialSignatures.Select(kvp => $"Key: {kvp.Key}, Value: {Convert.ToBase64String(kvp.Value)}"))}");
-
-            var transactionId =
-                await writer.SendCommitTransactionAsync(reportContext, partialSignatures, crossChainData);
-            if (!string.IsNullOrEmpty(transactionId)) return transactionId;
-
-            _logger.LogWarning(
-                $"[CrossChain][Leader] {reportContext.MessageId} send transaction failed in {i} times, will send it later.");
-            Thread.Sleep((i + 1) * 1000 * 2);
-        }
+        // for (var i = 0; i < RetryConstants.DefaultDelay; i++)
+        // {
+        //     _logger.LogDebug(
+        //         $"[CrossChain][Leader] Get message ready to send, MateData: {JsonSerializer.Serialize(reportContext)},CrossChainDataDto: {JsonSerializer.Serialize(crossChainData)} Signature: {string.Join(", ", partialSignatures.Select(kvp => $"Key: {kvp.Key}, Value: {Convert.ToBase64String(kvp.Value)}"))}");
+        //
+        //     var transactionId =
+        //         await writer.SendCommitTransactionAsync(reportContext, partialSignatures, crossChainData);
+        //     if (!string.IsNullOrEmpty(transactionId)) return transactionId;
+        //
+        //     _logger.LogWarning(
+        //         $"[CrossChain][Leader] {reportContext.MessageId} send transaction failed in {i} times, will send it later.");
+        //     Thread.Sleep((i + 1) * 1000 * 2);
+        // }
 
         return await writer.SendCommitTransactionAsync(reportContext, partialSignatures, crossChainData);
     }

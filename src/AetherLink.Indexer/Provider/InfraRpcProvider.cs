@@ -7,6 +7,8 @@ using AetherLink.Indexer.Constants;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Reactive.Eth;
 using Volo.Abp.DependencyInjection;
 
@@ -60,9 +62,15 @@ public class InfuraRpcProvider : IInfuraRpcProvider, ISingletonDependency
     }
 
     private async Task SubscribeToEventsAsync<TEventDTO>(StreamingWebSocketClient client,
-        Action<EventLog<TEventDTO>> onEventDecoded) where TEventDTO : IEventDTO, new()
+        Action<EventLog<TEventDTO>> onEventDecoded, ulong fromBlock = 7779730) where TEventDTO : IEventDTO, new()
     {
         var eventSubscription = new EthLogsObservableSubscription(client);
+        _logger.LogDebug($"Start {_options.ContractAddress} subscription at block {fromBlock}");
+
+        // var eventFilterInput = Event<TEventDTO>.GetEventABI().CreateFilterInput(
+        //     new BlockParameter(new HexBigInteger(fromBlock)),
+        //     _options.ContractAddress);
+
         var eventFilterInput = Event<TEventDTO>.GetEventABI().CreateFilterInput(_options.ContractAddress);
 
         eventSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(

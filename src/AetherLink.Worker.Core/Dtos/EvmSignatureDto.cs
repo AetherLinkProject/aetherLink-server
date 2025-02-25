@@ -2,7 +2,7 @@ namespace AetherLink.Worker.Core.Dtos;
 
 public class EvmSignatureDto
 {
-    public string[] R { get; set; }
-    public string[] S { get; set; }
-    public string V { get; set; }
+    public byte[][] R { get; set; }
+    public byte[][] S { get; set; }
+    public byte[] V { get; set; }
 }

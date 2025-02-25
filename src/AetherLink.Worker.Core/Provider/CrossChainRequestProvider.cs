@@ -108,6 +108,9 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
 
     public async Task StartCrossChainRequestFromAELf(RampRequestDto request)
     {
+        // todo: for debug, skip ton crossChain
+        if (request.TargetChainId == 1100) return;
+
         try
         {
             _logger.LogDebug($"[CrossChainRequestProvider] Start CrossChainRequest From {request.ChainId}....");

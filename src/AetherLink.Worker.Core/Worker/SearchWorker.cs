@@ -56,13 +56,18 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
             blockLatestHeight);
         var startTime = DateTime.Now;
 
+        // if (chainId == "tDVW")
+        // {
+        //     startHeight = 152031026;
+        // }
+
         await Task.WhenAll(
-            ExecuteJobsAsync(chainId, blockLatestHeight, startHeight),
-            ExecuteTransmittedAsync(chainId, blockLatestHeight, startHeight),
-            ExecuteRequestCanceledAsync(chainId, blockLatestHeight, startHeight),
-            ExecuteRampRequestsAsync(chainId, blockLatestHeight, startHeight),
-            ExecuteRampManuallyExecutedAsync(chainId, blockLatestHeight, startHeight),
-            ExecuteRampRequestsCanceledAsync(chainId, blockLatestHeight, startHeight)
+            // ExecuteJobsAsync(chainId, blockLatestHeight, startHeight),
+            // ExecuteTransmittedAsync(chainId, blockLatestHeight, startHeight),
+            // ExecuteRequestCanceledAsync(chainId, blockLatestHeight, startHeight),
+            ExecuteRampRequestsAsync(chainId, blockLatestHeight, startHeight)
+            // ExecuteRampManuallyExecutedAsync(chainId, blockLatestHeight, startHeight),
+            // ExecuteRampRequestsCanceledAsync(chainId, blockLatestHeight, startHeight)
         );
 
         _logger.LogDebug("[Search] {chain} search log took {time} ms.", chainId,

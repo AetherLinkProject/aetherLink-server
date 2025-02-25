@@ -1,17 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Threading.Tasks;
 using AetherLink.Indexer.Provider;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Math;
+using Nethereum.ABI;
+using Nethereum.ABI.FunctionEncoding;
 using Volo.Abp.DependencyInjection;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.ABI.Model;
 using Nethereum.Contracts;
-using Nethereum.Hex.HexTypes;
-using Nethereum.RPC.Eth.DTOs;
 
 namespace AetherLink.Worker.Core.Service;
 
@@ -99,6 +100,8 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
 
     private EvmReceivedMessageDto GenerateEvmReceivedMessage(EventLog<SendEventDTO> eventData)
     {
+        var tokenAmount = eventData.Event.DecodeTokenAmount();
+
         var blockNumber = eventData.Log.BlockNumber;
         var receivedMessage = new EvmReceivedMessageDto
         {
@@ -116,47 +119,58 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
     }
 }
 
-[Event("Send")]
+[Event("RequestSent")]
 public class SendEventDTO : IEventDTO
 {
-    [Parameter("bytes32", "requestId", 1, true)]
-    public string RequestId { get; set; }
+    [Parameter("bytes32", "messageId", 1, true)]
+    public byte[] MessageId { get; set; }
 
     [Parameter("address", "sender", 2, true)]
     public string Sender { get; set; }
 
-    [Parameter("string", "receiver", 3, true)]
+    [Parameter("string", "receiver", 3, false)]
     public string Receiver { get; set; }
 
-    [Parameter("uint256", "targetChain", 4, true)]
-    public BigInteger TargetChain { get; set; }
+    [Parameter("uint256", "targetChainId", 4, false)]
+    public BigInteger TargetChainId { get; set; }
 
     [Parameter("bytes", "message", 5, false)]
     public byte[] Message { get; set; }
 
-    [Parameter("tuple", "tokenAmount", 6, false)]
-    public TokenAmount TokenAmount { get; set; }
+    // [Parameter("bytes", "tokenAmount", 5, false)]
+    // public byte[] TokenAmount { get; set; }
+    [Parameter("bytes", "tokenAmount", 6, false)]
+    public byte[] TokenAmountBytes { get; set; }
+
+    public TokenAmount DecodeTokenAmount()
+    {
+        var decoder = new ParameterDecoder();
+        var tokenAmount = new TokenAmount();
+        var properties = typeof(TokenAmount).GetProperties();
+
+        decoder.DecodeAttributes(TokenAmountBytes, tokenAmount, properties);
+        return tokenAmount;
+    }
 }
 
+[FunctionOutput]
 public class TokenAmount
 {
-    [Parameter("bytes32", "swapId", 1, true)]
-    public string SwapId { get; set; }
+    [Parameter("string", "swapId", 1)] public string SwapId { get; set; }
 
-    [Parameter("uint256", "targetChainId", 2, true)]
+    [Parameter("uint256", "targetChainId", 2)]
     public BigInteger TargetChainId { get; set; }
 
-    [Parameter("string", "targetContractAddress", 3, true)]
+    [Parameter("string", "targetContractAddress", 3)]
     public string TargetContractAddress { get; set; }
 
-    [Parameter("string", "tokenAddress", 4, true)]
+    [Parameter("string", "tokenAddress", 4)]
     public string TokenAddress { get; set; }
 
-    [Parameter("string", "originToken", 5, true)]
+    [Parameter("string", "originToken", 5)]
     public string OriginToken { get; set; }
 
-    [Parameter("uint256", "amount", 6, true)]
-    public BigInteger Amount { get; set; }
+    [Parameter("uint256", "amount", 6)] public BigInteger Amount { get; set; }
 }
 
 [Event("Transmitted")]

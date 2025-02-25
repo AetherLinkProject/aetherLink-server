@@ -1,134 +1,105 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
+using System.Text;
+using AElf;
+using AElf.Cryptography;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
+using Google.Protobuf;
 using Nethereum.ABI;
-using Nethereum.Signer;
 using Nethereum.Util;
 
 namespace AetherLink.Worker.Core.Common;
 
 public class EvmHelper
 {
-    public static byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report,
-        ChainConfig chainConfig)
+    public static byte[] OffChainSign(ReportContextDto context, CrossChainReportDto report, ChainConfig chainConfig)
     {
-        var reportHash = ComputeReportHash(reportContext, report.TokenAmount, report.Message);
-        var signer = new EthereumMessageSigner();
-        var signature = signer.Sign(reportHash, chainConfig.SignerSecret);
-        return StringToByteArray(signature);
+        var reportContextDecoded = GenerateReportContextBytes(context);
+        var message = GenerateMessageBytes(report.Message);
+        var tokenAmountDecode = GenerateTokenAmountBytes(report.TokenAmount);
+        var reportHash = GenerateReportHash(reportContextDecoded, message, tokenAmountDecode);
+        var privateKey = ByteArrayHelper.HexStringToByteArray(chainConfig.SignerSecret);
+        return CryptoHelper.SignWithPrivateKey(privateKey, reportHash);
     }
 
-    public static EvmSignatureDto AggregateSignatures(List<byte[]> aggregatedSignatures)
+    public static ( byte[][], byte[][], byte[]) AggregateSignatures(List<byte[]> signatureByteList)
     {
-        var rs = new List<string>();
-        var ss = new List<string>();
-        var vs = new List<byte>();
-
-        foreach (var signature in aggregatedSignatures)
+        var signaturesCount = signatureByteList.Count;
+        var r = new byte[signaturesCount][];
+        var s = new byte[signaturesCount][];
+        var v = new byte[32];
+        var index = 0;
+        foreach (var signatureBytes in signatureByteList)
         {
-            if (signature.Length != 65)
-            {
-                throw new ArgumentException("Invalid signature length. Expected 65 bytes.");
-            }
-
-            var r = BitConverter.ToString(signature[..32]).Replace("-", "");
-            var s = BitConverter.ToString(signature[32..64]).Replace("-", "");
-            var v = signature[64];
-            rs.Add(r);
-            ss.Add(s);
-            vs.Add(v);
+            r[index] = signatureBytes.Take(32).ToArray();
+            s[index] = signatureBytes.Skip(32).Take(32).ToArray();
+            v[index] = signatureBytes.Last();
+            index++;
         }
 
-        return new()
-        {
-            R = rs.ToArray(),
-            S = ss.ToArray(),
-            V = ConvertVsToBytes32(vs)
-        };
+        return (r, s, v);
     }
 
-    private static string ConvertVsToBytes32(List<byte> vs)
+    private static byte[] GenerateReportHash(byte[] reportContext, byte[] message, byte[] tokenAmount)
     {
-        var buffer = new byte[32];
-        for (var i = 0; i < vs.Count; i++)
-        {
-            buffer[31 - i] = vs[i];
-        }
-
-        return "0x" + BitConverter.ToString(buffer).Replace("-", "").ToLower();
+        var abiEncode = new ABIEncode();
+        var result = abiEncode.GetABIEncoded(
+            reportContext,
+            message,
+            tokenAmount
+        );
+        return Sha3Keccack.Current.CalculateHash(result);
     }
 
-    private static byte[] ComputeReportHash(ReportContextDto reportContext, TokenAmountDto tokenAmount, string message)
+    public static byte[] GenerateReportContextBytes(ReportContextDto reportContext)
     {
-        var abiEncoder = new ABIEncode();
-
-        var encodedReportContext = abiEncoder.GetABIEncoded(
-            new[] { "bytes32", "uint256", "uint256", "string", "address" },
-            new object[]
-            {
-                reportContext.MessageId, // bytes32
-                new BigInteger(reportContext.SourceChainId), // uint256
-                new BigInteger(reportContext.TargetChainId), // uint256
-                reportContext.Sender, // string
-                reportContext.Receiver // address
-            });
-
-        var encodedTokenAmount = abiEncoder.GetABIEncoded(
-            new[] { "string", "uint256", "string", "string", "string", "uint256" },
-            new object[]
-            {
-                tokenAmount.SwapId, // string
-                new BigInteger(tokenAmount.TargetChainId), // uint256
-                tokenAmount.TargetContractAddress, // string
-                tokenAmount.TokenAddress, // string
-                tokenAmount.OriginToken, // string
-                tokenAmount.Amount // uint256
-            });
-
-        var encodedMessage = abiEncoder.GetABIEncoded(new[] { "string" }, new object[] { message });
-        var combinedBytes = CombineBytes(encodedReportContext, encodedMessage, encodedTokenAmount);
-        return new Sha3Keccack().CalculateHash(combinedBytes);
+        var abiEncode = new ABIEncode();
+        var encoded = abiEncode.GetABIEncoded(
+            ByteString.FromBase64(reportContext.MessageId).ToByteArray(),
+            (int)reportContext.SourceChainId,
+            (int)reportContext.TargetChainId,
+            reportContext.Sender,
+            "0x3c37E0A09eAFEaA7eFB57107802De1B28A6f5F07"
+            // reportContext.Receiver
+        );
+        return encoded;
     }
 
-    private static byte[] StringToByteArray(string hex)
+    public static byte[] GenerateTokenAmountBytes(TokenAmountDto tokenAmount)
     {
-        if (hex.StartsWith("0x"))
-        {
-            hex = hex[2..];
-        }
-
-        var result = new byte[hex.Length / 2];
-        for (var i = 0; i < hex.Length; i += 2)
-        {
-            result[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
-        }
-
-        return result;
+        var abiEncode = new ABIEncode();
+        var encoded = abiEncode.GetABIEncoded(
+            tokenAmount.SwapId,
+            (int)tokenAmount.TargetChainId,
+            tokenAmount.TargetContractAddress,
+            tokenAmount.TokenAddress,
+            tokenAmount.OriginToken,
+            10000
+            // tokenAmount.Amount
+        );
+        return encoded;
     }
 
-    private static byte[] CombineBytes(params byte[][] arrays)
-    {
-        var combinedLength = arrays.Sum(arr => arr.Length);
-        var combined = new byte[combinedLength];
-        var offset = 0;
-
-        foreach (var array in arrays)
-        {
-            Buffer.BlockCopy(array, 0, combined, offset, array.Length);
-            offset += array.Length;
-        }
-
-        return combined;
-    }
+    public static byte[] GenerateMessageBytes(string message) => Encoding.UTF8.GetBytes(message);
 
     public static ChainConfig GetChainConfig(long chainId, OracleInfoOptions options)
     {
-        // todo: convert long to string
-        return options.ChainConfig.TryGetValue("", out var chainConfig)
-            ? chainConfig
-            : null;
+        ChainConfig chainConfig = null;
+        switch (chainId)
+        {
+            case 1:
+                options.ChainConfig.TryGetValue("EVM", out chainConfig);
+                break;
+            case 56:
+                options.ChainConfig.TryGetValue("BSC", out chainConfig);
+                break;
+            case 11155111:
+                options.ChainConfig.TryGetValue("SEPOLIA", out chainConfig);
+                break;
+        }
+
+        return chainConfig;
     }
 }
