@@ -40,24 +40,25 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
             }
 
             var tokenSwapConfigId = GenerateTokenSwapId(reportContext, tokenAmount);
-            var tokenSwapConfig = await _storageProvider.GetAsync<TokenSwapConfigDto>(tokenSwapConfigId);
-            if (tokenSwapConfig == null)
+            // var tokenSwapConfig = await _storageProvider.GetAsync<TokenSwapConfigDto>(tokenSwapConfigId);
+            // if (tokenSwapConfig == null)
+            // {
+            // todo for testnet debug
+            _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
+
+            var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenAmount.TargetChainId,
+                reportContext.SourceChainId, tokenAmount.TargetContractAddress, tokenAmount.TokenAddress,
+                tokenAmount.OriginToken);
+
+            if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.SwapId))
             {
-                _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
-
-                var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenAmount.TargetChainId,
-                    reportContext.SourceChainId, tokenAmount.TargetContractAddress, tokenAmount.TokenAddress,
-                    tokenAmount.OriginToken);
-
-                if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.SwapId))
-                {
-                    _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
-                    throw new InvalidDataException("Could not find token swap config");
-                }
-
-                tokenSwapConfig = indexerConfig.TokenSwapConfig;
-                await _storageProvider.SetAsync(tokenSwapConfigId, tokenSwapConfig);
+                _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
+                throw new InvalidDataException("Could not find token swap config");
             }
+
+            var tokenSwapConfig = indexerConfig.TokenSwapConfig;
+            await _storageProvider.SetAsync(tokenSwapConfigId, tokenSwapConfig);
+            // }
 
             tokenAmount.SwapId = tokenSwapConfig.SwapId;
             if (string.IsNullOrEmpty(tokenAmount.OriginToken))
