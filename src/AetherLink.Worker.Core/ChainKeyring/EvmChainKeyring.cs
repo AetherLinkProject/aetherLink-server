@@ -57,3 +57,20 @@ public class BscChainKeyring : ChainKeyring, ISingletonDependency
     public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
         byte[] sign) => true;
 }
+
+public class BscTestChainKeyring : ChainKeyring, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.BSCTEST;
+    private readonly ChainConfig _chainConfig;
+
+    public BscTestChainKeyring(IOptionsSnapshot<OracleInfoOptions> oracleOptions)
+    {
+        _chainConfig = EvmHelper.GetChainConfig(ChainId, oracleOptions.Value);
+    }
+
+    public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
+        => EvmHelper.OffChainSign(reportContext, report, _chainConfig);
+
+    public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
+        byte[] sign) => true;
+}

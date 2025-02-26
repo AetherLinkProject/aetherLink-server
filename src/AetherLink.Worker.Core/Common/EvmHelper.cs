@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using AElf;
 using AElf.Cryptography;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using Google.Protobuf;
@@ -61,8 +62,7 @@ public class EvmHelper
             (int)reportContext.SourceChainId,
             (int)reportContext.TargetChainId,
             reportContext.Sender,
-            "0x3c37E0A09eAFEaA7eFB57107802De1B28A6f5F07"
-            // reportContext.Receiver
+            reportContext.Receiver
         );
         return encoded;
     }
@@ -76,8 +76,7 @@ public class EvmHelper
             tokenAmount.TargetContractAddress,
             tokenAmount.TokenAddress,
             tokenAmount.OriginToken,
-            10000
-            // tokenAmount.Amount
+            (int)tokenAmount.Amount
         );
         return encoded;
     }
@@ -89,13 +88,16 @@ public class EvmHelper
         ChainConfig chainConfig = null;
         switch (chainId)
         {
-            case 1:
+            case ChainIdConstants.EVM:
                 options.ChainConfig.TryGetValue("EVM", out chainConfig);
                 break;
-            case 56:
+            case ChainIdConstants.BSC:
                 options.ChainConfig.TryGetValue("BSC", out chainConfig);
                 break;
-            case 11155111:
+            case ChainIdConstants.BSCTEST:
+                options.ChainConfig.TryGetValue("BSCTEST", out chainConfig);
+                break;
+            case ChainIdConstants.SEPOLIA:
                 options.ChainConfig.TryGetValue("SEPOLIA", out chainConfig);
                 break;
         }

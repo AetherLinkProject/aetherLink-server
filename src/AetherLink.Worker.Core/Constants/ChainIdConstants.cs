@@ -7,6 +7,7 @@ public static class ChainIdConstants
     public const long TDVW = 1931928;
     public const long TON = 1100;
     public const long BSC = 56;
+    public const long BSCTEST = 97;
     public const long EVM = 1;
     public const long SEPOLIA = 11155111;
 }

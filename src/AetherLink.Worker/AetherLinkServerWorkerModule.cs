@@ -175,6 +175,10 @@ namespace AetherLink.Worker
             context.Services.AddSingleton<IChainKeyring, TDVVChainKeyring>();
             context.Services.AddSingleton<IChainKeyring, TDVWChainKeyring>();
             context.Services.AddSingleton<IChainKeyring, TonChainKeyring>();
+            context.Services.AddSingleton<IChainKeyring, EvmChainKeyring>();
+            context.Services.AddSingleton<IChainKeyring, BscChainKeyring>();
+            context.Services.AddSingleton<IChainKeyring, SEPOLIAChainKeyring>();
+            context.Services.AddSingleton<IChainKeyring, BscTestChainKeyring>();
         }
 
         private void ConfigureChainHandler(ServiceConfigurationContext context)

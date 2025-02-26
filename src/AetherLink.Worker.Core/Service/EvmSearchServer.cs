@@ -1,23 +1,16 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Indexer;
 using AetherLink.Indexer.Provider;
-using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Provider;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nethereum.ABI;
-using Nethereum.ABI.FunctionEncoding;
 using Volo.Abp.DependencyInjection;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.ABI.Model;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
 
@@ -50,12 +43,6 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
         await Task.WhenAll(_networkOptions.ChainInfos.Values.Select(SubscribeRequestAsync));
     }
 
-    public Task StopAsync()
-    {
-        _logger.LogInformation("[EvmSearchServer] Stopping...");
-        return Task.CompletedTask;
-    }
-
     private async Task SubscribeRequestAsync(EvmIndexerOptions options)
     {
         try
@@ -75,24 +62,6 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             throw;
         }
     }
-
-    // private async Task SubscribeTransmitAsync()
-    // {
-    //     try
-    //     {
-    //         await _indexerProvider.SubscribeAndRunAsync<TransmitEventDTO>(
-    //             eventData =>
-    //             {
-    //                 _logger.LogInformation("[EvmSearchServer] Received transmit Event --> ");
-    //                 // _crossChainProvider.StartCrossChainRequestFromEvm(GenerateEvmReceivedMessage(eventData));
-    //             });
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         Console.WriteLine(e);
-    //         throw;
-    //     }
-    // }
 
     private EvmReceivedMessageDto GenerateEvmReceivedMessage(EventLog<SendEventDTO> eventData)
     {
