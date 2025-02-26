@@ -1,18 +1,25 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using AetherLink.Indexer;
 using AetherLink.Indexer.Provider;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Provider;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nethereum.ABI;
 using Nethereum.ABI.FunctionEncoding;
 using Volo.Abp.DependencyInjection;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts;
+using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace AetherLink.Worker.Core.Service;
 
@@ -24,96 +31,91 @@ public interface IEvmSearchServer
 public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
 {
     private readonly ILogger<EvmSearchServer> _logger;
-    private readonly IInfuraRpcProvider _indexerProvider;
+    private readonly IEvmRpcProvider _indexerProvider;
+    private readonly EvmIndexerOptionsMap _networkOptions;
     private readonly ICrossChainRequestProvider _crossChainProvider;
 
-    public EvmSearchServer(IInfuraRpcProvider indexerProvider, ILogger<EvmSearchServer> logger,
-        ICrossChainRequestProvider crossChainProvider)
+    public EvmSearchServer(ILogger<EvmSearchServer> logger, ICrossChainRequestProvider crossChainProvider,
+        IEvmRpcProvider indexerProvider, IOptionsSnapshot<EvmIndexerOptionsMap> networkOptions)
     {
         _logger = logger;
         _indexerProvider = indexerProvider;
+        _networkOptions = networkOptions.Value;
         _crossChainProvider = crossChainProvider;
     }
 
-    public Task StartAsync()
+    public async Task StartAsync()
     {
         _logger.LogDebug("[EvmSearchServer] Starting EvmSearchServer ....");
-        return Task.Run(async () =>
-        {
-            var tasks = new List<Task>();
-
-            tasks.Add(SubscribeRequestAsync());
-            // tasks.Add(SubscribeTransmitAsync());
-
-            await Task.WhenAll(tasks);
-        });
+        await Task.WhenAll(_networkOptions.ChainInfos.Values.Select(SubscribeRequestAsync));
     }
 
-    private async Task SubscribeRequestAsync()
+    public Task StopAsync()
+    {
+        _logger.LogInformation("[EvmSearchServer] Stopping...");
+        return Task.CompletedTask;
+    }
+
+    private async Task SubscribeRequestAsync(EvmIndexerOptions options)
     {
         try
         {
             await _indexerProvider.SubscribeAndRunAsync<SendEventDTO>(
-                eventData =>
+                options, eventData =>
                 {
                     _logger.LogInformation("[EvmSearchServer] Received Event --> ");
                     _crossChainProvider.StartCrossChainRequestFromEvm(GenerateEvmReceivedMessage(eventData));
                 });
 
             _logger.LogInformation("[EvmSearchServer] Start handler cross chain request... ");
-            // await _crossChainProvider.StartCrossChainRequestFromEvm(new()
-            // {
-            //     MessageId = "testReceivedMessage",
-            //     Sender = "test_evm_address",
-            //     Epoch = 0,
-            //     SourceChainId = ChainIdConstants.EVM,
-            //     TargetChainId = ChainIdConstants.AELF,
-            //     Receiver = "test_aelf_address",
-            //     TransactionTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds(),
-            //     Message = ""
-            // });
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            _logger.LogError(e, "[EvmSearchServer] Subscribe cross chain request fail.");
             throw;
         }
     }
 
-    private async Task SubscribeTransmitAsync()
-    {
-        try
-        {
-            await _indexerProvider.SubscribeAndRunAsync<TransmitEventDTO>(
-                eventData =>
-                {
-                    _logger.LogInformation("[EvmSearchServer] Received transmit Event --> ");
-                    // _crossChainProvider.StartCrossChainRequestFromEvm(GenerateEvmReceivedMessage(eventData));
-                });
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
-    }
+    // private async Task SubscribeTransmitAsync()
+    // {
+    //     try
+    //     {
+    //         await _indexerProvider.SubscribeAndRunAsync<TransmitEventDTO>(
+    //             eventData =>
+    //             {
+    //                 _logger.LogInformation("[EvmSearchServer] Received transmit Event --> ");
+    //                 // _crossChainProvider.StartCrossChainRequestFromEvm(GenerateEvmReceivedMessage(eventData));
+    //             });
+    //     }
+    //     catch (Exception e)
+    //     {
+    //         Console.WriteLine(e);
+    //         throw;
+    //     }
+    // }
 
     private EvmReceivedMessageDto GenerateEvmReceivedMessage(EventLog<SendEventDTO> eventData)
     {
-        var tokenAmount = eventData.Event.DecodeTokenAmount();
-
         var blockNumber = eventData.Log.BlockNumber;
+        var sendRequestData = eventData.Event;
         var receivedMessage = new EvmReceivedMessageDto
         {
-            MessageId = "testReceivedMessage",
-            Sender = "test_evm_address",
-            Epoch = 0,
-            SourceChainId = ChainIdConstants.EVM,
-            TargetChainId = ChainIdConstants.AELF,
+            MessageId = sendRequestData.MessageId.ToHex(),
+            Sender = Convert.ToBase64String(Encoding.UTF8.GetBytes(sendRequestData.Sender)),
+            Epoch = (long)sendRequestData.Epoch,
+            SourceChainId = (long)sendRequestData.SourceChainId,
+            TargetChainId = (long)sendRequestData.TargetChainId,
             BlockNumber = blockNumber,
-            Receiver = "test_aelf_address",
-            Message = null,
-            TokenAmountInfo = null
+            Receiver = sendRequestData.Receiver,
+            Message = Convert.ToBase64String(sendRequestData.Message),
+            TokenAmountInfo = new()
+            {
+                TargetChainId = (long)sendRequestData.TargetChainId,
+                TargetContractAddress = sendRequestData.TargetContractAddress,
+                TokenAddress = sendRequestData.TokenAddress,
+                Amount = (long)sendRequestData.Amount
+            },
+            TransactionTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds()
         };
         return receivedMessage;
     }
@@ -125,52 +127,32 @@ public class SendEventDTO : IEventDTO
     [Parameter("bytes32", "messageId", 1, true)]
     public byte[] MessageId { get; set; }
 
-    [Parameter("address", "sender", 2, true)]
+    [Parameter("uint256", "messageId", 2, false)]
+    public BigInteger Epoch { get; set; }
+
+    [Parameter("address", "sender", 3, true)]
     public string Sender { get; set; }
 
-    [Parameter("string", "receiver", 3, false)]
+    [Parameter("string", "receiver", 4, false)]
     public string Receiver { get; set; }
 
-    [Parameter("uint256", "targetChainId", 4, false)]
+    [Parameter("uint256", "sourceChainId", 5, false)]
+    public BigInteger SourceChainId { get; set; }
+
+    [Parameter("uint256", "targetChainId", 6, false)]
     public BigInteger TargetChainId { get; set; }
 
-    [Parameter("bytes", "message", 5, false)]
+    [Parameter("bytes", "message", 7, false)]
     public byte[] Message { get; set; }
 
-    // [Parameter("bytes", "tokenAmount", 5, false)]
-    // public byte[] TokenAmount { get; set; }
-    [Parameter("bytes", "tokenAmount", 6, false)]
-    public byte[] TokenAmountBytes { get; set; }
-
-    public TokenAmount DecodeTokenAmount()
-    {
-        var decoder = new ParameterDecoder();
-        var tokenAmount = new TokenAmount();
-        var properties = typeof(TokenAmount).GetProperties();
-
-        decoder.DecodeAttributes(TokenAmountBytes, tokenAmount, properties);
-        return tokenAmount;
-    }
-}
-
-[FunctionOutput]
-public class TokenAmount
-{
-    [Parameter("string", "swapId", 1)] public string SwapId { get; set; }
-
-    [Parameter("uint256", "targetChainId", 2)]
-    public BigInteger TargetChainId { get; set; }
-
-    [Parameter("string", "targetContractAddress", 3)]
+    [Parameter("string", "targetContractAddress", 8, false)]
     public string TargetContractAddress { get; set; }
 
-    [Parameter("string", "tokenAddress", 4)]
+    [Parameter("string", "tokenAddress", 9, false)]
     public string TokenAddress { get; set; }
 
-    [Parameter("string", "originToken", 5)]
-    public string OriginToken { get; set; }
-
-    [Parameter("uint256", "amount", 6)] public BigInteger Amount { get; set; }
+    [Parameter("uint256", "amount", 10, false)]
+    public BigInteger Amount { get; set; }
 }
 
 [Event("Transmitted")]

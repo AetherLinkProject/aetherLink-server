@@ -3,6 +3,7 @@ VERSION ?= dev
 FOLDER := AetherLink.Worker
 MOCKFOLDER := AetherLink.MockServer
 SRC_DIR := /app/src/${FOLDER}
+RSC_DIR := /app/src/AetherLink.Worker.Core
 NODE_DIR := /srv/oracle
 KVROCKSDIR := /kvrocks/build/kvrocks
 REDIS ?= 127.0.0.1
@@ -102,6 +103,7 @@ define restart
     $(eval des := ${NODE_DIR}/${name})
     $(eval cf := ${SRC_DIR}/${name}.json)
     $(eval apcf := ${SRC_DIR}/apollosettings.json)
+    $(eval rampAbi := ${RSC_DIR}/ContractBuild/RampAbi.json)    
     $(eval ds := ${des}/build)
     
     rm -rf ${des}
@@ -109,6 +111,8 @@ define restart
     cp -r /tmp/build ${des}
     cp ${cf} ${ds}/appsettings.json
     cp ${apcf} ${ds}/apollosettings.json
+    mkdir -p ${ds}/ContractBuild
+    cp ${rampAbi} ${ds}/ContractBuild/RampAbi.json
     cd ${ds} && dotnet ${FOLDER}.dll &
 endef
 

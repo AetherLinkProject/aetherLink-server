@@ -84,19 +84,10 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                     Epoch = request.Epoch
                 },
                 Message = request.Message,
-                StartTime = request.TransactionTime,
-                TokenAmount = new()
-                {
-                    SwapId = "e27025bb839682c3e55d4e4a415a32242529acaebe74bb2e3213111c3eae14b2",
-                    TargetChainId = ChainIdConstants.AELF,
-                    TargetContractAddress = "2TL2DvyGhiwyxaP6KQYkgF1VgwcrurH22u3kaDvc4iwYMLEngn",
-                    TokenAddress = "0x8adD57b8aD6C291BC3E3ffF89F767fcA08e0E7Ab",
-                    OriginToken = "ELF",
-                    Amount = 100
-                }
+                StartTime = request.TransactionTime
             };
-            // crossChainRequestStartArgs.TokenAmount =
-            //     await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenAmountInfo);
+            crossChainRequestStartArgs.TokenAmount =
+                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenAmountInfo);
             await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
         }
         catch (Exception e)

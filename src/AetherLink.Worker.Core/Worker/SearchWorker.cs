@@ -56,11 +56,6 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
             blockLatestHeight);
         var startTime = DateTime.Now;
 
-        // if (chainId == "tDVW")
-        // {
-        //     startHeight = 152031026;
-        // }
-
         await Task.WhenAll(
             // ExecuteJobsAsync(chainId, blockLatestHeight, startHeight),
             // ExecuteTransmittedAsync(chainId, blockLatestHeight, startHeight),
