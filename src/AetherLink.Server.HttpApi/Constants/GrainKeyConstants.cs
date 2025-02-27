@@ -10,7 +10,4 @@ public class GrainKeyConstants
 
     // TON
     public const string SearchTransactionGrainKey = "searchTransaction";
-
-    // EVM
-    public const string SubscribeTransactionGrainKey = "subscribeTransaction";
 }
