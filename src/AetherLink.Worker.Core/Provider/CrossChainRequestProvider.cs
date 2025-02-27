@@ -111,7 +111,8 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 {
                     MessageId = request.MessageId,
                     Sender = request.Sender,
-                    Receiver = request.Receiver,
+                    // Receiver = request.Receiver,
+                    Receiver = "0x3c37E0A09eAFEaA7eFB57107802De1B28A6f5F07",
                     TargetChainId = request.TargetChainId,
                     SourceChainId = request.SourceChainId,
                     Epoch = request.Epoch
