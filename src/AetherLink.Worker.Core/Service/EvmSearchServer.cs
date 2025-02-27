@@ -1,23 +1,15 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Indexer;
+using AetherLink.Indexer.Dtos;
 using AetherLink.Indexer.Provider;
-using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Provider;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nethereum.ABI;
-using Nethereum.ABI.FunctionEncoding;
 using Volo.Abp.DependencyInjection;
-using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.ABI.Model;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
 
@@ -50,12 +42,6 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
         await Task.WhenAll(_networkOptions.ChainInfos.Values.Select(SubscribeRequestAsync));
     }
 
-    public Task StopAsync()
-    {
-        _logger.LogInformation("[EvmSearchServer] Stopping...");
-        return Task.CompletedTask;
-    }
-
     private async Task SubscribeRequestAsync(EvmIndexerOptions options)
     {
         try
@@ -75,24 +61,6 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             throw;
         }
     }
-
-    // private async Task SubscribeTransmitAsync()
-    // {
-    //     try
-    //     {
-    //         await _indexerProvider.SubscribeAndRunAsync<TransmitEventDTO>(
-    //             eventData =>
-    //             {
-    //                 _logger.LogInformation("[EvmSearchServer] Received transmit Event --> ");
-    //                 // _crossChainProvider.StartCrossChainRequestFromEvm(GenerateEvmReceivedMessage(eventData));
-    //             });
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         Console.WriteLine(e);
-    //         throw;
-    //     }
-    // }
 
     private EvmReceivedMessageDto GenerateEvmReceivedMessage(EventLog<SendEventDTO> eventData)
     {
@@ -119,59 +87,4 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
         };
         return receivedMessage;
     }
-}
-
-[Event("RequestSent")]
-public class SendEventDTO : IEventDTO
-{
-    [Parameter("bytes32", "messageId", 1, true)]
-    public byte[] MessageId { get; set; }
-
-    [Parameter("uint256", "messageId", 2, false)]
-    public BigInteger Epoch { get; set; }
-
-    [Parameter("address", "sender", 3, true)]
-    public string Sender { get; set; }
-
-    [Parameter("string", "receiver", 4, false)]
-    public string Receiver { get; set; }
-
-    [Parameter("uint256", "sourceChainId", 5, false)]
-    public BigInteger SourceChainId { get; set; }
-
-    [Parameter("uint256", "targetChainId", 6, false)]
-    public BigInteger TargetChainId { get; set; }
-
-    [Parameter("bytes", "message", 7, false)]
-    public byte[] Message { get; set; }
-
-    [Parameter("string", "targetContractAddress", 8, false)]
-    public string TargetContractAddress { get; set; }
-
-    [Parameter("string", "tokenAddress", 9, false)]
-    public string TokenAddress { get; set; }
-
-    [Parameter("uint256", "amount", 10, false)]
-    public BigInteger Amount { get; set; }
-}
-
-[Event("Transmitted")]
-public class TransmitEventDTO : IEventDTO
-{
-    [Parameter("string", "requestId", 1, true)]
-    public string RequestId { get; set; }
-
-    [Parameter("address", "sender", 2, true)]
-    public string Sender { get; set; }
-
-    [Parameter("uint256", "targetChain", 3, true)]
-    public BigInteger TargetChain { get; set; }
-
-    [Parameter("address", "targetContract", 4, true)]
-    public string Receiver { get; set; }
-
-    [Parameter("bytes", "data", 5, false)] public byte[] Data { get; set; }
-
-    [Parameter("bytes", "tokenAmounts", 6, false)]
-    public byte[] TokenAmounts { get; set; }
 }
