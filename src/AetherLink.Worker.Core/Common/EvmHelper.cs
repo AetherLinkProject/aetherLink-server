@@ -81,7 +81,8 @@ public class EvmHelper
         return encoded;
     }
 
-    public static byte[] GenerateMessageBytes(string message) => Encoding.UTF8.GetBytes(message);
+    // public static byte[] GenerateMessageBytes(string message) => Encoding.UTF8.GetBytes(message);
+    public static byte[] GenerateMessageBytes(string message) => ByteString.FromBase64(message).ToByteArray();
 
     public static EvmOptions GetEvmContractConfig(long chainId, EvmContractsOptions options)
     {
