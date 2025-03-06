@@ -192,14 +192,18 @@ namespace AetherLink.Worker
             context.Services.AddSingleton<IChainWriter, BscTestChainWriter>();
             context.Services.AddSingleton<IChainWriter, SEPOLIAChainWriter>();
             context.Services.AddSingleton<IChainWriter, EvmChainWriter>();
+            context.Services.AddSingleton<IChainWriter, BscChainWriter>();
 
             // reader
             context.Services.AddSingleton<IChainReader, AElfChainReader>();
             context.Services.AddSingleton<IChainReader, TDVVChainReader>();
             context.Services.AddSingleton<IChainReader, TDVWChainReader>();
             context.Services.AddSingleton<IChainReader, TonChainReader>();
+            context.Services.AddSingleton<IChainReader, BscChainReader>();
+            context.Services.AddSingleton<IChainReader, EvmChainReader>();
+            context.Services.AddSingleton<IChainReader, SEPOLIAChainReader>();
+            context.Services.AddSingleton<IChainReader, BscTestChainReader>();
         }
-
 
         private void ConfigureEventFilter(ServiceConfigurationContext context)
         {
