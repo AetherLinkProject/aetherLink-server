@@ -4,10 +4,7 @@ using Nethereum.RPC.Reactive.Eth.Subscriptions;
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.Hex.HexTypes;
-using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Reactive.Eth;
 using Volo.Abp.DependencyInjection;
 
@@ -16,10 +13,10 @@ namespace AetherLink.Indexer.Provider
     public interface IEvmRpcProvider
     {
         Task SubscribeAndRunAsync<TEventDTO>(EvmIndexerOptions networkOptions,
-            Action<EventLog<TEventDTO>> onEventDecoded, ulong fromBlock = 0) where TEventDTO : IEventDTO, new();
+            Action<EventLog<TEventDTO>> onEventDecoded) where TEventDTO : IEventDTO, new();
     }
 
-    public class EvmRpcProvider : IEvmRpcProvider, ISingletonDependency
+    public class EvmRpcProvider : IEvmRpcProvider, ITransientDependency
     {
         private readonly ILogger<EvmRpcProvider> _logger;
 
@@ -29,11 +26,11 @@ namespace AetherLink.Indexer.Provider
         }
 
         public async Task SubscribeAndRunAsync<TEventDTO>(EvmIndexerOptions networkOptions,
-            Action<EventLog<TEventDTO>> onEventDecoded, ulong fromBlock = 0) where TEventDTO : IEventDTO, new()
+            Action<EventLog<TEventDTO>> onEventDecoded) where TEventDTO : IEventDTO, new()
         {
             _logger.LogInformation($"[EvmRpcProvider] Starting subscription on Network: {networkOptions.NetworkName}");
 
-            // initial retry time == 1min
+            // initial retry time == 1 min
             var retryInterval = 1000;
 
             while (true)
@@ -75,17 +72,10 @@ namespace AetherLink.Indexer.Provider
         }
 
         private async Task SubscribeToEventsAsync<TEventDTO>(StreamingWebSocketClient client, EvmIndexerOptions options,
-            Action<EventLog<TEventDTO>> onEventDecoded, ulong fromBlock = 0) where TEventDTO : IEventDTO, new()
+            Action<EventLog<TEventDTO>> onEventDecoded) where TEventDTO : IEventDTO, new()
         {
             var eventSubscription = new EthLogsObservableSubscription(client);
             var eventFilterInput = Event<TEventDTO>.GetEventABI().CreateFilterInput(options.ContractAddress);
-
-            if (fromBlock != 0)
-            {
-                eventFilterInput = Event<TEventDTO>.GetEventABI().CreateFilterInput(
-                    new BlockParameter(new HexBigInteger(fromBlock)),
-                    options.ContractAddress);
-            }
 
             eventSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(
                 log =>

@@ -36,3 +36,25 @@ public class SendEventDTO : IEventDTO
     [Parameter("uint256", "amount", 10, false)]
     public BigInteger Amount { get; set; }
 }
+
+[Event("ForwardMessageCalled")]
+public class ForwardMessageCalledEventDTO : IEventDTO
+{
+    [Parameter("bytes32", "messageId", 1, true)]
+    public byte[] MessageId { get; set; }
+
+    [Parameter("uint256", "sourceChainId", 2, false)]
+    public BigInteger SourceChainId { get; set; }
+
+    [Parameter("uint256", "targetChainId", 3, false)]
+    public BigInteger TargetChainId { get; set; }
+
+    [Parameter("string", "sender", 4, true)]
+    public string Sender { get; set; }
+
+    [Parameter("address", "receiver", 5, true)]
+    public string Receiver { get; set; }
+
+    [Parameter("bytes", "message", 6, false)]
+    public byte[] Message { get; set; }
+}

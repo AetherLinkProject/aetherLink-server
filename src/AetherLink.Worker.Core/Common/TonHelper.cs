@@ -206,7 +206,7 @@ public static class TonHelper
         }
 
         result.StoreRef(new CellBuilder().StoreBytes(Base64.Decode(tokenAmountDto.SwapId)).Build());
-        result.StoreUInt(tokenAmountDto.TargetChainId, TonMetaDataConstants.ChainIdIntSize);
+        result.StoreInt(tokenAmountDto.TargetChainId, TonMetaDataConstants.ChainIdIntSize);
         result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenAmountDto.TargetContractAddress))
             .Build());
         result.StoreRef(new CellBuilder().StoreAddress(new Address(tokenAmountDto.TokenAddress)).Build());

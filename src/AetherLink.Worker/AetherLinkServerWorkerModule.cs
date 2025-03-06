@@ -88,6 +88,7 @@ namespace AetherLink.Worker
             Configure<SchedulerOptions>(configuration.GetSection("Scheduler"));
             Configure<PriceFeedsOptions>(configuration.GetSection("PriceFeeds"));
             Configure<ProcessJobOptions>(configuration.GetSection("ProcessJob"));
+            Configure<EvmContractsOptions>(configuration.GetSection("EvmContracts"));
             Configure<OracleInfoOptions>(configuration.GetSection("OracleChainInfo"));
             Configure<TonPublicOptions>(configuration.GetSection("Chains:ChainInfos:Ton"));
             Configure<TonApiHealthCheckOptions>(configuration.GetSection("TonApiHealthCheck"));
@@ -126,11 +127,11 @@ namespace AetherLink.Worker
 
         private void ConfigureBackgroundWorker(ApplicationInitializationContext context)
         {
-            // context.AddBackgroundWorkerAsync<LogsPoller>();
+            context.AddBackgroundWorkerAsync<LogsPoller>();
             context.AddBackgroundWorkerAsync<SearchWorker>();
-            // context.AddBackgroundWorkerAsync<TonIndexerWorker>();
-            // context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
-            // context.AddBackgroundWorkerAsync<TonApiHealthCheckWorker>();
+            context.AddBackgroundWorkerAsync<TonIndexerWorker>();
+            context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
+            context.AddBackgroundWorkerAsync<TonApiHealthCheckWorker>();
         }
 
         private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
@@ -188,6 +189,9 @@ namespace AetherLink.Worker
             context.Services.AddSingleton<IChainWriter, TDVVChainWriter>();
             context.Services.AddSingleton<IChainWriter, TDVWChainWriter>();
             context.Services.AddSingleton<IChainWriter, TonChainWriter>();
+            context.Services.AddSingleton<IChainWriter, BscTestChainWriter>();
+            context.Services.AddSingleton<IChainWriter, SEPOLIAChainWriter>();
+            context.Services.AddSingleton<IChainWriter, EvmChainWriter>();
 
             // reader
             context.Services.AddSingleton<IChainReader, AElfChainReader>();

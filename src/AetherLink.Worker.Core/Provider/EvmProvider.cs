@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Nethereum.Contracts;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
@@ -16,35 +15,30 @@ namespace AetherLink.Worker.Core.Provider;
 
 public interface IEvmProvider
 {
-    Task<string> TransmitAsync(byte[] contextBytes, byte[] messageBytes, byte[] tokenAmountBytes, byte[][] rs,
-        byte[][] ss, byte[] rawVs);
+    Task<string> TransmitAsync(EvmOptions evmOptions, byte[] contextBytes, byte[] messageBytes, byte[] tokenAmountBytes,
+        byte[][] rs, byte[][] ss, byte[] rawVs);
 }
 
 public class EvmProvider : IEvmProvider, ISingletonDependency
 {
-    private readonly EvmOptions _evmOptions;
-    private readonly ChainConfig _chainConfig;
     private readonly ILogger<EvmProvider> _logger;
 
-    public EvmProvider(IOptionsSnapshot<EvmOptions> evmConfig, ILogger<EvmProvider> logger,
-        IOptionsSnapshot<ChainConfig> chainConfig)
+    public EvmProvider(ILogger<EvmProvider> logger)
     {
         _logger = logger;
-        _evmOptions = evmConfig.Value;
-        _chainConfig = chainConfig.Value;
     }
 
-    public async Task<string> TransmitAsync(byte[] contextBytes, byte[] messageBytes, byte[] tokenAmountBytes,
-        byte[][] rs, byte[][] ss, byte[] rawVs)
+    public async Task<string> TransmitAsync(EvmOptions evmOptions, byte[] contextBytes, byte[] messageBytes,
+        byte[] tokenAmountBytes, byte[][] rs, byte[][] ss, byte[] rawVs)
     {
         try
         {
             _logger.LogInformation("Starting evm transaction preparation...");
 
-            var function = GetTransmitFunction();
+            var function = GetTransmitFunction(evmOptions);
             var gasLimit = new Nethereum.Hex.HexTypes.HexBigInteger(300000);
             var transactionHash = await function.SendTransactionAsync(
-                from: GetWeb3Account().TransactionManager.Account.Address,
+                from: GetWeb3Account(evmOptions).TransactionManager.Account.Address,
                 gas: gasLimit,
                 null,
                 null,
@@ -66,7 +60,7 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
         }
     }
 
-    private Function GetTransmitFunction()
+    private Function GetTransmitFunction(EvmOptions evmOptions)
     {
         try
         {
@@ -76,7 +70,7 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
             var abiObject = (JObject)JToken.ReadFrom(new JsonTextReader(abiContent));
             var abiJson = abiObject?["abi"]?.ToString() ??
                           throw new InvalidOperationException("ABI is missing in the file.");
-            var contract = GetWeb3Account().Eth.GetContract(abiJson, _evmOptions.ContractAddress);
+            var contract = GetWeb3Account(evmOptions).Eth.GetContract(abiJson, evmOptions.ContractAddress);
             return contract.GetFunction(EvmTransactionConstants.TransmitMethodName);
         }
         catch (Exception ex)
@@ -86,10 +80,9 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
         }
     }
 
-    private Web3 GetWeb3Account()
+    private Web3 GetWeb3Account(EvmOptions evmOptions)
     {
-        // var account = new Account(_chainConfig.TransmitterSecret);
-        var account = new Account("80533a7d5ed1b7a128d1ba28fdfe280641adc5e3306b5007a2f7acfbececee3d");
-        return new Web3(account, _evmOptions.Url);
+        var account = new Account(evmOptions.TransmitterSecret);
+        return new Web3(account, evmOptions.Api);
     }
 }

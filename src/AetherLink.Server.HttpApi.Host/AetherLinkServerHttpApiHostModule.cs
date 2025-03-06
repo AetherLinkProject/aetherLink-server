@@ -1,8 +1,10 @@
 using System;
 using System.Linq;
+using AetherLink.Indexer;
 using AetherLink.Server.HttpApi;
 using AetherLink.Server.HttpApi.Options;
 using AetherLink.Server.HttpApi.Worker.AELF;
+using AetherLink.Server.HttpApi.Worker.Evm;
 using AetherLink.Server.HttpApi.Worker.Ton;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
@@ -25,6 +27,7 @@ namespace AetherLinkServer;
 [DependsOn(
     typeof(AetherLinkServerHttpApiModule),
     typeof(AbpAspNetCoreSerilogModule),
+    typeof(AetherLinkIndexerModule),
     typeof(AbpSwashbuckleModule),
     typeof(AbpAutoMapperModule),
     typeof(AbpAutofacModule)
@@ -108,6 +111,7 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
     {
         context.AddBackgroundWorkerAsync<ConfirmBlockHeightSearchWorker>();
         context.AddBackgroundWorkerAsync<RequestSearchWorker>();
+        context.AddBackgroundWorkerAsync<EvmSearchWorker>();
         context.AddBackgroundWorkerAsync<CommitSearchWorker>();
         context.AddBackgroundWorkerAsync<TransactionSearchWorker>();
     }
