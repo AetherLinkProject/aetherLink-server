@@ -15,7 +15,7 @@ namespace AetherLink.Worker.Core.Common;
 
 public class EvmHelper
 {
-    public static byte[] OffChainSign(ReportContextDto context, CrossChainReportDto report, ChainConfig chainConfig)
+    public static byte[] OffChainSign(ReportContextDto context, CrossChainReportDto report, EvmOptions chainConfig)
     {
         var reportContextDecoded = GenerateReportContextBytes(context);
         var message = GenerateMessageBytes(report.Message);
@@ -83,22 +83,22 @@ public class EvmHelper
 
     public static byte[] GenerateMessageBytes(string message) => Encoding.UTF8.GetBytes(message);
 
-    public static ChainConfig GetChainConfig(long chainId, OracleInfoOptions options)
+    public static EvmOptions GetEvmContractConfig(long chainId, EvmContractsOptions options)
     {
-        ChainConfig chainConfig = null;
+        EvmOptions chainConfig = null;
         switch (chainId)
         {
             case ChainIdConstants.EVM:
-                options.ChainConfig.TryGetValue("EVM", out chainConfig);
+                options.ContractConfig.TryGetValue("EVM", out chainConfig);
                 break;
             case ChainIdConstants.BSC:
-                options.ChainConfig.TryGetValue("BSC", out chainConfig);
+                options.ContractConfig.TryGetValue("BSC", out chainConfig);
                 break;
             case ChainIdConstants.BSCTEST:
-                options.ChainConfig.TryGetValue("BSCTEST", out chainConfig);
+                options.ContractConfig.TryGetValue("BSCTEST", out chainConfig);
                 break;
             case ChainIdConstants.SEPOLIA:
-                options.ChainConfig.TryGetValue("SEPOLIA", out chainConfig);
+                options.ContractConfig.TryGetValue("SEPOLIA", out chainConfig);
                 break;
         }
 

@@ -10,15 +10,15 @@ namespace AetherLink.Worker.Core.ChainKeyring;
 public class EvmChainKeyring : ChainKeyring, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.EVM;
-    private readonly ChainConfig _chainConfig;
+    private readonly EvmOptions _evmOptions;
 
-    public EvmChainKeyring(IOptionsSnapshot<OracleInfoOptions> oracleOptions)
+    public EvmChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions)
     {
-        _chainConfig = EvmHelper.GetChainConfig(ChainId, oracleOptions.Value);
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
 
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
-        => EvmHelper.OffChainSign(reportContext, report, _chainConfig);
+        => EvmHelper.OffChainSign(reportContext, report, _evmOptions);
 
     public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
         byte[] sign) => true;
@@ -27,15 +27,15 @@ public class EvmChainKeyring : ChainKeyring, ISingletonDependency
 public class SEPOLIAChainKeyring : ChainKeyring, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.SEPOLIA;
-    private readonly ChainConfig _chainConfig;
+    private readonly EvmOptions _evmOptions;
 
-    public SEPOLIAChainKeyring(IOptionsSnapshot<OracleInfoOptions> oracleOptions)
+    public SEPOLIAChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions)
     {
-        _chainConfig = EvmHelper.GetChainConfig(ChainId, oracleOptions.Value);
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
 
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
-        => EvmHelper.OffChainSign(reportContext, report, _chainConfig);
+        => EvmHelper.OffChainSign(reportContext, report, _evmOptions);
 
     public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
         byte[] sign) => true;
@@ -44,15 +44,15 @@ public class SEPOLIAChainKeyring : ChainKeyring, ISingletonDependency
 public class BscChainKeyring : ChainKeyring, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.BSC;
-    private readonly ChainConfig _chainConfig;
+    private readonly EvmOptions _evmOptions;
 
-    public BscChainKeyring(IOptionsSnapshot<OracleInfoOptions> oracleOptions)
+    public BscChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions)
     {
-        _chainConfig = EvmHelper.GetChainConfig(ChainId, oracleOptions.Value);
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
 
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
-        => EvmHelper.OffChainSign(reportContext, report, _chainConfig);
+        => EvmHelper.OffChainSign(reportContext, report, _evmOptions);
 
     public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
         byte[] sign) => true;
@@ -61,15 +61,15 @@ public class BscChainKeyring : ChainKeyring, ISingletonDependency
 public class BscTestChainKeyring : ChainKeyring, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.BSCTEST;
-    private readonly ChainConfig _chainConfig;
+    private readonly EvmOptions _evmOptions;
 
-    public BscTestChainKeyring(IOptionsSnapshot<OracleInfoOptions> oracleOptions)
+    public BscTestChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions)
     {
-        _chainConfig = EvmHelper.GetChainConfig(ChainId, oracleOptions.Value);
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
 
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
-        => EvmHelper.OffChainSign(reportContext, report, _chainConfig);
+        => EvmHelper.OffChainSign(reportContext, report, _evmOptions);
 
     public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
         byte[] sign) => true;
