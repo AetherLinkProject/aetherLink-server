@@ -18,6 +18,7 @@ using Ramp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 using Report = Oracle.Report;
+using TokenAmount = Ramp.TokenAmount;
 
 namespace AetherLink.Worker.Core.Provider;
 

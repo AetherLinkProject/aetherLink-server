@@ -5,6 +5,7 @@ using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.JobPipeline.CrossChain;
 using AutoMapper;
 using Ramp;
+using TokenAmount = Ramp.TokenAmount;
 
 namespace AetherLink.Worker.Core;
 

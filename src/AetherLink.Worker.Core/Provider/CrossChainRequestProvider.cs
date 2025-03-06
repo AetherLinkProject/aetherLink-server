@@ -14,6 +14,7 @@ namespace AetherLink.Worker.Core.Provider;
 public interface ICrossChainRequestProvider
 {
     public Task StartCrossChainRequestFromTon(ReceiveMessageDto request);
+    public Task StartCrossChainRequestFromEvm(EvmReceivedMessageDto request);
     public Task StartCrossChainRequestFromAELf(RampRequestDto request);
 
     public Task SetAsync(CrossChainDataDto data);
@@ -66,8 +67,41 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         }
     }
 
+    public async Task StartCrossChainRequestFromEvm(EvmReceivedMessageDto request)
+    {
+        try
+        {
+            _logger.LogDebug("[CrossChainRequestProvider] Start CrossChainRequest From EVM....");
+            var crossChainRequestStartArgs = new CrossChainRequestStartArgs
+            {
+                ReportContext = new()
+                {
+                    MessageId = request.MessageId,
+                    Sender = request.Sender,
+                    Receiver = request.Receiver,
+                    TargetChainId = request.TargetChainId,
+                    SourceChainId = request.SourceChainId,
+                    Epoch = request.Epoch
+                },
+                Message = request.Message,
+                StartTime = request.TransactionTime
+            };
+            crossChainRequestStartArgs.TokenAmount =
+                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenAmountInfo);
+            await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,
+                $"[CrossChainRequestProvider] Start cross chain request from ton failed, messageId: {request.MessageId}");
+        }
+    }
+
     public async Task StartCrossChainRequestFromAELf(RampRequestDto request)
     {
+        // todo: for debug, skip ton crossChain
+        if (request.TargetChainId == 1100) return;
+
         try
         {
             _logger.LogDebug($"[CrossChainRequestProvider] Start CrossChainRequest From {request.ChainId}....");
@@ -77,7 +111,8 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 {
                     MessageId = request.MessageId,
                     Sender = request.Sender,
-                    Receiver = request.Receiver,
+                    // Receiver = request.Receiver,
+                    Receiver = "0x3c37E0A09eAFEaA7eFB57107802De1B28A6f5F07",
                     TargetChainId = request.TargetChainId,
                     SourceChainId = request.SourceChainId,
                     Epoch = request.Epoch
