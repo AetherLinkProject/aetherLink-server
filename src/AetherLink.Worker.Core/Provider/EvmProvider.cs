@@ -66,7 +66,7 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
         {
             _logger.LogInformation("Loading contract ABI...");
 
-            var abiContent = File.OpenText(Path.Combine("ContractBuild", "RampAbi.json"));
+            var abiContent = File.OpenText(EvmTransactionConstants.AbiFileName);
             var abiObject = (JObject)JToken.ReadFrom(new JsonTextReader(abiContent));
             var abiJson = abiObject?["abi"]?.ToString() ??
                           throw new InvalidOperationException("ABI is missing in the file.");
