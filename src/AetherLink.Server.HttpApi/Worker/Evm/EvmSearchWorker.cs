@@ -11,6 +11,7 @@ using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Reactive.Eth;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
@@ -66,11 +67,12 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
             HandleCommittedAsync(eventData);
         });
 
-        _logger.LogInformation($"[{networkKey}] WebSocket connection initialize.");
+        _logger.LogInformation($"[EvmSearchServer]{networkKey} WebSocket connection initialize.");
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
+        _logger.LogDebug("[EvmSearchServer]Start handle evm transaction search");
         foreach (var kv in _clients)
         {
             var networkKey = kv.Key;
@@ -78,18 +80,19 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
             if (!client.IsStarted)
             {
-                _logger.LogWarning($"[{networkKey}] WebSocket is not started, connecting or reconnecting...");
+                _logger.LogWarning(
+                    $"[EvmSearchServer]{networkKey} WebSocket is not started, connecting or reconnecting...");
                 await InitializeWebSocketAsync(networkKey, _networkOptions.ChainInfos[networkKey]);
                 continue;
             }
 
             try
             {
-                _logger.LogInformation($"[{networkKey}] Sending Ping...");
+                _logger.LogInformation($"[EvmSearchServer]{networkKey} Sending Ping...");
 
                 var handler = new EthBlockNumberObservableHandler(client);
                 handler.GetResponseAsObservable().Subscribe(blockNumber =>
-                    _logger.LogInformation($"[{networkKey}] Block Height: {blockNumber.Value}")
+                    _logger.LogInformation($"[EvmSearchServer]{networkKey} Block Height: {blockNumber.Value}")
                 );
 
                 await handler.SendRequestAsync();
@@ -103,7 +106,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
     }
 
     private async Task SubscribeToEventsAsync<TEventDTO>(string networkKey, StreamingWebSocketClient client,
-        EvmIndexerOptions options, Action<EventLog<TEventDTO>> onEventDecoded) where TEventDTO : IEventDTO, new()
+        EvmIndexerOptions options, Action<FilterLog> onEventDecoded) where TEventDTO : IEventDTO, new()
     {
         var eventSubscription = new EthLogsObservableSubscription(client);
         var eventFilterInput = Event<TEventDTO>.GetEventABI().CreateFilterInput(options.ContractAddress);
@@ -114,8 +117,9 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
                 _logger.LogInformation($"[{networkKey}] Event Received - Block {log.BlockNumber}");
                 try
                 {
-                    var decoded = Event<TEventDTO>.DecodeEvent(log);
-                    if (decoded != null) onEventDecoded(decoded);
+                    onEventDecoded(log);
+                    // var decoded = Event<TEventDTO>.DecodeEvent(log);
+                    // if (decoded != null) onEventDecoded(decoded);
                 }
                 catch (Exception e)
                 {
@@ -127,37 +131,43 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         _logger.LogInformation($"[{networkKey}] Subscribed to contract events.");
     }
 
-    private async Task HandleRequestStartAsync(EventLog<SendEventDTO> eventData)
+    private async Task HandleRequestStartAsync(FilterLog log)
     {
-        var sendRequestData = eventData.Event;
+        var decoded = Event<SendEventDTO>.DecodeEvent(log);
+        if (decoded == null) return;
+        var sendRequestData = decoded.Event;
+        var grainId = decoded.Log.TransactionHash;
         var messageId = sendRequestData.MessageId.ToHex();
-        var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(messageId);
+        var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(grainId);
         var result = await requestGrain.UpdateAsync(new()
         {
-            Id = messageId,
+            Id = grainId,
             SourceChainId = (long)sendRequestData.SourceChainId,
             TargetChainId = (long)sendRequestData.TargetChainId,
             MessageId = messageId,
             Status = CrossChainStatus.Started.ToString()
         });
 
-        _logger.LogDebug($"[CommitSearchWorker] Create {messageId} started {result.Success}");
+        _logger.LogDebug($"[CommitSearchWorker] Create {grainId} {messageId} started {result.Success}");
     }
 
-    private async Task HandleCommittedAsync(EventLog<ForwardMessageCalledEventDTO> eventData)
+    private async Task HandleCommittedAsync(FilterLog log)
     {
-        var transmitEvent = eventData.Event;
+        var decoded = Event<SendEventDTO>.DecodeEvent(log);
+        if (decoded == null) return;
+        var transmitEvent = decoded.Event;
+        var grainId = decoded.Log.TransactionHash;
         var messageId = transmitEvent.MessageId.ToHex();
-        var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(messageId);
+        var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(grainId);
         var result = await requestGrain.UpdateAsync(new()
         {
-            Id = messageId,
+            Id = decoded.Log.TransactionHash,
             SourceChainId = (long)transmitEvent.SourceChainId,
             TargetChainId = (long)transmitEvent.TargetChainId,
             MessageId = messageId,
             Status = CrossChainStatus.Committed.ToString()
         });
 
-        _logger.LogDebug($"[CommitSearchWorker] Update {messageId} committed {result.Success}");
+        _logger.LogDebug($"[CommitSearchWorker] Update {grainId} {messageId} committed {result.Success}");
     }
 }
