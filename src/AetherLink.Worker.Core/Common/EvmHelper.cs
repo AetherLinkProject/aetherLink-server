@@ -62,11 +62,9 @@ public class EvmHelper
             new ABIValue("uint256", reportContext.SourceChainId),
             new ABIValue("uint256", reportContext.TargetChainId),
             new ABIValue("string", reportContext.Sender),
-            new ABIValue("address", GenerateEvmAddressFormat(reportContext.Receiver)));
+            new ABIValue("address", ByteString.FromBase64(reportContext.Receiver).ToHex(true)));
         return encoded;
     }
-
-    private static string GenerateEvmAddressFormat(string receiver) => $"0x{ByteString.FromBase64(receiver).ToHex()}";
 
     public static byte[] GenerateTokenAmountBytes(TokenAmountDto tokenAmount)
     {

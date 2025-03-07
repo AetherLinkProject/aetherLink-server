@@ -37,15 +37,19 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
             _logger.LogInformation("Starting evm transaction preparation...");
 
             var function = GetTransmitFunction(evmOptions);
+            var account = GetWeb3Account(evmOptions);
             // var gasLimit = new Nethereum.Hex.HexTypes.HexBigInteger(300000);
-            var gas = await function.EstimateGasAsync(contextBytes,
+            var gas = await function.EstimateGasAsync(
+                from: account.TransactionManager.Account.Address,
+                null,
+                null,
+                contextBytes,
                 messageBytes,
                 tokenAmountBytes,
                 rs,
                 ss,
                 rawVs);
             gas.Value = BigInteger.Multiply(gas.Value, 2);
-            var account = GetWeb3Account(evmOptions);
             var transactionHash = await function.SendTransactionAsync(
                 from: account.TransactionManager.Account.Address,
                 gas: gas,
