@@ -63,14 +63,6 @@ public class EvmHelper
             new ABIValue("uint256", reportContext.TargetChainId),
             new ABIValue("string", reportContext.Sender),
             new ABIValue("address", reportContext.Receiver));
-
-        // var encoded = abiEncode.GetABIEncoded(
-        //     ByteString.FromBase64(reportContext.MessageId).ToByteArray(),
-        //     (int)reportContext.SourceChainId,
-        //     (int)reportContext.TargetChainId,
-        //     reportContext.Sender,
-        //     reportContext.Receiver
-        // );
         return encoded;
     }
 

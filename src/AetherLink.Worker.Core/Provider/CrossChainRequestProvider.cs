@@ -63,7 +63,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         catch (Exception e)
         {
             _logger.LogError(e,
-                $"[CrossChainRequestProvider] Start cross chain request from ton failed, messageId: {request.MessageId}");
+                $"[CrossChainRequestProvider] Start cross chain request from TON failed, messageId: {request.MessageId}");
         }
     }
 
@@ -93,7 +93,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         catch (Exception e)
         {
             _logger.LogError(e,
-                $"[CrossChainRequestProvider] Start cross chain request from ton failed, messageId: {request.MessageId}");
+                $"[CrossChainRequestProvider] Start cross chain request from EVM failed, messageId: {request.MessageId}");
         }
     }
 
@@ -111,8 +111,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 {
                     MessageId = request.MessageId,
                     Sender = request.Sender,
-                    // Receiver = request.Receiver,
-                    Receiver = "0x3c37E0A09eAFEaA7eFB57107802De1B28A6f5F07",
+                    Receiver = request.Receiver,
                     TargetChainId = request.TargetChainId,
                     SourceChainId = request.SourceChainId,
                     Epoch = request.Epoch
@@ -133,7 +132,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         catch (Exception e)
         {
             _logger.LogError(e,
-                $"[CrossChainRequestProvider] Start cross chain request from aelf failed, transactionId: {request.TransactionId} messageId: {request.MessageId}");
+                $"[CrossChainRequestProvider] Start cross chain request from AELF failed, transactionId: {request.TransactionId} messageId: {request.MessageId}");
         }
     }
 
