@@ -152,11 +152,8 @@ public class BscChainReader : ChainReader, ISingletonDependency
         throw new System.NotImplementedException();
     }
 
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
-    {
-        State = await AELFHelper.GetTransactionResultAsync(_contractProvider,
-            ChainHelper.ConvertChainIdToBase58((int)ChainId), transactionId)
-    };
+    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
+        => new() { State = TransactionState.Success };
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)
     {
@@ -179,11 +176,8 @@ public class BscTestChainReader : ChainReader, ISingletonDependency
         throw new System.NotImplementedException();
     }
 
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
-    {
-        State = await AELFHelper.GetTransactionResultAsync(_contractProvider,
-            ChainHelper.ConvertChainIdToBase58((int)ChainId), transactionId)
-    };
+    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
+        => new() { State = TransactionState.Success };
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)
     {
@@ -206,11 +200,8 @@ public class SEPOLIAChainReader : ChainReader, ISingletonDependency
         throw new System.NotImplementedException();
     }
 
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
-    {
-        State = await AELFHelper.GetTransactionResultAsync(_contractProvider,
-            ChainHelper.ConvertChainIdToBase58((int)ChainId), transactionId)
-    };
+    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
+        => new() { State = TransactionState.Success };
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)
     {
