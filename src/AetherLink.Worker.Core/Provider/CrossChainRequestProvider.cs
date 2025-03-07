@@ -104,7 +104,8 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
 
         try
         {
-            _logger.LogDebug($"[CrossChainRequestProvider] Start CrossChainRequest From {request.ChainId}....");
+            _logger.LogDebug(
+                $"[CrossChainRequestProvider] Start CrossChainRequest From {request.ChainId} transactionId: {request.TransactionId}");
             var crossChainRequestStartArgs = new CrossChainRequestStartArgs
             {
                 ReportContext = new()

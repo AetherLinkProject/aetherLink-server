@@ -10,6 +10,7 @@ using Nethereum.Web3.Accounts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Volo.Abp.DependencyInjection;
+using BigInteger = System.Numerics.BigInteger;
 
 namespace AetherLink.Worker.Core.Provider;
 
@@ -36,10 +37,18 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
             _logger.LogInformation("Starting evm transaction preparation...");
 
             var function = GetTransmitFunction(evmOptions);
-            var gasLimit = new Nethereum.Hex.HexTypes.HexBigInteger(300000);
+            // var gasLimit = new Nethereum.Hex.HexTypes.HexBigInteger(300000);
+            var gas = await function.EstimateGasAsync(contextBytes,
+                messageBytes,
+                tokenAmountBytes,
+                rs,
+                ss,
+                rawVs);
+            gas.Value = BigInteger.Multiply(gas.Value, 2);
+            var account = GetWeb3Account(evmOptions);
             var transactionHash = await function.SendTransactionAsync(
-                from: GetWeb3Account(evmOptions).TransactionManager.Account.Address,
-                gas: gasLimit,
+                from: account.TransactionManager.Account.Address,
+                gas: gas,
                 null,
                 null,
                 contextBytes,
