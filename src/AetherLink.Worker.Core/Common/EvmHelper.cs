@@ -58,12 +58,13 @@ public class EvmHelper
     {
         var abiEncode = new ABIEncode();
         var encoded = abiEncode.GetABIEncoded(
-            ByteString.FromBase64(reportContext.MessageId).ToByteArray(),
+            ByteStringHelper.FromHexString(reportContext.MessageId).ToByteArray(),
+            // ByteString.FromBase64(reportContext.MessageId).ToByteArray(),
             (int)reportContext.SourceChainId,
             (int)reportContext.TargetChainId,
             reportContext.Sender,
-            ByteStringHelper.FromHexString(reportContext.Receiver).ToBase64()
-            // reportContext.Receiver
+            // ByteStringHelper.FromHexString(reportContext.Receiver).ToBase64()
+            reportContext.Receiver
         );
         return encoded;
     }
