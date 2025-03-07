@@ -62,7 +62,7 @@ public class EvmHelper
             (int)reportContext.SourceChainId,
             (int)reportContext.TargetChainId,
             reportContext.Sender,
-            ByteStringHelper.FromHexString(reportContext.Receiver).ToByteArray()
+            ByteStringHelper.FromHexString(reportContext.Receiver).ToBase64()
             // reportContext.Receiver
         );
         return encoded;
