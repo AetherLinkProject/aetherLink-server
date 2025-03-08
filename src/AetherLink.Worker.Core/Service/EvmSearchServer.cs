@@ -67,7 +67,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
         var blockNumber = eventData.Log.BlockNumber;
         var sendRequestData = eventData.Event;
         var messageId = sendRequestData.MessageId.ToHex();
-        var sender = Convert.ToBase64String(Encoding.UTF8.GetBytes(sendRequestData.Sender));
+        var sender = sendRequestData.Sender;
         var receivedMessage = new EvmReceivedMessageDto
         {
             MessageId = messageId,

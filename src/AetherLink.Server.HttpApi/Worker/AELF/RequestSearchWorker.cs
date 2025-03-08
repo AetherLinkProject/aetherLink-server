@@ -61,13 +61,12 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
         }
 
         var consumedBlockHeight = consumedHeight.Data + 1;
-        // todo skip for rollback
-        // if (confirmedHeight < consumedBlockHeight)
-        // {
-        //     _logger.LogWarning(
-        //         $"[RequestSearchWorker] Waiting for {chainId} block confirmed, consumedBlockHeight:{consumedBlockHeight} confirmedHeight:{confirmedHeight}.");
-        //     return;
-        // }
+        if (confirmedHeight < consumedBlockHeight)
+        {
+            _logger.LogWarning(
+                $"[RequestSearchWorker] Waiting for {chainId} block confirmed, consumedBlockHeight:{consumedBlockHeight} confirmedHeight:{confirmedHeight}.");
+            return;
+        }
 
         _logger.LogDebug(
             $"[RequestSearchWorker] Get {chainId} Block Height {confirmedHeight}");
