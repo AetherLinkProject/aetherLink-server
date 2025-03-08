@@ -5,12 +5,12 @@ using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
 using Microsoft.Extensions.Logging;
 using Nethereum.Contracts;
+using Nethereum.Hex.HexTypes;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Volo.Abp.DependencyInjection;
-using BigInteger = System.Numerics.BigInteger;
 
 namespace AetherLink.Worker.Core.Provider;
 
@@ -38,40 +38,35 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
 
             var function = GetTransmitFunction(evmOptions);
             var account = GetWeb3Account(evmOptions);
-            // var gasLimit = new Nethereum.Hex.HexTypes.HexBigInteger(300000);
-            var gas = await function.EstimateGasAsync(
-                from: account.TransactionManager.Account.Address,
-                null,
-                null,
-                contextBytes,
-                messageBytes,
-                tokenAmountBytes,
-                rs,
-                ss,
-                rawVs);
-            gas.Value = BigInteger.Multiply(gas.Value, 2);
-            var transactionHash = await function.SendTransactionAsync(
-                from: account.TransactionManager.Account.Address,
-                gas: gas,
-                null,
-                null,
-                contextBytes,
-                messageBytes,
-                tokenAmountBytes,
-                rs,
-                ss,
-                rawVs
-            );
+            var transmitSenderAddress = account.TransactionManager.Account.Address;
+            var gas = await EstimateTransmitGasAsync(function, transmitSenderAddress, contextBytes, messageBytes,
+                tokenAmountBytes, rs, ss, rawVs);
+            var transactionHash = await SendTransmitTransactionAsync(function, transmitSenderAddress, gas, contextBytes,
+                messageBytes, tokenAmountBytes, rs, ss, rawVs);
 
             _logger.LogInformation($"[Evm] Transaction successful! Hash: {transactionHash}");
+
             return transactionHash;
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Transaction failed: {ex.Message}", ex);
+            _logger.LogError($"[Evm] Transaction failed: {ex.Message}", ex);
             throw;
         }
     }
+
+    private async Task<HexBigInteger> EstimateTransmitGasAsync(Function function, string from, params object[] input)
+    {
+        var gas = await function.EstimateGasAsync(from, null, null, input);
+        gas.Value = System.Numerics.BigInteger.Multiply(gas.Value, 2);
+
+        _logger.LogDebug($"[Evm] Estimate transmit gas result: {gas.ToUlong()}");
+
+        return gas;
+    }
+
+    private async Task<string> SendTransmitTransactionAsync(Function function, string from, HexBigInteger gas,
+        params object[] input) => await function.SendTransactionAsync(from, gas: gas, null, null, input);
 
     private Function GetTransmitFunction(EvmOptions evmOptions)
     {
