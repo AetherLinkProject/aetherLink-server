@@ -1,17 +1,17 @@
 using System;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using AElf;
 using AetherLink.Indexer;
 using AetherLink.Indexer.Dtos;
 using AetherLink.Indexer.Provider;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Provider;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 using Nethereum.Contracts;
-using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace AetherLink.Worker.Core.Service;
 
@@ -66,10 +66,12 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
     {
         var blockNumber = eventData.Log.BlockNumber;
         var sendRequestData = eventData.Event;
+        var messageId = ByteString.CopyFrom(sendRequestData.MessageId).ToBase64();
+        var sender = ByteStringHelper.FromHexString(sendRequestData.Sender).ToBase64();
         var receivedMessage = new EvmReceivedMessageDto
         {
-            MessageId = sendRequestData.MessageId.ToHex(),
-            Sender = Convert.ToBase64String(Encoding.UTF8.GetBytes(sendRequestData.Sender)),
+            MessageId = messageId,
+            Sender = sender,
             Epoch = (long)sendRequestData.Epoch,
             SourceChainId = (long)sendRequestData.SourceChainId,
             TargetChainId = (long)sendRequestData.TargetChainId,
@@ -85,6 +87,9 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             },
             TransactionTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds()
         };
+
+        _logger.LogInformation(
+            $"[EvmSearchServer] Get evm cross chain request {messageId} from {sender} to {(long)sendRequestData.TargetChainId} {sendRequestData.Receiver}");
         return receivedMessage;
     }
 }

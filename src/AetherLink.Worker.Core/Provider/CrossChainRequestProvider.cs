@@ -125,7 +125,8 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 {
                     TargetChainId = request.TokenTransferMetadata.TargetChainId,
                     Receiver = request.Receiver,
-                    Symbol = request.TokenTransferMetadata.Symbol
+                    Symbol = request.TokenTransferMetadata.Symbol,
+                    Amount = request.TokenTransferMetadata.Amount
                 });
 
             await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);

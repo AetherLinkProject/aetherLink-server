@@ -45,7 +45,15 @@ public class AetherLinkRequestService : AetherLinkServerAppService, IAetherLinkR
         }
         else if (!string.IsNullOrEmpty(input.TransactionId))
         {
-            crossChainRequestGrainId = input.TransactionId;
+            if (input.TransactionId.StartsWith("0x"))
+            {
+                var tempGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(input.TransactionId);
+                var tempResult = await tempGrain.GetAsync();
+                if (!tempResult.Success) throw new UserFriendlyException("Failed to get cross chain transaction");
+                crossChainRequestGrainId = tempResult.Data.MessageId;
+            }
+            else crossChainRequestGrainId = input.TransactionId;
+
             _logger.LogDebug(
                 $"[AetherLinkRequestService]Get CrossChainRequest status query by TransactionId {input.TransactionId}");
         }
