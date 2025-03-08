@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using AElf;
 using AetherLink.Indexer;
 using AetherLink.Indexer.Dtos;
 using AetherLink.Indexer.Provider;
@@ -66,8 +66,8 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
     {
         var blockNumber = eventData.Log.BlockNumber;
         var sendRequestData = eventData.Event;
-        var messageId = sendRequestData.MessageId.ToHex();
-        var sender = sendRequestData.Sender;
+        var messageId = HexByteConvertorExtensions.ToHex(sendRequestData.MessageId);
+        var sender = ByteStringHelper.FromHexString(sendRequestData.Sender).ToBase64();
         var receivedMessage = new EvmReceivedMessageDto
         {
             MessageId = messageId,
