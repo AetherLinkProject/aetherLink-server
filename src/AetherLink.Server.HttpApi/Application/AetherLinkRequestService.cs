@@ -49,7 +49,7 @@ public class AetherLinkRequestService : AetherLinkServerAppService, IAetherLinkR
             {
                 var tempGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(input.TransactionId);
                 var tempResult = await tempGrain.GetAsync();
-                if (tempResult is not { Success: true })
+                if (tempResult is not { Success: true } || tempResult.Data == null)
                     throw new UserFriendlyException("Failed to get cross chain transaction");
                 crossChainRequestGrainId = tempResult.Data.MessageId;
             }
