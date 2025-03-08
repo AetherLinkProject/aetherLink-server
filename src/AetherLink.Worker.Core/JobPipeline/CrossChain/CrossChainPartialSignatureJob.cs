@@ -83,7 +83,7 @@ public class CrossChainPartialSignatureJob : AsyncBackgroundJob<CrossChainPartia
             var crossChainReport = new CrossChainReportDto
             {
                 Message = crossChainData.Message,
-                TokenAmount = crossChainData.TokenAmount
+                TokenTransferMetadata = crossChainData.TokenTransferMetadata
             };
             var partialSig = signer.OffChainSign(reportContext, crossChainReport);
 

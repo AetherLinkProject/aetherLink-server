@@ -12,5 +12,5 @@ public class ReceiveMessageDto
     public string TargetContractAddress { get; set; }
     public long TransactionTime { get; set; }
     public string Message { get; set; }
-    [CanBeNull] public TokenAmountDto TokenAmountInfo { get; set; }
+    [CanBeNull] public TokenTransferMetadata TokenTransferMetadataInfo { get; set; }
 }

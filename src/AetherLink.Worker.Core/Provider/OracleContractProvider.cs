@@ -141,7 +141,7 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         var commitInput = new CommitInput
         {
             Report = AELFHelper.GenerateReport(reportContext, crossChainData.Message,
-                _objectMapper.Map<TokenAmountDto, TokenAmount>(crossChainData.TokenAmount))
+                _objectMapper.Map<TokenTransferMetadata, TokenAmount>(crossChainData.TokenTransferMetadata))
         };
 
         var signature = signatures.Values.Select(sig => ByteStringHelper.FromHexString(sig.ToHex())).ToList();

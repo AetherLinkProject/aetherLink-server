@@ -81,7 +81,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             TokenAmountInfo = new()
             {
                 TargetChainId = (long)sendRequestData.TargetChainId,
-                Receiver = sendRequestData.TargetContractAddress,
+                // Receiver = sendRequestData.TargetContractAddress,
                 TokenAddress = sendRequestData.TokenAddress,
                 Amount = (long)sendRequestData.Amount
             },

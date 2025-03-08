@@ -12,7 +12,8 @@ namespace AetherLink.Worker.Core.Provider;
 
 public interface ITokenSwapper
 {
-    public Task<TokenAmountDto> ConstructSwapId(ReportContextDto reportContext, TokenAmountDto tokenAmount);
+    public Task<TokenTransferMetadata> ConstructSwapId(ReportContextDto reportContext,
+        TokenTransferMetadata tokenAmount);
 }
 
 public class TokenSwapper : ITokenSwapper, ITransientDependency
@@ -29,11 +30,12 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
         _aeFinderProvider = aeFinderProvider;
     }
 
-    public async Task<TokenAmountDto> ConstructSwapId(ReportContextDto reportContext, TokenAmountDto tokenAmount)
+    public async Task<TokenTransferMetadata> ConstructSwapId(ReportContextDto reportContext,
+        TokenTransferMetadata tokenAmount)
     {
         try
         {
-            if (tokenAmount == null || string.IsNullOrEmpty(tokenAmount.Receiver))
+            if (tokenAmount == null || string.IsNullOrEmpty(reportContext.Receiver))
             {
                 _logger.LogWarning("[TokenSwapper] Get empty token amount");
                 return null;
@@ -47,7 +49,7 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
             _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
 
             var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenAmount.TargetChainId,
-                reportContext.SourceChainId, tokenAmount.Receiver, tokenAmount.TokenAddress, tokenAmount.Symbol);
+                reportContext.SourceChainId, reportContext.Receiver, tokenAmount.TokenAddress, tokenAmount.Symbol);
 
             if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.SwapId))
             {
@@ -79,11 +81,11 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
         }
     }
 
-    private string GenerateTokenSwapId(ReportContextDto reportContext, TokenAmountDto data)
+    private string GenerateTokenSwapId(ReportContextDto reportContext, TokenTransferMetadata data)
     {
         // CrossChain from aelf chain, TokenAddress is empty 
         var temp = !string.IsNullOrEmpty(data.TokenAddress) ? data.TokenAddress : data.Symbol;
         return IdGeneratorHelper.GenerateId(data.TargetChainId, reportContext.SourceChainId,
-            data.Receiver, temp);
+            reportContext.Receiver, temp);
     }
 }

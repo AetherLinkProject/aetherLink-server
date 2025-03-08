@@ -90,7 +90,7 @@ public class CrossChainMultiSignatureJob : AsyncBackgroundJob<CrossChainMultiSig
 
             // todo validate signature by chain client
             var report = new CrossChainReportDto
-                { Message = crossChainData.Message, TokenAmount = crossChainData.TokenAmount };
+                { Message = crossChainData.Message, TokenTransferMetadata = crossChainData.TokenTransferMetadata };
             if (!signer.OffChainVerify(reportContext, nodeIndex, report, args.Signature))
             {
                 _logger.LogWarning($"[CrossChain][Leader] Check {nodeIndex} Signature failed.");

@@ -37,7 +37,7 @@ public class EvmHelper
     {
         var reportContextDecoded = GenerateReportContextBytes(context);
         var message = GenerateMessageBytes(report.Message);
-        var tokenAmountDecode = GenerateTokenAmountBytes(report.TokenAmount);
+        var tokenAmountDecode = GenerateTokenTransferMetadataBytes(report.TokenTransferMetadata);
         return GenerateReportHash(reportContextDecoded, message, tokenAmountDecode);
     }
 
@@ -78,13 +78,13 @@ public class EvmHelper
         return encoded;
     }
 
-    public static byte[] GenerateTokenAmountBytes(TokenAmountDto tokenAmount)
+    public static byte[] GenerateTokenTransferMetadataBytes(TokenTransferMetadata tokenAmount)
     {
         var abiEncode = new ABIEncode();
         var encoded = abiEncode.GetABIEncoded(
             tokenAmount.ExtraData,
             (int)tokenAmount.TargetChainId,
-            tokenAmount.Receiver,
+            // tokenAmount.Receiver,
             tokenAmount.TokenAddress,
             tokenAmount.Symbol,
             (int)tokenAmount.Amount

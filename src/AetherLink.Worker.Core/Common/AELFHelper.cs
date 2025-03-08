@@ -8,7 +8,6 @@ using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using Google.Protobuf;
-using Ramp;
 using TokenAmount = Ramp.TokenAmount;
 
 namespace AetherLink.Worker.Core.Common;
@@ -19,14 +18,13 @@ public static class AELFHelper
         ChainConfig chainConfig)
     {
         var rpcTokenAmount = new TokenAmount();
-        if (report.TokenAmount != null)
+        if (report.TokenTransferMetadata != null)
         {
-            var temp = report.TokenAmount;
+            var temp = report.TokenTransferMetadata;
             rpcTokenAmount = new()
             {
                 SwapId = temp.ExtraData,
                 TargetChainId = temp.TargetChainId,
-                TargetContractAddress = temp.Receiver,
                 TokenAddress = temp.TokenAddress,
                 OriginToken = temp.Symbol,
                 Amount = temp.Amount
@@ -56,14 +54,14 @@ public static class AELFHelper
     private static byte[] GenerateMessage(ReportContextDto reportContext, CrossChainReportDto report)
     {
         var rpcTokenAmount = new TokenAmount();
-        if (report.TokenAmount != null)
+        if (report.TokenTransferMetadata != null)
         {
-            var temp = report.TokenAmount;
+            var temp = report.TokenTransferMetadata;
             rpcTokenAmount = new()
             {
                 SwapId = temp.ExtraData,
                 TargetChainId = temp.TargetChainId,
-                TargetContractAddress = temp.Receiver,
+                // TargetContractAddress = temp.Receiver,
                 TokenAddress = temp.TokenAddress,
                 OriginToken = temp.Symbol,
                 Amount = temp.Amount

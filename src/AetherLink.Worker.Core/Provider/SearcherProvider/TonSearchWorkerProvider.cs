@@ -328,7 +328,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
                     senderTonContractAddress.IsTestOnly(), false));
             var message = Base64.ToBase64String(TonHelper.ConvertMessageCellToBytes(receiveSlice.LoadRef()));
 
-            TokenAmountDto tokenAmountDto = null;
+            TokenTransferMetadata tokenTransferMetadata = null;
             if (receiveSlice.Refs.Length <= 0)
                 return new()
                 {
@@ -340,7 +340,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
                     TargetContractAddress = targetContractAddress,
                     TransactionTime = tonTransactionDto.BlockTime * 1000,
                     Message = message,
-                    TokenAmountInfo = tokenAmountDto,
+                    TokenTransferMetadataInfo = tokenTransferMetadata,
                 };
 
             var extraDataRefCell = receiveSlice.LoadRef().Parse();
@@ -351,10 +351,10 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
             var tokenAddressStr = tokenAddress.ToString(AddressType.Base64,
                 new AddressStringifyOptions(tokenAddress.IsBounceable(), tokenAddress.IsTestOnly(), false));
             var amount = (long)extraDataRefCell.LoadUInt(TonMetaDataConstants.AmountUIntSize);
-            tokenAmountDto = new TokenAmountDto
+            tokenTransferMetadata = new TokenTransferMetadata
             {
                 TargetChainId = tokenTargetChainId,
-                Receiver = contractAddress,
+                // Receiver = contractAddress,
                 TokenAddress = tokenAddressStr,
                 Amount = amount
             };
@@ -369,7 +369,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
                 TargetContractAddress = targetContractAddress,
                 TransactionTime = tonTransactionDto.BlockTime * 1000,
                 Message = message,
-                TokenAmountInfo = tokenAmountDto,
+                TokenTransferMetadataInfo = tokenTransferMetadata,
             };
         }
         catch (Exception e)
