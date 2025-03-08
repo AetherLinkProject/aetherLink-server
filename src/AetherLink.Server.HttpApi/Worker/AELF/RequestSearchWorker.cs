@@ -63,7 +63,8 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var consumedBlockHeight = consumedHeight.Data + 1;
         if (confirmedHeight < consumedBlockHeight)
         {
-            _logger.LogWarning($"[RequestSearchWorker] Waiting for {chainId} block confirmed.");
+            _logger.LogWarning(
+                $"[RequestSearchWorker] Waiting for {chainId} block confirmed, consumedBlockHeight:{consumedBlockHeight} confirmedHeight:{confirmedHeight}.");
             return;
         }
 
@@ -75,7 +76,7 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
             await aeFinderGrainClient.SearchRampRequestsAsync(chainId, confirmedHeight, consumedBlockHeight);
         if (!requests.Success)
         {
-            _logger.LogError($"[RequestSearchWorker]  {chainId} Get requests failed");
+            _logger.LogError($"[RequestSearchWorker] {chainId} Get requests failed");
         }
 
         var tasks = requests.Data.Select(HandleRampRequestAsync);
