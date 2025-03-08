@@ -7,11 +7,11 @@ using AetherLink.Indexer.Dtos;
 using AetherLink.Indexer.Provider;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Provider;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 using Nethereum.Contracts;
-using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace AetherLink.Worker.Core.Service;
 
@@ -66,7 +66,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
     {
         var blockNumber = eventData.Log.BlockNumber;
         var sendRequestData = eventData.Event;
-        var messageId = HexByteConvertorExtensions.ToHex(sendRequestData.MessageId);
+        var messageId = ByteString.CopyFrom(sendRequestData.MessageId).ToBase64();
         var sender = ByteStringHelper.FromHexString(sendRequestData.Sender).ToBase64();
         var receivedMessage = new EvmReceivedMessageDto
         {

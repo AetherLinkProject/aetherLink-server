@@ -17,12 +17,28 @@ public class EvmHelper
 {
     public static byte[] OffChainSign(ReportContextDto context, CrossChainReportDto report, EvmOptions chainConfig)
     {
+        var reportHash = GenerateReportHash(context, report);
+        var privateKey = ByteArrayHelper.HexStringToByteArray(chainConfig.SignerSecret);
+        return CryptoHelper.SignWithPrivateKey(privateKey, reportHash);
+    }
+
+    public static bool OffChainVerify(ReportContextDto context, int index, CrossChainReportDto report, byte[] sign,
+        string[] distPublicKey)
+    {
+        if (sign.Length <= 0) return false;
+        if (index < 0 || index > distPublicKey.Length) return false;
+
+        var reportHash = GenerateReportHash(context, report);
+        CryptoHelper.RecoverPublicKey(sign, reportHash, out var pubkey);
+        return pubkey != null && distPublicKey[index] == pubkey.ToHex();
+    }
+
+    private static byte[] GenerateReportHash(ReportContextDto context, CrossChainReportDto report)
+    {
         var reportContextDecoded = GenerateReportContextBytes(context);
         var message = GenerateMessageBytes(report.Message);
         var tokenAmountDecode = GenerateTokenAmountBytes(report.TokenAmount);
-        var reportHash = GenerateReportHash(reportContextDecoded, message, tokenAmountDecode);
-        var privateKey = ByteArrayHelper.HexStringToByteArray(chainConfig.SignerSecret);
-        return CryptoHelper.SignWithPrivateKey(privateKey, reportHash);
+        return GenerateReportHash(reportContextDecoded, message, tokenAmountDecode);
     }
 
     public static ( byte[][], byte[][], byte[]) AggregateSignatures(List<byte[]> signatureByteList)
@@ -46,11 +62,7 @@ public class EvmHelper
     private static byte[] GenerateReportHash(byte[] reportContext, byte[] message, byte[] tokenAmount)
     {
         var abiEncode = new ABIEncode();
-        var result = abiEncode.GetABIEncoded(
-            reportContext,
-            message,
-            tokenAmount
-        );
+        var result = abiEncode.GetABIEncoded(reportContext, message, tokenAmount);
         return Sha3Keccack.Current.CalculateHash(result);
     }
 

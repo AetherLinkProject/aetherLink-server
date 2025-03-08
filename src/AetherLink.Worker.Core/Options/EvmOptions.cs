@@ -5,6 +5,7 @@ namespace AetherLink.Worker.Core.Options;
 public class EvmContractsOptions
 {
     public Dictionary<string, EvmOptions> ContractConfig { get; set; }
+    public string[] DistPublicKey { get; set; }
 }
 
 public class EvmOptions

@@ -153,8 +153,19 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
             MessageId = messageId,
             Status = CrossChainStatus.Started.ToString()
         });
-
         _logger.LogDebug($"[EvmSearchServer] Create {grainId} {messageId} started {result.Success}");
+
+        var messageGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(messageId);
+        var messageResult = await messageGrain.UpdateAsync(new()
+        {
+            Id = grainId,
+            SourceChainId = (long)sendRequestData.SourceChainId,
+            TargetChainId = (long)sendRequestData.TargetChainId,
+            MessageId = messageId,
+            Status = CrossChainStatus.Started.ToString()
+        });
+
+        _logger.LogDebug($"[EvmSearchServer] Create {grainId} message grain {messageResult.Success}");
     }
 
     private async Task HandleCommittedAsync(FilterLog log)
