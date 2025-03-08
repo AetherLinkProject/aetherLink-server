@@ -25,9 +25,7 @@ public class EvmHelper
     public static bool OffChainVerify(ReportContextDto context, int index, CrossChainReportDto report, byte[] sign,
         string[] distPublicKey)
     {
-        if (sign.Length <= 0) return false;
-        if (index < 0 || index > distPublicKey.Length) return false;
-
+        if (sign.Length <= 0 || index < 0 || index > distPublicKey.Length) return false;
         var reportHash = GenerateReportHash(context, report);
         CryptoHelper.RecoverPublicKey(sign, reportHash, out var pubkey);
         return pubkey != null && distPublicKey[index] == pubkey.ToHex();
