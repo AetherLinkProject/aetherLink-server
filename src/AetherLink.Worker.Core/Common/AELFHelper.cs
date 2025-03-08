@@ -24,11 +24,11 @@ public static class AELFHelper
             var temp = report.TokenAmount;
             rpcTokenAmount = new()
             {
-                SwapId = temp.SwapId,
+                SwapId = temp.ExtraData,
                 TargetChainId = temp.TargetChainId,
-                TargetContractAddress = temp.TargetContractAddress,
+                TargetContractAddress = temp.Receiver,
                 TokenAddress = temp.TokenAddress,
-                OriginToken = temp.OriginToken,
+                OriginToken = temp.Symbol,
                 Amount = temp.Amount
             };
         }
@@ -61,11 +61,11 @@ public static class AELFHelper
             var temp = report.TokenAmount;
             rpcTokenAmount = new()
             {
-                SwapId = temp.SwapId,
+                SwapId = temp.ExtraData,
                 TargetChainId = temp.TargetChainId,
-                TargetContractAddress = temp.TargetContractAddress,
+                TargetContractAddress = temp.Receiver,
                 TokenAddress = temp.TokenAddress,
-                OriginToken = temp.OriginToken,
+                OriginToken = temp.Symbol,
                 Amount = temp.Amount
             };
         }

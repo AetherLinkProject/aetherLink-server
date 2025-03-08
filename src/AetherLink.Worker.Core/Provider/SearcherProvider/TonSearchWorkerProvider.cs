@@ -354,7 +354,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
             tokenAmountDto = new TokenAmountDto
             {
                 TargetChainId = tokenTargetChainId,
-                TargetContractAddress = contractAddress,
+                Receiver = contractAddress,
                 TokenAddress = tokenAddressStr,
                 Amount = amount
             };

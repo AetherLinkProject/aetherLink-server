@@ -123,9 +123,9 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
             crossChainRequestStartArgs.TokenAmount = await _tokenSwapper.ConstructSwapId(
                 crossChainRequestStartArgs.ReportContext, new()
                 {
-                    TargetChainId = request.TokenAmount.TargetChainId,
-                    TargetContractAddress = request.TokenAmount.TargetContractAddress,
-                    OriginToken = request.TokenAmount.OriginToken
+                    TargetChainId = request.TokenTransferMetadata.TargetChainId,
+                    Receiver = request.Receiver,
+                    Symbol = request.TokenTransferMetadata.Symbol
                 });
 
             await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);

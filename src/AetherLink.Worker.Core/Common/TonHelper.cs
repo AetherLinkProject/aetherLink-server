@@ -205,12 +205,12 @@ public static class TonHelper
             return result.Build();
         }
 
-        result.StoreRef(new CellBuilder().StoreBytes(Base64.Decode(tokenAmountDto.SwapId)).Build());
+        result.StoreRef(new CellBuilder().StoreBytes(Base64.Decode(tokenAmountDto.ExtraData)).Build());
         result.StoreInt(tokenAmountDto.TargetChainId, TonMetaDataConstants.ChainIdIntSize);
-        result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenAmountDto.TargetContractAddress))
+        result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenAmountDto.Receiver))
             .Build());
         result.StoreRef(new CellBuilder().StoreAddress(new Address(tokenAmountDto.TokenAddress)).Build());
-        result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenAmountDto.OriginToken)).Build());
+        result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenAmountDto.Symbol)).Build());
         result.StoreUInt(tokenAmountDto.Amount, TonMetaDataConstants.AmountUIntSize);
 
         return result.Build();

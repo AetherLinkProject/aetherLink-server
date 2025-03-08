@@ -119,10 +119,10 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
             .ForPath(t => t.ReportContext.Epoch, m => m.MapFrom(f => f.ReportContext.Epoch))
             .ForPath(t => t.ReportContext.RoundId, m => m.MapFrom(f => f.ReportContext.RoundId));
         CreateMap<TokenAmountDto, TokenAmount>()
-            .ForPath(t => t.SwapId, m => m.MapFrom(f => f.SwapId))
+            .ForPath(t => t.SwapId, m => m.MapFrom(f => f.ExtraData))
             .ForPath(t => t.TokenAddress, m => m.MapFrom(f => f.TokenAddress))
             .ForPath(t => t.TargetChainId, m => m.MapFrom(f => f.TargetChainId))
-            .ForPath(t => t.TargetContractAddress, m => m.MapFrom(f => f.TargetContractAddress))
-            .ForPath(t => t.OriginToken, m => m.MapFrom(f => f.OriginToken));
+            .ForPath(t => t.TargetContractAddress, m => m.MapFrom(f => f.Receiver))
+            .ForPath(t => t.OriginToken, m => m.MapFrom(f => f.Symbol));
     }
 }

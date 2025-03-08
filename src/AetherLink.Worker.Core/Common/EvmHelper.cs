@@ -70,11 +70,11 @@ public class EvmHelper
     {
         var abiEncode = new ABIEncode();
         var encoded = abiEncode.GetABIEncoded(
-            tokenAmount.SwapId,
+            tokenAmount.ExtraData,
             (int)tokenAmount.TargetChainId,
-            tokenAmount.TargetContractAddress,
+            tokenAmount.Receiver,
             tokenAmount.TokenAddress,
-            tokenAmount.OriginToken,
+            tokenAmount.Symbol,
             (int)tokenAmount.Amount
         );
         return encoded;
