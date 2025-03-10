@@ -26,7 +26,7 @@ public class EvmHelper
         string[] distPublicKey)
     {
         // todo for test;
-        return true;
+        // return true;
         if (sign.Length <= 0 || index < 0 || index > distPublicKey.Length) return false;
         var reportHash = GenerateReportHash(context, report);
         CryptoHelper.RecoverPublicKey(sign, reportHash, out var pubkey);
