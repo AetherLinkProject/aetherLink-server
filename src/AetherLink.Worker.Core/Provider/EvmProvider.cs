@@ -39,13 +39,16 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
 
             var function = GetTransmitFunction(evmOptions);
             var account = GetWeb3Account(evmOptions);
-            // var transmitSenderAddress = account.TransactionManager.Account.Address;
-            // var gas = await EstimateTransmitGasAsync(function, transmitSenderAddress, contextBytes, messageBytes,
-            //     tokenAmountBytes, rs, ss, rawVs);
+            var gasPrice = await account.Eth.GasPrice.SendRequestAsync();
+            var minGasPrice = Web3.Convert.ToWei(5, Nethereum.Util.UnitConversion.EthUnit.Gwei);
+            if (gasPrice.Value < minGasPrice) gasPrice = new HexBigInteger(minGasPrice);
+
+            _logger.LogDebug(
+                $"[Evm] Current Gas Price: {Web3.Convert.FromWei(gasPrice, Nethereum.Util.UnitConversion.EthUnit.Gwei)} Gwei");
 
             var gas = await function.EstimateGasAsync(
                 from: account.TransactionManager.Account.Address,
-                null,
+                gasPrice,
                 null,
                 contextBytes,
                 messageBytes,
@@ -57,9 +60,9 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
             _logger.LogDebug($"[Evm] Estimate transmit gas result: {gas.ToUlong()}");
 
             var transactionHash = await function.SendTransactionAsync(
-                from: account.TransactionManager.Account.Address,
-                gas: gas,
-                null,
+                account.TransactionManager.Account.Address,
+                gas,
+                gasPrice,
                 null,
                 contextBytes,
                 messageBytes,
@@ -68,33 +71,21 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
                 ss,
                 rawVs
             );
-
-            // var transactionHash = await SendTransmitTransactionAsync(function, transmitSenderAddress, gas, contextBytes,
-            //     messageBytes, tokenAmountBytes, rs, ss, rawVs);
-
             _logger.LogInformation($"[Evm] Transaction successful! Hash: {transactionHash}");
 
             return transactionHash;
         }
+        catch (Nethereum.ABI.FunctionEncoding.SmartContractRevertException se)
+        {
+            _logger.LogError(se, $"[Evm] Transaction is revert by smart contract: {se.Message}");
+            return string.Empty;
+        }
         catch (Exception ex)
         {
-            _logger.LogError($"[Evm] Transaction failed: {ex.Message}", ex);
+            _logger.LogError(ex, $"[Evm] Transaction failed: {ex.Message}", ex);
             throw;
         }
     }
-
-    private async Task<HexBigInteger> EstimateTransmitGasAsync(Function function, string from, params object[] input)
-    {
-        var gas = await function.EstimateGasAsync(from, null, null, input);
-        gas.Value = System.Numerics.BigInteger.Multiply(gas.Value, 2);
-
-        _logger.LogDebug($"[Evm] Estimate transmit gas result: {gas.ToUlong()}");
-
-        return gas;
-    }
-
-    private async Task<string> SendTransmitTransactionAsync(Function function, string from, HexBigInteger gas,
-        params object[] input) => await function.SendTransactionAsync(from, gas: gas, null, null, input);
 
     private Function GetTransmitFunction(EvmOptions evmOptions)
     {
