@@ -116,7 +116,7 @@ public static class TonHelper
     }
 
     private static Cell BuildMessageBody(long sourceChainId, long targetChainId, byte[] sender, Address receiverAddress,
-        byte[] message, TokenTransferMetadataDto tokenAmount = null)
+        byte[] message, TokenTransferMetadataDto tokenTransferMetadata = null)
     {
         return new CellBuilder()
             .StoreUInt((int)sourceChainId, TonMetaDataConstants.ChainIdIntSize)
@@ -124,7 +124,7 @@ public static class TonHelper
             .StoreRef(new CellBuilder().StoreBytes(sender).Build())
             .StoreRef(new CellBuilder().StoreAddress(receiverAddress).Build())
             .StoreRef(ConvertMessageBytesToCell(message))
-            .StoreRef(BuildTokenAmountInfo(tokenAmount))
+            .StoreRef(BuildTokenTransferMetadataInfo(tokenTransferMetadata))
             .Build();
     }
 
@@ -197,7 +197,7 @@ public static class TonHelper
         return tempCellRef.Build();
     }
 
-    private static Cell BuildTokenAmountInfo(TokenTransferMetadataDto tokenTransferMetadataDto = null)
+    private static Cell BuildTokenTransferMetadataInfo(TokenTransferMetadataDto tokenTransferMetadataDto = null)
     {
         var result = new CellBuilder();
         if (tokenTransferMetadataDto == null)

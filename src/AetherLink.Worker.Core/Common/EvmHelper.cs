@@ -59,10 +59,10 @@ public class EvmHelper
         return (r, s, v);
     }
 
-    private static byte[] GenerateReportHash(byte[] reportContext, byte[] message, byte[] tokenAmount)
+    private static byte[] GenerateReportHash(byte[] reportContext, byte[] message, byte[] tokenTransferMetadata)
     {
         var abiEncode = new ABIEncode();
-        var result = abiEncode.GetABIEncoded(reportContext, message, tokenAmount);
+        var result = abiEncode.GetABIEncoded(reportContext, message, tokenTransferMetadata);
         return Sha3Keccack.Current.CalculateHash(result);
     }
 
@@ -78,16 +78,16 @@ public class EvmHelper
         return encoded;
     }
 
-    public static byte[] GenerateTokenTransferMetadataBytes(TokenTransferMetadataDto tokenAmount)
+    public static byte[] GenerateTokenTransferMetadataBytes(TokenTransferMetadataDto tokenTransferMetadata)
     {
         var abiEncode = new ABIEncode();
         var encoded = abiEncode.GetABIEncoded(
-            tokenAmount.ExtraData,
-            (int)tokenAmount.TargetChainId,
-            // tokenAmount.Receiver,
-            tokenAmount.TokenAddress,
-            tokenAmount.Symbol,
-            (int)tokenAmount.Amount
+            tokenTransferMetadata.ExtraData,
+            (int)tokenTransferMetadata.TargetChainId,
+            // TokenTransferMetadata.Receiver,
+            tokenTransferMetadata.TokenAddress,
+            tokenTransferMetadata.Symbol,
+            (int)tokenTransferMetadata.Amount
         );
         return encoded;
     }

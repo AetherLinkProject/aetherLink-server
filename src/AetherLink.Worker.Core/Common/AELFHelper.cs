@@ -53,11 +53,11 @@ public static class AELFHelper
 
     private static byte[] GenerateMessage(ReportContextDto reportContext, CrossChainReportDto report)
     {
-        var rpcTokenAmount = new TokenTransferMetadata();
+        var tokenTransferMetadata = new TokenTransferMetadata();
         if (report.TokenTransferMetadataDto != null)
         {
             var temp = report.TokenTransferMetadataDto;
-            rpcTokenAmount = new()
+            tokenTransferMetadata = new()
             {
                 ExtraData = ByteString.FromBase64(temp.ExtraData),
                 TargetChainId = temp.TargetChainId,
@@ -68,7 +68,7 @@ public static class AELFHelper
             };
         }
 
-        var reportData = GenerateReport(reportContext, report.Message, rpcTokenAmount);
+        var reportData = GenerateReport(reportContext, report.Message, tokenTransferMetadata);
         return HashHelper.ComputeFrom(reportData.ToByteArray()).ToByteArray();
     }
 
