@@ -49,10 +49,10 @@ public class ForwardMessageCalledEventDTO : IEventDTO
     [Parameter("uint256", "targetChainId", 3, false)]
     public BigInteger TargetChainId { get; set; }
 
-    [Parameter("string", "sender", 4, true)]
+    [Parameter("string", "sender", 4, false)]
     public string Sender { get; set; }
 
-    [Parameter("address", "receiver", 5, true)]
+    [Parameter("address", "receiver", 5, false)]
     public string Receiver { get; set; }
 
     [Parameter("bytes", "message", 6, false)]
