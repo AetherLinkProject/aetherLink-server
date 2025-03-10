@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Numerics;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
@@ -38,11 +39,38 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
 
             var function = GetTransmitFunction(evmOptions);
             var account = GetWeb3Account(evmOptions);
-            var transmitSenderAddress = account.TransactionManager.Account.Address;
-            var gas = await EstimateTransmitGasAsync(function, transmitSenderAddress, contextBytes, messageBytes,
-                tokenAmountBytes, rs, ss, rawVs);
-            var transactionHash = await SendTransmitTransactionAsync(function, transmitSenderAddress, gas, contextBytes,
-                messageBytes, tokenAmountBytes, rs, ss, rawVs);
+            // var transmitSenderAddress = account.TransactionManager.Account.Address;
+            // var gas = await EstimateTransmitGasAsync(function, transmitSenderAddress, contextBytes, messageBytes,
+            //     tokenAmountBytes, rs, ss, rawVs);
+
+            var gas = await function.EstimateGasAsync(
+                from: account.TransactionManager.Account.Address,
+                null,
+                null,
+                contextBytes,
+                messageBytes,
+                tokenAmountBytes,
+                rs,
+                ss,
+                rawVs);
+            gas.Value = BigInteger.Multiply(gas.Value, 2);
+            _logger.LogDebug($"[Evm] Estimate transmit gas result: {gas.ToUlong()}");
+
+            var transactionHash = await function.SendTransactionAsync(
+                from: account.TransactionManager.Account.Address,
+                gas: gas,
+                null,
+                null,
+                contextBytes,
+                messageBytes,
+                tokenAmountBytes,
+                rs,
+                ss,
+                rawVs
+            );
+
+            // var transactionHash = await SendTransmitTransactionAsync(function, transmitSenderAddress, gas, contextBytes,
+            //     messageBytes, tokenAmountBytes, rs, ss, rawVs);
 
             _logger.LogInformation($"[Evm] Transaction successful! Hash: {transactionHash}");
 
