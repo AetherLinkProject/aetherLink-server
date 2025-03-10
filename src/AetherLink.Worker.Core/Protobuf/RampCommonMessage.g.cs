@@ -27,87 +27,62 @@ namespace Ramp {
             "ChlyYW1wX2NvbW1vbl9tZXNzYWdlLnByb3RvEgRyYW1wGg9hZWxmL2NvcmUu",
             "cHJvdG8aEmFlbGYvb3B0aW9ucy5wcm90bxoLYWNzMTIucHJvdG8aG2dvb2ds",
             "ZS9wcm90b2J1Zi9lbXB0eS5wcm90bxoeZ29vZ2xlL3Byb3RvYnVmL3dyYXBw",
-            "ZXJzLnByb3RvGh9nb29nbGUvcHJvdG9idWYvdGltZXN0YW1wLnByb3RvIpUB",
-            "CgtUb2tlbkFtb3VudBIPCgdzd2FwX2lkGAEgASgJEhcKD3RhcmdldF9jaGFp",
-            "bl9pZBgCIAEoAxIfChd0YXJnZXRfY29udHJhY3RfYWRkcmVzcxgDIAEoCRIV",
-            "Cg10b2tlbl9hZGRyZXNzGAQgASgJEhQKDG9yaWdpbl90b2tlbhgFIAEoCRIO",
-            "CgZhbW91bnQYBiABKANiBnByb3RvMw=="));
+            "ZXJzLnByb3RvGh9nb29nbGUvcHJvdG9idWYvdGltZXN0YW1wLnByb3RvInsK",
+            "FVRva2VuVHJhbnNmZXJNZXRhZGF0YRIXCg90YXJnZXRfY2hhaW5faWQYASAB",
+            "KAMSFQoNdG9rZW5fYWRkcmVzcxgCIAEoCRIOCgZzeW1ib2wYAyABKAkSDgoG",
+            "YW1vdW50GAQgASgDEhIKCmV4dHJhX2RhdGEYBSABKAxiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::AElf.Types.CoreReflection.Descriptor, global::AElf.OptionsReflection.Descriptor, global::AElf.Standards.ACS12.Acs12Reflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.WrappersReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.TimestampReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Ramp.TokenAmount), global::Ramp.TokenAmount.Parser, new[]{ "SwapId", "TargetChainId", "TargetContractAddress", "TokenAddress", "OriginToken", "Amount" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::Ramp.TokenTransferMetadata), global::Ramp.TokenTransferMetadata.Parser, new[]{ "TargetChainId", "TokenAddress", "Symbol", "Amount", "ExtraData" }, null, null, null, null)
           }));
     }
     #endregion
 
   }
   #region Messages
-  public sealed partial class TokenAmount : pb::IMessage<TokenAmount>
-  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-      , pb::IBufferMessage
-  #endif
-  {
-    private static readonly pb::MessageParser<TokenAmount> _parser = new pb::MessageParser<TokenAmount>(() => new TokenAmount());
+  public sealed partial class TokenTransferMetadata : pb::IMessage<TokenTransferMetadata> {
+    private static readonly pb::MessageParser<TokenTransferMetadata> _parser = new pb::MessageParser<TokenTransferMetadata>(() => new TokenTransferMetadata());
     private pb::UnknownFieldSet _unknownFields;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public static pb::MessageParser<TokenAmount> Parser { get { return _parser; } }
+    public static pb::MessageParser<TokenTransferMetadata> Parser { get { return _parser; } }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
       get { return global::Ramp.RampCommonMessageReflection.Descriptor.MessageTypes[0]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     pbr::MessageDescriptor pb::IMessage.Descriptor {
       get { return Descriptor; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public TokenAmount() {
+    public TokenTransferMetadata() {
       OnConstruction();
     }
 
     partial void OnConstruction();
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public TokenAmount(TokenAmount other) : this() {
-      swapId_ = other.swapId_;
+    public TokenTransferMetadata(TokenTransferMetadata other) : this() {
       targetChainId_ = other.targetChainId_;
-      targetContractAddress_ = other.targetContractAddress_;
       tokenAddress_ = other.tokenAddress_;
-      originToken_ = other.originToken_;
+      symbol_ = other.symbol_;
       amount_ = other.amount_;
+      extraData_ = other.extraData_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public TokenAmount Clone() {
-      return new TokenAmount(this);
-    }
-
-    /// <summary>Field number for the "swap_id" field.</summary>
-    public const int SwapIdFieldNumber = 1;
-    private string swapId_ = "";
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string SwapId {
-      get { return swapId_; }
-      set {
-        swapId_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
+    public TokenTransferMetadata Clone() {
+      return new TokenTransferMetadata(this);
     }
 
     /// <summary>Field number for the "target_chain_id" field.</summary>
-    public const int TargetChainIdFieldNumber = 2;
+    public const int TargetChainIdFieldNumber = 1;
     private long targetChainId_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public long TargetChainId {
       get { return targetChainId_; }
       set {
@@ -115,23 +90,10 @@ namespace Ramp {
       }
     }
 
-    /// <summary>Field number for the "target_contract_address" field.</summary>
-    public const int TargetContractAddressFieldNumber = 3;
-    private string targetContractAddress_ = "";
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string TargetContractAddress {
-      get { return targetContractAddress_; }
-      set {
-        targetContractAddress_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
-    }
-
     /// <summary>Field number for the "token_address" field.</summary>
-    public const int TokenAddressFieldNumber = 4;
+    public const int TokenAddressFieldNumber = 2;
     private string tokenAddress_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public string TokenAddress {
       get { return tokenAddress_; }
       set {
@@ -139,23 +101,21 @@ namespace Ramp {
       }
     }
 
-    /// <summary>Field number for the "origin_token" field.</summary>
-    public const int OriginTokenFieldNumber = 5;
-    private string originToken_ = "";
+    /// <summary>Field number for the "symbol" field.</summary>
+    public const int SymbolFieldNumber = 3;
+    private string symbol_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string OriginToken {
-      get { return originToken_; }
+    public string Symbol {
+      get { return symbol_; }
       set {
-        originToken_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+        symbol_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
       }
     }
 
     /// <summary>Field number for the "amount" field.</summary>
-    public const int AmountFieldNumber = 6;
+    public const int AmountFieldNumber = 4;
     private long amount_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public long Amount {
       get { return amount_; }
       set {
@@ -163,40 +123,46 @@ namespace Ramp {
       }
     }
 
+    /// <summary>Field number for the "extra_data" field.</summary>
+    public const int ExtraDataFieldNumber = 5;
+    private pb::ByteString extraData_ = pb::ByteString.Empty;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public override bool Equals(object other) {
-      return Equals(other as TokenAmount);
+    public pb::ByteString ExtraData {
+      get { return extraData_; }
+      set {
+        extraData_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public bool Equals(TokenAmount other) {
+    public override bool Equals(object other) {
+      return Equals(other as TokenTransferMetadata);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool Equals(TokenTransferMetadata other) {
       if (ReferenceEquals(other, null)) {
         return false;
       }
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (SwapId != other.SwapId) return false;
       if (TargetChainId != other.TargetChainId) return false;
-      if (TargetContractAddress != other.TargetContractAddress) return false;
       if (TokenAddress != other.TokenAddress) return false;
-      if (OriginToken != other.OriginToken) return false;
+      if (Symbol != other.Symbol) return false;
       if (Amount != other.Amount) return false;
+      if (ExtraData != other.ExtraData) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
-      if (SwapId.Length != 0) hash ^= SwapId.GetHashCode();
       if (TargetChainId != 0L) hash ^= TargetChainId.GetHashCode();
-      if (TargetContractAddress.Length != 0) hash ^= TargetContractAddress.GetHashCode();
       if (TokenAddress.Length != 0) hash ^= TokenAddress.GetHashCode();
-      if (OriginToken.Length != 0) hash ^= OriginToken.GetHashCode();
+      if (Symbol.Length != 0) hash ^= Symbol.GetHashCode();
       if (Amount != 0L) hash ^= Amount.GetHashCode();
+      if (ExtraData.Length != 0) hash ^= ExtraData.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -204,102 +170,54 @@ namespace Ramp {
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override string ToString() {
       return pb::JsonFormatter.ToDiagnosticString(this);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public void WriteTo(pb::CodedOutputStream output) {
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-      output.WriteRawMessage(this);
-    #else
-      if (SwapId.Length != 0) {
-        output.WriteRawTag(10);
-        output.WriteString(SwapId);
-      }
       if (TargetChainId != 0L) {
-        output.WriteRawTag(16);
+        output.WriteRawTag(8);
         output.WriteInt64(TargetChainId);
       }
-      if (TargetContractAddress.Length != 0) {
-        output.WriteRawTag(26);
-        output.WriteString(TargetContractAddress);
-      }
       if (TokenAddress.Length != 0) {
-        output.WriteRawTag(34);
+        output.WriteRawTag(18);
         output.WriteString(TokenAddress);
       }
-      if (OriginToken.Length != 0) {
-        output.WriteRawTag(42);
-        output.WriteString(OriginToken);
+      if (Symbol.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteString(Symbol);
       }
       if (Amount != 0L) {
-        output.WriteRawTag(48);
+        output.WriteRawTag(32);
         output.WriteInt64(Amount);
+      }
+      if (ExtraData.Length != 0) {
+        output.WriteRawTag(42);
+        output.WriteBytes(ExtraData);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
-    #endif
     }
 
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      if (SwapId.Length != 0) {
-        output.WriteRawTag(10);
-        output.WriteString(SwapId);
-      }
-      if (TargetChainId != 0L) {
-        output.WriteRawTag(16);
-        output.WriteInt64(TargetChainId);
-      }
-      if (TargetContractAddress.Length != 0) {
-        output.WriteRawTag(26);
-        output.WriteString(TargetContractAddress);
-      }
-      if (TokenAddress.Length != 0) {
-        output.WriteRawTag(34);
-        output.WriteString(TokenAddress);
-      }
-      if (OriginToken.Length != 0) {
-        output.WriteRawTag(42);
-        output.WriteString(OriginToken);
-      }
-      if (Amount != 0L) {
-        output.WriteRawTag(48);
-        output.WriteInt64(Amount);
-      }
-      if (_unknownFields != null) {
-        _unknownFields.WriteTo(ref output);
-      }
-    }
-    #endif
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
-      if (SwapId.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(SwapId);
-      }
       if (TargetChainId != 0L) {
         size += 1 + pb::CodedOutputStream.ComputeInt64Size(TargetChainId);
-      }
-      if (TargetContractAddress.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(TargetContractAddress);
       }
       if (TokenAddress.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(TokenAddress);
       }
-      if (OriginToken.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(OriginToken);
+      if (Symbol.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Symbol);
       }
       if (Amount != 0L) {
         size += 1 + pb::CodedOutputStream.ComputeInt64Size(Amount);
+      }
+      if (ExtraData.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeBytesSize(ExtraData);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -308,111 +226,59 @@ namespace Ramp {
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public void MergeFrom(TokenAmount other) {
+    public void MergeFrom(TokenTransferMetadata other) {
       if (other == null) {
         return;
-      }
-      if (other.SwapId.Length != 0) {
-        SwapId = other.SwapId;
       }
       if (other.TargetChainId != 0L) {
         TargetChainId = other.TargetChainId;
       }
-      if (other.TargetContractAddress.Length != 0) {
-        TargetContractAddress = other.TargetContractAddress;
-      }
       if (other.TokenAddress.Length != 0) {
         TokenAddress = other.TokenAddress;
       }
-      if (other.OriginToken.Length != 0) {
-        OriginToken = other.OriginToken;
+      if (other.Symbol.Length != 0) {
+        Symbol = other.Symbol;
       }
       if (other.Amount != 0L) {
         Amount = other.Amount;
+      }
+      if (other.ExtraData.Length != 0) {
+        ExtraData = other.ExtraData;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public void MergeFrom(pb::CodedInputStream input) {
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-      input.ReadRawMessage(this);
-    #else
       uint tag;
       while ((tag = input.ReadTag()) != 0) {
         switch(tag) {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
-          case 10: {
-            SwapId = input.ReadString();
-            break;
-          }
-          case 16: {
+          case 8: {
             TargetChainId = input.ReadInt64();
             break;
           }
-          case 26: {
-            TargetContractAddress = input.ReadString();
-            break;
-          }
-          case 34: {
+          case 18: {
             TokenAddress = input.ReadString();
             break;
           }
-          case 42: {
-            OriginToken = input.ReadString();
-            break;
-          }
-          case 48: {
-            Amount = input.ReadInt64();
-            break;
-          }
-        }
-      }
-    #endif
-    }
-
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
-      uint tag;
-      while ((tag = input.ReadTag()) != 0) {
-        switch(tag) {
-          default:
-            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
-            break;
-          case 10: {
-            SwapId = input.ReadString();
-            break;
-          }
-          case 16: {
-            TargetChainId = input.ReadInt64();
-            break;
-          }
           case 26: {
-            TargetContractAddress = input.ReadString();
+            Symbol = input.ReadString();
             break;
           }
-          case 34: {
-            TokenAddress = input.ReadString();
+          case 32: {
+            Amount = input.ReadInt64();
             break;
           }
           case 42: {
-            OriginToken = input.ReadString();
-            break;
-          }
-          case 48: {
-            Amount = input.ReadInt64();
+            ExtraData = input.ReadBytes();
             break;
           }
         }
       }
     }
-    #endif
 
   }
 

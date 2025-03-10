@@ -1,6 +1,6 @@
 namespace AetherLink.Worker.Core.Dtos;
 
-public class TokenTransferMetadata
+public class TokenTransferMetadataDto
 {
     public string ExtraData { get; set; }
     public long TargetChainId { get; set; }

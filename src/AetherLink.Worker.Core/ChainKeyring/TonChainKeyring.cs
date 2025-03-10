@@ -28,7 +28,7 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
         var unsignedCell = TonHelper.PopulateMetadata(new CellBuilder(),
             reportContext,
             report.Message,
-            report.TokenTransferMetadata).Build();
+            report.TokenTransferMetadataDto).Build();
         var secretKeyHex = Hex.Decode(_privateOptions.TransmitterSecretKey);
         return KeyPair.Sign(unsignedCell, secretKeyHex);
     }
@@ -39,7 +39,7 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
         var bodyCell = TonHelper.PopulateMetadata(new CellBuilder(),
             reportContext,
             report.Message,
-            report.TokenTransferMetadata).Build();
+            report.TokenTransferMetadataDto).Build();
 
         var nodeInfo = _publicOption.OracleNodeInfoList.Find(f => f.Index == index);
         return nodeInfo != null && TonHelper.VerifySignature(nodeInfo.PublicKey, bodyCell, sign);

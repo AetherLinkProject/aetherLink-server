@@ -328,7 +328,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
                     senderTonContractAddress.IsTestOnly(), false));
             var message = Base64.ToBase64String(TonHelper.ConvertMessageCellToBytes(receiveSlice.LoadRef()));
 
-            TokenTransferMetadata tokenTransferMetadata = null;
+            TokenTransferMetadataDto tokenTransferMetadataDto = null;
             if (receiveSlice.Refs.Length <= 0)
                 return new()
                 {
@@ -340,7 +340,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
                     TargetContractAddress = targetContractAddress,
                     TransactionTime = tonTransactionDto.BlockTime * 1000,
                     Message = message,
-                    TokenTransferMetadataInfo = tokenTransferMetadata,
+                    TokenTransferMetadataDtoInfo = tokenTransferMetadataDto,
                 };
 
             var extraDataRefCell = receiveSlice.LoadRef().Parse();
@@ -351,7 +351,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
             var tokenAddressStr = tokenAddress.ToString(AddressType.Base64,
                 new AddressStringifyOptions(tokenAddress.IsBounceable(), tokenAddress.IsTestOnly(), false));
             var amount = (long)extraDataRefCell.LoadUInt(TonMetaDataConstants.AmountUIntSize);
-            tokenTransferMetadata = new TokenTransferMetadata
+            tokenTransferMetadataDto = new TokenTransferMetadataDto
             {
                 TargetChainId = tokenTargetChainId,
                 // Receiver = contractAddress,
@@ -369,7 +369,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
                 TargetContractAddress = targetContractAddress,
                 TransactionTime = tonTransactionDto.BlockTime * 1000,
                 Message = message,
-                TokenTransferMetadataInfo = tokenTransferMetadata,
+                TokenTransferMetadataDtoInfo = tokenTransferMetadataDto,
             };
         }
         catch (Exception e)

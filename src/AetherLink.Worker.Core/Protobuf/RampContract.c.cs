@@ -104,7 +104,7 @@ namespace AetherLink.Contracts.Ramp {
         Receiver = Receiver,
         Sender = Sender,
         Message = Message,
-        TokenAmount = TokenAmount,
+        TokenTransferMetadata = TokenTransferMetadata,
         Epoch = Epoch,
       };
     }
@@ -122,6 +122,24 @@ namespace AetherLink.Contracts.Ramp {
     public RequestCancelled GetNonIndexed()
     {
       return new RequestCancelled
+      {
+        MessageId = MessageId,
+      };
+    }
+  }
+
+  public partial class RequestManuallyExecuted : aelf::IEvent<RequestManuallyExecuted>
+  {
+    public global::System.Collections.Generic.IEnumerable<RequestManuallyExecuted> GetIndexed()
+    {
+      return new List<RequestManuallyExecuted>
+      {
+      };
+    }
+
+    public RequestManuallyExecuted GetNonIndexed()
+    {
+      return new RequestManuallyExecuted
       {
         MessageId = MessageId,
       };
@@ -202,6 +220,7 @@ namespace AetherLink.Contracts.Ramp {
     static readonly aelf::Marshaller<global::AetherLink.Contracts.Ramp.SendInput> __Marshaller_SendInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Ramp.SendInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AetherLink.Contracts.Ramp.CommitInput> __Marshaller_CommitInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Ramp.CommitInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::AElf.Types.Hash> __Marshaller_aelf_Hash = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AElf.Types.Hash.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::AetherLink.Contracts.Ramp.ManuallyExecuteRequestsInput> __Marshaller_ManuallyExecuteRequestsInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AetherLink.Contracts.Ramp.ManuallyExecuteRequestsInput.Parser.ParseFrom);
     #endregion
 
     #region Methods
@@ -324,6 +343,20 @@ namespace AetherLink.Contracts.Ramp {
         __Marshaller_aelf_Hash,
         __Marshaller_google_protobuf_Empty);
 
+    static readonly aelf::Method<global::AetherLink.Contracts.Ramp.ManuallyExecuteRequestsInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_BatchManuallyExecute = new aelf::Method<global::AetherLink.Contracts.Ramp.ManuallyExecuteRequestsInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "BatchManuallyExecute",
+        __Marshaller_ManuallyExecuteRequestsInput,
+        __Marshaller_google_protobuf_Empty);
+
+    static readonly aelf::Method<global::AElf.Types.Hash, global::AElf.Types.Hash> __Method_GetMessageMetaData = new aelf::Method<global::AElf.Types.Hash, global::AElf.Types.Hash>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetMessageMetaData",
+        __Marshaller_aelf_Hash,
+        __Marshaller_aelf_Hash);
+
     #endregion
 
     #region Descriptors
@@ -433,6 +466,16 @@ namespace AetherLink.Contracts.Ramp {
     //     throw new global::System.NotImplementedException();
     //   }
     //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty BatchManuallyExecute(global::AetherLink.Contracts.Ramp.ManuallyExecuteRequestsInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::AElf.Types.Hash GetMessageMetaData(global::AElf.Types.Hash input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
     // }
     //
     // public static aelf::ServerServiceDefinition BindService(RampContractBase serviceImpl)
@@ -455,7 +498,9 @@ namespace AetherLink.Contracts.Ramp {
     //       .AddMethod(__Method_GetLatestEpoch, serviceImpl.GetLatestEpoch)
     //       .AddMethod(__Method_Send, serviceImpl.Send)
     //       .AddMethod(__Method_Commit, serviceImpl.Commit)
-    //       .AddMethod(__Method_Cancel, serviceImpl.Cancel).Build();
+    //       .AddMethod(__Method_Cancel, serviceImpl.Cancel)
+    //       .AddMethod(__Method_BatchManuallyExecute, serviceImpl.BatchManuallyExecute)
+    //       .AddMethod(__Method_GetMessageMetaData, serviceImpl.GetMessageMetaData).Build();
     // }
 
   }

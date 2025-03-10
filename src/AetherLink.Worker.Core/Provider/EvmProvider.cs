@@ -16,7 +16,7 @@ namespace AetherLink.Worker.Core.Provider;
 
 public interface IEvmProvider
 {
-    Task<string> TransmitAsync(EvmOptions evmOptions, byte[] contextBytes, byte[] messageBytes, byte[] tokenAmountBytes,
+    Task<string> TransmitAsync(EvmOptions evmOptions, byte[] contextBytes, byte[] messageBytes, byte[] tokenTransferMetadataBytes,
         byte[][] rs, byte[][] ss, byte[] rawVs);
 }
 
@@ -30,7 +30,7 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
     }
 
     public async Task<string> TransmitAsync(EvmOptions evmOptions, byte[] contextBytes, byte[] messageBytes,
-        byte[] tokenAmountBytes, byte[][] rs, byte[][] ss, byte[] rawVs)
+        byte[] tokenTransferMetadataBytes, byte[][] rs, byte[][] ss, byte[] rawVs)
     {
         try
         {
@@ -40,9 +40,9 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
             var account = GetWeb3Account(evmOptions);
             var transmitSenderAddress = account.TransactionManager.Account.Address;
             var gas = await EstimateTransmitGasAsync(function, transmitSenderAddress, contextBytes, messageBytes,
-                tokenAmountBytes, rs, ss, rawVs);
+                tokenTransferMetadataBytes, rs, ss, rawVs);
             var transactionHash = await SendTransmitTransactionAsync(function, transmitSenderAddress, gas, contextBytes,
-                messageBytes, tokenAmountBytes, rs, ss, rawVs);
+                messageBytes, tokenTransferMetadataBytes, rs, ss, rawVs);
 
             _logger.LogInformation($"[Evm] Transaction successful! Hash: {transactionHash}");
 

@@ -8,5 +8,5 @@ public class ForwardMessageDto
     public string Sender { get; set; }
     public string Receiver { get; set; }
     public string Message { get; set; }
-    public TokenTransferMetadata TokenTransferMetadata { get; set; }
+    public TokenTransferMetadataDto TokenTransferMetadataDto { get; set; }
 }

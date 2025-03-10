@@ -78,7 +78,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             BlockNumber = blockNumber,
             Receiver = sendRequestData.Receiver,
             Message = Convert.ToBase64String(sendRequestData.Message),
-            TokenAmountInfo = new()
+            TokenTransferMetadataInfo = new()
             {
                 TargetChainId = (long)sendRequestData.TargetChainId,
                 // Receiver = sendRequestData.TargetContractAddress,

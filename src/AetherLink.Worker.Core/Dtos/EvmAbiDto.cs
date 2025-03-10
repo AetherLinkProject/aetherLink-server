@@ -14,12 +14,11 @@ public class ReportContext
     [Parameter("address", 5)] public string Receiver { get; set; }
 }
 
-public class TokenAmount
+public class TokenTransferMetadata
 {
-    [Parameter("string", 1)] public string SwapId { get; set; }
-    [Parameter("uint256", 2)] public int TargetChainId { get; set; }
-    [Parameter("string", 3)] public string TargetContractAddress { get; set; }
-    [Parameter("string", 4)] public string TokenAddress { get; set; }
-    [Parameter("string", 5)] public string OriginToken { get; set; }
-    [Parameter("uint256", 6)] public long Amount { get; set; }
+    [Parameter("uint256", 1)] public int TargetChainId { get; set; }
+    [Parameter("string", 2)] public string TokenAddress { get; set; }
+    [Parameter("string", 3)] public string Symbol { get; set; }
+    [Parameter("uint256", 4)] public long Amount { get; set; }
+    [Parameter("bytes", 5)] public string ExtraData { get; set; }
 }

@@ -57,7 +57,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 StartTime = request.TransactionTime
             };
             crossChainRequestStartArgs.TokenAmount =
-                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenTransferMetadataInfo);
+                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenTransferMetadataDtoInfo);
             await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
         }
         catch (Exception e)
@@ -87,7 +87,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 StartTime = request.TransactionTime
             };
             crossChainRequestStartArgs.TokenAmount =
-                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenAmountInfo);
+                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenTransferMetadataInfo);
             await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
         }
         catch (Exception e)

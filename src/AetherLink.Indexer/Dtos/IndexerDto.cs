@@ -169,10 +169,10 @@ public class IndexerTokenSwapConfigInfo
 
 public class TokenSwapConfigDto
 {
-    public string SwapId { get; set; }
+    public string ExtraData { get; set; }
     public long TargetChainId { get; set; }
     public long SourceChainId { get; set; }
-    public string TargetContractAddress { get; set; }
+    public string Receiver { get; set; }
     public string TokenAddress { get; set; }
-    public string OriginToken { get; set; }
+    public string Symbol { get; set; }
 }

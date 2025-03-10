@@ -60,10 +60,10 @@ public static class TonHelper
     }
 
     public static CellBuilder PopulateMetadata(CellBuilder builder, ReportContextDto context, CrossChainDataDto meta)
-        => PopulateMetadata(builder, context, meta.Message, meta.TokenTransferMetadata);
+        => PopulateMetadata(builder, context, meta.Message, meta.TokenTransferMetadataDto);
 
     public static CellBuilder PopulateMetadata(CellBuilder builder, ReportContextDto context, string message,
-        TokenTransferMetadata tokenAmount)
+        TokenTransferMetadataDto tokenTransferMetadata)
     {
         var receiverAddress = new Address(context.Receiver);
         var sender = Base58CheckEncoding.Decode(context.Sender);
@@ -74,7 +74,7 @@ public static class TonHelper
             sender,
             receiverAddress,
             messageByte,
-            tokenAmount);
+            tokenTransferMetadata);
         var messageId = Ensure128ByteArray(context.MessageId);
         return builder.StoreInt(messageId, TonMetaDataConstants.MessageIdBitsSize)
             .StoreAddress(receiverAddress)
@@ -116,7 +116,7 @@ public static class TonHelper
     }
 
     private static Cell BuildMessageBody(long sourceChainId, long targetChainId, byte[] sender, Address receiverAddress,
-        byte[] message, TokenTransferMetadata tokenAmount = null)
+        byte[] message, TokenTransferMetadataDto tokenAmount = null)
     {
         return new CellBuilder()
             .StoreUInt((int)sourceChainId, TonMetaDataConstants.ChainIdIntSize)
@@ -197,21 +197,21 @@ public static class TonHelper
         return tempCellRef.Build();
     }
 
-    private static Cell BuildTokenAmountInfo(TokenTransferMetadata tokenTransferMetadata = null)
+    private static Cell BuildTokenAmountInfo(TokenTransferMetadataDto tokenTransferMetadataDto = null)
     {
         var result = new CellBuilder();
-        if (tokenTransferMetadata == null)
+        if (tokenTransferMetadataDto == null)
         {
             return result.Build();
         }
 
-        result.StoreRef(new CellBuilder().StoreBytes(Base64.Decode(tokenTransferMetadata.ExtraData)).Build());
-        result.StoreInt(tokenTransferMetadata.TargetChainId, TonMetaDataConstants.ChainIdIntSize);
-        // result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenTransferMetadata.Receiver))
+        result.StoreRef(new CellBuilder().StoreBytes(Base64.Decode(tokenTransferMetadataDto.ExtraData)).Build());
+        result.StoreInt(tokenTransferMetadataDto.TargetChainId, TonMetaDataConstants.ChainIdIntSize);
+        // result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenTransferMetadataDto.Receiver))
         //     .Build());
-        result.StoreRef(new CellBuilder().StoreAddress(new Address(tokenTransferMetadata.TokenAddress)).Build());
-        result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenTransferMetadata.Symbol)).Build());
-        result.StoreUInt(tokenTransferMetadata.Amount, TonMetaDataConstants.AmountUIntSize);
+        result.StoreRef(new CellBuilder().StoreAddress(new Address(tokenTransferMetadataDto.TokenAddress)).Build());
+        result.StoreRef(new CellBuilder().StoreBytes(Encoding.UTF8.GetBytes(tokenTransferMetadataDto.Symbol)).Build());
+        result.StoreUInt(tokenTransferMetadataDto.Amount, TonMetaDataConstants.AmountUIntSize);
 
         return result.Build();
     }

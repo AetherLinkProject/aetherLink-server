@@ -6,6 +6,6 @@ public class CrossChainRequestStartArgs
 {
     public ReportContextDto ReportContext { get; set; }
     public string Message { get; set; }
-    public TokenTransferMetadata TokenAmount { get; set; }
+    public TokenTransferMetadataDto TokenAmount { get; set; }
     public long StartTime { get; set; }
 }

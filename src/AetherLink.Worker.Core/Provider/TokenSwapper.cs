@@ -12,8 +12,8 @@ namespace AetherLink.Worker.Core.Provider;
 
 public interface ITokenSwapper
 {
-    public Task<TokenTransferMetadata> ConstructSwapId(ReportContextDto reportContext,
-        TokenTransferMetadata tokenAmount);
+    public Task<TokenTransferMetadataDto> ConstructSwapId(ReportContextDto reportContext,
+        TokenTransferMetadataDto tokenTransferMetadata);
 }
 
 public class TokenSwapper : ITokenSwapper, ITransientDependency
@@ -30,49 +30,50 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
         _aeFinderProvider = aeFinderProvider;
     }
 
-    public async Task<TokenTransferMetadata> ConstructSwapId(ReportContextDto reportContext,
-        TokenTransferMetadata tokenAmount)
+    public async Task<TokenTransferMetadataDto> ConstructSwapId(ReportContextDto reportContext,
+        TokenTransferMetadataDto tokenTransferMetadata)
     {
         try
         {
-            if (tokenAmount == null || string.IsNullOrEmpty(reportContext.Receiver))
+            if (tokenTransferMetadata == null)
             {
                 _logger.LogWarning("[TokenSwapper] Get empty token amount");
                 return null;
             }
 
-            var tokenSwapConfigId = GenerateTokenSwapId(reportContext, tokenAmount);
-            // var tokenSwapConfig = await _storageProvider.GetAsync<TokenSwapConfigDto>(tokenSwapConfigId);
-            // if (tokenSwapConfig == null)
-            // {
-            // todo for testnet debug
-            _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
-
-            var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenAmount.TargetChainId,
-                reportContext.SourceChainId, reportContext.Receiver, tokenAmount.TokenAddress, tokenAmount.Symbol);
-
-            if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.SwapId))
+            var tokenSwapConfigId = GenerateTokenSwapId(reportContext, tokenTransferMetadata);
+            var tokenSwapConfig = await _storageProvider.GetAsync<TokenSwapConfigDto>(tokenSwapConfigId);
+            if (tokenSwapConfig == null)
             {
-                _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
-                throw new InvalidDataException("Could not find token swap config");
+                // todo for testnet debug
+                _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
+
+                var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenTransferMetadata.TargetChainId,
+                    reportContext.SourceChainId, reportContext.Receiver, tokenTransferMetadata.TokenAddress,
+                    tokenTransferMetadata.Symbol);
+
+                if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.ExtraData))
+                {
+                    _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
+                    throw new InvalidDataException("Could not find token swap config");
+                }
+
+                tokenSwapConfig = indexerConfig.TokenSwapConfig;
+                await _storageProvider.SetAsync(tokenSwapConfigId, tokenSwapConfig);
             }
 
-            var tokenSwapConfig = indexerConfig.TokenSwapConfig;
-            await _storageProvider.SetAsync(tokenSwapConfigId, tokenSwapConfig);
-            // }
-
-            tokenAmount.ExtraData = tokenSwapConfig.SwapId;
-            if (string.IsNullOrEmpty(tokenAmount.Symbol))
+            tokenTransferMetadata.ExtraData = tokenSwapConfig.ExtraData;
+            if (string.IsNullOrEmpty(tokenTransferMetadata.Symbol))
             {
-                tokenAmount.Symbol = tokenSwapConfig.OriginToken;
-                _logger.LogDebug($"[TokenSwapper] need fill Symbol: {tokenAmount.Symbol}");
+                tokenTransferMetadata.Symbol = tokenSwapConfig.Symbol;
+                _logger.LogDebug($"[TokenSwapper] need fill Symbol: {tokenTransferMetadata.Symbol}");
             }
 
-            if (!string.IsNullOrEmpty(tokenAmount.TokenAddress)) return tokenAmount;
+            if (!string.IsNullOrEmpty(tokenTransferMetadata.TokenAddress)) return tokenTransferMetadata;
 
-            tokenAmount.TokenAddress = tokenSwapConfig.TokenAddress;
-            _logger.LogDebug($"[TokenSwapper] need fill TokenAddress: {tokenAmount.TokenAddress}");
-            return tokenAmount;
+            tokenTransferMetadata.TokenAddress = tokenSwapConfig.TokenAddress;
+            _logger.LogDebug($"[TokenSwapper] need fill TokenAddress: {tokenTransferMetadata.TokenAddress}");
+            return tokenTransferMetadata;
         }
         catch (Exception e)
         {
@@ -81,7 +82,7 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
         }
     }
 
-    private string GenerateTokenSwapId(ReportContextDto reportContext, TokenTransferMetadata data)
+    private string GenerateTokenSwapId(ReportContextDto reportContext, TokenTransferMetadataDto data)
     {
         // CrossChain from aelf chain, TokenAddress is empty 
         var temp = !string.IsNullOrEmpty(data.TokenAddress) ? data.TokenAddress : data.Symbol;
