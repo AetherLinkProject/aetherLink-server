@@ -57,12 +57,12 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         var startTime = DateTime.Now;
 
         await Task.WhenAll(
-            // ExecuteJobsAsync(chainId, blockLatestHeight, startHeight),
-            // ExecuteTransmittedAsync(chainId, blockLatestHeight, startHeight),
-            // ExecuteRequestCanceledAsync(chainId, blockLatestHeight, startHeight),
-            ExecuteRampRequestsAsync(chainId, blockLatestHeight, startHeight)
-            // ExecuteRampManuallyExecutedAsync(chainId, blockLatestHeight, startHeight),
-            // ExecuteRampRequestsCanceledAsync(chainId, blockLatestHeight, startHeight)
+            ExecuteJobsAsync(chainId, blockLatestHeight, startHeight),
+            ExecuteTransmittedAsync(chainId, blockLatestHeight, startHeight),
+            ExecuteRequestCanceledAsync(chainId, blockLatestHeight, startHeight),
+            ExecuteRampRequestsAsync(chainId, blockLatestHeight, startHeight),
+            ExecuteRampManuallyExecutedAsync(chainId, blockLatestHeight, startHeight),
+            ExecuteRampRequestsCanceledAsync(chainId, blockLatestHeight, startHeight)
         );
 
         _logger.LogDebug("[Search] {chain} search log took {time} ms.", chainId,
