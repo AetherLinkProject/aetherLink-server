@@ -143,7 +143,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         var sendRequestData = decoded.Event;
         var grainId = decoded.Log.TransactionHash;
-        var messageId = sendRequestData.MessageId.ToHex();
+        var messageId = HashHelper.ComputeFrom(sendRequestData.MessageId).ToHex();
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(grainId);
         var result = await requestGrain.UpdateAsync(new()
         {
