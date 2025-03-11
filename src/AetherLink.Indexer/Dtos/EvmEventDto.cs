@@ -27,14 +27,8 @@ public class SendEventDTO : IEventDTO
     [Parameter("bytes", "message", 7, false)]
     public byte[] Message { get; set; }
 
-    [Parameter("string", "targetContractAddress", 8, false)]
-    public string TargetContractAddress { get; set; }
-
-    [Parameter("string", "tokenAddress", 9, false)]
-    public string TokenAddress { get; set; }
-
-    [Parameter("uint256", "amount", 10, false)]
-    public BigInteger Amount { get; set; }
+    [Parameter("bytes", "tokenTransferMetadata", 8, false)]
+    public byte[] TokenTransferMetadata { get; set; }
 }
 
 [Event("ForwardMessageCalled")]
