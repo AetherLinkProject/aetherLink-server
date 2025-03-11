@@ -78,6 +78,8 @@ public class EvmHelper
 
     public static byte[] GenerateTokenAmountBytes(TokenAmountDto tokenAmount)
     {
+        if (tokenAmount == null) return new byte[] { };
+
         var abiEncode = new ABIEncode();
         var encoded = abiEncode.GetABIEncoded(
             tokenAmount.SwapId,

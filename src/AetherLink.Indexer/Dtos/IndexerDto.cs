@@ -34,15 +34,15 @@ public class RampRequestDto
     public long Epoch { get; set; }
     public long StartTime { get; set; }
     public string Message { get; set; }
-    [CanBeNull] public IndexerTokenAmountDto TokenAmount { get; set; }
+    [CanBeNull] public IndexerTokenAmountDto? TokenAmount { get; set; }
 }
 
 public class IndexerTokenAmountDto
 {
-    public long TargetChainId { get; set; }
-    public string TargetContractAddress { get; set; }
-    public string OriginToken { get; set; }
-    public long Amount { get; set; }
+    public long? TargetChainId { get; set; }
+    public string? TargetContractAddress { get; set; }
+    public string? OriginToken { get; set; }
+    public long? Amount { get; set; }
 }
 
 // Transmitted event

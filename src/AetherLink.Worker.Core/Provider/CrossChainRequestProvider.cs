@@ -120,14 +120,17 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 Message = request.Message,
                 StartTime = request.StartTime
             };
-            crossChainRequestStartArgs.TokenAmount = await _tokenSwapper.ConstructSwapId(
-                crossChainRequestStartArgs.ReportContext, new()
-                {
-                    TargetChainId = request.TokenAmount.TargetChainId,
-                    TargetContractAddress = request.TokenAmount.TargetContractAddress,
-                    OriginToken = request.TokenAmount.OriginToken,
-                    Amount = request.TokenAmount.Amount
-                });
+            if (crossChainRequestStartArgs.TokenAmount != null)
+            {
+                crossChainRequestStartArgs.TokenAmount = await _tokenSwapper.ConstructSwapId(
+                    crossChainRequestStartArgs.ReportContext, new()
+                    {
+                        TargetChainId = (long)request.TokenAmount.TargetChainId,
+                        TargetContractAddress = request.TokenAmount.TargetContractAddress,
+                        OriginToken = request.TokenAmount.OriginToken,
+                        Amount = (long)request.TokenAmount.Amount
+                    });
+            }
 
             await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
         }
