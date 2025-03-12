@@ -56,8 +56,8 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 Message = request.Message,
                 StartTime = request.TransactionTime
             };
-            crossChainRequestStartArgs.TokenAmount =
-                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenAmountInfo);
+            crossChainRequestStartArgs.TokenTransferMetadata =
+                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenTransferMetadataDtoInfo);
             await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
         }
         catch (Exception e)
@@ -86,8 +86,8 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 Message = request.Message,
                 StartTime = request.TransactionTime
             };
-            crossChainRequestStartArgs.TokenAmount =
-                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenAmountInfo);
+            crossChainRequestStartArgs.TokenTransferMetadata =
+                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenTransferMetadataInfo);
             await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
         }
         catch (Exception e)
@@ -117,16 +117,14 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 Message = request.Message,
                 StartTime = request.StartTime
             };
-
-            if (request.TokenAmount != null)
+            if (request.TokenTransferMetadata != null)
             {
-                crossChainRequestStartArgs.TokenAmount = await _tokenSwapper.ConstructSwapId(
+                crossChainRequestStartArgs.TokenTransferMetadata = await _tokenSwapper.ConstructSwapId(
                     crossChainRequestStartArgs.ReportContext, new()
                     {
-                        TargetChainId = (long)request.TokenAmount.TargetChainId,
-                        TargetContractAddress = request.TokenAmount.TargetContractAddress,
-                        OriginToken = request.TokenAmount.OriginToken,
-                        Amount = (long)request.TokenAmount.Amount
+                        TargetChainId = (long)request.TokenTransferMetadata.TargetChainId,
+                        Symbol = request.TokenTransferMetadata.Symbol,
+                        Amount = (long)request.TokenTransferMetadata.Amount
                     });
             }
 

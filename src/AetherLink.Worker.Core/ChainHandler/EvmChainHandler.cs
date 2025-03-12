@@ -30,10 +30,11 @@ public class EvmChainWriter : ChainWriter, ISingletonDependency
     {
         var contextBytes = EvmHelper.GenerateReportContextBytes(reportContext);
         var messageBytes = EvmHelper.GenerateMessageBytes(crossChainData.Message);
-        var tokenAmount = EvmHelper.GenerateTokenAmountBytes(crossChainData.TokenAmount);
+        var tokenTransferMetadataBytes =
+            EvmHelper.GenerateTokenTransferMetadataBytes(crossChainData.TokenTransferMetadataDto);
         var (rs, ss, rawVs) = EvmHelper.AggregateSignatures(signatures.Values.ToList());
-        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenAmount, rs, ss,
-            rawVs);
+        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes,
+            tokenTransferMetadataBytes, rs, ss, rawVs);
     }
 }
 
@@ -54,9 +55,9 @@ public class BscChainWriter : ChainWriter, ISingletonDependency
     {
         var contextBytes = EvmHelper.GenerateReportContextBytes(reportContext);
         var messageBytes = EvmHelper.GenerateMessageBytes(crossChainData.Message);
-        var tokenAmount = EvmHelper.GenerateTokenAmountBytes(crossChainData.TokenAmount);
+        var tokenTransferMetadata = EvmHelper.GenerateTokenTransferMetadataBytes(crossChainData.TokenTransferMetadataDto);
         var (rs, ss, rawVs) = EvmHelper.AggregateSignatures(signatures.Values.ToList());
-        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenAmount, rs, ss,
+        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata, rs, ss,
             rawVs);
     }
 }
@@ -78,9 +79,9 @@ public class SEPOLIAChainWriter : ChainWriter, ISingletonDependency
     {
         var contextBytes = EvmHelper.GenerateReportContextBytes(reportContext);
         var messageBytes = EvmHelper.GenerateMessageBytes(crossChainData.Message);
-        var tokenAmount = EvmHelper.GenerateTokenAmountBytes(crossChainData.TokenAmount);
+        var tokenTransferMetadata = EvmHelper.GenerateTokenTransferMetadataBytes(crossChainData.TokenTransferMetadataDto);
         var (rs, ss, rawVs) = EvmHelper.AggregateSignatures(signatures.Values.ToList());
-        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenAmount, rs, ss,
+        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata, rs, ss,
             rawVs);
     }
 }
@@ -102,9 +103,9 @@ public class BscTestChainWriter : ChainWriter, ISingletonDependency
     {
         var contextBytes = EvmHelper.GenerateReportContextBytes(reportContext);
         var messageBytes = EvmHelper.GenerateMessageBytes(crossChainData.Message);
-        var tokenAmount = EvmHelper.GenerateTokenAmountBytes(crossChainData.TokenAmount);
+        var tokenTransferMetadata = EvmHelper.GenerateTokenTransferMetadataBytes(crossChainData.TokenTransferMetadataDto);
         var (rs, ss, rawVs) = EvmHelper.AggregateSignatures(signatures.Values.ToList());
-        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenAmount, rs, ss,
+        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata, rs, ss,
             rawVs);
     }
 }

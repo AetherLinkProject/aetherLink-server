@@ -8,8 +8,7 @@ using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using Google.Protobuf;
-using Ramp;
-using TokenAmount = Ramp.TokenAmount;
+using TokenTransferMetadata = Ramp.TokenTransferMetadata;
 
 namespace AetherLink.Worker.Core.Common;
 
@@ -18,22 +17,21 @@ public static class AELFHelper
     public static byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report,
         ChainConfig chainConfig)
     {
-        var rpcTokenAmount = new TokenAmount();
-        if (report.TokenAmount != null)
+        var tokenTransferMetadata = new TokenTransferMetadata();
+        if (report.TokenTransferMetadataDto != null)
         {
-            var temp = report.TokenAmount;
-            rpcTokenAmount = new()
+            var temp = report.TokenTransferMetadataDto;
+            tokenTransferMetadata = new()
             {
-                SwapId = temp.SwapId,
+                ExtraData = ByteString.FromBase64(temp.ExtraData),
                 TargetChainId = temp.TargetChainId,
-                TargetContractAddress = temp.TargetContractAddress,
                 TokenAddress = temp.TokenAddress,
-                OriginToken = temp.OriginToken,
+                Symbol = temp.Symbol,
                 Amount = temp.Amount
             };
         }
 
-        var reportData = GenerateReport(reportContext, report.Message, rpcTokenAmount);
+        var reportData = GenerateReport(reportContext, report.Message, tokenTransferMetadata);
         var msg = HashHelper.ComputeFrom(reportData.ToByteArray()).ToByteArray();
         var multiSignature = new MultiSignature(ByteArrayHelper.HexStringToByteArray(chainConfig.SignerSecret), msg,
             chainConfig.DistPublicKey, chainConfig.PartialSignaturesThreshold);
@@ -55,26 +53,27 @@ public static class AELFHelper
 
     private static byte[] GenerateMessage(ReportContextDto reportContext, CrossChainReportDto report)
     {
-        var rpcTokenAmount = new TokenAmount();
-        if (report.TokenAmount != null)
+        var tokenTransferMetadata = new TokenTransferMetadata();
+        if (report.TokenTransferMetadataDto != null)
         {
-            var temp = report.TokenAmount;
-            rpcTokenAmount = new()
+            var temp = report.TokenTransferMetadataDto;
+            tokenTransferMetadata = new()
             {
-                SwapId = temp.SwapId,
+                ExtraData = ByteString.FromBase64(temp.ExtraData),
                 TargetChainId = temp.TargetChainId,
-                TargetContractAddress = temp.TargetContractAddress,
+                // TargetContractAddress = temp.Receiver,
                 TokenAddress = temp.TokenAddress,
-                OriginToken = temp.OriginToken,
+                Symbol = temp.Symbol,
                 Amount = temp.Amount
             };
         }
 
-        var reportData = GenerateReport(reportContext, report.Message, rpcTokenAmount);
+        var reportData = GenerateReport(reportContext, report.Message, tokenTransferMetadata);
         return HashHelper.ComputeFrom(reportData.ToByteArray()).ToByteArray();
     }
 
-    public static Report GenerateReport(ReportContextDto reportContext, string message, TokenAmount tokenAmount)
+    public static Report GenerateReport(ReportContextDto reportContext, string message,
+        TokenTransferMetadata tokenTransferMetadata)
     {
         return new()
         {
@@ -88,7 +87,7 @@ public static class AELFHelper
                 Receiver = Address.FromBase58(reportContext.Receiver).ToByteString()
             },
             Message = ByteString.FromBase64(message),
-            TokenAmount = tokenAmount
+            TokenTransferMetadata = tokenTransferMetadata
         };
     }
 

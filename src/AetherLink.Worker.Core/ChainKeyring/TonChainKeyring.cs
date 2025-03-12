@@ -25,12 +25,10 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
 
     public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
     {
-        var unsignedCell = TonHelper.PopulateMetadata(
-                new CellBuilder(),
-                reportContext,
-                report.Message,
-                report.TokenAmount)
-            .Build();
+        var unsignedCell = TonHelper.PopulateMetadata(new CellBuilder(),
+            reportContext,
+            report.Message,
+            report.TokenTransferMetadataDto).Build();
         var secretKeyHex = Hex.Decode(_privateOptions.TransmitterSecretKey);
         return KeyPair.Sign(unsignedCell, secretKeyHex);
     }
@@ -38,12 +36,10 @@ public class TonChainKeyring : ChainKeyring, ISingletonDependency
     public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
         byte[] sign)
     {
-        var bodyCell = TonHelper.PopulateMetadata(
-                new CellBuilder(),
-                reportContext,
-                report.Message,
-                report.TokenAmount)
-            .Build();
+        var bodyCell = TonHelper.PopulateMetadata(new CellBuilder(),
+            reportContext,
+            report.Message,
+            report.TokenTransferMetadataDto).Build();
 
         var nodeInfo = _publicOption.OracleNodeInfoList.Find(f => f.Index == index);
         return nodeInfo != null && TonHelper.VerifySignature(nodeInfo.PublicKey, bodyCell, sign);

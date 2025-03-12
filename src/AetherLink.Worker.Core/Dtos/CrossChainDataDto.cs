@@ -6,7 +6,7 @@ public class CrossChainDataDto
 {
     public ReportContextDto ReportContext { get; set; }
     public string Message { get; set; }
-    public TokenAmountDto TokenAmount { get; set; }
+    public TokenTransferMetadataDto TokenTransferMetadataDto { get; set; }
 
     // When the task begins a new round, the RequestReceiveTime will become the starting point of the next round's time window.
     public DateTime RequestReceiveTime { get; set; }

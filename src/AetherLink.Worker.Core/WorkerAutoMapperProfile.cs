@@ -2,10 +2,7 @@ using AetherLink.Indexer.Dtos;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
-using AetherLink.Worker.Core.JobPipeline.CrossChain;
 using AutoMapper;
-using Ramp;
-using TokenAmount = Ramp.TokenAmount;
 
 namespace AetherLink.Worker.Core;
 
@@ -118,11 +115,10 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
             .ForPath(t => t.ReportContext.Receiver, m => m.MapFrom(f => f.ReportContext.Receiver))
             .ForPath(t => t.ReportContext.Epoch, m => m.MapFrom(f => f.ReportContext.Epoch))
             .ForPath(t => t.ReportContext.RoundId, m => m.MapFrom(f => f.ReportContext.RoundId));
-        CreateMap<TokenAmountDto, TokenAmount>()
-            .ForPath(t => t.SwapId, m => m.MapFrom(f => f.SwapId))
-            .ForPath(t => t.TokenAddress, m => m.MapFrom(f => f.TokenAddress))
-            .ForPath(t => t.TargetChainId, m => m.MapFrom(f => f.TargetChainId))
-            .ForPath(t => t.TargetContractAddress, m => m.MapFrom(f => f.TargetContractAddress))
-            .ForPath(t => t.OriginToken, m => m.MapFrom(f => f.OriginToken));
+        // CreateMap<Ramp.TokenTransferMetadata, TokenTransferMetadata>()
+        //     .ForPath(t => t.ExtraData, m => m.MapFrom(f => f.ExtraData))
+        //     .ForPath(t => t.TokenAddress, m => m.MapFrom(f => f.TokenAddress))
+        //     .ForPath(t => t.TargetChainId, m => m.MapFrom(f => f.TargetChainId))
+        //     .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Symbol));
     }
 }

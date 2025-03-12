@@ -19,8 +19,8 @@ namespace AetherLink.Worker.Core.Provider;
 
 public interface IEvmProvider
 {
-    Task<string> TransmitAsync(EvmOptions evmOptions, byte[] contextBytes, byte[] messageBytes, byte[] tokenAmountBytes,
-        byte[][] rs, byte[][] ss, byte[] rawVs);
+    Task<string> TransmitAsync(EvmOptions evmOptions, byte[] contextBytes, byte[] messageBytes,
+        byte[] tokenTransferMetadataBytes, byte[][] rs, byte[][] ss, byte[] rawVs);
 
     Task<TransactionState> GetTransactionResultAsync(EvmOptions evmOptions, string transactionId);
 }
@@ -35,7 +35,7 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
     }
 
     public async Task<string> TransmitAsync(EvmOptions evmOptions, byte[] contextBytes, byte[] messageBytes,
-        byte[] tokenAmountBytes, byte[][] rs, byte[][] ss, byte[] rawVs)
+        byte[] tokenTransferMetadataBytes, byte[][] rs, byte[][] ss, byte[] rawVs)
     {
         try
         {
@@ -56,7 +56,7 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
                 null,
                 contextBytes,
                 messageBytes,
-                tokenAmountBytes,
+                tokenTransferMetadataBytes,
                 rs,
                 ss,
                 rawVs);
@@ -70,7 +70,7 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
                 null,
                 contextBytes,
                 messageBytes,
-                tokenAmountBytes,
+                tokenTransferMetadataBytes,
                 rs,
                 ss,
                 rawVs

@@ -97,10 +97,9 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                          message,
                          startTime,
                          epoch,
-                         tokenAmount {
-                            targetContractAddress,
+                         tokenTransferMetadata {
                             targetChainId,
-                            originToken,
+                            symbol,
                             amount
                          }
                  }

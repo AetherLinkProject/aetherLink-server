@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using AElf;
 using AElf.Cryptography;
 using AetherLink.Worker.Core.Constants;
@@ -35,8 +33,8 @@ public class EvmHelper
     {
         var reportContextDecoded = GenerateReportContextBytes(context);
         var message = GenerateMessageBytes(report.Message);
-        var tokenAmountDecode = GenerateTokenAmountBytes(report.TokenAmount);
-        return GenerateReportHash(reportContextDecoded, message, tokenAmountDecode);
+        var tokenTransferMetadataDecode = GenerateTokenTransferMetadataBytes(report.TokenTransferMetadataDto);
+        return GenerateReportHash(reportContextDecoded, message, tokenTransferMetadataDecode);
     }
 
     public static ( byte[][], byte[][], byte[]) AggregateSignatures(List<byte[]> signatureByteList)
@@ -57,10 +55,10 @@ public class EvmHelper
         return (r, s, v);
     }
 
-    private static byte[] GenerateReportHash(byte[] reportContext, byte[] message, byte[] tokenAmount)
+    private static byte[] GenerateReportHash(byte[] reportContext, byte[] message, byte[] tokenTransferMetadata)
     {
         var abiEncode = new ABIEncode();
-        var result = abiEncode.GetABIEncoded(reportContext, message, tokenAmount);
+        var result = abiEncode.GetABIEncoded(reportContext, message, tokenTransferMetadata);
         return Sha3Keccack.Current.CalculateHash(result);
     }
 
@@ -76,18 +74,17 @@ public class EvmHelper
         return encoded;
     }
 
-    public static byte[] GenerateTokenAmountBytes(TokenAmountDto tokenAmount)
+    public static byte[] GenerateTokenTransferMetadataBytes(TokenTransferMetadataDto tokenTransferMetadata)
     {
-        if (tokenAmount == null) return new byte[] { };
+        if (tokenTransferMetadata == null) return new byte[] { };
 
         var abiEncode = new ABIEncode();
         var encoded = abiEncode.GetABIEncoded(
-            tokenAmount.SwapId,
-            (int)tokenAmount.TargetChainId,
-            tokenAmount.TargetContractAddress,
-            tokenAmount.TokenAddress,
-            tokenAmount.OriginToken,
-            (int)tokenAmount.Amount
+            (int)tokenTransferMetadata.TargetChainId,
+            tokenTransferMetadata.TokenAddress,
+            tokenTransferMetadata.Symbol,
+            (int)tokenTransferMetadata.Amount,
+            tokenTransferMetadata.ExtraData
         );
         return encoded;
     }

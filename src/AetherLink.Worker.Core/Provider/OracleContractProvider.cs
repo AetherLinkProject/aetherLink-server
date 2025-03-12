@@ -18,7 +18,7 @@ using Ramp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 using Report = Oracle.Report;
-using TokenAmount = Ramp.TokenAmount;
+using TokenTransferMetadata = Ramp.TokenTransferMetadata;
 
 namespace AetherLink.Worker.Core.Provider;
 
@@ -141,7 +141,8 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         var commitInput = new CommitInput
         {
             Report = AELFHelper.GenerateReport(reportContext, crossChainData.Message,
-                _objectMapper.Map<TokenAmountDto, TokenAmount>(crossChainData.TokenAmount))
+                _objectMapper.Map<TokenTransferMetadataDto, TokenTransferMetadata>(crossChainData
+                    .TokenTransferMetadataDto))
         };
 
         var signature = signatures.Values.Select(sig => ByteStringHelper.FromHexString(sig.ToHex())).ToList();

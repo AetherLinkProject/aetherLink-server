@@ -13,6 +13,6 @@ public class EvmReceivedMessageDto
     public string Receiver { get; set; }
     public long TransactionTime { get; set; }
     public string Message { get; set; }
-    [CanBeNull] public TokenAmountDto TokenAmountInfo { get; set; }
+    [CanBeNull] public TokenTransferMetadataDto TokenTransferMetadataInfo { get; set; }
     public HexBigInteger BlockNumber { get; set; }
 }
