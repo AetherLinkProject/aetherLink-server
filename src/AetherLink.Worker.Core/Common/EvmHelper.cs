@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using AElf;
 using AElf.Cryptography;
 using AetherLink.Worker.Core.Constants;
@@ -78,16 +76,15 @@ public class EvmHelper
 
     public static byte[] GenerateTokenTransferMetadataBytes(TokenTransferMetadataDto tokenTransferMetadata)
     {
-        if (tokenAmount == null) return new byte[] { };
+        if (tokenTransferMetadata == null) return new byte[] { };
 
         var abiEncode = new ABIEncode();
         var encoded = abiEncode.GetABIEncoded(
-            tokenTransferMetadata.ExtraData,
             (int)tokenTransferMetadata.TargetChainId,
-            // TokenTransferMetadata.Receiver,
             tokenTransferMetadata.TokenAddress,
             tokenTransferMetadata.Symbol,
-            (int)tokenTransferMetadata.Amount
+            (int)tokenTransferMetadata.Amount,
+            tokenTransferMetadata.ExtraData
         );
         return encoded;
     }

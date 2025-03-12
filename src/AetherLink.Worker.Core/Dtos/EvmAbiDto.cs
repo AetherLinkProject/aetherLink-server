@@ -1,13 +1,10 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Org.BouncyCastle.Math;
 
 namespace AetherLink.Worker.Core.Dtos;
 
 public class ReportContext
 {
     [Parameter("bytes32", 1)] public byte[] MessageId { get; set; }
-
-    // [Parameter("string", 1)] public string MessageId { get; set; }
     [Parameter("uint256", 2)] public int SourceChainId { get; set; }
     [Parameter("uint256", 3)] public int TargetChainId { get; set; }
     [Parameter("string", 4)] public string Sender { get; set; }
