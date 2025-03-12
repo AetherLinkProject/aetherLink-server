@@ -43,36 +43,36 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
 
             var tokenSwapConfigId = GenerateTokenSwapId(reportContext, tokenTransferMetadata);
             var tokenSwapConfig = await _storageProvider.GetAsync<TokenSwapConfigDto>(tokenSwapConfigId);
-            if (tokenSwapConfig == null)
+            // if (tokenSwapConfig == null)
+            // {
+            // todo for testnet debug
+            _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
+
+            var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenTransferMetadata.TargetChainId,
+                reportContext.SourceChainId, reportContext.Receiver, tokenTransferMetadata.TokenAddress,
+                tokenTransferMetadata.Symbol);
+
+            if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.ExtraData))
             {
-                // todo for testnet debug
-                _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
-
-                var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenTransferMetadata.TargetChainId,
-                    reportContext.SourceChainId, reportContext.Receiver, tokenTransferMetadata.TokenAddress,
-                    tokenTransferMetadata.Symbol);
-
-                if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.ExtraData))
-                {
-                    _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
-                    throw new InvalidDataException("Could not find token swap config");
-                }
-
-                tokenSwapConfig = indexerConfig.TokenSwapConfig;
-                await _storageProvider.SetAsync(tokenSwapConfigId, tokenSwapConfig);
+                _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
+                throw new InvalidDataException("Could not find token swap config");
             }
+
+            tokenSwapConfig = indexerConfig.TokenSwapConfig;
+            await _storageProvider.SetAsync(tokenSwapConfigId, tokenSwapConfig);
+            // }
 
             tokenTransferMetadata.ExtraData = tokenSwapConfig.ExtraData;
             if (string.IsNullOrEmpty(tokenTransferMetadata.Symbol))
             {
                 tokenTransferMetadata.Symbol = tokenSwapConfig.Symbol;
-                _logger.LogDebug($"[TokenSwapper] need fill Symbol: {tokenTransferMetadata.Symbol}");
+                _logger.LogDebug($"[TokenSwapper] need fill Symbol: {tokenSwapConfig.Symbol}");
             }
 
             if (!string.IsNullOrEmpty(tokenTransferMetadata.TokenAddress)) return tokenTransferMetadata;
 
             tokenTransferMetadata.TokenAddress = tokenSwapConfig.TokenAddress;
-            _logger.LogDebug($"[TokenSwapper] need fill TokenAddress: {tokenTransferMetadata.TokenAddress}");
+            _logger.LogDebug($"[TokenSwapper] need fill TokenAddress: {tokenSwapConfig.TokenAddress}");
             return tokenTransferMetadata;
         }
         catch (Exception e)
