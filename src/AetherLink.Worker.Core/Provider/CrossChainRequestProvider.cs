@@ -99,9 +99,6 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
 
     public async Task StartCrossChainRequestFromAELf(RampRequestDto request)
     {
-        // todo: for debug, skip ton crossChain
-        if (request.TargetChainId == 1100) return;
-
         try
         {
             _logger.LogDebug(
@@ -120,14 +117,16 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 Message = request.Message,
                 StartTime = request.StartTime
             };
-            crossChainRequestStartArgs.TokenTransferMetadata = await _tokenSwapper.ConstructSwapId(
-                crossChainRequestStartArgs.ReportContext, new()
-                {
-                    TargetChainId = request.TokenTransferMetadata.TargetChainId,
-                    // Receiver = request.Receiver,
-                    Symbol = request.TokenTransferMetadata.Symbol,
-                    Amount = request.TokenTransferMetadata.Amount
-                });
+            if (request.TokenTransferMetadata != null)
+            {
+                crossChainRequestStartArgs.TokenTransferMetadata = await _tokenSwapper.ConstructSwapId(
+                    crossChainRequestStartArgs.ReportContext, new()
+                    {
+                        TargetChainId = (long)request.TokenTransferMetadata.TargetChainId,
+                        Symbol = request.TokenTransferMetadata.Symbol,
+                        Amount = (long)request.TokenTransferMetadata.Amount
+                    });
+            }
 
             await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
         }
