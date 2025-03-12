@@ -39,9 +39,9 @@ public class RampRequestDto
 
 public class IndexerTokenTransferMetadataDto
 {
-    public long TargetChainId { get; set; }
-    public string Symbol { get; set; }
-    public long Amount { get; set; }
+    public long? TargetChainId { get; set; }
+    [CanBeNull] public string Symbol { get; set; }
+    public long? Amount { get; set; }
 }
 
 // Transmitted event
