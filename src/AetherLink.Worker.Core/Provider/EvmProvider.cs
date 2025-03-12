@@ -75,6 +75,12 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
 
             return transactionHash;
         }
+        catch (Nethereum.JsonRpc.Client.RpcResponseException re)
+        {
+            _logger.LogError(re, $"[Evm] Transaction is revert: {re.Message}");
+
+            return string.Empty;
+        }
         catch (Nethereum.ABI.FunctionEncoding.SmartContractRevertException se)
         {
             _logger.LogError(se, $"[Evm] Transaction is revert by smart contract: {se.Message}");
