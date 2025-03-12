@@ -57,7 +57,8 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 StartTime = request.TransactionTime
             };
             crossChainRequestStartArgs.TokenTransferMetadata =
-                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenTransferMetadataDtoInfo);
+                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext,
+                    request.TokenTransferMetadataDtoInfo);
             await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
         }
         catch (Exception e)
@@ -72,7 +73,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         try
         {
             _logger.LogDebug("[CrossChainRequestProvider] Start CrossChainRequest From EVM....");
-            var crossChainRequestStartArgs = new CrossChainRequestStartArgs
+            var startArgs = new CrossChainRequestStartArgs
             {
                 ReportContext = new()
                 {
@@ -86,9 +87,9 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 Message = request.Message,
                 StartTime = request.TransactionTime
             };
-            crossChainRequestStartArgs.TokenTransferMetadata =
-                await _tokenSwapper.ConstructSwapId(crossChainRequestStartArgs.ReportContext, request.TokenTransferMetadataInfo);
-            await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
+            startArgs.TokenTransferMetadata =
+                await _tokenSwapper.ConstructSwapId(startArgs.ReportContext, request.TokenTransferMetadataInfo);
+            await _backgroundJobManager.EnqueueAsync(startArgs);
         }
         catch (Exception e)
         {

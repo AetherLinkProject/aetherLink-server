@@ -27,8 +27,8 @@ public class SendEventDTO : IEventDTO
     [Parameter("bytes", "message", 7, false)]
     public byte[] Message { get; set; }
 
-    [Parameter("bytes", "tokenTransferMetadata", 8, false)]
-    public byte[] TokenTransferMetadata { get; set; }
+    [Parameter("bytes", "tokenTransferMetadataBytes", 8, false)]
+    public byte[] TokenTransferMetadataBytes { get; set; }
 }
 
 [Event("ForwardMessageCalled")]

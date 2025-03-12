@@ -84,10 +84,10 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             TransactionTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds()
         };
 
-        if (sendRequestData.TokenTransferMetadata.Length > 0)
+        if (sendRequestData.TokenTransferMetadataBytes.Length > 0)
         {
             receivedMessage.TokenTransferMetadataInfo =
-                DecodeTokenTransferMetadata(sendRequestData.TokenTransferMetadata);
+                DecodeTokenTransferMetadata(sendRequestData.TokenTransferMetadataBytes);
         }
 
         _logger.LogInformation(
@@ -130,6 +130,8 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             //     (int)uintDecoder.DecodeBigInteger(metadataBytes.Skip(extraDataOffset + 32).Take(32).ToArray());
             // var extraData = metadataBytes.Skip(extraDataOffset + 64).Take(extraDataLength).ToArray();
 
+            _logger.LogDebug(
+                $"[EvmSearchServer] Get cross chain token transfer metadata=> targetChainId:{targetChainId}, tokenAddress: {tokenAddress}, amount: {amount}");
             return new()
             {
                 TargetChainId = (long)targetChainId,
@@ -139,7 +141,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error decoding TokenTransferMetadata: {ex.Message}");
+            _logger.LogError($"[EvmSearchServer] Error decoding TokenTransferMetadataBytes: {ex.Message}");
             return new();
         }
     }
