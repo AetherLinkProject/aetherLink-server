@@ -113,11 +113,13 @@ public class BscTestChainWriter : ChainWriter, ISingletonDependency
 public class EvmChainReader : ChainReader, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.EVM;
-    private readonly IContractProvider _contractProvider;
+    private readonly IEvmProvider _evmProvider;
+    private readonly EvmOptions _evmOptions;
 
-    public EvmChainReader(IContractProvider contractProvider)
+    public EvmChainReader(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
     {
-        _contractProvider = contractProvider;
+        _evmProvider = evmContractProvider;
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
 
     public override Task<byte[]> CallTransactionAsync(byte[] transaction)
@@ -126,10 +128,7 @@ public class EvmChainReader : ChainReader, ISingletonDependency
     }
 
     public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
-    {
-        State = await AELFHelper.GetTransactionResultAsync(_contractProvider,
-            ChainHelper.ConvertChainIdToBase58((int)ChainId), transactionId)
-    };
+        { State = await _evmProvider.GetTransactionResultAsync(_evmOptions, transactionId) };
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)
     {
@@ -140,11 +139,13 @@ public class EvmChainReader : ChainReader, ISingletonDependency
 public class BscChainReader : ChainReader, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.BSC;
-    private readonly IContractProvider _contractProvider;
+    private readonly IEvmProvider _evmProvider;
+    private readonly EvmOptions _evmOptions;
 
-    public BscChainReader(IContractProvider contractProvider)
+    public BscChainReader(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
     {
-        _contractProvider = contractProvider;
+        _evmProvider = evmContractProvider;
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
 
     public override Task<byte[]> CallTransactionAsync(byte[] transaction)
@@ -152,8 +153,8 @@ public class BscChainReader : ChainReader, ISingletonDependency
         throw new System.NotImplementedException();
     }
 
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
-        => new() { State = TransactionState.Success };
+    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
+        { State = await _evmProvider.GetTransactionResultAsync(_evmOptions, transactionId) };
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)
     {
@@ -164,20 +165,21 @@ public class BscChainReader : ChainReader, ISingletonDependency
 public class BscTestChainReader : ChainReader, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.BSCTEST;
-    private readonly IContractProvider _contractProvider;
+    private readonly IEvmProvider _evmProvider;
+    private readonly EvmOptions _evmOptions;
 
-    public BscTestChainReader(IContractProvider contractProvider)
+    public BscTestChainReader(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
     {
-        _contractProvider = contractProvider;
+        _evmProvider = evmContractProvider;
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
-
     public override Task<byte[]> CallTransactionAsync(byte[] transaction)
     {
         throw new System.NotImplementedException();
     }
 
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
-        => new() { State = TransactionState.Success };
+    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
+        { State = await _evmProvider.GetTransactionResultAsync(_evmOptions, transactionId) };
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)
     {
@@ -188,11 +190,13 @@ public class BscTestChainReader : ChainReader, ISingletonDependency
 public class SEPOLIAChainReader : ChainReader, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.SEPOLIA;
-    private readonly IContractProvider _contractProvider;
+    private readonly IEvmProvider _evmProvider;
+    private readonly EvmOptions _evmOptions;
 
-    public SEPOLIAChainReader(IContractProvider contractProvider)
+    public SEPOLIAChainReader(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
     {
-        _contractProvider = contractProvider;
+        _evmProvider = evmContractProvider;
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
 
     public override Task<byte[]> CallTransactionAsync(byte[] transaction)
@@ -200,8 +204,8 @@ public class SEPOLIAChainReader : ChainReader, ISingletonDependency
         throw new System.NotImplementedException();
     }
 
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
-        => new() { State = TransactionState.Success };
+    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
+        { State = await _evmProvider.GetTransactionResultAsync(_evmOptions, transactionId) };
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)
     {
