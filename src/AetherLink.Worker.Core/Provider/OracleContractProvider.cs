@@ -142,7 +142,7 @@ public class OracleContractProvider : IOracleContractProvider, ISingletonDepende
         {
             Report = AELFHelper.GenerateReport(reportContext, crossChainData.Message,
                 _objectMapper.Map<TokenTransferMetadataDto, TokenTransferMetadata>(crossChainData
-                    .TokenTransferMetadataDto))
+                    .TokenTransferMetadata))
         };
 
         var signature = signatures.Values.Select(sig => ByteStringHelper.FromHexString(sig.ToHex())).ToList();

@@ -60,7 +60,7 @@ public static class TonHelper
     }
 
     public static CellBuilder PopulateMetadata(CellBuilder builder, ReportContextDto context, CrossChainDataDto meta)
-        => PopulateMetadata(builder, context, meta.Message, meta.TokenTransferMetadataDto);
+        => PopulateMetadata(builder, context, meta.Message, meta.TokenTransferMetadata);
 
     public static CellBuilder PopulateMetadata(CellBuilder builder, ReportContextDto context, string message,
         TokenTransferMetadataDto tokenTransferMetadata)

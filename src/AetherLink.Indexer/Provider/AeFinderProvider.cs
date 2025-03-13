@@ -408,9 +408,11 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                 }",
                 Variables = new
                 {
-                    targetChainId = targetChainId, sourceChainId = sourceChainId,
-                    targetContractAddress = receiver, tokenAddress = tokenAddress,
-                    originToken = symbol
+                    targetChainId = targetChainId,
+                    sourceChainId = sourceChainId,
+                    receiver = receiver,
+                    tokenAddress = tokenAddress,
+                    symbol = symbol
                 }
             });
             return indexerResult ?? new();

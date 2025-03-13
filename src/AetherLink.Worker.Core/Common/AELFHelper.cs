@@ -59,12 +59,11 @@ public static class AELFHelper
             var temp = report.TokenTransferMetadataDto;
             tokenTransferMetadata = new()
             {
-                ExtraData = ByteString.FromBase64(temp.ExtraData),
                 TargetChainId = temp.TargetChainId,
-                // TargetContractAddress = temp.Receiver,
                 TokenAddress = temp.TokenAddress,
                 Symbol = temp.Symbol,
-                Amount = temp.Amount
+                Amount = temp.Amount,
+                ExtraData = ByteString.FromBase64(temp.ExtraData)
             };
         }
 
