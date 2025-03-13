@@ -1,10 +1,13 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using AElf;
 using AetherLink.Indexer.Dtos;
 using AetherLink.Indexer.Provider;
 using AetherLink.Worker.Core.Common;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
 
@@ -40,6 +43,8 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
                 _logger.LogWarning("[TokenSwapper] Get empty token amount");
                 return null;
             }
+
+            reportContext = ContextPreprocessing(reportContext);
 
             var tokenSwapConfigId = GenerateTokenSwapId(reportContext, tokenTransferMetadata);
             var tokenSwapConfig = await _storageProvider.GetAsync<TokenSwapConfigDto>(tokenSwapConfigId);
@@ -80,6 +85,21 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
             _logger.LogError(e, "[TokenSwapper]Get TokenSwapConfig failed.");
             throw;
         }
+    }
+
+    private ReportContextDto ContextPreprocessing(ReportContextDto originContext)
+    {
+        switch (originContext.TargetChainId)
+        {
+            case ChainIdConstants.EVM:
+            case ChainIdConstants.BSC:
+            case ChainIdConstants.BSCTEST:
+            case ChainIdConstants.SEPOLIA:
+                originContext.Receiver = ByteString.FromBase64(originContext.Receiver).ToHex(true);
+                break;
+        }
+
+        return originContext;
     }
 
     private string GenerateTokenSwapId(ReportContextDto reportContext, TokenTransferMetadataDto data)
