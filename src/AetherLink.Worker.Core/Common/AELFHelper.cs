@@ -78,8 +78,7 @@ public static class AELFHelper
         {
             ReportContext = new()
             {
-                // MessageId = HashHelper.ComputeFrom(reportContext.MessageId),
-                MessageId = HashHelper.ComputeFrom(ByteString.FromBase64(reportContext.MessageId).ToByteArray()),
+                MessageId = HashHelper.ComputeFrom(ByteString.FromBase64(reportContext.MessageId).ToHex()),
                 SourceChainId = reportContext.SourceChainId,
                 TargetChainId = reportContext.TargetChainId,
                 Sender = ByteString.FromBase64(reportContext.Sender),

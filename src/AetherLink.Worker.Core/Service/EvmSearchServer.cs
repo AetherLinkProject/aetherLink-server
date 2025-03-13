@@ -74,13 +74,13 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
         var receivedMessage = new EvmReceivedMessageDto
         {
             MessageId = messageId,
-            Sender = sender,
             Epoch = (long)sendRequestData.Epoch,
             SourceChainId = (long)sendRequestData.SourceChainId,
             TargetChainId = (long)sendRequestData.TargetChainId,
-            BlockNumber = blockNumber,
+            Sender = sender,
             Receiver = sendRequestData.Receiver,
             Message = Convert.ToBase64String(sendRequestData.Message),
+            BlockNumber = blockNumber,
             TransactionTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds()
         };
 
