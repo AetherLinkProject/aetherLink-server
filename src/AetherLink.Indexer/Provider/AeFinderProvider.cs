@@ -398,12 +398,12 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                 Query =
                     @"query($targetChainId:Long!,$sourceChainId:Long!,$receiver:String!,$tokenAddress:String,$symbol:String){
                     tokenSwapConfig(input: {targetChainId:$targetChainId,sourceChainId:$sourceChainId,receiver:$receiver,tokenAddress:$tokenAddress,symbol:$symbol}){
-                            swapId,
                             targetChainId,
                             sourceChainId,
                             receiver,
                             tokenAddress,
-                            symbol
+                            symbol,
+                            extraData
                     }
                 }",
                 Variables = new
