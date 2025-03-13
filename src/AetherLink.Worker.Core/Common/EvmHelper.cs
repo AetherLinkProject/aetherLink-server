@@ -66,11 +66,11 @@ public class EvmHelper
     {
         var abiEncode = new ABIEncode();
         var encoded = abiEncode.GetABIEncoded(
-            new ABIValue("bytes32", ByteString.FromBase64(reportContext.MessageId).ToByteArray()),
+            new ABIValue("bytes32", ByteStringHelper.FromHexString(reportContext.MessageId).ToByteArray()),
             new ABIValue("uint256", reportContext.SourceChainId),
             new ABIValue("uint256", reportContext.TargetChainId),
             new ABIValue("string", reportContext.Sender),
-            new ABIValue("address", ByteString.FromBase64(reportContext.Receiver).ToHex(true)));
+            new ABIValue("address", reportContext.Receiver));
         return encoded;
     }
 
@@ -84,7 +84,7 @@ public class EvmHelper
             tokenTransferMetadata.TokenAddress,
             tokenTransferMetadata.Symbol,
             (int)tokenTransferMetadata.Amount,
-            tokenTransferMetadata.ExtraData
+            tokenTransferMetadata.ExtraDataString
         );
         return encoded;
     }

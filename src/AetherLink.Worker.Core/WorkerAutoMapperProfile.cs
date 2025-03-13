@@ -116,7 +116,6 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
             .ForPath(t => t.ReportContext.Epoch, m => m.MapFrom(f => f.ReportContext.Epoch))
             .ForPath(t => t.ReportContext.RoundId, m => m.MapFrom(f => f.ReportContext.RoundId));
         CreateMap<TokenTransferMetadataDto, Ramp.TokenTransferMetadata>()
-            .ForPath(t => t.ExtraData, m => m.MapFrom(f => f.ExtraData))
             .ForPath(t => t.TokenAddress, m => m.MapFrom(f => f.TokenAddress))
             .ForPath(t => t.TargetChainId, m => m.MapFrom(f => f.TargetChainId))
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Symbol));

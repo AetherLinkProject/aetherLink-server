@@ -67,7 +67,7 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
             await _storageProvider.SetAsync(tokenSwapConfigId, tokenSwapConfig);
             // }
 
-            tokenTransferMetadata.ExtraData = tokenSwapConfig.ExtraData;
+            tokenTransferMetadata.ExtraDataString = tokenSwapConfig.ExtraData;
             if (string.IsNullOrEmpty(tokenTransferMetadata.Symbol))
             {
                 tokenTransferMetadata.Symbol = tokenSwapConfig.Symbol;
