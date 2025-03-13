@@ -80,11 +80,11 @@ public class EvmHelper
 
         var abiEncode = new ABIEncode();
         var encoded = abiEncode.GetABIEncoded(
-            (int)tokenTransferMetadata.TargetChainId,
-            tokenTransferMetadata.TokenAddress,
-            tokenTransferMetadata.Symbol,
-            (int)tokenTransferMetadata.Amount,
-            tokenTransferMetadata.ExtraDataString
+            new ABIValue("uint256", tokenTransferMetadata.TargetChainId),
+            new ABIValue("string", tokenTransferMetadata.TokenAddress),
+            new ABIValue("string", tokenTransferMetadata.Symbol),
+            new ABIValue("uint256", tokenTransferMetadata.Amount),
+            new ABIValue("bytes", ByteString.FromBase64(tokenTransferMetadata.ExtraDataString).ToByteArray())
         );
         return encoded;
     }
