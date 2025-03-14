@@ -96,6 +96,7 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
             case ChainIdConstants.BSC:
             case ChainIdConstants.BSCTEST:
             case ChainIdConstants.SEPOLIA:
+            case ChainIdConstants.BASESEPOLIA:
                 var checksumAddress = new AddressUtil().ConvertToChecksumAddress(
                     ByteString.FromBase64(originContext.Receiver).ToHex(true));
                 originContext.Receiver = checksumAddress;

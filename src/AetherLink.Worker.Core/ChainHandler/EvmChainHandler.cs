@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
@@ -57,8 +56,8 @@ public class BscChainWriter : ChainWriter, ISingletonDependency
         var messageBytes = EvmHelper.GenerateMessageBytes(crossChainData.Message);
         var tokenTransferMetadata = EvmHelper.GenerateTokenTransferMetadataBytes(crossChainData.TokenTransferMetadata);
         var (rs, ss, rawVs) = EvmHelper.AggregateSignatures(signatures.Values.ToList());
-        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata, rs, ss,
-            rawVs);
+        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata,
+            rs, ss, rawVs);
     }
 }
 
@@ -81,8 +80,8 @@ public class SEPOLIAChainWriter : ChainWriter, ISingletonDependency
         var messageBytes = EvmHelper.GenerateMessageBytes(crossChainData.Message);
         var tokenTransferMetadata = EvmHelper.GenerateTokenTransferMetadataBytes(crossChainData.TokenTransferMetadata);
         var (rs, ss, rawVs) = EvmHelper.AggregateSignatures(signatures.Values.ToList());
-        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata, rs, ss,
-            rawVs);
+        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata,
+            rs, ss, rawVs);
     }
 }
 
@@ -105,8 +104,32 @@ public class BscTestChainWriter : ChainWriter, ISingletonDependency
         var messageBytes = EvmHelper.GenerateMessageBytes(crossChainData.Message);
         var tokenTransferMetadata = EvmHelper.GenerateTokenTransferMetadataBytes(crossChainData.TokenTransferMetadata);
         var (rs, ss, rawVs) = EvmHelper.AggregateSignatures(signatures.Values.ToList());
-        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata, rs, ss,
-            rawVs);
+        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata,
+            rs, ss, rawVs);
+    }
+}
+
+public class BaseSepoliaWriter : ChainWriter, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.BASESEPOLIA;
+    private readonly IEvmProvider _evmContractProvider;
+    private readonly EvmOptions _evmOptions;
+
+    public BaseSepoliaWriter(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    {
+        _evmContractProvider = evmContractProvider;
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
+    }
+
+    public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
+        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
+    {
+        var contextBytes = EvmHelper.GenerateReportContextBytes(reportContext);
+        var messageBytes = EvmHelper.GenerateMessageBytes(crossChainData.Message);
+        var tokenTransferMetadata = EvmHelper.GenerateTokenTransferMetadataBytes(crossChainData.TokenTransferMetadata);
+        var (rs, ss, rawVs) = EvmHelper.AggregateSignatures(signatures.Values.ToList());
+        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata,
+            rs, ss, rawVs);
     }
 }
 
@@ -174,6 +197,7 @@ public class BscTestChainReader : ChainReader, ISingletonDependency
         _evmProvider = evmContractProvider;
         _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
+
     public override Task<byte[]> CallTransactionAsync(byte[] transaction)
     {
         throw new System.NotImplementedException();
@@ -195,6 +219,32 @@ public class SEPOLIAChainReader : ChainReader, ISingletonDependency
     private readonly EvmOptions _evmOptions;
 
     public SEPOLIAChainReader(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    {
+        _evmProvider = evmContractProvider;
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
+    }
+
+    public override Task<byte[]> CallTransactionAsync(byte[] transaction)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
+        { State = await _evmProvider.GetTransactionResultAsync(_evmOptions, transactionId) };
+
+    public override string ConvertBytesToAddressStr(byte[] addressBytes)
+    {
+        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
+    }
+}
+
+public class BaseSepoliaChainReader : ChainReader, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.BASESEPOLIA;
+    private readonly IEvmProvider _evmProvider;
+    private readonly EvmOptions _evmOptions;
+
+    public BaseSepoliaChainReader(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
     {
         _evmProvider = evmContractProvider;
         _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);

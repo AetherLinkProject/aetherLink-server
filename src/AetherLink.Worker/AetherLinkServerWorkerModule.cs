@@ -179,6 +179,7 @@ namespace AetherLink.Worker
             context.Services.AddSingleton<IChainKeyring, EvmChainKeyring>();
             context.Services.AddSingleton<IChainKeyring, BscChainKeyring>();
             context.Services.AddSingleton<IChainKeyring, SEPOLIAChainKeyring>();
+            context.Services.AddSingleton<IChainKeyring, BaseSepoliaChainKeyring>();
             context.Services.AddSingleton<IChainKeyring, BscTestChainKeyring>();
         }
 
@@ -191,6 +192,7 @@ namespace AetherLink.Worker
             context.Services.AddSingleton<IChainWriter, TonChainWriter>();
             context.Services.AddSingleton<IChainWriter, BscTestChainWriter>();
             context.Services.AddSingleton<IChainWriter, SEPOLIAChainWriter>();
+            context.Services.AddSingleton<IChainWriter, BaseSepoliaWriter>();
             context.Services.AddSingleton<IChainWriter, EvmChainWriter>();
             context.Services.AddSingleton<IChainWriter, BscChainWriter>();
 
@@ -202,6 +204,7 @@ namespace AetherLink.Worker
             context.Services.AddSingleton<IChainReader, BscChainReader>();
             context.Services.AddSingleton<IChainReader, EvmChainReader>();
             context.Services.AddSingleton<IChainReader, SEPOLIAChainReader>();
+            context.Services.AddSingleton<IChainReader, BaseSepoliaChainReader>();
             context.Services.AddSingleton<IChainReader, BscTestChainReader>();
         }
 

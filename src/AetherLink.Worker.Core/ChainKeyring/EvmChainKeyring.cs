@@ -45,6 +45,25 @@ public class SEPOLIAChainKeyring : ChainKeyring, ISingletonDependency
         byte[] sign) => EvmHelper.OffChainVerify(reportContext, index, report, sign, _distPublicKey);
 }
 
+public class BaseSepoliaChainKeyring : ChainKeyring, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.BASESEPOLIA;
+    private readonly EvmOptions _evmOptions;
+    private string[] _distPublicKey;
+
+    public BaseSepoliaChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    {
+        _distPublicKey = evmOptions.Value.DistPublicKey;
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
+    }
+
+    public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
+        => EvmHelper.OffChainSign(reportContext, report, _evmOptions);
+
+    public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
+        byte[] sign) => EvmHelper.OffChainVerify(reportContext, index, report, sign, _distPublicKey);
+}
+
 public class BscChainKeyring : ChainKeyring, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.BSC;

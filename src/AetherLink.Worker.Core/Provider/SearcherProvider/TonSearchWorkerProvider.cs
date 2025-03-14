@@ -354,7 +354,6 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
             tokenTransferMetadataDto = new TokenTransferMetadataDto
             {
                 TargetChainId = tokenTargetChainId,
-                // Receiver = contractAddress,
                 TokenAddress = tokenAddressStr,
                 Amount = amount
             };
