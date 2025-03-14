@@ -15,6 +15,7 @@ using Microsoft.Extensions.Options;
 using Nethereum.ABI.Decoders;
 using Volo.Abp.DependencyInjection;
 using Nethereum.Contracts;
+using Nethereum.Util;
 
 namespace AetherLink.Worker.Core.Service;
 
@@ -122,6 +123,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
 
             var tokenAddress =
                 Encoding.UTF8.GetString(metadataBytes.Skip(tokenAddressOffset + 64).Take(tokenAddressLength).ToArray());
+            var checksumAddress = new AddressUtil().ConvertToChecksumAddress(tokenAddress);
 
             // var symbolLength =
             //     (int)uintDecoder.DecodeBigInteger(metadataBytes.Skip(symbolOffset + 32).Take(32).ToArray());
@@ -131,11 +133,11 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             // var extraData = metadataBytes.Skip(extraDataOffset + 64).Take(extraDataLength).ToArray();
 
             _logger.LogDebug(
-                $"[EvmSearchServer] Get cross chain token transfer metadata=> targetChainId:{targetChainId}, tokenAddress: {tokenAddress}, amount: {amount}");
+                $"[EvmSearchServer] Get cross chain token transfer metadata=> targetChainId:{targetChainId}, tokenAddress: {checksumAddress}, amount: {amount}");
             return new()
             {
                 TargetChainId = (long)targetChainId,
-                TokenAddress = tokenAddress,
+                TokenAddress = checksumAddress,
                 Amount = (long)amount
             };
         }
