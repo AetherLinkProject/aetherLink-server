@@ -9,6 +9,7 @@ using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
+using Nethereum.Util;
 using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.Provider;
@@ -95,7 +96,9 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
             case ChainIdConstants.BSC:
             case ChainIdConstants.BSCTEST:
             case ChainIdConstants.SEPOLIA:
-                originContext.Receiver = ByteString.FromBase64(originContext.Receiver).ToHex(true);
+                var checksumAddress = new AddressUtil().ConvertToChecksumAddress(
+                    ByteString.FromBase64(originContext.Receiver).ToHex(true));
+                originContext.Receiver = checksumAddress;
                 break;
         }
 
