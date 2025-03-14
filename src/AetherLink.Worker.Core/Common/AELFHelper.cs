@@ -74,11 +74,10 @@ public static class AELFHelper
     public static Report GenerateReport(ReportContextDto reportContext, string message,
         TokenTransferMetadata tokenTransferMetadata)
     {
-        return new()
+        var report = new Report()
         {
             ReportContext = new()
             {
-                MessageId = HashHelper.ComputeFrom(ByteString.FromBase64(reportContext.MessageId).ToHex()),
                 SourceChainId = reportContext.SourceChainId,
                 TargetChainId = reportContext.TargetChainId,
                 Sender = ByteString.FromBase64(reportContext.Sender),
@@ -87,6 +86,10 @@ public static class AELFHelper
             Message = ByteString.FromBase64(message),
             TokenTransferMetadata = tokenTransferMetadata
         };
+        report.ReportContext.MessageId = HashHelper.ConcatAndCompute(HashHelper.ComputeFrom(report),
+            HashHelper.ComputeFrom(reportContext.MessageId));
+
+        return report;
     }
 
     public static async Task<ChainHandler.TransactionState> GetTransactionResultAsync(
