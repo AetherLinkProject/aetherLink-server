@@ -1,9 +1,11 @@
+using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Types;
 using AetherLink.Contracts.Ramp;
 using AetherLink.Multisignature;
 using AetherLink.Worker.Core.Common.ContractHandler;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
@@ -95,14 +97,23 @@ public static class AELFHelper
     public static async Task<ChainHandler.TransactionState> GetTransactionResultAsync(
         IContractProvider contractProvider, string chainId, string transactionId)
     {
-        var txResult = await contractProvider.GetTxResultAsync(chainId, transactionId);
-        return txResult.Status switch
+        for (var i = 0; i < RetryConstants.DefaultDelay; i++)
         {
-            TransactionState.Mined => ChainHandler.TransactionState.Success,
-            TransactionState.Pending => ChainHandler.TransactionState.Pending,
-            TransactionState.NotExisted => ChainHandler.TransactionState.NotExist,
-            _ => ChainHandler.TransactionState.Fail
-        };
+            var txResult = await contractProvider.GetTxResultAsync(chainId, transactionId);
+            switch (txResult.Status)
+            {
+                case TransactionState.Pending:
+                case TransactionState.NotExisted:
+                    Thread.Sleep((i + 1) * 1000 * 2);
+                    break;
+                case TransactionState.Mined:
+                    return ChainHandler.TransactionState.Success;
+                default:
+                    return ChainHandler.TransactionState.Fail;
+            }
+        }
+
+        return ChainHandler.TransactionState.Fail;
     }
 
     public static ChainConfig GetChainConfig(long chainId, OracleInfoOptions options)
