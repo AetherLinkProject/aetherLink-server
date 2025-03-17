@@ -118,7 +118,8 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 Message = request.Message,
                 StartTime = request.StartTime
             };
-            if (request.TokenTransferMetadata != null)
+            if (request.TokenTransferMetadata is { TargetChainId: > 0 } &&
+                !string.IsNullOrEmpty(request.TokenTransferMetadata.Symbol))
             {
                 crossChainRequestStartArgs.TokenTransferMetadata = await _tokenSwapper.ConstructSwapId(
                     crossChainRequestStartArgs.ReportContext, new()
