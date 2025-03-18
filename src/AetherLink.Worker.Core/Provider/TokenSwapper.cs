@@ -45,8 +45,6 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
                 return null;
             }
 
-            reportContext = ContextPreprocessing(reportContext);
-
             var tokenSwapConfigId = GenerateTokenSwapId(reportContext, tokenTransferMetadata);
             var tokenSwapConfig = await _storageProvider.GetAsync<TokenSwapConfigDto>(tokenSwapConfigId);
             // if (tokenSwapConfig == null)
@@ -86,24 +84,6 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
             _logger.LogError(e, "[TokenSwapper]Get TokenSwapConfig failed.");
             throw;
         }
-    }
-
-    private ReportContextDto ContextPreprocessing(ReportContextDto originContext)
-    {
-        switch (originContext.TargetChainId)
-        {
-            case ChainIdConstants.EVM:
-            case ChainIdConstants.BSC:
-            case ChainIdConstants.BSCTEST:
-            case ChainIdConstants.SEPOLIA:
-            case ChainIdConstants.BASESEPOLIA:
-                var checksumAddress = new AddressUtil().ConvertToChecksumAddress(
-                    ByteString.FromBase64(originContext.Receiver).ToHex(true));
-                originContext.Receiver = checksumAddress;
-                break;
-        }
-
-        return originContext;
     }
 
     private string GenerateTokenSwapId(ReportContextDto reportContext, TokenTransferMetadataDto data)

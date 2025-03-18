@@ -1,11 +1,14 @@
 using System;
 using System.Threading.Tasks;
+using AElf;
 using AetherLink.Indexer.Dtos;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
+using Nethereum.Util;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 
@@ -106,18 +109,11 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                 $"[CrossChainRequestProvider] Start CrossChainRequest From {request.ChainId} transactionId: {request.TransactionId}");
             var crossChainRequestStartArgs = new CrossChainRequestStartArgs
             {
-                ReportContext = new()
-                {
-                    MessageId = request.MessageId,
-                    Sender = request.Sender,
-                    Receiver = request.Receiver,
-                    TargetChainId = request.TargetChainId,
-                    SourceChainId = request.SourceChainId,
-                    Epoch = request.Epoch
-                },
                 Message = request.Message,
-                StartTime = request.StartTime
+                StartTime = request.StartTime,
+                ReportContext = ContextPreprocessing(request)
             };
+
             if (request.TokenTransferMetadata is { TargetChainId: > 0 } &&
                 !string.IsNullOrEmpty(request.TokenTransferMetadata.Symbol))
             {
@@ -153,4 +149,34 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
 
     private static string GenerateCrossChainDataId(string messageId)
         => IdGeneratorHelper.GenerateId(RedisKeyConstants.CrossChainDataKey, messageId);
+
+    private ReportContextDto ContextPreprocessing(RampRequestDto request)
+    {
+        var reportContext = new ReportContextDto()
+        {
+            MessageId = request.MessageId,
+            Sender = request.Sender,
+            TargetChainId = request.TargetChainId,
+            SourceChainId = request.SourceChainId,
+            Epoch = request.Epoch
+        };
+
+        switch (reportContext.TargetChainId)
+        {
+            case ChainIdConstants.EVM:
+            case ChainIdConstants.BSC:
+            case ChainIdConstants.BSCTEST:
+            case ChainIdConstants.SEPOLIA:
+            case ChainIdConstants.BASESEPOLIA:
+                var checksumAddress = new AddressUtil().ConvertToChecksumAddress(
+                    ByteString.FromBase64(request.Receiver).ToHex(true));
+                reportContext.Receiver = checksumAddress;
+                break;
+            default:
+                reportContext.Receiver = request.Receiver;
+                break;
+        }
+
+        return reportContext;
+    }
 }
