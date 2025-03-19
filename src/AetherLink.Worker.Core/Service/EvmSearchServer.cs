@@ -133,7 +133,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             // var extraData = metadataBytes.Skip(extraDataOffset + 64).Take(extraDataLength).ToArray();
 
             _logger.LogDebug(
-                $"[EvmSearchServer] Get cross chain token transfer metadata=> targetChainId:{targetChainId}, tokenAddress: {checksumAddress}, amount: {amount}");
+                $"[EvmSearchServer] Get cross chain token transfer metadata => targetChainId:{targetChainId}, tokenAddress: {checksumAddress}, amount: {amount}");
             return new()
             {
                 TargetChainId = (long)targetChainId,
