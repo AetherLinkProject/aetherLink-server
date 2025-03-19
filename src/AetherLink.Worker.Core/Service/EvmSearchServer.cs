@@ -92,7 +92,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
         }
 
         _logger.LogInformation(
-            $"[EvmSearchServer] Get evm cross chain request {messageId} from {sender} to {(long)sendRequestData.TargetChainId} {sendRequestData.Receiver}");
+            $"[EvmSearchServer] Get evm cross chain request {eventData.Log.TransactionHash} {messageId} from {sender} to {(long)sendRequestData.TargetChainId} {sendRequestData.Receiver}");
         return receivedMessage;
     }
 
