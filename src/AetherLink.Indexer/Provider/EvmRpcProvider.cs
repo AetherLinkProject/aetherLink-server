@@ -44,10 +44,9 @@ namespace AetherLink.Indexer.Provider
                     while (true)
                     {
                         var handler = new EthBlockNumberObservableHandler(client);
-                        handler.GetResponseAsObservable()
-                            .Subscribe(x =>
-                                _logger.LogDebug(
-                                    $"[EvmRpcProvider] Network: {networkOptions.NetworkName} BlockHeight: {x.Value}"));
+                        handler.GetResponseAsObservable().Subscribe(x =>
+                            _logger.LogDebug(
+                                $"[EvmRpcProvider] Network: {networkOptions.NetworkName} BlockHeight: {x.Value}"));
                         await handler.SendRequestAsync();
                         await Task.Delay(networkOptions.PingDelay);
                     }
