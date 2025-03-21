@@ -9,4 +9,6 @@ public class ReportContextDto
     public long SourceChainId { get; set; }
     public long Epoch { get; set; }
     public int RoundId { get; set; }
+    public string TargetChainOracleContractAddress { get; set; } = "EQBCOuvczf29HIGNxrJdsmTKIabHQ1j4dW2ojlYkcru3IOYy";
+    public long TransactionReceivedTime { get; set; }
 }

@@ -65,7 +65,17 @@ public static class TonHelper
     public static CellBuilder PopulateMetadata(CellBuilder builder, ReportContextDto context, string message,
         TokenTransferMetadataDto tokenTransferMetadata)
     {
+        var messageId = Ensure128ByteArray(context.MessageId);
+        var timestamp = context.TransactionReceivedTime;
+        var targetChainOracleContractAddress = new Address(context.TargetChainOracleContractAddress);
         var receiverAddress = new Address(context.Receiver);
+        var contextRef = new CellBuilder()
+            .StoreInt(messageId, TonMetaDataConstants.MessageIdBitsSize)
+            .StoreUInt(timestamp, TonMetaDataConstants.TimestampUIntSize)
+            .StoreRef(new CellBuilder().StoreAddress(targetChainOracleContractAddress).Build())
+            .StoreRef(new CellBuilder().StoreAddress(receiverAddress).Build())
+            .Build();
+
         var sender = Base58CheckEncoding.Decode(context.Sender);
         var messageByte = Base64.Decode(message);
         var body = BuildMessageBody(
@@ -74,11 +84,10 @@ public static class TonHelper
             sender,
             receiverAddress,
             messageByte,
-            tokenTransferMetadata);
-        var messageId = Ensure128ByteArray(context.MessageId);
-        return builder.StoreInt(messageId, TonMetaDataConstants.MessageIdBitsSize)
-            .StoreAddress(receiverAddress)
-            .StoreRef(body);
+            tokenTransferMetadata
+        );
+
+        return builder.StoreRef(contextRef).StoreRef(body);
     }
 
     public static bool VerifySignature(string publicKey, Cell metaData, byte[] signature)
