@@ -227,8 +227,7 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
     {
         try
         {
-            var body = Cell.From(tonTransactionDto.Body);
-            var bodySlice = body.Parse();
+            var bodySlice = Cell.From(tonTransactionDto.Body).Parse();
             var opCode = bodySlice.LoadInt(TonMetaDataConstants.OpCodeUintSize);
             if (opCode != TonOpCodeConstants.ResendTx)
             {
@@ -264,41 +263,13 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
     {
         try
         {
-            var inMessageBody = Cell.From(tonTransactionDto.Body);
-            var inMessageBodySlice = inMessageBody.Parse();
+            // MessageBody: OP, messageContext, ody
+            var inMessageBodySlice = Cell.From(tonTransactionDto.Body).Parse();
             var opCode = inMessageBodySlice.LoadUInt(TonMetaDataConstants.OpCodeUintSize);
-            if (opCode != TonOpCodeConstants.ForwardTx)
-            {
-                _logger.LogError("[TonSearchWorkerProvider] Analysis ForwardTransaction OpCode Error");
-                return null;
-            }
+            var messageContext = inMessageBodySlice.LoadRef().Parse();
+            var messageId = messageContext.LoadBytes(TonMetaDataConstants.MessageIdBytesSize);
 
-            var messageId = inMessageBodySlice.LoadBytes(TonMetaDataConstants.MessageIdBytesSize);
-            var messageIdStr = Base64.ToBase64String(messageId);
-            var targetAddr = inMessageBodySlice.LoadAddress();
-            var targetAddrStr = targetAddr?.ToString();
-
-            var proxyBody = inMessageBodySlice.LoadRef();
-            var proxyBodySlice = proxyBody.Parse();
-
-            var sourceChainId = proxyBodySlice.LoadUInt(TonMetaDataConstants.ChainIdIntSize);
-            var targetChainId = proxyBodySlice.LoadUInt(TonMetaDataConstants.ChainIdIntSize);
-            var sender = proxyBodySlice.LoadRef();
-            var senderStr = Base64.ToBase64String(sender.Parse().Bits.ToBytes());
-            var receive = proxyBodySlice.LoadRef();
-            var receiveStr = Base64.ToBase64String(receive.Parse().Bits.ToBytes());
-            var proxyMessage = proxyBodySlice.LoadRef();
-            var proxyMessageStr = Base64.ToBase64String(proxyMessage.Parse().Bits.ToBytes());
-
-            return new ForwardMessageDto
-            {
-                MessageId = messageIdStr,
-                SourceChainId = (long)sourceChainId,
-                TargetChainId = (long)targetChainId,
-                Sender = senderStr,
-                Receiver = targetAddrStr,
-                Message = proxyMessageStr
-            };
+            return new() { MessageId = Base64.ToBase64String(messageId), };
         }
         catch (Exception e)
         {

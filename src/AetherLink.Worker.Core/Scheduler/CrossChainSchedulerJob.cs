@@ -69,6 +69,8 @@ public class CrossChainSchedulerJob : ICrossChainSchedulerJob, ITransientDepende
         try
         {
             data.ReportContext.RoundId = 0;
+            data.ReportContext.TransactionReceivedTime =
+                new DateTimeOffset(data.ResendTransactionBlockTime).ToUnixTimeMilliseconds();
             data.State = CrossChainState.PendingResend;
             data.RequestReceiveTime =
                 data.ResendTransactionBlockTime.AddMinutes(data.NextCommitDelayTime);

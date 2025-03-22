@@ -73,6 +73,10 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
             .ForPath(t => t.ReportContext.TargetChainId, m => m.MapFrom(f => f.ReportContext.TargetChainId))
             .ForPath(t => t.ReportContext.Sender, m => m.MapFrom(f => f.ReportContext.Sender))
             .ForPath(t => t.ReportContext.Receiver, m => m.MapFrom(f => f.ReportContext.Receiver))
+            .ForPath(t => t.ReportContext.TransactionReceivedTime,
+                m => m.MapFrom(f => f.ReportContext.TransactionReceivedTime))
+            .ForPath(t => t.ReportContext.TargetChainOracleContractAddress,
+                m => m.MapFrom(f => f.ReportContext.TargetChainOracleContractAddress))
             .ForPath(t => t.ReportContext.Epoch, m => m.MapFrom(f => f.ReportContext.Epoch))
             .ForPath(t => t.ReportContext.RoundId, m => m.MapFrom(f => f.ReportContext.RoundId));
         CreateMap<QueryMessageSignatureRequest, CrossChainPartialSignatureJobArgs>()
@@ -81,6 +85,10 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
             .ForPath(t => t.ReportContext.TargetChainId, m => m.MapFrom(f => f.ReportContext.TargetChainId))
             .ForPath(t => t.ReportContext.Sender, m => m.MapFrom(f => f.ReportContext.Sender))
             .ForPath(t => t.ReportContext.Receiver, m => m.MapFrom(f => f.ReportContext.Receiver))
+            .ForPath(t => t.ReportContext.TransactionReceivedTime,
+                m => m.MapFrom(f => f.ReportContext.TransactionReceivedTime))
+            .ForPath(t => t.ReportContext.TargetChainOracleContractAddress,
+                m => m.MapFrom(f => f.ReportContext.TargetChainOracleContractAddress))
             .ForPath(t => t.ReportContext.Epoch, m => m.MapFrom(f => f.ReportContext.Epoch))
             .ForPath(t => t.ReportContext.RoundId, m => m.MapFrom(f => f.ReportContext.RoundId));
         CreateMap<CrossChainPartialSignatureJobArgs, ReturnPartialSignatureResults>()
@@ -89,6 +97,10 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
             .ForPath(t => t.ReportContext.TargetChainId, m => m.MapFrom(f => f.ReportContext.TargetChainId))
             .ForPath(t => t.ReportContext.Sender, m => m.MapFrom(f => f.ReportContext.Sender))
             .ForPath(t => t.ReportContext.Receiver, m => m.MapFrom(f => f.ReportContext.Receiver))
+            .ForPath(t => t.ReportContext.TransactionReceivedTime,
+                m => m.MapFrom(f => f.ReportContext.TransactionReceivedTime))
+            .ForPath(t => t.ReportContext.TargetChainOracleContractAddress,
+                m => m.MapFrom(f => f.ReportContext.TargetChainOracleContractAddress))
             .ForPath(t => t.ReportContext.Epoch, m => m.MapFrom(f => f.ReportContext.Epoch))
             .ForPath(t => t.ReportContext.RoundId, m => m.MapFrom(f => f.ReportContext.RoundId));
         CreateMap<ReturnPartialSignatureResults, CrossChainMultiSignatureJobArgs>()
@@ -97,6 +109,10 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
             .ForPath(t => t.ReportContext.TargetChainId, m => m.MapFrom(f => f.ReportContext.TargetChainId))
             .ForPath(t => t.ReportContext.Sender, m => m.MapFrom(f => f.ReportContext.Sender))
             .ForPath(t => t.ReportContext.Receiver, m => m.MapFrom(f => f.ReportContext.Receiver))
+            .ForPath(t => t.ReportContext.TransactionReceivedTime,
+                m => m.MapFrom(f => f.ReportContext.TransactionReceivedTime))
+            .ForPath(t => t.ReportContext.TargetChainOracleContractAddress,
+                m => m.MapFrom(f => f.ReportContext.TargetChainOracleContractAddress))
             .ForPath(t => t.ReportContext.Epoch, m => m.MapFrom(f => f.ReportContext.Epoch))
             .ForPath(t => t.ReportContext.RoundId, m => m.MapFrom(f => f.ReportContext.RoundId));
         CreateMap<CrossChainCommitJobArgs, CrossChainReceivedResult>()

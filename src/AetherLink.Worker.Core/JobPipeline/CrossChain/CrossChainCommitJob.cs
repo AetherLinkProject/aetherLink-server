@@ -9,6 +9,7 @@ using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.PeerManager;
+using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
@@ -23,14 +24,17 @@ public class CrossChainCommitJob : AsyncBackgroundJob<CrossChainCommitJobArgs>, 
     private readonly ILogger<CrossChainCommitJob> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
     private readonly Dictionary<long, IChainWriter> _chainWriters;
+    private readonly ICrossChainRequestProvider _crossChainRequestProvider;
 
     public CrossChainCommitJob(IBackgroundJobManager backgroundJobManager, ILogger<CrossChainCommitJob> logger,
-        IObjectMapper objectMapper, IPeerManager peerManager, IEnumerable<IChainWriter> chainWriter)
+        IObjectMapper objectMapper, IPeerManager peerManager, IEnumerable<IChainWriter> chainWriter,
+        ICrossChainRequestProvider crossChainRequestProvider)
     {
         _logger = logger;
         _peerManager = peerManager;
         _objectMapper = objectMapper;
         _backgroundJobManager = backgroundJobManager;
+        _crossChainRequestProvider = crossChainRequestProvider;
         _chainWriters = chainWriter.GroupBy(x => x.ChainId).Select(g => g.First())
             .ToDictionary(x => x.ChainId, y => y);
     }
@@ -44,8 +48,15 @@ public class CrossChainCommitJob : AsyncBackgroundJob<CrossChainCommitJobArgs>, 
             return;
         }
 
-        var transactionId =
-            await TryToSendTransactionAsync(writer, reportContext, args.PartialSignatures, args.CrossChainData);
+        var crossChainData = await _crossChainRequestProvider.GetAsync(args.ReportContext.MessageId);
+        if (crossChainData == null)
+        {
+            _logger.LogWarning($"[CrossChain][Leader] Ramp request {args.ReportContext.MessageId} not exist.");
+            return;
+        }
+
+        var transactionId = await TryToSendTransactionAsync(writer, crossChainData.ReportContext,
+            args.PartialSignatures, args.CrossChainData);
         if (string.IsNullOrEmpty(transactionId))
         {
             _logger.LogError($"[CrossChain][Leader] Commit {reportContext.MessageId} report failed");

@@ -152,13 +152,15 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
 
     private ReportContextDto ContextPreprocessing(RampRequestDto request)
     {
-        var reportContext = new ReportContextDto()
+        var reportContext = new ReportContextDto
         {
             MessageId = request.MessageId,
             Sender = request.Sender,
             TargetChainId = request.TargetChainId,
             SourceChainId = request.SourceChainId,
-            Epoch = request.Epoch
+            Epoch = request.Epoch,
+            // TODO: set target contract address from option after test finished.
+            TransactionReceivedTime = request.StartTime
         };
 
         switch (reportContext.TargetChainId)

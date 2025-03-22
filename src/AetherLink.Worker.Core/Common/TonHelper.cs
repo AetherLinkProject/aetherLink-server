@@ -59,26 +59,49 @@ public static class TonHelper
         return hashmap;
     }
 
-    public static CellBuilder PopulateMetadata(CellBuilder builder, ReportContextDto context, CrossChainDataDto meta)
-        => PopulateMetadata(builder, context, meta.Message, meta.TokenTransferMetadata);
+    public static Cell ConstructDataToSign(ReportContextDto context, string message, TokenTransferMetadataDto meta)
+    {
+        var messageId = Ensure128ByteArray(context.MessageId);
+        var timestamp = new BigInteger(context.TransactionReceivedTime);
+        var targetChainOracleContractAddress = new Address(context.TargetChainOracleContractAddress);
+        var receiverAddress = new Address(context.Receiver);
+        var metaData = ConstructMetaData(context, message, meta);
+        return new CellBuilder()
+            .StoreInt(messageId, TonMetaDataConstants.MessageIdBitsSize)
+            .StoreUInt(timestamp, TonMetaDataConstants.TimestampUIntSize)
+            .StoreAddress(targetChainOracleContractAddress)
+            .StoreAddress(receiverAddress)
+            .StoreRef(metaData)
+            .Build();
+    }
 
-    public static CellBuilder PopulateMetadata(CellBuilder builder, ReportContextDto context, string message,
-        TokenTransferMetadataDto tokenTransferMetadata)
+    public static Cell ConstructMetaData(ReportContextDto context, string message, TokenTransferMetadataDto meta)
     {
         var receiverAddress = new Address(context.Receiver);
         var sender = Base58CheckEncoding.Decode(context.Sender);
         var messageByte = Base64.Decode(message);
-        var body = BuildMessageBody(
+        return BuildMessageBody(
             context.SourceChainId,
             context.TargetChainId,
             sender,
             receiverAddress,
             messageByte,
-            tokenTransferMetadata);
+            meta
+        );
+    }
+
+    public static Cell ConstructContext(ReportContextDto context)
+    {
         var messageId = Ensure128ByteArray(context.MessageId);
-        return builder.StoreInt(messageId, TonMetaDataConstants.MessageIdBitsSize)
+        var timestamp = new BigInteger(context.TransactionReceivedTime);
+        var targetChainOracleContractAddress = new Address(context.TargetChainOracleContractAddress);
+        var receiverAddress = new Address(context.Receiver);
+        return new CellBuilder()
+            .StoreInt(messageId, TonMetaDataConstants.MessageIdBitsSize)
+            .StoreUInt(timestamp, TonMetaDataConstants.TimestampUIntSize)
+            .StoreAddress(targetChainOracleContractAddress)
             .StoreAddress(receiverAddress)
-            .StoreRef(body);
+            .Build();
     }
 
     public static bool VerifySignature(string publicKey, Cell metaData, byte[] signature)

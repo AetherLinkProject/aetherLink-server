@@ -45,11 +45,21 @@ public class TonChainWriter : ChainWriter
             return null;
         }
 
-        var initCellBuilder =
-            new CellBuilder().StoreUInt(TonOpCodeConstants.ForwardTx, TonMetaDataConstants.OpCodeUintSize);
-        var cellWithMetadata = TonHelper.PopulateMetadata(initCellBuilder, reportContext, crossChainData);
-        var signatureCell = new CellBuilder().StoreDict(TonHelper.ConvertConsensusSignature(signatures)).Build();
-        var bodyCell = cellWithMetadata.StoreRef(signatureCell).Build();
+        // op, context, data, sign
+        var initCellBuilder = new CellBuilder()
+            .StoreUInt(TonOpCodeConstants.ForwardTx, TonMetaDataConstants.OpCodeUintSize);
+        var contextCell = TonHelper.ConstructContext(reportContext);
+        var metadataCell = TonHelper.ConstructMetaData(reportContext, crossChainData.Message,crossChainData.TokenTransferMetadata);
+        var signatureCell = new CellBuilder()
+            .StoreDict(TonHelper.ConvertConsensusSignature(signatures))
+            .Build();
+
+        var bodyCell = initCellBuilder
+            .StoreRef(contextCell)
+            .StoreRef(metadataCell)
+            .StoreRef(signatureCell)
+            .Build();
+
         var msg = _wallet.CreateTransferMessage(new[]
         {
             new WalletTransfer

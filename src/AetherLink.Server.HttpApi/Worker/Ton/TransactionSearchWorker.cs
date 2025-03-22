@@ -63,11 +63,12 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task UpdateRequestStateAsync(TonTransactionGrainDto transaction)
     {
         var bodySlice = Cell.From(transaction.InMsg.MessageContent.Body).Parse();
-        var _ = bodySlice.LoadUInt(TonTransactionConstants.DefaultUIntSize);
-        var messageId = Base64.ToBase64String(bodySlice.LoadBytes(TonTransactionConstants.MessageIdBytesSize));
-        
+        var opCode = bodySlice.LoadUInt(TonTransactionConstants.DefaultUIntSize);
+        var messageContext = bodySlice.LoadRef().Parse();
+        var messageId = Base64.ToBase64String(messageContext.LoadBytes(TonTransactionConstants.MessageIdBytesSize));
+
         _logger.LogDebug($"[TonSearchWorker] Get messageId: {messageId} transaction.");
-        
+
         var transactionIdGrainClient = _clusterClient.GetGrain<ITransactionIdGrain>(messageId);
         var transactionIdGrainResponse = await transactionIdGrainClient.GetAsync();
         if (!transactionIdGrainResponse.Success)
