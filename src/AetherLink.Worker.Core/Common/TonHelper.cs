@@ -71,7 +71,7 @@ public static class TonHelper
         var receiverAddress = new Address(context.Receiver);
         var contextRef = new CellBuilder()
             .StoreInt(messageId, TonMetaDataConstants.MessageIdBitsSize)
-            .StoreUInt(timestamp, TonMetaDataConstants.TimestampUIntSize)
+            .StoreUInt(new BigInteger(timestamp), TonMetaDataConstants.TimestampUIntSize)
             .StoreAddress(targetChainOracleContractAddress)
             .StoreAddress(receiverAddress)
             .Build();
