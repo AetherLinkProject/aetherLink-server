@@ -72,6 +72,8 @@ message ReportContext {
     string receiver = 5;
     int32 round_id = 6;
     int64 epoch = 7;
+    int64 transaction_received_time = 8;
+    string target_chain_oracle_contract_address = 9;
 }
 
 message CommitTransmitResultRequest {

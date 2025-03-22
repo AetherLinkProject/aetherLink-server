@@ -72,8 +72,8 @@ public static class TonHelper
         var contextRef = new CellBuilder()
             .StoreInt(messageId, TonMetaDataConstants.MessageIdBitsSize)
             .StoreUInt(timestamp, TonMetaDataConstants.TimestampUIntSize)
-            .StoreRef(new CellBuilder().StoreAddress(targetChainOracleContractAddress).Build())
-            .StoreRef(new CellBuilder().StoreAddress(receiverAddress).Build())
+            .StoreAddress(targetChainOracleContractAddress)
+            .StoreAddress(receiverAddress)
             .Build();
 
         var sender = Base58CheckEncoding.Decode(context.Sender);
