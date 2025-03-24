@@ -104,7 +104,7 @@ public static class AELFHelper
             {
                 case TransactionState.Pending:
                 case TransactionState.NotExisted:
-                    Thread.Sleep((i + 1) * 1000 * 2);
+                    await Task.Delay((i + 1) * 1000 * 2);
                     break;
                 case TransactionState.Mined:
                     return ChainHandler.TransactionState.Success;
