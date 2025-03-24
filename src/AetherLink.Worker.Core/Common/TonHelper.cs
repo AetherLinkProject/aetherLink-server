@@ -115,9 +115,9 @@ public static class TonHelper
         return signer.VerifySignature(signature);
     }
 
-    private static BigInteger Ensure128ByteArray(string base64MessageId)
+    private static BigInteger Ensure128ByteArray(string originMessageId)
     {
-        var messageIdBytes = ByteString.FromBase64(base64MessageId).ToByteArray();
+        var messageIdBytes = ByteStringHelper.FromHexString(originMessageId).ToByteArray();
         switch (messageIdBytes.Length)
         {
             case > 16:
