@@ -12,7 +12,6 @@ public class AetherLinkIndexerModule : AbpModule
         Configure<AeFinderOptions>(configuration.GetSection("AeFinder"));
         Configure<TonIndexerOption>(configuration.GetSection("TonIndexer"));
         Configure<EvmIndexerOptionsMap>(configuration.GetSection("EvmNetworks"));
-        context.Services.AddTransient<IEvmRpcProvider, EvmRpcProvider>();
         context.Services.AddTransient<IAeFinderProvider, AeFinderProvider>();
         context.Services.AddTransient<ITonIndexerProvider, TonIndexerProvider>();
         context.Services.AddHttpClient();

@@ -5,9 +5,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using AElf;
-using AetherLink.Indexer;
 using AetherLink.Indexer.Dtos;
-using AetherLink.Indexer.Provider;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
@@ -17,10 +15,10 @@ using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nethereum.ABI.Decoders;
-using Nethereum.ABI.FunctionEncoding.Attributes;
 using Volo.Abp.DependencyInjection;
 using Nethereum.Contracts;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Reactive.Eth;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
 using Nethereum.Util;
@@ -35,73 +33,41 @@ public interface IEvmSearchServer
 
 public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
 {
+    private readonly EvmContractsOptions _evmOptions;
     private readonly ILogger<EvmSearchServer> _logger;
-    private readonly IEvmRpcProvider _indexerProvider;
     private readonly IStorageProvider _storageProvider;
-    private readonly EvmIndexerOptionsMap _networkOptions;
     private readonly ICrossChainRequestProvider _crossChainProvider;
     private readonly ConcurrentDictionary<string, long> _heightMap = new();
 
     public EvmSearchServer(ILogger<EvmSearchServer> logger, ICrossChainRequestProvider crossChainProvider,
-        IEvmRpcProvider indexerProvider, IOptionsSnapshot<EvmIndexerOptionsMap> networkOptions,
-        IStorageProvider storageProvider)
+        IStorageProvider storageProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
     {
         _logger = logger;
-        _indexerProvider = indexerProvider;
+        _evmOptions = evmOptions.Value;
         _storageProvider = storageProvider;
-        _networkOptions = networkOptions.Value;
         _crossChainProvider = crossChainProvider;
     }
 
     public async Task StartAsync()
     {
         _logger.LogDebug("[EvmSearchServer] Starting EvmSearchServer ....");
-        await InitializeConsumedHeight(_networkOptions);
+        await InitializeConsumedHeight(_evmOptions);
 
-        await Task.WhenAll(_networkOptions.ChainInfos.Values.Select(SubscribeRequestAsync));
+        await Task.WhenAll(_evmOptions.ContractConfig.Values.Select(StartSubscribeEvmEventsAsync));
     }
 
-    private async Task SubscribeRequestAsync(EvmIndexerOptions options)
+    private async Task StartSubscribeEvmEventsAsync(EvmOptions indexerOptions)
     {
-        try
+        if (_heightMap.TryGetValue(indexerOptions.NetworkName, out var latestConsumedBlockHeight) ||
+            latestConsumedBlockHeight != 0)
         {
-            await _indexerProvider.SubscribeAndRunAsync<SendEventDTO>(
-                options, eventData =>
-                {
-                    _logger.LogInformation("[EvmSearchServer] Received Event --> ");
-                    _crossChainProvider.StartCrossChainRequestFromEvm(GenerateEvmReceivedMessage(eventData));
-                });
-
-            _logger.LogInformation("[EvmSearchServer] Start handler cross chain request... ");
+            await DealingWithMissedDataAsync(indexerOptions);
         }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[EvmSearchServer] Subscribe cross chain request fail.");
-            throw;
-        }
+
+        await StartSubscribeAndRunAsync(indexerOptions);
     }
 
-    private async Task DealingWithMissedDataAsync<TEventDTO>(EvmOptions networkOptions,
-        Action<EventLog<TEventDTO>> onEventDecoded) where TEventDTO : IEventDTO, new()
-    {
-        var lastProcessedBlock = _heightMap[networkOptions.NetworkName];
-        _logger.LogInformation($"[EvmSearchServer] Last processed block: {lastProcessedBlock}");
-
-        var web3 = new Web3(networkOptions.Api);
-        var latestBlock = (long)(await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()).Value;
-        _logger.LogInformation($"[EvmSearchServer] Current latest block: {latestBlock}");
-
-        await QueryHistoricalEventsAsync<TEventDTO>(web3, networkOptions,
-            lastProcessedBlock + 1, latestBlock - 1, onEventDecoded);
-    }
-
-    private async Task QueryHistoricalEventsAsync<TEventDTO>(Web3 web3, EvmOptions networkOptions, long from, long to,
-        Action<EventLog<TEventDTO>> onEventDecoded) where TEventDTO : IEventDTO, new()
-    {
-    }
-
-    public async Task SubscribeAndRunAsync<TEventDTO>(EvmOptions networkOptions,
-        Action<EventLog<TEventDTO>> onEventDecoded) where TEventDTO : IEventDTO, new()
+    private async Task StartSubscribeAndRunAsync(EvmOptions networkOptions)
     {
         _logger.LogInformation($"[EvmRpcProvider] Starting subscription on Network: {networkOptions.NetworkName}");
 
@@ -111,17 +77,20 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
         while (true)
         {
             using var client = new StreamingWebSocketClient(networkOptions.WsUrl);
-
             try
             {
-                await SubscribeToEventsAsync(client, networkOptions, onEventDecoded);
+                await SubscribeToEventsAsync(client, networkOptions);
 
                 while (true)
                 {
                     var handler = new EthBlockNumberObservableHandler(client);
                     handler.GetResponseAsObservable().Subscribe(x =>
+                    {
+                        SaveConsumedBlockHeightAsync(networkOptions.NetworkName, (long)x.Value);
                         _logger.LogDebug(
-                            $"[EvmRpcProvider] Network: {networkOptions.NetworkName} BlockHeight: {x.Value}"));
+                            $"[EvmRpcProvider] Network: {networkOptions.NetworkName} BlockHeight: {x.Value}");
+                    });
+
                     await handler.SendRequestAsync();
                     await Task.Delay(networkOptions.PingDelay);
                 }
@@ -139,21 +108,125 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             finally
             {
                 if (client != null) await client.StopAsync();
+
+                await DealingWithMissedDataAsync(networkOptions);
+
                 _logger.LogDebug(
                     $"[EvmRpcProvider] Network: {networkOptions.NetworkName} WebSocket client stopped. Restarting...");
             }
         }
     }
 
-    private async Task InitializeConsumedHeight(EvmIndexerOptionsMap options)
+    private async Task SubscribeToEventsAsync(StreamingWebSocketClient client, EvmOptions options)
     {
-        foreach (var op in options.ChainInfos)
+        var eventSubscription = new EthLogsObservableSubscription(client);
+        var eventFilterInput = Event<SendEventDTO>.GetEventABI().CreateFilterInput(options.ContractAddress);
+
+        eventSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(
+            log =>
+            {
+                DecodeAndStartCrossChainAsync(log);
+                SaveConsumedBlockHeightAsync(options.NetworkName, (long)log.BlockNumber.Value);
+
+                _logger.LogDebug(
+                    $"[EvmRpcProvider] Network: {options.NetworkName} Block: {log.BlockHash}, BlockHeight: {log.BlockNumber}");
+            },
+            exception => _logger.LogError(
+                $"[EvmRpcProvider] Network: {options.NetworkName} Subscription error: {exception.Message}")
+        );
+
+        _logger.LogDebug($"[EvmRpcProvider] Connecting WebSocket client on {options.NetworkName}...");
+
+        await client.StartAsync();
+        await eventSubscription.SubscribeAsync(eventFilterInput);
+
+        _logger.LogDebug($"[EvmRpcProvider] Successfully subscribed to contract events on {options.NetworkName}.");
+    }
+
+    private async Task DealingWithMissedDataAsync(EvmOptions options)
+    {
+        var lastProcessedBlock = _heightMap[options.NetworkName];
+        _logger.LogInformation($"[EvmSearchServer] Last processed block: {lastProcessedBlock}");
+        if (lastProcessedBlock == 0)
         {
-            var redisKey = IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, op.Key);
+            _logger.LogInformation("[EvmSearchServer] There is no needs to be consumed by https.");
+            return;
+        }
+
+        var web3 = new Web3(options.Api);
+        var latestBlock = (long)(await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()).Value;
+        _logger.LogInformation($"[EvmSearchServer] Current latest block: {latestBlock}");
+
+        if (lastProcessedBlock == latestBlock)
+        {
+            _logger.LogInformation("[EvmSearchServer] There is no missing height that needs to be consumed.");
+            return;
+        }
+
+        var from = lastProcessedBlock + 1;
+        var to = latestBlock - 1;
+        for (var currentFrom = from; currentFrom <= to; currentFrom += EvmSubscribeConstants.SubscribeBlockStep)
+        {
+            var currentTo = Math.Min(currentFrom + EvmSubscribeConstants.SubscribeBlockStep - 1, to);
+            var filterInput = new NewFilterInput
+            {
+                FromBlock = new BlockParameter((ulong)currentFrom),
+                ToBlock = new BlockParameter((ulong)currentTo),
+                Address = new[] { options.ContractAddress }
+            };
+            var logs = await web3.Eth.Filters.GetLogs.SendRequestAsync(filterInput);
+            var tasks = logs.Select(DecodeAndStartCrossChainAsync);
+
+            await Task.WhenAll(tasks);
+        }
+    }
+
+    private async Task DecodeAndStartCrossChainAsync(FilterLog log)
+    {
+        try
+        {
+            var decoded = Event<SendEventDTO>.DecodeEvent(log);
+            if (decoded == null)
+            {
+                _logger.LogWarning($"[EvmRpcProvider] Failed to decode event at: {log.BlockNumber}");
+                return;
+            }
+
+            var messagePendingToCrossChain = GenerateEvmReceivedMessage(decoded);
+            await _crossChainProvider.StartCrossChainRequestFromEvm(messagePendingToCrossChain);
+
+            _logger.LogDebug(
+                $"[EvmRpcProvider] Start cross chain request {messagePendingToCrossChain.MessageId} successful at: {log.TransactionHash} {log.BlockNumber}");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"[EvmRpcProvider] Decode {log.TransactionHash} fail at {log.BlockNumber}.");
+        }
+    }
+
+    private async Task InitializeConsumedHeight(EvmContractsOptions options)
+    {
+        _logger.LogDebug("[EvmRpcProvider] Start consumption height setting");
+
+        foreach (var op in options.ContractConfig.Values)
+        {
+            var redisKey = IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, op.NetworkName);
             var latestBlockHeight = await _storageProvider.GetAsync<SearchHeightDto>(redisKey);
 
-            _heightMap[op.Key] = latestBlockHeight?.BlockHeight ?? 0;
+            _logger.LogDebug($"[EvmRpcProvider] {op.NetworkName} has consumed {latestBlockHeight} with {redisKey}.");
+
+            _heightMap[op.NetworkName] = latestBlockHeight?.BlockHeight ?? 0;
         }
+    }
+
+    private async Task SaveConsumedBlockHeightAsync(string network, long blockHeight)
+    {
+        var redisKey = IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, network);
+        await _storageProvider.SetAsync(redisKey, new SearchHeightDto { BlockHeight = blockHeight });
+
+        _heightMap[network] = blockHeight;
+
+        _logger.LogDebug($"[EvmRpcProvider] Network {network} has consumed to height {blockHeight} with {redisKey}.");
     }
 
     private EvmReceivedMessageDto GenerateEvmReceivedMessage(EventLog<SendEventDTO> eventData)
@@ -236,45 +309,5 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             _logger.LogError($"[EvmSearchServer] Error decoding TokenTransferMetadataBytes: {ex.Message}");
             return new();
         }
-    }
-
-
-    private async Task SubscribeToEventsAsync<TEventDTO>(StreamingWebSocketClient client, EvmOptions options,
-        Action<EventLog<TEventDTO>> onEventDecoded) where TEventDTO : IEventDTO, new()
-    {
-        var eventSubscription = new EthLogsObservableSubscription(client);
-        var eventFilterInput = Event<TEventDTO>.GetEventABI().CreateFilterInput(options.ContractAddress);
-
-        eventSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(
-            log =>
-            {
-                _logger.LogDebug(
-                    $"[EvmRpcProvider] Network: {options.NetworkName} Block: {log.BlockHash}, BlockHeight: {log.BlockNumber}");
-                try
-                {
-                    var decoded = Event<TEventDTO>.DecodeEvent(log);
-                    if (decoded == null)
-                    {
-                        _logger.LogWarning(
-                            $"[EvmRpcProvider] Network: {options.NetworkName} DecodeEvent failed at BlockHeight: {log.BlockNumber}");
-                        return;
-                    }
-
-                    onEventDecoded(decoded);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError(e, $"[EvmRpcProvider] Network: {options.NetworkName} Failed to decode event.");
-                }
-            },
-            exception =>
-                _logger.LogError(
-                    $"[EvmRpcProvider] Network: {options.NetworkName} Subscription error: {exception.Message}")
-        );
-
-        _logger.LogDebug($"[EvmRpcProvider] Connecting WebSocket client on {options.NetworkName}...");
-        await client.StartAsync();
-        await eventSubscription.SubscribeAsync(eventFilterInput);
-        _logger.LogDebug($"[EvmRpcProvider] Successfully subscribed to contract events on {options.NetworkName}.");
     }
 }
