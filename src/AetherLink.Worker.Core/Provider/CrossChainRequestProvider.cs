@@ -6,8 +6,10 @@ using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
+using AetherLink.Worker.Core.Options;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nethereum.Util;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
@@ -28,15 +30,18 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
 {
     private readonly ITokenSwapper _tokenSwapper;
     private readonly IStorageProvider _storageProvider;
+    private readonly TargetContractOptions _contractOptions;
     private readonly ILogger<CrossChainRequestProvider> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
     public CrossChainRequestProvider(IBackgroundJobManager backgroundJobManager, ITokenSwapper tokenSwapper,
-        ILogger<CrossChainRequestProvider> logger, IStorageProvider storageProvider)
+        ILogger<CrossChainRequestProvider> logger, IStorageProvider storageProvider,
+        IOptionsSnapshot<TargetContractOptions> contractOptions)
     {
         _logger = logger;
         _tokenSwapper = tokenSwapper;
         _storageProvider = storageProvider;
+        _contractOptions = contractOptions.Value;
         _backgroundJobManager = backgroundJobManager;
     }
 
@@ -159,9 +164,14 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
             TargetChainId = request.TargetChainId,
             SourceChainId = request.SourceChainId,
             Epoch = request.Epoch,
-            // TODO: set target contract address from option after test finished.
             TransactionReceivedTime = request.StartTime
         };
+
+        if (_contractOptions.Contracts.TryGetValue(reportContext.TargetChainId.ToString(),
+                out var targetContractAddress))
+        {
+            reportContext.TargetChainOracleContractAddress = targetContractAddress;
+        }
 
         switch (reportContext.TargetChainId)
         {
