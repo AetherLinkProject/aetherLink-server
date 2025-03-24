@@ -61,7 +61,7 @@ public static class TonHelper
 
     public static Cell ConstructDataToSign(ReportContextDto context, string message, TokenTransferMetadataDto meta)
     {
-        var messageId = Ensure128ByteArray(context.MessageId);
+        var messageId = ConvertMessageIdToBigInteger(context.MessageId);
         var timestamp = new BigInteger(context.TransactionReceivedTime);
         var targetChainOracleContractAddress = new Address(context.TargetChainOracleContractAddress);
         var receiverAddress = new Address(context.Receiver);
@@ -92,7 +92,7 @@ public static class TonHelper
 
     public static Cell ConstructContext(ReportContextDto context)
     {
-        var messageId = Ensure128ByteArray(context.MessageId);
+        var messageId = ConvertMessageIdToBigInteger(context.MessageId);
         var timestamp = new BigInteger(context.TransactionReceivedTime);
         var targetChainOracleContractAddress = new Address(context.TargetChainOracleContractAddress);
         var receiverAddress = new Address(context.Receiver);
@@ -115,9 +115,10 @@ public static class TonHelper
         return signer.VerifySignature(signature);
     }
 
-    private static BigInteger Ensure128ByteArray(string originMessageId)
+    private static BigInteger ConvertMessageIdToBigInteger(string originMessageId)
     {
-        var messageIdBytes = ByteStringHelper.FromHexString(originMessageId).ToByteArray();
+        // var messageIdBytes = ByteStringHelper.FromHexString(originMessageId).ToByteArray();
+        var messageIdBytes = ByteString.FromBase64(originMessageId).ToByteArray();
         switch (messageIdBytes.Length)
         {
             case > 16:
@@ -132,10 +133,9 @@ public static class TonHelper
             }
         }
 
-        var reversedBytes = messageIdBytes.Reverse().ToArray();
-        var bigInt = new BigInteger(reversedBytes, isBigEndian: true);
-
-        return bigInt;
+        // var reversedBytes = messageIdBytes.Reverse().ToArray();
+        // return new BigInteger(reversedBytes, isBigEndian: true);
+        return new BigInteger(messageIdBytes, isBigEndian: true);
     }
 
     private static Cell BuildMessageBody(long sourceChainId, long targetChainId, byte[] sender, Address receiverAddress,

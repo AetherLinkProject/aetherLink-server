@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AetherLink.Indexer.Dtos;
@@ -11,6 +12,7 @@ using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nethereum.Util;
+using Org.BouncyCastle.Utilities.Encoders;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 
@@ -161,6 +163,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         {
             MessageId = request.MessageId,
             Sender = request.Sender,
+            Receiver = request.Receiver,
             TargetChainId = request.TargetChainId,
             SourceChainId = request.SourceChainId,
             Epoch = request.Epoch,
@@ -184,11 +187,33 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
                     ByteString.FromBase64(request.Receiver).ToHex(true));
                 reportContext.Receiver = checksumAddress;
                 break;
+            case ChainIdConstants.TON:
+                reportContext.MessageId = Ensure128BytesMessageId(request.MessageId);
+                break;
             default:
-                reportContext.Receiver = request.Receiver;
                 break;
         }
 
         return reportContext;
+    }
+
+    private static string Ensure128BytesMessageId(string originMessageId)
+    {
+        var messageIdBytes = ByteStringHelper.FromHexString(originMessageId).ToByteArray();
+        switch (messageIdBytes.Length)
+        {
+            case > 16:
+                messageIdBytes = messageIdBytes.Take(16).ToArray();
+                break;
+            case < 16:
+            {
+                var paddedBytes = new byte[16];
+                Array.Copy(messageIdBytes, 0, paddedBytes, 16 - messageIdBytes.Length, messageIdBytes.Length);
+                messageIdBytes = paddedBytes;
+                break;
+            }
+        }
+
+        return Base64.ToBase64String(messageIdBytes);
     }
 }
