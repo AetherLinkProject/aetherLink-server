@@ -117,24 +117,7 @@ public static class TonHelper
 
     private static BigInteger ConvertMessageIdToBigInteger(string originMessageId)
     {
-        // var messageIdBytes = ByteStringHelper.FromHexString(originMessageId).ToByteArray();
         var messageIdBytes = ByteString.FromBase64(originMessageId).ToByteArray();
-        switch (messageIdBytes.Length)
-        {
-            case > 16:
-                messageIdBytes = messageIdBytes.Take(16).ToArray();
-                break;
-            case < 16:
-            {
-                var paddedBytes = new byte[16];
-                Array.Copy(messageIdBytes, 0, paddedBytes, 16 - messageIdBytes.Length, messageIdBytes.Length);
-                messageIdBytes = paddedBytes;
-                break;
-            }
-        }
-
-        // var reversedBytes = messageIdBytes.Reverse().ToArray();
-        // return new BigInteger(reversedBytes, isBigEndian: true);
         return new BigInteger(messageIdBytes, isBigEndian: true);
     }
 
