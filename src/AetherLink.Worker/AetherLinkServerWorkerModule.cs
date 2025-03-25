@@ -90,6 +90,7 @@ namespace AetherLink.Worker
             Configure<ProcessJobOptions>(configuration.GetSection("ProcessJob"));
             Configure<EvmContractsOptions>(configuration.GetSection("EvmContracts"));
             Configure<OracleInfoOptions>(configuration.GetSection("OracleChainInfo"));
+            Configure<TargetContractOptions>(configuration.GetSection("TargetContract"));
             Configure<TonPublicOptions>(configuration.GetSection("Chains:ChainInfos:Ton"));
             Configure<TonApiHealthCheckOptions>(configuration.GetSection("TonApiHealthCheck"));
             Configure<TonPrivateOptions>(configuration.GetSection("OracleChainInfo:ChainConfig:Ton"));
