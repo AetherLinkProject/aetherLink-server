@@ -17,3 +17,8 @@ public class ChainConfig
     public string VRFSecret { get; set; }
     public string[] DistPublicKey { get; set; }
 }
+
+public class TargetContractOptions
+{
+    public Dictionary<string, string> Contracts { get; set; }
+}

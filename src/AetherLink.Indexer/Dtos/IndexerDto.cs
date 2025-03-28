@@ -34,15 +34,14 @@ public class RampRequestDto
     public long Epoch { get; set; }
     public long StartTime { get; set; }
     public string Message { get; set; }
-    [CanBeNull] public IndexerTokenAmountDto TokenAmount { get; set; }
+    [CanBeNull] public IndexerTokenTransferMetadataDto TokenTransferMetadata { get; set; }
 }
 
-public class IndexerTokenAmountDto
+public class IndexerTokenTransferMetadataDto
 {
-    public long TargetChainId { get; set; }
-    public string TargetContractAddress { get; set; }
-    public string OriginToken { get; set; }
-    public long Amount { get; set; }
+    public long? TargetChainId { get; set; }
+    [CanBeNull] public string Symbol { get; set; }
+    public long? Amount { get; set; }
 }
 
 // Transmitted event
@@ -170,10 +169,10 @@ public class IndexerTokenSwapConfigInfo
 
 public class TokenSwapConfigDto
 {
-    public string SwapId { get; set; }
+    public string ExtraData { get; set; }
     public long TargetChainId { get; set; }
     public long SourceChainId { get; set; }
-    public string TargetContractAddress { get; set; }
+    public string Receiver { get; set; }
     public string TokenAddress { get; set; }
-    public string OriginToken { get; set; }
+    public string Symbol { get; set; }
 }

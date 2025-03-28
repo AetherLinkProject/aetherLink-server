@@ -76,9 +76,6 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
                         plainData.NewData, pendingConfirmData);
                     return;
                 }
-
-                plainData.OldData = plainData.NewData;
-                await _dataMessageProvider.SetAsync(plainData);
             }
             else
             {

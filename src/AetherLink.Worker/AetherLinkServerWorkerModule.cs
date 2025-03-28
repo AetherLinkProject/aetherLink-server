@@ -58,6 +58,7 @@ namespace AetherLink.Worker
             context.Services.AddSingleton<IRetryProvider, RetryProvider>();
             context.Services.AddSingleton<IStateProvider, StateProvider>();
             context.Services.AddSingleton<IWorkerProvider, WorkerProvider>();
+            context.Services.AddSingleton<IEvmSearchServer, EvmSearchServer>();
             context.Services.AddSingleton<IContractProvider, ContractProvider>();
             context.Services.AddSingleton<ITonStorageProvider, TonStorageProvider>();
             context.Services.AddSingleton<IRecurringJobManager, RecurringJobManager>();
@@ -80,13 +81,16 @@ namespace AetherLink.Worker
         private void ConfigureOptions(IConfiguration configuration)
         {
             Configure<WorkerOptions>(configuration.GetSection("Worker"));
+            Configure<EvmOptions>(configuration.GetSection("EvmOptions"));
             Configure<ContractOptions>(configuration.GetSection("Chains"));
             Configure<NetworkOptions>(configuration.GetSection("Network"));
             Configure<HangfireOptions>(configuration.GetSection("Hangfire"));
             Configure<SchedulerOptions>(configuration.GetSection("Scheduler"));
             Configure<PriceFeedsOptions>(configuration.GetSection("PriceFeeds"));
             Configure<ProcessJobOptions>(configuration.GetSection("ProcessJob"));
+            Configure<EvmContractsOptions>(configuration.GetSection("EvmContracts"));
             Configure<OracleInfoOptions>(configuration.GetSection("OracleChainInfo"));
+            Configure<TargetContractOptions>(configuration.GetSection("TargetContract"));
             Configure<TonPublicOptions>(configuration.GetSection("Chains:ChainInfos:Ton"));
             Configure<TonApiHealthCheckOptions>(configuration.GetSection("TonApiHealthCheck"));
             Configure<TonPrivateOptions>(configuration.GetSection("OracleChainInfo:ChainConfig:Ton"));
@@ -116,6 +120,10 @@ namespace AetherLink.Worker
 
             ConfigureBackgroundWorker(context);
             AsyncHelper.RunSync(async () => { await context.ServiceProvider.GetService<IServer>().StartAsync(); });
+            AsyncHelper.RunSync(async () =>
+            {
+                await context.ServiceProvider.GetService<IEvmSearchServer>().StartAsync();
+            });
         }
 
         private void ConfigureBackgroundWorker(ApplicationInitializationContext context)
@@ -169,6 +177,11 @@ namespace AetherLink.Worker
             context.Services.AddSingleton<IChainKeyring, TDVVChainKeyring>();
             context.Services.AddSingleton<IChainKeyring, TDVWChainKeyring>();
             context.Services.AddSingleton<IChainKeyring, TonChainKeyring>();
+            context.Services.AddSingleton<IChainKeyring, EvmChainKeyring>();
+            context.Services.AddSingleton<IChainKeyring, BscChainKeyring>();
+            context.Services.AddSingleton<IChainKeyring, SEPOLIAChainKeyring>();
+            context.Services.AddSingleton<IChainKeyring, BaseSepoliaChainKeyring>();
+            context.Services.AddSingleton<IChainKeyring, BscTestChainKeyring>();
         }
 
         private void ConfigureChainHandler(ServiceConfigurationContext context)
@@ -178,14 +191,23 @@ namespace AetherLink.Worker
             context.Services.AddSingleton<IChainWriter, TDVVChainWriter>();
             context.Services.AddSingleton<IChainWriter, TDVWChainWriter>();
             context.Services.AddSingleton<IChainWriter, TonChainWriter>();
+            context.Services.AddSingleton<IChainWriter, BscTestChainWriter>();
+            context.Services.AddSingleton<IChainWriter, SEPOLIAChainWriter>();
+            context.Services.AddSingleton<IChainWriter, BaseSepoliaWriter>();
+            context.Services.AddSingleton<IChainWriter, EvmChainWriter>();
+            context.Services.AddSingleton<IChainWriter, BscChainWriter>();
 
             // reader
             context.Services.AddSingleton<IChainReader, AElfChainReader>();
             context.Services.AddSingleton<IChainReader, TDVVChainReader>();
             context.Services.AddSingleton<IChainReader, TDVWChainReader>();
             context.Services.AddSingleton<IChainReader, TonChainReader>();
+            context.Services.AddSingleton<IChainReader, BscChainReader>();
+            context.Services.AddSingleton<IChainReader, EvmChainReader>();
+            context.Services.AddSingleton<IChainReader, SEPOLIAChainReader>();
+            context.Services.AddSingleton<IChainReader, BaseSepoliaChainReader>();
+            context.Services.AddSingleton<IChainReader, BscTestChainReader>();
         }
-
 
         private void ConfigureEventFilter(ServiceConfigurationContext context)
         {

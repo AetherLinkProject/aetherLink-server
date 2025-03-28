@@ -26,7 +26,7 @@ public interface IAeFinderProvider
     public Task<List<TransactionEventDto>> GetTransactionLogEventsAsync(string chainId, long to, long from);
 
     public Task<IndexerTokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, long sourceChainId,
-        string targetContractAddress, string tokenAddress, string originToken);
+        string receiver, string tokenAddress, string symbol);
 
     public Task<List<RampRequestManuallyExecutedDto>> SubscribeRampRequestManuallyExecutedAsync(string chainId, long to,
         long from);
@@ -97,10 +97,9 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                          message,
                          startTime,
                          epoch,
-                         tokenAmount {
-                            targetContractAddress,
+                         tokenTransferMetadata {
                             targetChainId,
-                            originToken,
+                            symbol,
                             amount
                          }
                  }
@@ -390,28 +389,30 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
     }
 
     public async Task<IndexerTokenSwapConfigInfo> GetTokenSwapConfigAsync(long targetChainId, long sourceChainId,
-        string targetContractAddress, string tokenAddress, string originToken)
+        string receiver, string tokenAddress, string symbol)
     {
         try
         {
             var indexerResult = await GraphQLHelper.SendQueryAsync<IndexerTokenSwapConfigInfo>(GetClient(), new()
             {
                 Query =
-                    @"query($targetChainId:Long!,$sourceChainId:Long!,$targetContractAddress:String!,$tokenAddress:String,$originToken:String){
-                    tokenSwapConfig(input: {targetChainId:$targetChainId,sourceChainId:$sourceChainId,targetContractAddress:$targetContractAddress,tokenAddress:$tokenAddress,originToken:$originToken}){
-                            swapId,
+                    @"query($targetChainId:Long!,$sourceChainId:Long!,$receiver:String!,$tokenAddress:String,$symbol:String){
+                    tokenSwapConfig(input: {targetChainId:$targetChainId,sourceChainId:$sourceChainId,receiver:$receiver,tokenAddress:$tokenAddress,symbol:$symbol}){
                             targetChainId,
                             sourceChainId,
-                            targetContractAddress,
+                            receiver,
                             tokenAddress,
-                            originToken
+                            symbol,
+                            extraData
                     }
                 }",
                 Variables = new
                 {
-                    targetChainId = targetChainId, sourceChainId = sourceChainId,
-                    targetContractAddress = targetContractAddress, tokenAddress = tokenAddress,
-                    originToken = originToken
+                    targetChainId = targetChainId,
+                    sourceChainId = sourceChainId,
+                    receiver = receiver,
+                    tokenAddress = tokenAddress,
+                    symbol = symbol
                 }
             });
             return indexerResult ?? new();

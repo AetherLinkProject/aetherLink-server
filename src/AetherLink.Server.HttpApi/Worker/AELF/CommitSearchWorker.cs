@@ -62,7 +62,8 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var consumedBlockHeight = consumedHeight.Data + 1;
         if (confirmedHeight < consumedBlockHeight)
         {
-            _logger.LogWarning($"[CommitSearchWorker] Waiting for {chainId} block confirmed.");
+            _logger.LogWarning(
+                $"[CommitSearchWorker] Waiting for {chainId} block confirmed, consumedBlockHeight:{consumedBlockHeight} confirmedHeight:{confirmedHeight}.");
             return;
         }
 

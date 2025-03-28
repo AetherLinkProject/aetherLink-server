@@ -1,11 +1,10 @@
 namespace AetherLink.Worker.Core.Dtos;
 
-public class TokenAmountDto
+public class TokenTransferMetadataDto
 {
-    public string SwapId { get; set; }
     public long TargetChainId { get; set; }
-    public string TargetContractAddress { get; set; }
     public string TokenAddress { get; set; }
-    public string OriginToken { get; set; }
+    public string Symbol { get; set; }
     public long Amount { get; set; }
+    public string ExtraDataString { get; set; }
 }

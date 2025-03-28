@@ -1,16 +1,9 @@
-using AElf;
-using AElf.Types;
-using AetherLink.Contracts.Ramp;
-using AetherLink.Multisignature;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
-using Google.Protobuf;
 using Microsoft.Extensions.Options;
-using Ramp;
 using Volo.Abp.DependencyInjection;
-using Volo.Abp.ObjectMapping;
 
 namespace AetherLink.Worker.Core.ChainKeyring;
 
@@ -29,10 +22,7 @@ public class AElfChainKeyring : ChainKeyring, ISingletonDependency
         => AELFHelper.OffChainSign(reportContext, report, _chainConfig);
 
     public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
-        byte[] sign)
-    {
-        return true;
-    }
+        byte[] sign) => AELFHelper.OffChainVerify(reportContext, report, index, sign, _chainConfig);
 }
 
 public class TDVWChainKeyring : ChainKeyring, ISingletonDependency
@@ -50,10 +40,7 @@ public class TDVWChainKeyring : ChainKeyring, ISingletonDependency
         => AELFHelper.OffChainSign(reportContext, report, _chainConfig);
 
     public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
-        byte[] sign)
-    {
-        return true;
-    }
+        byte[] sign) => AELFHelper.OffChainVerify(reportContext, report, index, sign, _chainConfig);
 }
 
 public class TDVVChainKeyring : ChainKeyring, ISingletonDependency

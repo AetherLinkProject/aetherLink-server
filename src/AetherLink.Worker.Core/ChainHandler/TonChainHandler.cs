@@ -1,19 +1,14 @@
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Constants;
 using Volo.Abp.DependencyInjection;
-using System;
 using System.Collections.Generic;
-using System.Numerics;
-using AElf;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider.TonIndexer;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Org.BouncyCastle.Utilities.Encoders;
 using TonSdk.Contracts.Wallet;
-using TonSdk.Core;
 using TonSdk.Core.Block;
 using TonSdk.Core.Boc;
 
@@ -42,7 +37,6 @@ public class TonChainWriter : ChainWriter
     public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
         Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
     {
-        var receiverAddress = TonHelper.ConvertAddress(reportContext.Receiver);
         var seqno = await _indexerRouter.GetAddressSeqno(
             TonHelper.GetAddressFromPrivateKey(_privateOptions.TransmitterSecretKey));
         if (seqno == null)
@@ -51,14 +45,19 @@ public class TonChainWriter : ChainWriter
             return null;
         }
 
-        var bodyCell = new CellBuilder().StoreUInt(TonOpCodeConstants.ForwardTx, 32)
-            .StoreInt(new BigInteger(new ReadOnlySpan<byte>
-                (Base64.Decode(reportContext.MessageId)), false, true), 256)
-            .StoreAddress(receiverAddress)
-            .StoreRef(TonHelper.BuildMessageBody(reportContext.SourceChainId,
-                reportContext.TargetChainId, Base58CheckEncoding.Decode(reportContext.Sender), receiverAddress,
-                Base64.Decode(crossChainData.Message), crossChainData.TokenAmount))
-            .StoreRef(new CellBuilder().StoreDict(ConvertConsensusSignature(signatures)).Build())
+        // op, context, data, sign
+        var initCellBuilder = new CellBuilder()
+            .StoreUInt(TonOpCodeConstants.ForwardTx, TonMetaDataConstants.OpCodeUintSize);
+        var contextCell = TonHelper.ConstructContext(reportContext);
+        var metadataCell = TonHelper.ConstructMetaData(reportContext, crossChainData.Message,crossChainData.TokenTransferMetadata);
+        var signatureCell = new CellBuilder()
+            .StoreDict(TonHelper.ConvertConsensusSignature(signatures))
+            .Build();
+
+        var bodyCell = initCellBuilder
+            .StoreRef(contextCell)
+            .StoreRef(metadataCell)
+            .StoreRef(signatureCell)
             .Build();
 
         var msg = _wallet.CreateTransferMessage(new[]
@@ -85,33 +84,6 @@ public class TonChainWriter : ChainWriter
 
         return await _indexerRouter.CommitTransaction(msg.Cell);
     }
-
-    private HashmapE<int, byte[]> ConvertConsensusSignature(Dictionary<int, byte[]> consensusInfo)
-    {
-        var hashMapSerializer = new HashmapSerializers<int, byte[]>
-        {
-            Key = (key) =>
-            {
-                var cell = new CellBuilder().StoreInt(new BigInteger(key), 256).Build();
-                return cell.Parse().LoadBits(256);
-            },
-
-            Value = (value) => new CellBuilder().StoreRef(new CellBuilder().StoreBytes(value).Build()).Build()
-        };
-
-        var hashmap = new HashmapE<int, byte[]>(new HashmapOptions<int, byte[]>()
-        {
-            KeySize = 256,
-            Serializers = hashMapSerializer,
-        });
-
-        foreach (var (nodeIndex, signature) in consensusInfo)
-        {
-            hashmap.Set(nodeIndex, signature);
-        }
-
-        return hashmap;
-    }
 }
 
 public class TonChainReader : ChainReader, ISingletonDependency
@@ -126,7 +98,7 @@ public class TonChainReader : ChainReader, ISingletonDependency
     public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
     {
         // todo: use official full node to check transaction result 
-        return new() { State = TransactionState.NotExist };
+        return new() { State = TransactionState.Success };
     }
 
     public override string ConvertBytesToAddressStr(byte[] addressBytes)

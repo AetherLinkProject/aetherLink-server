@@ -63,11 +63,12 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task UpdateRequestStateAsync(TonTransactionGrainDto transaction)
     {
         var bodySlice = Cell.From(transaction.InMsg.MessageContent.Body).Parse();
-        var _ = bodySlice.LoadUInt(32);
-        var messageId = Base64.ToBase64String(bodySlice.LoadBytes(32));
-        
+        var opCode = bodySlice.LoadUInt(TonTransactionConstants.DefaultUIntSize);
+        var messageContext = bodySlice.LoadRef().Parse();
+        var messageId = Base64.ToBase64String(messageContext.LoadBytes(TonTransactionConstants.MessageIdBytesSize));
+
         _logger.LogDebug($"[TonSearchWorker] Get messageId: {messageId} transaction.");
-        
+
         var transactionIdGrainClient = _clusterClient.GetGrain<ITransactionIdGrain>(messageId);
         var transactionIdGrainResponse = await transactionIdGrainClient.GetAsync();
         if (!transactionIdGrainResponse.Success)
@@ -121,11 +122,11 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         }
 
         var receiveSlice = Cell.From(transaction.OutMsgs[0].MessageContent.Body).Parse();
-        var _ = (long)receiveSlice.LoadInt(64);
-        var targetChainId = (long)receiveSlice.LoadInt(64);
+        var _ = (long)receiveSlice.LoadInt(TonTransactionConstants.DefaultIntSize);
+        var targetChainId = (long)receiveSlice.LoadInt(TonTransactionConstants.ChainIdSize);
         var crossChainRequestData = new CrossChainRequestGrainDto
         {
-            SourceChainId = 1100,
+            SourceChainId = TonTransactionConstants.TonChainId,
             TargetChainId = targetChainId,
             MessageId = messageId,
             Status = CrossChainStatus.Started.ToString()
