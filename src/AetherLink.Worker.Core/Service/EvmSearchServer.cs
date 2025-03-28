@@ -84,9 +84,9 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
                 while (true)
                 {
                     var handler = new EthBlockNumberObservableHandler(client);
-                    handler.GetResponseAsObservable().Subscribe(x =>
+                    handler.GetResponseAsObservable().Subscribe(async x =>
                     {
-                        SaveConsumedBlockHeightAsync(networkOptions.NetworkName, (long)x.Value);
+                        await SaveConsumedBlockHeightAsync(networkOptions.NetworkName, (long)x.Value);
                         _logger.LogDebug(
                             $"[EvmRpcProvider] Network: {networkOptions.NetworkName} BlockHeight: {x.Value}");
                     });
@@ -123,10 +123,10 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
         var eventFilterInput = Event<SendEventDTO>.GetEventABI().CreateFilterInput(options.ContractAddress);
 
         eventSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(
-            log =>
+            async log =>
             {
-                DecodeAndStartCrossChainAsync(log);
-                SaveConsumedBlockHeightAsync(options.NetworkName, (long)log.BlockNumber.Value);
+                await DecodeAndStartCrossChainAsync(log);
+                await SaveConsumedBlockHeightAsync(options.NetworkName, (long)log.BlockNumber.Value);
 
                 _logger.LogDebug(
                     $"[EvmRpcProvider] Network: {options.NetworkName} Block: {log.BlockHash}, BlockHeight: {log.BlockNumber}");
