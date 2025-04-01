@@ -18,7 +18,7 @@ public class TonIndexerOption
 
 public class EvmIndexerOptionsMap
 {
-    public Dictionary<string, EvmIndexerOptions> ChainInfos { get; set; }
+    public Dictionary<string, EvmIndexerOptions> ChainInfos { get; set; } = new();
 }
 
 public class EvmIndexerOptions
