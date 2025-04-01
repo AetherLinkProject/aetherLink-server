@@ -64,6 +64,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             await StartSubscribeAndRunAsync(indexerOptions);
 
             await Task.Delay(RetryConstants.DefaultDelay * 1000);
+            _logger.LogDebug($"[EvmEventSubscriber] Starting {indexerOptions.NetworkName} subscribe in next round.");
         }
     }
 
@@ -73,6 +74,12 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
         if (!_networkStates.TryGetValue(networkName, out var networkState))
         {
             _logger.LogError($"[EvmEventSubscriber] {networkName} Network state is empty, please check options.");
+            return;
+        }
+
+        if (!networkState.IsHttpFinished)
+        {
+            _logger.LogWarning($"[EvmEventSubscriber] {networkName} http handler is no finished.");
             return;
         }
 
@@ -143,11 +150,13 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
 
             while (true)
             {
+                networkState.IsHttpFinished = false;
                 var latestBlock = (long)(await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()).Value;
                 if (lastProcessedBlock >= latestBlock)
                 {
                     _logger.LogInformation(
                         $"[EvmEventSubscriber] {networkName} All blocks up to {latestBlock} have been processed.");
+                    networkState.IsHttpFinished = true;
                     break;
                 }
 
@@ -189,6 +198,10 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
                         throw;
                     }
                 }
+
+                networkState.IsHttpFinished = true;
+                _logger.LogInformation(
+                    $"[EvmEventSubscriber] {networkName} http processing blocks is finished.");
             }
         }
         catch (Exception e)
