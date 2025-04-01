@@ -37,7 +37,9 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
     private readonly ILogger<EvmSearchServer> _logger;
     private readonly IStorageProvider _storageProvider;
     private readonly ICrossChainRequestProvider _crossChainProvider;
-    private readonly ConcurrentDictionary<string, NetworkState> _networkStates = new();
+    private readonly ConcurrentDictionary<string, bool> _healthMap = new();
+    private readonly ConcurrentDictionary<string, long> _consumedWsBlockHeights = new();
+    private readonly ConcurrentDictionary<string, long> _consumedHttpBlockHeights = new();
 
     public EvmSearchServer(ILogger<EvmSearchServer> logger, ICrossChainRequestProvider crossChainProvider,
         IStorageProvider storageProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
@@ -60,26 +62,21 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
     {
         while (true)
         {
-            await DealingWithMissedDataAsync(indexerOptions);
-            await StartSubscribeAndRunAsync(indexerOptions);
+            await Task.WhenAll(StartSubscribeAndRunAsync(indexerOptions), DealingWithMissedDataAsync(indexerOptions));
+
+            _logger.LogDebug($"[EvmEventSubscriber] Starting {indexerOptions.NetworkName} subscribe in next round.");
 
             await Task.Delay(RetryConstants.DefaultDelay * 1000);
-            _logger.LogDebug($"[EvmEventSubscriber] Starting {indexerOptions.NetworkName} subscribe in next round.");
+            _healthMap[indexerOptions.NetworkName] = true;
         }
     }
 
     private async Task StartSubscribeAndRunAsync(EvmOptions networkOptions)
     {
         var networkName = networkOptions.NetworkName;
-        if (!_networkStates.TryGetValue(networkName, out var networkState))
+        if (!_consumedWsBlockHeights.TryGetValue(networkName, out _))
         {
             _logger.LogError($"[EvmEventSubscriber] {networkName} Network state is empty, please check options.");
-            return;
-        }
-
-        if (!networkState.IsHttpFinished)
-        {
-            _logger.LogWarning($"[EvmEventSubscriber] {networkName} http handler is no finished.");
             return;
         }
 
@@ -88,20 +85,21 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
         using var client = new StreamingWebSocketClient(networkOptions.WsUrl);
         try
         {
-            networkState.IsWsRunning = true;
-
             await SubscribeToEventsAsync(client, networkOptions);
 
-            while (networkState.IsWsRunning)
+            while (_healthMap[networkName])
             {
                 var handler = new EthBlockNumberObservableHandler(client);
 
                 handler.GetResponseAsObservable().Subscribe(async x =>
                 {
-                    await SaveConsumedBlockHeightAsync(networkName, (long)x.Value);
-                    networkState.LastProcessedBlock = (long)x.Value;
+                    var blockHeight = (long)x.Value;
+                    _logger.LogDebug($"[EvmEventSubscriber] {networkName} BlockHeight: {blockHeight}");
 
-                    _logger.LogDebug($"[EvmEventSubscriber] {networkName} BlockHeight: {x.Value}");
+                    if (blockHeight % 100 != 0) return;
+
+                    _consumedWsBlockHeights[networkName] = blockHeight;
+                    await SaveConsumedBlockHeightAsync(networkName, blockHeight);
                 });
 
                 await handler.SendRequestAsync();
@@ -114,7 +112,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
         }
         finally
         {
-            networkState.IsWsRunning = false;
+            _healthMap[networkName] = false;
             if (client != null) await client.StopAsync();
 
             _logger.LogDebug($"[EvmEventSubscriber] Network: {networkName} WebSocket client stopped.");
@@ -124,88 +122,75 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
     private async Task DealingWithMissedDataAsync(EvmOptions options)
     {
         var networkName = options.NetworkName;
-        if (!_networkStates.TryGetValue(networkName, out var networkState))
+        if (!_consumedHttpBlockHeights.TryGetValue(networkName, out var consumedHttpBlockHeight) ||
+            !_consumedWsBlockHeights.TryGetValue(networkName, out var consumedWsBlockHeight))
         {
             _logger.LogError($"[EvmEventSubscriber] {networkName} Network state is empty, please check options.");
             return;
         }
 
-        if (networkState.LastProcessedBlock == 0)
+        if (consumedHttpBlockHeight == 0)
         {
             _logger.LogInformation($"[EvmEventSubscriber] {networkName} No altitude compensation required.");
             return;
         }
 
-        if (networkState.IsWsRunning)
+        if (!_healthMap[networkName])
         {
-            _logger.LogInformation(
-                $"[EvmEventSubscriber] {networkName} WebSocket is running. HTTP will wait for WS to stop.");
+            _logger.LogInformation($"[EvmEventSubscriber] {networkName} network is not health.");
             return;
         }
 
         try
         {
-            var lastProcessedBlock = networkState.LastProcessedBlock;
+            var lastProcessedBlock = Math.Min(consumedHttpBlockHeight, consumedWsBlockHeight);
             var web3 = new Web3(options.Api);
-
-            while (true)
+            var latestBlock = (long)(await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()).Value;
+            if (lastProcessedBlock >= latestBlock)
             {
-                networkState.IsHttpFinished = false;
-                var latestBlock = (long)(await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()).Value;
-                if (lastProcessedBlock >= latestBlock)
+                _logger.LogInformation(
+                    $"[EvmEventSubscriber] {networkName} All blocks up to {latestBlock} have been processed.");
+                return;
+            }
+
+            _logger.LogInformation(
+                $"[EvmEventSubscriber] {networkName} Starting HTTP query from block {lastProcessedBlock} to latestBlock {latestBlock}");
+
+            var from = lastProcessedBlock + 1;
+            for (var curFrom = from; curFrom <= latestBlock; curFrom += EvmSubscribeConstants.SubscribeBlockStep)
+            {
+                var currentTo = Math.Min(curFrom + EvmSubscribeConstants.SubscribeBlockStep - 1, latestBlock);
+                var filterInput = new NewFilterInput
                 {
+                    FromBlock = new BlockParameter((ulong)curFrom),
+                    ToBlock = new BlockParameter((ulong)currentTo),
+                    Address = new[] { options.ContractAddress }
+                };
+
+                try
+                {
+                    var logs = await web3.Eth.Filters.GetLogs.SendRequestAsync(filterInput);
+                    var tasks = logs.Select(DecodeAndStartCrossChainAsync);
+                    await Task.WhenAll(tasks);
+
+                    _consumedHttpBlockHeights[networkName] = currentTo;
+
+                    await SaveConsumedBlockHeightAsync(networkName, currentTo);
+
                     _logger.LogInformation(
-                        $"[EvmEventSubscriber] {networkName} All blocks up to {latestBlock} have been processed.");
-                    networkState.IsHttpFinished = true;
-                    break;
+                        $"[EvmEventSubscriber] {networkName} Processed blocks from {curFrom} to {currentTo}.");
                 }
-
-                _logger.LogInformation(
-                    $"[EvmEventSubscriber] {networkName} Starting HTTP query from block {lastProcessedBlock} to latestBlock {latestBlock}");
-
-                var from = lastProcessedBlock + 1;
-
-                for (var currentFrom = from;
-                     currentFrom <= latestBlock;
-                     currentFrom += EvmSubscribeConstants.SubscribeBlockStep)
+                catch (Exception ex)
                 {
-                    var currentTo = Math.Min(currentFrom + EvmSubscribeConstants.SubscribeBlockStep - 1, latestBlock);
-                    var filterInput = new NewFilterInput
-                    {
-                        FromBlock = new BlockParameter((ulong)currentFrom),
-                        ToBlock = new BlockParameter((ulong)currentTo),
-                        Address = new[] { options.ContractAddress }
-                    };
-
-                    try
-                    {
-                        var logs = await web3.Eth.Filters.GetLogs.SendRequestAsync(filterInput);
-                        var tasks = logs.Select(DecodeAndStartCrossChainAsync);
-                        await Task.WhenAll(tasks);
-
-                        lastProcessedBlock = currentTo;
-                        networkState.LastProcessedBlock = currentTo;
-
-                        await SaveConsumedBlockHeightAsync(networkName, currentTo);
-
-                        _logger.LogInformation(
-                            $"[EvmEventSubscriber] {networkName} Processed blocks from {currentFrom} to {currentTo}.");
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(
-                            $"[EvmEventSubscriber] {networkName} Error processing blocks {currentFrom} to {currentTo}: {ex.Message}");
-                        throw;
-                    }
+                    _logger.LogError(
+                        $"[EvmEventSubscriber] {networkName} Error processing blocks {curFrom} to {currentTo}: {ex.Message}");
+                    throw;
                 }
-
-                networkState.IsHttpFinished = true;
-                _logger.LogInformation(
-                    $"[EvmEventSubscriber] {networkName} http processing blocks is finished.");
             }
         }
         catch (Exception e)
         {
+            _healthMap[networkName] = false;
             _logger.LogError(e, $"[EvmEventSubscriber] {networkName} Error processing http subscribe.");
         }
     }
@@ -213,7 +198,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
     private async Task SubscribeToEventsAsync(StreamingWebSocketClient client, EvmOptions options)
     {
         var networkName = options.NetworkName;
-        if (!_networkStates.TryGetValue(networkName, out var networkState))
+        if (!_consumedWsBlockHeights.TryGetValue(networkName, out var consumedWsBlockHeight))
         {
             _logger.LogError($"[EvmEventSubscriber] {networkName} Network state is empty, please check options.");
             return;
@@ -222,17 +207,19 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
         var eventSubscription = new EthLogsObservableSubscription(client);
         var eventFilterInput = Event<SendEventDTO>.GetEventABI().CreateFilterInput(options.ContractAddress);
 
-        eventSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(
-            async log =>
+        eventSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(async log =>
             {
                 await DecodeAndStartCrossChainAsync(log);
 
                 var blockHeight = (long)log.BlockNumber.Value;
-                networkState.LastProcessedBlock = blockHeight;
+                consumedWsBlockHeight = blockHeight;
                 await SaveConsumedBlockHeightAsync(networkName, blockHeight);
             },
-            exception => _logger.LogError($"[EvmEventSubscriber] {networkName} Subscription error: {exception.Message}")
-        );
+            exception =>
+            {
+                _logger.LogError($"[EvmEventSubscriber] {networkName} Subscription error: {exception.Message}");
+                throw exception;
+            });
 
         _logger.LogDebug($"[EvmEventSubscriber] Connecting WebSocket client on {networkName}...");
 
@@ -244,6 +231,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
 
     private async Task DecodeAndStartCrossChainAsync(FilterLog log)
     {
+        EvmReceivedMessageDto messagePendingToCrossChain = null;
         try
         {
             var decoded = Event<SendEventDTO>.DecodeEvent(log);
@@ -253,16 +241,17 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
                 return;
             }
 
-            var messagePendingToCrossChain = GenerateEvmReceivedMessage(decoded);
-            await _crossChainProvider.StartCrossChainRequestFromEvm(messagePendingToCrossChain);
-
-            _logger.LogDebug(
-                $"[EvmEventSubscriber] Start cross chain request {messagePendingToCrossChain.MessageId} successful at: {log.TransactionHash} {log.BlockNumber}");
+            messagePendingToCrossChain = GenerateEvmReceivedMessage(decoded);
         }
         catch (Exception e)
         {
             _logger.LogError(e, $"[EvmEventSubscriber] Decode {log.TransactionHash} fail at {log.BlockNumber}.");
         }
+
+        await _crossChainProvider.StartCrossChainRequestFromEvm(messagePendingToCrossChain);
+
+        _logger.LogDebug(
+            $"[EvmEventSubscriber] Start cross chain request {messagePendingToCrossChain.MessageId} successful at: {log.TransactionHash} {log.BlockNumber}");
     }
 
     private async Task InitializeConsumedHeight(EvmContractsOptions options)
@@ -277,7 +266,9 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             _logger.LogDebug(
                 $"[EvmEventSubscriber] {op.NetworkName} has consumed {latestBlockHeight} with {redisKey}.");
 
-            _networkStates[op.NetworkName] = new() { LastProcessedBlock = latestBlockHeight?.BlockHeight ?? 0 };
+            _consumedWsBlockHeights[op.NetworkName] = latestBlockHeight?.BlockHeight ?? 0;
+            _consumedHttpBlockHeights[op.NetworkName] = _consumedWsBlockHeights[op.NetworkName];
+            _healthMap[op.NetworkName] = true;
         }
     }
 
