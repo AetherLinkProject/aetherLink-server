@@ -14,4 +14,7 @@ public class EvmOptions
     public string Api { get; set; }
     public string TransmitterSecret { get; set; }
     public string SignerSecret { get; set; }
+    public string NetworkName { get; set; }
+    public string WsUrl { get; set; }
+    public int PingDelay { get; set; } = 50000;
 }
