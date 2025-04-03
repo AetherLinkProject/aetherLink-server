@@ -137,17 +137,28 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
 
         try
         {
-            var lastProcessedBlock = Math.Min(consumedHttpBlockHeight, consumedWsBlockHeight);
             var web3 = new Web3(options.Api);
             var latestBlock = (long)(await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()).Value;
-            if (consumedHttpBlockHeight == 0)
+            var lastProcessedBlock = consumedWsBlockHeight;
+
+            switch (consumedHttpBlockHeight)
             {
-                _logger.LogInformation($"[EvmEventSubscriber] {networkName} No altitude compensation required.");
+                // During initialization, http compensation is not required, and ws subscription starts directly from the latest height.
+                case 0 when consumedWsBlockHeight == 0:
+                    _logger.LogDebug($"[EvmEventSubscriber] {networkName} No altitude compensation required.");
 
-                await SaveHttpConsumedHeightAsync(networkName, latestBlock);
-                _consumedHttpBlockHeights[networkName] = latestBlock;
+                    return;
+                // When http compensation is completed, http is 0, and the next time http compensation starts, it starts from the last ws consumption height.
+                case 0:
+                    _logger.LogDebug(
+                        $"[EvmEventSubscriber] {networkName}it starts from the last ws consumption height {consumedWsBlockHeight}.");
 
-                return;
+                    _consumedHttpBlockHeights[networkName] = consumedWsBlockHeight;
+                    break;
+                // When both are not 0, it means it is a concurrent scenario, and the starting height is the minimum of the two heights.
+                default:
+                    lastProcessedBlock = Math.Min(consumedHttpBlockHeight, consumedWsBlockHeight);
+                    break;
             }
 
             if (lastProcessedBlock >= latestBlock)
@@ -178,7 +189,6 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
                     await Task.WhenAll(tasks);
 
                     _consumedHttpBlockHeights[networkName] = currentTo;
-
                     await SaveHttpConsumedHeightAsync(networkName, currentTo);
 
                     _logger.LogInformation(
@@ -190,6 +200,10 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
                         $"[EvmEventSubscriber] {networkName} Error processing blocks {curFrom} to {currentTo}: {ex.Message}");
                     throw;
                 }
+
+                _consumedHttpBlockHeights[networkName] = 0;
+                // It is guaranteed that after restart, it will be compensated from the last ws consumption height.
+                await SaveHttpConsumedHeightAsync(networkName, 0);
             }
         }
         catch (Exception e)
