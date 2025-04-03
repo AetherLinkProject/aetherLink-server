@@ -96,10 +96,10 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
                     var blockHeight = (long)x.Value;
                     _logger.LogDebug($"[EvmEventSubscriber] {networkName} BlockHeight: {blockHeight}");
 
-                    if (blockHeight % 100 != 0) return;
+                    if (blockHeight % EvmSubscribeConstants.SubscribeBlockSaveStep != 0) return;
 
                     _consumedWsBlockHeights[networkName] = blockHeight;
-                    await SaveConsumedBlockHeightAsync(networkName, blockHeight);
+                    await SaveWebsocketSubscribedHeightAsync(networkName, blockHeight);
                 });
 
                 await handler.SendRequestAsync();
@@ -129,12 +129,6 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             return;
         }
 
-        if (consumedHttpBlockHeight == 0)
-        {
-            _logger.LogInformation($"[EvmEventSubscriber] {networkName} No altitude compensation required.");
-            return;
-        }
-
         if (!_healthMap[networkName])
         {
             _logger.LogInformation($"[EvmEventSubscriber] {networkName} network is not health.");
@@ -146,6 +140,16 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
             var lastProcessedBlock = Math.Min(consumedHttpBlockHeight, consumedWsBlockHeight);
             var web3 = new Web3(options.Api);
             var latestBlock = (long)(await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()).Value;
+            if (consumedHttpBlockHeight == 0)
+            {
+                _logger.LogInformation($"[EvmEventSubscriber] {networkName} No altitude compensation required.");
+
+                await SaveHttpConsumedHeightAsync(networkName, latestBlock);
+                _consumedHttpBlockHeights[networkName] = latestBlock;
+
+                return;
+            }
+
             if (lastProcessedBlock >= latestBlock)
             {
                 _logger.LogInformation(
@@ -175,7 +179,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
 
                     _consumedHttpBlockHeights[networkName] = currentTo;
 
-                    await SaveConsumedBlockHeightAsync(networkName, currentTo);
+                    await SaveHttpConsumedHeightAsync(networkName, currentTo);
 
                     _logger.LogInformation(
                         $"[EvmEventSubscriber] {networkName} Processed blocks from {curFrom} to {currentTo}.");
@@ -213,11 +217,15 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
 
                 var blockHeight = (long)log.BlockNumber.Value;
                 consumedWsBlockHeight = blockHeight;
-                await SaveConsumedBlockHeightAsync(networkName, blockHeight);
+                await SaveWebsocketSubscribedHeightAsync(networkName, blockHeight);
             },
             exception =>
             {
                 _logger.LogError($"[EvmEventSubscriber] {networkName} Subscription error: {exception.Message}");
+
+                _healthMap[networkName] = false;
+                client?.StopAsync();
+
                 throw exception;
             });
 
@@ -260,25 +268,36 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
 
         foreach (var op in options.ContractConfig.Values)
         {
-            var redisKey = IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, op.NetworkName);
-            var latestBlockHeight = await _storageProvider.GetAsync<SearchHeightDto>(redisKey);
+            var redisKey =
+                IdGeneratorHelper.GenerateId(RedisKeyConstants.EvmWebsocketSubscribedHeightKey, op.NetworkName);
+            var latestWebsocketSubscribedBlockHeight = await _storageProvider.GetAsync<SearchHeightDto>(redisKey);
+            _consumedWsBlockHeights[op.NetworkName] = latestWebsocketSubscribedBlockHeight?.BlockHeight ?? 0;
+
+            var httpRedisKey =
+                IdGeneratorHelper.GenerateId(RedisKeyConstants.EvmHttpConsumedHeightKey, op.NetworkName);
+            var latestHttpConsumedBlockHeight = await _storageProvider.GetAsync<SearchHeightDto>(httpRedisKey);
+            _consumedHttpBlockHeights[op.NetworkName] = latestHttpConsumedBlockHeight?.BlockHeight ?? 0;
 
             _logger.LogDebug(
-                $"[EvmEventSubscriber] {op.NetworkName} has consumed {latestBlockHeight} with {redisKey}.");
+                $"[EvmEventSubscriber] {op.NetworkName} websocket has subscribed {_consumedWsBlockHeights[op.NetworkName]}, http has consumed {_consumedHttpBlockHeights[op.NetworkName]}.");
 
-            _consumedWsBlockHeights[op.NetworkName] = latestBlockHeight?.BlockHeight ?? 0;
-            _consumedHttpBlockHeights[op.NetworkName] = _consumedWsBlockHeights[op.NetworkName];
             _healthMap[op.NetworkName] = true;
         }
     }
 
-    private async Task SaveConsumedBlockHeightAsync(string network, long blockHeight)
+    private async Task SaveWebsocketSubscribedHeightAsync(string network, long blockHeight)
+        => await SaveBlockHeightAsync(
+            IdGeneratorHelper.GenerateId(RedisKeyConstants.EvmWebsocketSubscribedHeightKey, network), blockHeight);
+
+    private async Task SaveHttpConsumedHeightAsync(string network, long blockHeight)
+        => await SaveBlockHeightAsync(
+            IdGeneratorHelper.GenerateId(RedisKeyConstants.EvmHttpConsumedHeightKey, network), blockHeight);
+
+    private async Task SaveBlockHeightAsync(string redisKey, long blockHeight)
     {
-        var redisKey = IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, network);
         await _storageProvider.SetAsync(redisKey, new SearchHeightDto { BlockHeight = blockHeight });
 
-        _logger.LogDebug(
-            $"[EvmEventSubscriber] Network {network} has consumed to height {blockHeight} with {redisKey}.");
+        _logger.LogDebug($"[EvmEventSubscriber] {redisKey} has consumed to height {blockHeight}.");
     }
 
     private EvmReceivedMessageDto GenerateEvmReceivedMessage(EventLog<SendEventDTO> eventData)
