@@ -201,10 +201,11 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
                     throw;
                 }
 
-                _consumedHttpBlockHeights[networkName] = 0;
-                // It is guaranteed that after restart, it will be compensated from the last ws consumption height.
-                await SaveHttpConsumedHeightAsync(networkName, 0);
             }
+
+            _consumedHttpBlockHeights[networkName] = 0;
+            // It is guaranteed that after restart, it will be compensated from the last ws consumption height.
+            await SaveHttpConsumedHeightAsync(networkName, 0);
         }
         catch (Exception e)
         {
