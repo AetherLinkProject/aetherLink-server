@@ -200,7 +200,6 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
                         $"[EvmEventSubscriber] {networkName} Error processing blocks {curFrom} to {currentTo}: {ex.Message}");
                     throw;
                 }
-
             }
 
             _consumedHttpBlockHeights[networkName] = 0;
@@ -217,7 +216,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
     private async Task SubscribeToEventsAsync(StreamingWebSocketClient client, EvmOptions options)
     {
         var networkName = options.NetworkName;
-        if (!_consumedWsBlockHeights.TryGetValue(networkName, out var consumedWsBlockHeight))
+        if (!_consumedWsBlockHeights.TryGetValue(networkName, out _))
         {
             _logger.LogError($"[EvmEventSubscriber] {networkName} Network state is empty, please check options.");
             return;
@@ -231,7 +230,7 @@ public class EvmSearchServer : IEvmSearchServer, ISingletonDependency
                 await DecodeAndStartCrossChainAsync(log);
 
                 var blockHeight = (long)log.BlockNumber.Value;
-                consumedWsBlockHeight = blockHeight;
+                _consumedWsBlockHeights[networkName] = blockHeight;
                 await SaveWebsocketSubscribedHeightAsync(networkName, blockHeight);
             },
             exception =>
