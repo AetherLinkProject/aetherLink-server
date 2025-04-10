@@ -22,3 +22,8 @@ public class TonPrivateOptions
     public string TransmitterSecretKey { get; set; }
     public string TransmitterFee { get; set; } = "0.05";
 }
+
+public class TonChainStatesOptions
+{
+    public int StatesCheckInterval { get; set; } = 60000;
+}

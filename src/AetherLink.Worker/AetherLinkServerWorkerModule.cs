@@ -90,9 +90,9 @@ namespace AetherLink.Worker
             Configure<ProcessJobOptions>(configuration.GetSection("ProcessJob"));
             Configure<EvmContractsOptions>(configuration.GetSection("EvmContracts"));
             Configure<OracleInfoOptions>(configuration.GetSection("OracleChainInfo"));
+            Configure<TonChainStatesOptions>(configuration.GetSection("TonChainStates"));
             Configure<TargetContractOptions>(configuration.GetSection("TargetContract"));
             Configure<TonPublicOptions>(configuration.GetSection("Chains:ChainInfos:Ton"));
-            Configure<TonApiHealthCheckOptions>(configuration.GetSection("TonApiHealthCheck"));
             Configure<TonPrivateOptions>(configuration.GetSection("OracleChainInfo:ChainConfig:Ton"));
             Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "AetherLinkServer:"; });
             Configure<ChainStackApiConfig>(configuration.GetSection("Chains:ChainInfos:Ton:Indexer:ChainStack"));
@@ -120,19 +120,20 @@ namespace AetherLink.Worker
 
             ConfigureBackgroundWorker(context);
             AsyncHelper.RunSync(async () => { await context.ServiceProvider.GetService<IServer>().StartAsync(); });
-            AsyncHelper.RunSync(async () =>
-            {
-                await context.ServiceProvider.GetService<IEvmSearchServer>().StartAsync();
-            });
+            // AsyncHelper.RunSync(async () =>
+            // {
+            //     await context.ServiceProvider.GetService<IEvmSearchServer>().StartAsync();
+            // });
         }
 
         private void ConfigureBackgroundWorker(ApplicationInitializationContext context)
         {
-            context.AddBackgroundWorkerAsync<LogsPoller>();
-            context.AddBackgroundWorkerAsync<SearchWorker>();
-            context.AddBackgroundWorkerAsync<TonIndexerWorker>();
-            context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
-            context.AddBackgroundWorkerAsync<TonApiHealthCheckWorker>();
+            // context.AddBackgroundWorkerAsync<LogsPoller>();
+            // context.AddBackgroundWorkerAsync<SearchWorker>();
+            // context.AddBackgroundWorkerAsync<TonIndexerWorker>();
+            context.AddBackgroundWorkerAsync<TonChainStatesWorker>();
+            // context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
+            // context.AddBackgroundWorkerAsync<TonApiHealthCheckWorker>();
         }
 
         private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)

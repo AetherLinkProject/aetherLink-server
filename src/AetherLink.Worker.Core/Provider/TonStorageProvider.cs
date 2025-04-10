@@ -8,10 +8,12 @@ namespace AetherLink.Worker.Core.Provider;
 public interface ITonStorageProvider
 {
     Task<TonIndexerDto> GetTonIndexerInfoAsync();
+    Task<TonLatestBlockInfoDto> GetTonCenterLatestBlockInfoAsync();
     Task SetTonIndexerInfoAsync(TonIndexerDto tonIndexer);
+    Task SetTonCenterLatestBlockInfoAsync(TonLatestBlockInfoDto tonIndexer);
 }
 
-public class TonStorageProvider:ITonStorageProvider,ISingletonDependency
+public class TonStorageProvider : ITonStorageProvider, ISingletonDependency
 {
     private readonly IStorageProvider _storageProvider;
 
@@ -19,17 +21,16 @@ public class TonStorageProvider:ITonStorageProvider,ISingletonDependency
     {
         _storageProvider = storageProvider;
     }
-    
-    #region TonIndexer
+
     public async Task<TonIndexerDto> GetTonIndexerInfoAsync()
-    {
-        return await _storageProvider.GetAsync<TonIndexerDto>(TonStringConstants.TonIndexerStorageKey) ?? new TonIndexerDto();;
-    }
+        => await _storageProvider.GetAsync<TonIndexerDto>(TonStringConstants.TonIndexerStorageKey);
+
+    public async Task<TonLatestBlockInfoDto> GetTonCenterLatestBlockInfoAsync()
+        => await _storageProvider.GetAsync<TonLatestBlockInfoDto>(TonStringConstants.TonCenterLatestBlockInfoKey);
 
     public async Task SetTonIndexerInfoAsync(TonIndexerDto tonIndexer)
-    {
-        await _storageProvider.SetAsync(TonStringConstants.TonIndexerStorageKey, tonIndexer);
-    }
-    
-    #endregion
+        => await _storageProvider.SetAsync(TonStringConstants.TonIndexerStorageKey, tonIndexer);
+
+    public async Task SetTonCenterLatestBlockInfoAsync(TonLatestBlockInfoDto tonIndexer)
+        => await _storageProvider.SetAsync(TonStringConstants.TonCenterLatestBlockInfoKey, tonIndexer);
 }
