@@ -20,7 +20,7 @@ namespace AetherLink.Worker.Core.Provider;
 public interface IEvmProvider
 {
     Task<string> TransmitAsync(EvmOptions evmOptions, byte[] contextBytes, byte[] messageBytes,
-        byte[] tokenTransferMetadataBytes, byte[][] rs, byte[][] ss, byte[] rawVs);
+        byte[] tokenTransferMetadataBytes, byte[][] signatures);
 
     Task<TransactionState> GetTransactionResultAsync(EvmOptions evmOptions, string transactionId);
 }
@@ -35,7 +35,7 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
     }
 
     public async Task<string> TransmitAsync(EvmOptions evmOptions, byte[] contextBytes, byte[] messageBytes,
-        byte[] tokenTransferMetadataBytes, byte[][] rs, byte[][] ss, byte[] rawVs)
+        byte[] tokenTransferMetadataBytes, byte[][] signatures)
     {
         try
         {
@@ -57,9 +57,7 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
                 contextBytes,
                 messageBytes,
                 tokenTransferMetadataBytes,
-                rs,
-                ss,
-                rawVs);
+                signatures);
             gas.Value = BigInteger.Multiply(gas.Value, 2);
             _logger.LogDebug($"[Evm] Estimate transmit gas result: {gas.ToUlong()}");
 
@@ -71,9 +69,7 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
                 contextBytes,
                 messageBytes,
                 tokenTransferMetadataBytes,
-                rs,
-                ss,
-                rawVs
+                signatures
             );
             _logger.LogInformation($"[Evm] Transaction successful! Hash: {transactionHash}");
 

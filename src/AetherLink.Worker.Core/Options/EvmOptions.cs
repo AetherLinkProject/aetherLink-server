@@ -17,4 +17,6 @@ public class EvmOptions
     public string NetworkName { get; set; }
     public string WsUrl { get; set; }
     public int PingDelay { get; set; } = 50000;
+    public string TransmitTypeHash { get; set; }
+    public string DomainSeparator { get; set; }
 }
