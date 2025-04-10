@@ -120,20 +120,19 @@ namespace AetherLink.Worker
 
             ConfigureBackgroundWorker(context);
             AsyncHelper.RunSync(async () => { await context.ServiceProvider.GetService<IServer>().StartAsync(); });
-            // AsyncHelper.RunSync(async () =>
-            // {
-            //     await context.ServiceProvider.GetService<IEvmSearchServer>().StartAsync();
-            // });
+            AsyncHelper.RunSync(async () =>
+            {
+                await context.ServiceProvider.GetService<IEvmSearchServer>().StartAsync();
+            });
         }
 
         private void ConfigureBackgroundWorker(ApplicationInitializationContext context)
         {
-            // context.AddBackgroundWorkerAsync<LogsPoller>();
-            // context.AddBackgroundWorkerAsync<SearchWorker>();
-            // context.AddBackgroundWorkerAsync<TonIndexerWorker>();
+            context.AddBackgroundWorkerAsync<LogsPoller>();
+            context.AddBackgroundWorkerAsync<SearchWorker>();
+            context.AddBackgroundWorkerAsync<TonIndexerWorker>();
             context.AddBackgroundWorkerAsync<TonChainStatesWorker>();
-            // context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
-            // context.AddBackgroundWorkerAsync<TonApiHealthCheckWorker>();
+            context.AddBackgroundWorkerAsync<UnconfirmedWorker>();
         }
 
         private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
