@@ -35,6 +35,7 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
     private readonly TonCenterProviderApiConfig _option;
     private readonly ITonStorageProvider _storageProvider;
     private readonly ILogger<TonCenterApiProvider> _logger;
+    private const int TransactionFetchPageLimit = 100;
 
     public TonCenterApiProvider(IOptionsSnapshot<TonCenterProviderApiConfig> option,
         ILogger<TonCenterApiProvider> logger, IHttpClientFactory clientFactory, ITonStorageProvider storageProvider)
@@ -55,30 +56,47 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
                 _logger.LogDebug(
                     $"[TonCenterApiProvider] Search transaction from blockHeight: {latestBlockHeight} lt: {latestTransactionLt}");
 
+                var allTransactions = new List<CrossChainToTonTransactionDto>();
                 var latestBlockInfo = await _storageProvider.GetTonCenterLatestBlockInfoAsync();
                 if (latestBlockInfo == null)
                 {
                     _logger.LogDebug("[TonCenterApiProvider] Waiting for timer sync ton latest block info.");
-                    return new List<CrossChainToTonTransactionDto>();
+                    return allTransactions;
                 }
 
                 if (latestBlockInfo.McBlockSeqno <= latestBlockHeight + _option.TransactionsSubscribeDelay)
                 {
                     _logger.LogDebug(
-                        $"[TonCenterApiProvider] Current block height: {latestBlockHeight}, Waiting for Ton latest block {latestBlockInfo.McBlockSeqno}.");
-                    return new();
+                        $"[TonCenterApiProvider] Current block height: {latestBlockHeight}, master chain block height: {latestBlockInfo.McBlockSeqno}, Waiting for Ton latest block.");
+                    return allTransactions;
                 }
 
-                var path =
-                    $"{TonHttpApiUriConstants.GetTransactions}?account={contractAddress}&start_lt={latestTransactionLt}&limit=100&offset=0&sort=asc";
+                var skipCount = 0;
+                int totalFetched;
                 var client = _clientFactory.CreateClient();
                 if (!string.IsNullOrEmpty(_option.ApiKey))
                     client.DefaultRequestHeaders.Add("X-Api-Key", _option.ApiKey);
-                var responseMessage = await client.GetAsync(_option.Url + path);
-                var result = await responseMessage.Content.DeserializeSnakeCaseHttpContent<TransactionsResponse>();
-                return result.Transactions
-                    .Where(tx => tx.McBlockSeqno <= latestBlockInfo.McBlockSeqno - _option.TransactionsSubscribeDelay)
-                    .Select(t => t.ConvertToTonTransactionDto()).ToList();
+
+                do
+                {
+                    var path =
+                        $"{TonHttpApiUriConstants.GetTransactions}?account={contractAddress}&start_lt={latestTransactionLt}&TransactionFetchPageLimit={TransactionFetchPageLimit}&offset={skipCount}&sort=asc";
+                    _logger.LogDebug($"[TonCenterApiProvider] Fetching with uri: {path}, offset: {skipCount}");
+
+                    var responseMessage = await client.GetAsync(_option.Url + path);
+                    var result = await responseMessage.Content.DeserializeSnakeCaseHttpContent<TransactionsResponse>();
+                    var filteredTransactions = result.Transactions
+                        .Where(tx =>
+                            tx.McBlockSeqno + _option.TransactionsSubscribeDelay <= latestBlockInfo.McBlockSeqno)
+                        .Select(t => t.ConvertToTonTransactionDto()).ToList();
+                    allTransactions.AddRange(filteredTransactions);
+
+                    totalFetched = result.Transactions.Count;
+                    skipCount += totalFetched;
+                    _logger.LogDebug($"[TonCenterApiProvider] Fetched {totalFetched} transactions");
+                } while (totalFetched == TransactionFetchPageLimit);
+
+                return allTransactions;
             }, "SubscribeTransactionAsync");
         }
         catch (Exception e)
