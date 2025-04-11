@@ -153,12 +153,22 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
             var resp = await _clientFactory.CreateClient().PostAsync(_option.Url + TonHttpApiUriConstants.RunGetMethod,
                 new StringContent(JsonConvert.SerializeObject(body), Encoding.Default, "application/json"));
             var method = await resp.Content.DeserializeSnakeCaseHttpContent<RunGetMethodResult>();
-            if (method.ExitCode != 0 && method.ExitCode != 1) return 0;
+            if (method.ExitCode != 0 && method.ExitCode != 1)
+            {
+                _logger.LogWarning($"[TonCenterApiProvider] Get not expected exit code: {method.ExitCode}");
+                return 0;
+            }
+
+            if (method.Stack.Length == 0)
+            {
+                _logger.LogWarning($"[TonCenterApiProvider] Get empty stack.");
+                return 0;
+            }
+
             var value = method.Stack[0].ToString();
             if (value == null) return 0;
             var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(value);
-            var num = Convert.ToUInt32(data[TonStringConstants.Value], 16);
-            return num;
+            return Convert.ToUInt32(data[TonStringConstants.Value], 16);
         }, "GetAddressSeqno");
     }
 
