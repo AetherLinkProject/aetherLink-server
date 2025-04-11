@@ -137,7 +137,7 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
     }
 
     private async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> operation, string operationDescription,
-        int maxRetries = 3, int delayInSeconds = 10)
+        int maxRetries = 10, int delayInSeconds = 10)
     {
         var retryCount = 0;
         while (retryCount < maxRetries)
@@ -146,12 +146,13 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
             {
                 return await operation();
             }
-            catch (HttpRequestException he) when (he.StatusCode == HttpStatusCode.TooManyRequests)
+            catch (HttpRequestException he)
             {
                 _logger.LogWarning(he,
-                    "[TonCenterApiProvider] {OperationDescription} - 429 Too Many Requests. Retrying in {DelaySeconds} seconds... (Attempt {RetryCount}/{MaxRetries})",
+                    "[TonCenterApiProvider] {OperationDescription} Retrying in {DelaySeconds} seconds... (Attempt {RetryCount}/{MaxRetries})",
                     operationDescription, delayInSeconds, retryCount + 1, maxRetries);
                 retryCount++;
+
                 await Task.Delay(TimeSpan.FromSeconds(delayInSeconds));
             }
             catch (Exception e)

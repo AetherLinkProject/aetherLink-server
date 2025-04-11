@@ -35,7 +35,7 @@ public class TonChainStatesWorker : AsyncPeriodicBackgroundWorkerBase
         var masterChainInfo = await _tonCenterApiProvider.GetCurrentHighestBlockHeightAsync();
         if (masterChainInfo.Last == null)
         {
-            _logger.LogError("[TonChainStatesWorker]Failed to get the Ton master chain block states.");
+            _logger.LogError("[TonChainStatesWorker] Failed to get the Ton master chain block states.");
             return;
         }
 
