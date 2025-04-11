@@ -23,5 +23,5 @@ public class TonPrivateOptions
 
 public class TonChainStatesOptions
 {
-    public int StatesCheckInterval { get; set; } = 60000;
+    public int StatesCheckInterval { get; set; } = 5000;
 }
