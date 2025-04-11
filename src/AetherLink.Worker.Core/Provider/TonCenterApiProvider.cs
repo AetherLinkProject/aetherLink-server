@@ -64,12 +64,13 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
                     return allTransactions;
                 }
 
-                if (latestBlockInfo.McBlockSeqno <= latestBlockHeight + _option.TransactionsSubscribeDelay)
-                {
-                    _logger.LogDebug(
-                        $"[TonCenterApiProvider] Current block height: {latestBlockHeight}, master chain block height: {latestBlockInfo.McBlockSeqno}, Waiting for Ton latest block.");
-                    return allTransactions;
-                }
+                // todo for testnet
+                // if (latestBlockInfo.McBlockSeqno <= latestBlockHeight + _option.TransactionsSubscribeDelay)
+                // {
+                //     _logger.LogDebug(
+                //         $"[TonCenterApiProvider] Current block height: {latestBlockHeight}, master chain block height: {latestBlockInfo.McBlockSeqno}, Waiting for Ton latest block.");
+                //     return allTransactions;
+                // }
 
                 var skipCount = 0;
                 int totalFetched;
