@@ -28,7 +28,5 @@ public class TonBlock
 public class SendTransactionResultDto
 {
     public bool Ok { get; set; }
-    public string Result { get; set; }
     public string Error { get; set; }
-    public int Code { get; set; }
 }

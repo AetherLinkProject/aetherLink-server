@@ -127,10 +127,12 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
                 new Dictionary<string, string> { { "boc", bodyCell.ToString("base64") } }
             );
 
-            _logger.LogWarning($"[TonCenterApiProvider] Send Commit body string: {bodyString}");
+            _logger.LogDebug($"[TonCenterApiProvider] Send Commit body string: {bodyString}");
 
             var resp = await GetApiKeyClient().PostAsync(_option.Url + TonHttpApiUriConstants.SendTransaction,
                 new StringContent(bodyString, Encoding.Default, "application/json"));
+
+            _logger.LogDebug($"[TonCenterApiProvider] Send Commit response content: {resp.Content}");
 
             var result = await resp.Content.DeserializeSnakeCaseHttpContent<SendTransactionResultDto>();
             if (result.Ok) return bodyCell.Hash.ToString("base64");
