@@ -65,9 +65,7 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
 
                 var skipCount = 0;
                 int totalFetched;
-                var client = _clientFactory.CreateClient();
-                if (!string.IsNullOrEmpty(_option.ApiKey))
-                    client.DefaultRequestHeaders.Add("X-Api-Key", _option.ApiKey);
+                var client = GetApiKeyClient();
 
                 do
                 {
@@ -126,7 +124,7 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
         return await ExecuteWithRetryAsync(async () =>
         {
             var body = new Dictionary<string, string> { { "boc", bodyCell.ToString("base64") } };
-            var resp = await _clientFactory.CreateClient().PostAsync(
+            var resp = await GetApiKeyClient().PostAsync(
                 _option.Url + TonHttpApiUriConstants.SendTransaction,
                 new StringContent(JsonConvert.SerializeObject(body), Encoding.Default, "application/json"));
             if (!resp.IsSuccessStatusCode)
@@ -144,14 +142,15 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
     {
         return await ExecuteWithRetryAsync<uint?>(async () =>
         {
-            var body = new Dictionary<string, object>
+            var bodyString = JsonConvert.SerializeObject(new Dictionary<string, object>
             {
                 { "address", address.ToString() },
                 { "method", "seqno" },
                 { "stack", Array.Empty<string[]>() }
-            };
-            var resp = await _clientFactory.CreateClient().PostAsync(_option.Url + TonHttpApiUriConstants.RunGetMethod,
-                new StringContent(JsonConvert.SerializeObject(body), Encoding.Default, "application/json"));
+            });
+
+            var resp = await GetApiKeyClient().PostAsync(_option.Url + TonHttpApiUriConstants.RunGetMethod,
+                new StringContent(bodyString, Encoding.Default, "application/json"));
             var method = await resp.Content.DeserializeSnakeCaseHttpContent<RunGetMethodResult>();
             if (method.ExitCode != 0 && method.ExitCode != 1)
             {
@@ -159,9 +158,9 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
                 return 0;
             }
 
-            if (method.Stack.Length == 0)
+            if (method.Stack == null || method.Stack.Length == 0)
             {
-                _logger.LogWarning($"[TonCenterApiProvider] Get empty stack.");
+                _logger.LogWarning("[TonCenterApiProvider] Get empty stack.");
                 return 0;
             }
 
@@ -202,5 +201,14 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
 
         throw new Exception(
             $"[TonCenterApiProvider] {operationDescription} - Exceeded max retry attempts ({maxRetries}).");
+    }
+
+    private HttpClient GetApiKeyClient()
+    {
+        var client = _clientFactory.CreateClient();
+        if (!string.IsNullOrEmpty(_option.ApiKey))
+            client.DefaultRequestHeaders.Add("X-Api-Key", _option.ApiKey);
+
+        return client;
     }
 }
