@@ -52,7 +52,8 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
         {
             return await ExecuteWithRetryAsync(async () =>
             {
-                _logger.LogDebug($"[TonCenterApiProvider] Search transaction from {latestTransactionLt}");
+                _logger.LogDebug(
+                    $"[TonCenterApiProvider] Search transaction from blockHeight: {latestBlockHeight} lt: {latestTransactionLt}");
 
                 var latestBlockInfo = await _storageProvider.GetTonCenterLatestBlockInfoAsync();
                 if (latestBlockInfo == null)
