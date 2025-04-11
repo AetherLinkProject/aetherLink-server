@@ -123,22 +123,21 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
     {
         return await ExecuteWithRetryAsync(async () =>
         {
-            var bodyString = JsonConvert.SerializeObject(new Dictionary<string, string>
-                { { "boc", bodyCell.ToString("base64") } });
+            var bodyString = JsonConvert.SerializeObject(
+                new Dictionary<string, string> { { "boc", bodyCell.ToString("base64") } }
+            );
 
             _logger.LogWarning($"[TonCenterApiProvider] Send Commit body string: {bodyString}");
 
             var resp = await GetApiKeyClient().PostAsync(_option.Url + TonHttpApiUriConstants.SendTransaction,
                 new StringContent(bodyString, Encoding.Default, "application/json"));
 
-            if (!resp.IsSuccessStatusCode)
-            {
-                _logger.LogWarning($"[TonCenterApiProvider] Send Commit failed, {resp.StatusCode}");
-                return null;
-            }
+            var result = await resp.Content.DeserializeSnakeCaseHttpContent<SendBocResultDto>();
+            if (result.Ok) return bodyCell.Hash.ToString("base64");
 
-            var result = await resp.Content.DeserializeSnakeCaseHttpContent<SendBocResult>();
-            return !string.IsNullOrEmpty(result.Hash) ? result.Hash : null;
+            _logger.LogWarning($"[TonCenterApiProvider] Send Commit failed, error: {result.Error}");
+
+            return null;
         }, "CommitTransaction");
     }
 
