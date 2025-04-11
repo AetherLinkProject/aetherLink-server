@@ -64,12 +64,12 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
                 if (latestBlockInfo.McBlockSeqno <= latestBlockHeight + _option.TransactionsSubscribeDelay)
                 {
                     _logger.LogDebug(
-                        $"[TonCenterApiProvider] Current block height: {latestBlockInfo.McBlockSeqno},Waiting for Ton latest block.");
+                        $"[TonCenterApiProvider] Current block height: {latestBlockHeight}, Waiting for Ton latest block {latestBlockInfo.McBlockSeqno}.");
                     return new();
                 }
 
                 var path =
-                    $"/api/v3/transactions?account={contractAddress}&start_lt={latestTransactionLt}&limit=100&offset=0&sort=asc";
+                    $"{TonHttpApiUriConstants.GetTransactions}?account={contractAddress}&start_lt={latestTransactionLt}&limit=100&offset=0&sort=asc";
                 var client = _clientFactory.CreateClient();
                 if (!string.IsNullOrEmpty(_option.ApiKey))
                     client.DefaultRequestHeaders.Add("X-Api-Key", _option.ApiKey);
@@ -91,7 +91,8 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
     {
         return await ExecuteWithRetryAsync(async () =>
         {
-            var responseMessage = await _clientFactory.CreateClient().GetAsync(_option.Url + "/api/v3/masterchainInfo");
+            var responseMessage = await _clientFactory.CreateClient()
+                .GetAsync(_option.Url + TonHttpApiUriConstants.MasterChainInfo);
             return await responseMessage.Content.DeserializeSnakeCaseHttpContent<MasterChainInfoDto>();
         }, "GetCurrentHighestBlockHeightAsync");
     }
@@ -101,7 +102,8 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
         return await ExecuteWithRetryAsync(async () =>
         {
             var body = new Dictionary<string, string> { { "boc", bodyCell.ToString("base64") } };
-            var resp = await _clientFactory.CreateClient().PostAsync("/sendBoc",
+            var resp = await _clientFactory.CreateClient().PostAsync(
+                _option.Url + TonHttpApiUriConstants.SendTransaction,
                 new StringContent(JsonConvert.SerializeObject(body), Encoding.Default, "application/json"));
             if (!resp.IsSuccessStatusCode)
             {
@@ -124,7 +126,7 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
                 { "method", "seqno" },
                 { "stack", Array.Empty<string[]>() }
             };
-            var resp = await _clientFactory.CreateClient().PostAsync(TonStringConstants.RunGetMethod,
+            var resp = await _clientFactory.CreateClient().PostAsync(_option.Url + TonHttpApiUriConstants.RunGetMethod,
                 new StringContent(JsonConvert.SerializeObject(body), Encoding.Default, "application/json"));
             var method = await resp.Content.DeserializeSnakeCaseHttpContent<RunGetMethodResult>();
             if (method.ExitCode != 0 && method.ExitCode != 1) return 0;

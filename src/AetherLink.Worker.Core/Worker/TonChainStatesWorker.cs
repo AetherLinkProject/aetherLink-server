@@ -42,7 +42,7 @@ public class TonChainStatesWorker : AsyncPeriodicBackgroundWorkerBase
         var masterChainBlock = masterChainInfo.Last;
         if (masterChainBlock.Workchain != -1 || masterChainBlock.Shard != "8000000000000000")
         {
-            _logger.LogError("[TonChainStatesWorker]Failed to retrieve the Ton master chain block height.");
+            _logger.LogWarning("[TonChainStatesWorker]Failed to retrieve the Ton master chain block height.");
             return;
         }
 

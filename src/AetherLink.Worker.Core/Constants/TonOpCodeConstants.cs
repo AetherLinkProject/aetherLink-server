@@ -21,7 +21,14 @@ public class TonResendTypeConstants
 public class TonStringConstants
 {
     public const string Value = "value";
-    public const string RunGetMethod = "runGetMethod";
     public const string TonIndexerStorageKey = "TonIndexer";
     public const string TonCenterLatestBlockInfoKey = "TonCenterBlockInfo";
+}
+
+public class TonHttpApiUriConstants
+{
+    public const string RunGetMethod = "/runGetMethod";
+    public const string SendTransaction = "/sendBoc";
+    public const string MasterChainInfo = "/api/v3/masterchainInfo";
+    public const string GetTransactions = "/api/v3/transactions";
 }

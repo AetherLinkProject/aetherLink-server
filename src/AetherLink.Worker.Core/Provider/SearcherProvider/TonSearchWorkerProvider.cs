@@ -111,6 +111,9 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
                     IndexerTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds()
                 };
 
+                _logger.LogDebug(
+                    $"[TonSearchWorker] Successfully deposited new block status {JsonConvert.SerializeObject(newIndexerInfo)}");
+
                 await _tonStorageProvider.SetTonIndexerInfoAsync(newIndexerInfo);
             }
         }
