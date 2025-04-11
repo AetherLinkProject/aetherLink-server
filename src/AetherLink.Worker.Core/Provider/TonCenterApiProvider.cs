@@ -132,7 +132,7 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
             var resp = await GetApiKeyClient().PostAsync(_option.Url + TonHttpApiUriConstants.SendTransaction,
                 new StringContent(bodyString, Encoding.Default, "application/json"));
 
-            var result = await resp.Content.DeserializeSnakeCaseHttpContent<SendBocResultDto>();
+            var result = await resp.Content.DeserializeSnakeCaseHttpContent<SendTransactionResultDto>();
             if (result.Ok) return bodyCell.Hash.ToString("base64");
 
             _logger.LogWarning($"[TonCenterApiProvider] Send Commit failed, error: {result.Error}");
@@ -209,8 +209,10 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
     private HttpClient GetApiKeyClient()
     {
         var client = _clientFactory.CreateClient();
-        if (!string.IsNullOrEmpty(_option.ApiKey))
-            client.DefaultRequestHeaders.Add("X-Api-Key", _option.ApiKey);
+
+        if (!string.IsNullOrEmpty(_option.ApiKey)) client.DefaultRequestHeaders.Add("X-Api-Key", _option.ApiKey);
+
+        client.DefaultRequestHeaders.Add("accept", "application/json");
 
         return client;
     }

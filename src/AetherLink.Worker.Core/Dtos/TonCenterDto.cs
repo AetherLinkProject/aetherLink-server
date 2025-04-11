@@ -25,7 +25,7 @@ public class TonBlock
     public List<BlockId> PrevBlocks { get; set; }
 }
 
-public class SendBocResultDto
+public class SendTransactionResultDto
 {
     public bool Ok { get; set; }
     public string Result { get; set; }
