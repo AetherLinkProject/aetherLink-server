@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
-using AetherLink.Worker.Core.Provider.TonIndexer;
+using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TonSdk.Contracts.Wallet;
@@ -20,28 +20,27 @@ public class TonChainWriter : ChainWriter
 
     private readonly WalletV4 _wallet;
     private readonly ILogger<TonChainWriter> _logger;
-    private readonly TonIndexerRouter _indexerRouter;
     private readonly TonPrivateOptions _privateOptions;
     private readonly TonPublicOptions _tonPublicOptions;
+    private readonly ITonCenterApiProvider _tonCenterApiProvider;
 
-    public TonChainWriter(TonIndexerRouter indexerRouter, ILogger<TonChainWriter> logger,
-        IOptionsSnapshot<TonPublicOptions> tonPublicOptions, IOptionsSnapshot<TonPrivateOptions> privateOptions)
+    public TonChainWriter(ILogger<TonChainWriter> logger, IOptionsSnapshot<TonPublicOptions> tonPublicOptions,
+        IOptionsSnapshot<TonPrivateOptions> privateOptions, ITonCenterApiProvider tonCenterApiProvider)
     {
         _logger = logger;
-        _indexerRouter = indexerRouter;
         _privateOptions = privateOptions.Value;
         _tonPublicOptions = tonPublicOptions.Value;
+        _tonCenterApiProvider = tonCenterApiProvider;
         _wallet = TonHelper.GetWalletFromPrivateKey(_privateOptions.TransmitterSecretKey);
     }
 
     public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
         Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
     {
-        var seqno = await _indexerRouter.GetAddressSeqno(
-            TonHelper.GetAddressFromPrivateKey(_privateOptions.TransmitterSecretKey));
+        var seqno = await _tonCenterApiProvider.GetAddressSeqno(_wallet.Address);
         if (seqno == null)
         {
-            _logger.LogError($"[TonHelper] get seqno error, messageId is {reportContext.MessageId}");
+            _logger.LogError($"[TonChainWriter] get seqno error, messageId is {reportContext.MessageId}");
             return null;
         }
 
@@ -49,7 +48,8 @@ public class TonChainWriter : ChainWriter
         var initCellBuilder = new CellBuilder()
             .StoreUInt(TonOpCodeConstants.ForwardTx, TonMetaDataConstants.OpCodeUintSize);
         var contextCell = TonHelper.ConstructContext(reportContext);
-        var metadataCell = TonHelper.ConstructMetaData(reportContext, crossChainData.Message,crossChainData.TokenTransferMetadata);
+        var metadataCell =
+            TonHelper.ConstructMetaData(reportContext, crossChainData.Message, crossChainData.TokenTransferMetadata);
         var signatureCell = new CellBuilder()
             .StoreDict(TonHelper.ConvertConsensusSignature(signatures))
             .Build();
@@ -82,7 +82,7 @@ public class TonChainWriter : ChainWriter
         _logger.LogDebug(
             $"[TonChainWriter] Ready to commit , sourceChainId:{reportContext.SourceChainId} targetChainId:{reportContext.TargetChainId} messageId:{reportContext.MessageId}");
 
-        return await _indexerRouter.CommitTransaction(msg.Cell);
+        return await _tonCenterApiProvider.CommitTransaction(msg.Cell);
     }
 }
 

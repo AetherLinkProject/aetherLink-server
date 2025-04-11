@@ -2,7 +2,6 @@
 using AetherLink.Indexer;
 using AetherLink.Metric;
 using AetherLink.Worker.Core.Provider;
-using AetherLink.Worker.Core.Provider.TonIndexer;
 using AetherLink.Worker.Core.Reporter;
 using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,11 +37,5 @@ public class AetherLinkServerWorkerCoreModule : AbpModule
         context.Services.AddSingleton<IDataFeedsReporter, DataFeedsReporter>();
         context.Services.AddSingleton<IReportReporter, ReportReporter>();
         context.Services.AddSingleton<IMultiSignatureReporter, MultiSignatureReporter>();
-
-        // ton
-        context.Services.AddSingleton<ITonIndexerProvider, TonCenterClient>();
-        context.Services.AddSingleton<ITonIndexerProvider, GetBlockClient>();
-        context.Services.AddSingleton<ITonIndexerProvider, TonApiClient>();
-        context.Services.AddSingleton<ITonIndexerProvider, ChainStackClient>();
     }
 }

@@ -7,7 +7,6 @@ using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Exceptions;
 using AetherLink.Worker.Core.Options;
-using AetherLink.Worker.Core.Provider.TonIndexer;
 using AetherLink.Worker.Core.Scheduler;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -30,92 +29,89 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
     private readonly ISchedulerService _scheduler;
     private readonly IStorageProvider _storageProvider;
     private readonly IServiceProvider _serviceProvider;
-    private readonly TonIndexerRouter _tonIndexerRouter;
+    private readonly TonPublicOptions _tonPublicOptions;
     private readonly ITonStorageProvider _tonStorageProvider;
     private readonly ILogger<TonSearchWorkerProvider> _logger;
-    private readonly IOptions<TonPublicOptions> _tonPublicOptions;
+    private readonly ITonCenterApiProvider _tonCenterApiProvider;
     private readonly ICrossChainRequestProvider _crossChainRequestProvider;
 
     public TonSearchWorkerProvider(ISchedulerService scheduler, ITonStorageProvider tonStorageProvider,
-        TonIndexerRouter tonIndexerRouter, ILogger<TonSearchWorkerProvider> logger, IStorageProvider storageProvider,
-        ICrossChainRequestProvider crossChainRequestProvider, IOptions<TonPublicOptions> tonPublicOptions,
-        IServiceProvider serviceProvider)
+        ILogger<TonSearchWorkerProvider> logger, IStorageProvider storageProvider, IServiceProvider serviceProvider,
+        ICrossChainRequestProvider crossChainRequestProvider, IOptionsSnapshot<TonPublicOptions> tonPublicOptions,
+        ITonCenterApiProvider tonCenterApiProvider)
     {
         _logger = logger;
         _scheduler = scheduler;
-        _tonIndexerRouter = tonIndexerRouter;
-        _tonStorageProvider = tonStorageProvider;
         _storageProvider = storageProvider;
-        _crossChainRequestProvider = crossChainRequestProvider;
-        _tonPublicOptions = tonPublicOptions;
         _serviceProvider = serviceProvider;
+        _tonStorageProvider = tonStorageProvider;
+        _tonPublicOptions = tonPublicOptions.Value;
+        _tonCenterApiProvider = tonCenterApiProvider;
+        _crossChainRequestProvider = crossChainRequestProvider;
     }
 
     public async Task ExecuteSearchAsync()
     {
-        var indexerInfo = await _tonStorageProvider.GetTonIndexerInfoAsync();
-        if (indexerInfo.LatestTransactionLt == "0" && _tonPublicOptions.Value.SkipTransactionLt != "0")
+        var indexerInfo = await _tonStorageProvider.GetTonIndexerInfoAsync() ?? new TonIndexerDto();
+
+        if (indexerInfo.LatestTransactionLt == "0" && _tonPublicOptions.SkipTransactionLt != "0")
         {
-            indexerInfo.LatestTransactionLt = _tonPublicOptions.Value.SkipTransactionLt;
+            indexerInfo.LatestTransactionLt = _tonPublicOptions.SkipTransactionLt;
         }
 
-        var (transactionList, currentIndexerInfo) = await _tonIndexerRouter.GetSubsequentTransaction(indexerInfo);
-        var dtNow = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
-        if (transactionList == null || transactionList.Count == 0)
-        {
-            if (currentIndexerInfo == null) return;
-            currentIndexerInfo.IndexerTime = dtNow;
-            await _tonStorageProvider.SetTonIndexerInfoAsync(currentIndexerInfo);
-            return;
-        }
+        var results = await _tonCenterApiProvider.SubscribeTransactionAsync(_tonPublicOptions.ContractAddress,
+            indexerInfo.LatestTransactionLt, indexerInfo.BlockHeight);
 
-        for (var i = 0; i < transactionList.Count; i++)
+        while (true)
         {
-            var tx = transactionList[i];
-            if (!tx.Aborted && !tx.Bounced && tx.ExitCode == 0)
+            if ((results.Count == 1 && results[0].TransactionLt == indexerInfo.LatestTransactionLt) ||
+                results.Count == 0) break;
+
+            foreach (var transactionData in results)
             {
+                if (transactionData.Aborted || transactionData.Bounced || transactionData.ExitCode != 0)
+                {
+                    _logger.LogInformation(
+                        $"[Ton indexer] transaction execute error, detail message is:{JsonConvert.SerializeObject(transactionData)}");
+
+                    continue;
+                }
+
                 try
                 {
-                    switch (tx.OpCode)
+                    switch (transactionData.OpCode)
                     {
                         case TonOpCodeConstants.ForwardTx:
-                            await TonForwardTxHandle(tx);
+                            await TonForwardTxHandle(transactionData);
                             break;
                         case TonOpCodeConstants.ReceiveTx:
-                            await HandleTonReceiveTransaction(tx);
+                            await HandleTonReceiveTransaction(transactionData);
                             break;
                         case TonOpCodeConstants.ResendTx:
-                            await HandleTonResendTx(tx);
+                            await HandleTonResendTx(transactionData);
                             break;
                         default:
+                            _logger.LogWarning(
+                                $"[TonSearchWorker] Get not support opcode {transactionData.OpCode} in {transactionData.Hash}");
                             continue;
                     }
                 }
                 catch (ProtocolException ex)
                 {
-                    _logger.LogWarning(
-                        $"[TonIndexer] analysis ton transaction error:{ex.Message} , transaction hash:{tx.Hash}");
+                    _logger.LogError(ex,
+                        $"[TonSearchWorker] Analysis failed, transaction hash:{transactionData.Hash}");
                 }
-            }
-            else
-            {
-                _logger.LogInformation(
-                    $"[Ton indexer] transaction execute error, detail message is:{JsonConvert.SerializeObject(tx)}");
-            }
 
-            // update indexer info
-            indexerInfo.IndexerTime = dtNow;
-            indexerInfo.SkipCount = 0;
-            indexerInfo.LatestTransactionHash = tx.Hash;
-            indexerInfo.LatestTransactionLt = tx.TransactionLt;
-            indexerInfo.BlockHeight = tx.SeqNo;
-            if (i < transactionList.Count - 1)
-            {
-                await _tonStorageProvider.SetTonIndexerInfoAsync(indexerInfo);
-            }
-            else
-            {
-                await _tonStorageProvider.SetTonIndexerInfoAsync(currentIndexerInfo);
+                // update indexer info
+                var newIndexerInfo = new TonIndexerDto
+                {
+                    BlockHeight = transactionData.SeqNo,
+                    LatestTransactionHash = transactionData.Hash,
+                    LatestTransactionLt = transactionData.TransactionLt,
+                    IndexerTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds()
+                };
+
+                await _tonStorageProvider.SetTonIndexerInfoAsync(newIndexerInfo);
             }
         }
     }

@@ -105,6 +105,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         {
             _logger.LogError(e,
                 $"[CrossChainRequestProvider] Start cross chain request from EVM failed, messageId: {request.MessageId}");
+            throw;
         }
     }
 
