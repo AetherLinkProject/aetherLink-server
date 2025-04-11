@@ -63,8 +63,9 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
 
                 if (latestBlockInfo.McBlockSeqno <= latestBlockHeight + _option.TransactionsSubscribeDelay)
                 {
-                    _logger.LogDebug("[TonCenterApiProvider] Waiting for Ton latest block.");
-                    return new List<CrossChainToTonTransactionDto>();
+                    _logger.LogDebug(
+                        $"[TonCenterApiProvider] Current block height: {latestBlockInfo.McBlockSeqno},Waiting for Ton latest block.");
+                    return new();
                 }
 
                 var path =
