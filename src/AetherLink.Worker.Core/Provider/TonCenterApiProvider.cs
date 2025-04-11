@@ -85,18 +85,6 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
                     skipCount += totalFetched;
 
                     _logger.LogDebug($"[TonCenterApiProvider] Fetched {totalFetched} transactions");
-
-                    // todo test add log for filter
-                    var filteredCount = result.Transactions.Count(tx =>
-                        tx.McBlockSeqno + _option.TransactionsSubscribeDelay > latestBlockInfo.McBlockSeqno);
-                    var nextBlockSeqno = result.Transactions.Where(tx =>
-                            tx.McBlockSeqno + _option.TransactionsSubscribeDelay > latestBlockInfo.McBlockSeqno)
-                        .MinBy(tx => tx.McBlockSeqno)?.McBlockSeqno;
-                    _logger.LogInformation(
-                        "[TonCenterApiProvider] Filtered transactions count: {FilteredCount}, Next transaction's minimum McBlockSeqno exceeding limit: {NextBlockSeqno}",
-                        filteredCount,
-                        nextBlockSeqno.HasValue ? nextBlockSeqno.Value.ToString() : "None"
-                    );
                 } while (totalFetched == TransactionFetchPageLimit);
 
                 return allTransactions;
@@ -131,8 +119,6 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
 
             var resp = await GetApiKeyClient().PostAsync(_option.Url + TonHttpApiUriConstants.SendTransaction,
                 new StringContent(bodyString, Encoding.Default, "application/json"));
-
-            _logger.LogDebug($"[TonCenterApiProvider] Send Commit response content: {resp.Content}");
 
             var result = await resp.Content.DeserializeSnakeCaseHttpContent<SendTransactionResultDto>();
             if (result.Ok) return bodyCell.Hash.ToString("base64");
