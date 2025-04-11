@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -64,14 +63,6 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
                     return allTransactions;
                 }
 
-                // todo for testnet
-                // if (latestBlockInfo.McBlockSeqno <= latestBlockHeight + _option.TransactionsSubscribeDelay)
-                // {
-                //     _logger.LogDebug(
-                //         $"[TonCenterApiProvider] Current block height: {latestBlockHeight}, master chain block height: {latestBlockInfo.McBlockSeqno}, Waiting for Ton latest block.");
-                //     return allTransactions;
-                // }
-
                 var skipCount = 0;
                 int totalFetched;
                 var client = _clientFactory.CreateClient();
@@ -82,19 +73,32 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
                 {
                     var path =
                         $"{TonHttpApiUriConstants.GetTransactions}?account={contractAddress}&start_lt={latestTransactionLt}&TransactionFetchPageLimit={TransactionFetchPageLimit}&offset={skipCount}&sort=asc";
+
                     _logger.LogDebug($"[TonCenterApiProvider] Fetching with uri: {path}, offset: {skipCount}");
 
                     var responseMessage = await client.GetAsync(_option.Url + path);
                     var result = await responseMessage.Content.DeserializeSnakeCaseHttpContent<TransactionsResponse>();
-                    var filteredTransactions = result.Transactions
-                        .Where(tx =>
+
+                    var filteredTransactions = result.Transactions.Where(tx =>
                             tx.McBlockSeqno + _option.TransactionsSubscribeDelay <= latestBlockInfo.McBlockSeqno)
                         .Select(t => t.ConvertToTonTransactionDto()).ToList();
                     allTransactions.AddRange(filteredTransactions);
-
                     totalFetched = result.Transactions.Count;
                     skipCount += totalFetched;
+
                     _logger.LogDebug($"[TonCenterApiProvider] Fetched {totalFetched} transactions");
+
+                    // todo test add log for filter
+                    var filteredCount = result.Transactions.Count(tx =>
+                        tx.McBlockSeqno + _option.TransactionsSubscribeDelay > latestBlockInfo.McBlockSeqno);
+                    var nextBlockSeqno = result.Transactions.Where(tx =>
+                            tx.McBlockSeqno + _option.TransactionsSubscribeDelay > latestBlockInfo.McBlockSeqno)
+                        .MinBy(tx => tx.McBlockSeqno)?.McBlockSeqno;
+                    _logger.LogInformation(
+                        "[TonCenterApiProvider] Filtered transactions count: {FilteredCount}, Next transaction's minimum McBlockSeqno exceeding limit: {NextBlockSeqno}",
+                        filteredCount,
+                        nextBlockSeqno.HasValue ? nextBlockSeqno.Value.ToString() : "None"
+                    );
                 } while (totalFetched == TransactionFetchPageLimit);
 
                 return allTransactions;
