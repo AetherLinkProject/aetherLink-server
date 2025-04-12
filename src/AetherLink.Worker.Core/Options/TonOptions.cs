@@ -7,8 +7,6 @@ public class TonPublicOptions
     public string ContractAddress { get; set; }
     public string SkipTransactionLt { get; set; } = "0";
     public List<OracleNodeInfo> OracleNodeInfoList { get; set; }
-    public List<string> IndexerProvider { get; set; }
-    public List<string> CommitProvider { get; set; }
 }
 
 public class OracleNodeInfo
@@ -25,5 +23,5 @@ public class TonPrivateOptions
 
 public class TonChainStatesOptions
 {
-    public int StatesCheckInterval { get; set; } = 60000;
+    public int StatesCheckInterval { get; set; } = 5000;
 }

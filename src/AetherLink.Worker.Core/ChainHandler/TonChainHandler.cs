@@ -37,7 +37,8 @@ public class TonChainWriter : ChainWriter
     public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
         Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
     {
-        var seqno = await _tonCenterApiProvider.GetAddressSeqno(_wallet.Address);
+        var seqno = await _tonCenterApiProvider.GetAddressSeqno(
+            TonHelper.GetAddressFromPrivateKey(_privateOptions.TransmitterSecretKey));
         if (seqno == null)
         {
             _logger.LogError($"[TonChainWriter] get seqno error, messageId is {reportContext.MessageId}");

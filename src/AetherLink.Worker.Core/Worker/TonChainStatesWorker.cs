@@ -35,14 +35,14 @@ public class TonChainStatesWorker : AsyncPeriodicBackgroundWorkerBase
         var masterChainInfo = await _tonCenterApiProvider.GetCurrentHighestBlockHeightAsync();
         if (masterChainInfo.Last == null)
         {
-            _logger.LogError("[TonChainStatesWorker]Failed to get the Ton master chain block states.");
+            _logger.LogError("[TonChainStatesWorker] Failed to get the Ton master chain block states.");
             return;
         }
 
         var masterChainBlock = masterChainInfo.Last;
         if (masterChainBlock.Workchain != -1 || masterChainBlock.Shard != "8000000000000000")
         {
-            _logger.LogError("[TonChainStatesWorker]Failed to retrieve the Ton master chain block height.");
+            _logger.LogWarning("[TonChainStatesWorker] Failed to retrieve the Ton master chain block height.");
             return;
         }
 
@@ -54,6 +54,7 @@ public class TonChainStatesWorker : AsyncPeriodicBackgroundWorkerBase
             EndLt = masterChainBlock.EndLt
         });
 
-        _logger.LogInformation("[TonChainStatesWorker]Set Ton master chain block states successful.");
+        _logger.LogInformation(
+            $"[TonChainStatesWorker] Set Ton master chain block states {masterChainBlock.MasterchainBlockRef.Seqno} successful.");
     }
 }

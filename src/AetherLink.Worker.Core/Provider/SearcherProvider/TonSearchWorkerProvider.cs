@@ -62,57 +62,57 @@ public class TonSearchWorkerProvider : ITonSearchWorkerProvider, ISingletonDepen
         var results = await _tonCenterApiProvider.SubscribeTransactionAsync(_tonPublicOptions.ContractAddress,
             indexerInfo.LatestTransactionLt, indexerInfo.BlockHeight);
 
-        while (true)
+        if ((results.Count == 1 && results[0].TransactionLt == indexerInfo.LatestTransactionLt) ||
+            results.Count == 0) return;
+
+        foreach (var transactionData in results)
         {
-            if ((results.Count == 1 && results[0].TransactionLt == indexerInfo.LatestTransactionLt) ||
-                results.Count == 0) break;
-
-            foreach (var transactionData in results)
+            if (transactionData.Aborted || transactionData.Bounced || transactionData.ExitCode != 0)
             {
-                if (transactionData.Aborted || transactionData.Bounced || transactionData.ExitCode != 0)
-                {
-                    _logger.LogInformation(
-                        $"[Ton indexer] transaction execute error, detail message is:{JsonConvert.SerializeObject(transactionData)}");
+                _logger.LogInformation(
+                    $"[Ton indexer] transaction execute error, detail message is:{JsonConvert.SerializeObject(transactionData)}");
 
-                    continue;
-                }
-
-                try
-                {
-                    switch (transactionData.OpCode)
-                    {
-                        case TonOpCodeConstants.ForwardTx:
-                            await TonForwardTxHandle(transactionData);
-                            break;
-                        case TonOpCodeConstants.ReceiveTx:
-                            await HandleTonReceiveTransaction(transactionData);
-                            break;
-                        case TonOpCodeConstants.ResendTx:
-                            await HandleTonResendTx(transactionData);
-                            break;
-                        default:
-                            _logger.LogWarning(
-                                $"[TonSearchWorker] Get not exist opcode {transactionData.OpCode} in {transactionData.Hash}");
-                            continue;
-                    }
-                }
-                catch (ProtocolException ex)
-                {
-                    _logger.LogError(ex,
-                        $"[TonSearchWorker] Analysis failed, transaction hash:{transactionData.Hash}");
-                }
-
-                // update indexer info
-                var newIndexerInfo = new TonIndexerDto
-                {
-                    BlockHeight = transactionData.SeqNo,
-                    LatestTransactionHash = transactionData.Hash,
-                    LatestTransactionLt = transactionData.TransactionLt,
-                    IndexerTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds()
-                };
-
-                await _tonStorageProvider.SetTonIndexerInfoAsync(newIndexerInfo);
+                continue;
             }
+
+            try
+            {
+                switch (transactionData.OpCode)
+                {
+                    case TonOpCodeConstants.ForwardTx:
+                        await TonForwardTxHandle(transactionData);
+                        break;
+                    case TonOpCodeConstants.ReceiveTx:
+                        await HandleTonReceiveTransaction(transactionData);
+                        break;
+                    case TonOpCodeConstants.ResendTx:
+                        await HandleTonResendTx(transactionData);
+                        break;
+                    default:
+                        _logger.LogWarning(
+                            $"[TonSearchWorker] Get not support opcode {transactionData.OpCode} in {transactionData.Hash}");
+                        continue;
+                }
+            }
+            catch (ProtocolException ex)
+            {
+                _logger.LogError(ex,
+                    $"[TonSearchWorker] Analysis failed, transaction hash:{transactionData.Hash}");
+            }
+
+            // update indexer info
+            var newIndexerInfo = new TonIndexerDto
+            {
+                BlockHeight = transactionData.SeqNo,
+                LatestTransactionHash = transactionData.Hash,
+                LatestTransactionLt = transactionData.TransactionLt,
+                IndexerTime = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds()
+            };
+
+            _logger.LogDebug(
+                $"[TonSearchWorker] Successfully deposited new block status {JsonConvert.SerializeObject(newIndexerInfo)}");
+
+            await _tonStorageProvider.SetTonIndexerInfoAsync(newIndexerInfo);
         }
     }
 

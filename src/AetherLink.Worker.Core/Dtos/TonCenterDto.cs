@@ -24,3 +24,9 @@ public class TonBlock
     public BlockId MasterchainBlockRef { get; set; }
     public List<BlockId> PrevBlocks { get; set; }
 }
+
+public class SendTransactionResultDto
+{
+    public bool Ok { get; set; }
+    public string Error { get; set; }
+}

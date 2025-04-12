@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -34,6 +35,7 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
     private readonly TonCenterProviderApiConfig _option;
     private readonly ITonStorageProvider _storageProvider;
     private readonly ILogger<TonCenterApiProvider> _logger;
+    private const int TransactionFetchPageLimit = 100;
 
     public TonCenterApiProvider(IOptionsSnapshot<TonCenterProviderApiConfig> option,
         ILogger<TonCenterApiProvider> logger, IHttpClientFactory clientFactory, ITonStorageProvider storageProvider)
@@ -46,36 +48,48 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
 
     public async Task<List<CrossChainToTonTransactionDto>> SubscribeTransactionAsync(string contractAddress,
         string latestTransactionLt, long latestBlockHeight)
-
     {
         try
         {
-            _logger.LogDebug($"[TonCenterApiProvider] Search transaction from {latestTransactionLt}");
-
-            var latestBlockInfo = await _storageProvider.GetTonCenterLatestBlockInfoAsync();
-            if (latestBlockInfo == null)
+            return await ExecuteWithRetryAsync(async () =>
             {
-                _logger.LogDebug("[TonCenterApiProvider] Waiting for timer sync ton latest block info.");
-                return new();
-            }
+                _logger.LogDebug(
+                    $"[TonCenterApiProvider] Search transaction from blockHeight: {latestBlockHeight} lt: {latestTransactionLt}");
 
-            if (latestBlockInfo.McBlockSeqno <= latestBlockHeight + _option.TransactionsSubscribeDelay)
-            {
-                _logger.LogDebug("[TonCenterApiProvider] Waiting for Ton latest block.");
-                return new();
-            }
+                var allTransactions = new List<CrossChainToTonTransactionDto>();
+                var latestBlockInfo = await _storageProvider.GetTonCenterLatestBlockInfoAsync();
+                if (latestBlockInfo == null)
+                {
+                    _logger.LogDebug("[TonCenterApiProvider] Waiting for timer sync ton latest block info.");
+                    return allTransactions;
+                }
 
-            var path =
-                $"/api/v3/transactions?account={contractAddress}&start_lt={latestTransactionLt}&limit=100&offset=0&sort=asc";
+                var skipCount = 0;
+                int totalFetched;
+                var client = GetApiKeyClient();
 
-            var client = _clientFactory.CreateClient();
-            if (!string.IsNullOrEmpty(_option.ApiKey)) client.DefaultRequestHeaders.Add("X-Api-Key", _option.ApiKey);
-            var responseMessage = await client.GetAsync(_option.Url + path);
-            var result = await responseMessage.Content.DeserializeSnakeCaseHttpContent<TransactionsResponse>();
+                do
+                {
+                    var path =
+                        $"{TonHttpApiUriConstants.GetTransactions}?account={contractAddress}&start_lt={latestTransactionLt}&TransactionFetchPageLimit={TransactionFetchPageLimit}&offset={skipCount}&sort=asc";
 
-            return result.Transactions.Where(tx =>
-                    tx.McBlockSeqno <= latestBlockInfo.McBlockSeqno - _option.TransactionsSubscribeDelay)
-                .Select(t => t.ConvertToTonTransactionDto()).ToList();
+                    _logger.LogDebug($"[TonCenterApiProvider] Fetching with uri: {path}, offset: {skipCount}");
+
+                    var responseMessage = await client.GetAsync(_option.Url + path);
+                    var result = await responseMessage.Content.DeserializeSnakeCaseHttpContent<TransactionsResponse>();
+
+                    var filteredTransactions = result.Transactions.Where(tx =>
+                            tx.McBlockSeqno + _option.TransactionsSubscribeDelay <= latestBlockInfo.McBlockSeqno)
+                        .Select(t => t.ConvertToTonTransactionDto()).ToList();
+                    allTransactions.AddRange(filteredTransactions);
+                    totalFetched = result.Transactions.Count;
+                    skipCount += totalFetched;
+
+                    _logger.LogDebug($"[TonCenterApiProvider] Fetched {totalFetched} transactions");
+                } while (totalFetched == TransactionFetchPageLimit);
+
+                return allTransactions;
+            }, "SubscribeTransactionAsync");
         }
         catch (Exception e)
         {
@@ -86,74 +100,109 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
 
     public async Task<MasterChainInfoDto> GetCurrentHighestBlockHeightAsync()
     {
-        try
+        return await ExecuteWithRetryAsync(async () =>
         {
-            var responseMessage = await _clientFactory.CreateClient().GetAsync(_option.Url + "/api/v3/masterchainInfo");
+            var responseMessage = await _clientFactory.CreateClient()
+                .GetAsync(_option.Url + TonHttpApiUriConstants.MasterChainInfo);
             return await responseMessage.Content.DeserializeSnakeCaseHttpContent<MasterChainInfoDto>();
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "[TonCenterApiProvider] Get current highest block info failed");
-            throw;
-        }
+        }, "GetCurrentHighestBlockHeightAsync");
     }
 
     public async Task<string> CommitTransaction(Cell bodyCell)
     {
-        var body = new Dictionary<string, string> { { "boc", bodyCell.ToString("base64") } };
-        try
+        return await ExecuteWithRetryAsync(async () =>
         {
-            var resp = await _clientFactory.CreateClient().PostAsync("/sendBoc",
-                new StringContent(JsonConvert.SerializeObject(body), Encoding.Default, "application/json"));
+            var bodyString = JsonConvert.SerializeObject(
+                new Dictionary<string, string> { { "boc", bodyCell.ToString("base64") } }
+            );
 
-            if (!resp.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("[TonCenterApiProvider] Send Commit failed");
-                return null;
-            }
+            _logger.LogDebug($"[TonCenterApiProvider] Send Commit body string: {bodyString}");
 
-            var result = await resp.Content.DeserializeSnakeCaseHttpContent<SendBocResult>();
-            if (!string.IsNullOrEmpty(result.Hash)) return result.Hash;
+            var resp = await GetApiKeyClient().PostAsync(_option.Url + TonHttpApiUriConstants.SendTransaction,
+                new StringContent(bodyString, Encoding.Default, "application/json"));
 
-            _logger.LogWarning("[TonCenterApiProvider] Send Commit failed");
+            var result = await resp.Content.DeserializeSnakeCaseHttpContent<SendTransactionResultDto>();
+            if (result.Ok) return bodyCell.Hash.ToString("base64");
+
+            _logger.LogWarning($"[TonCenterApiProvider] Send Commit failed, error: {result.Error}");
 
             return null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[TonCenterApiProvider] Send Transaction error");
-            throw;
-        }
+        }, "CommitTransaction");
     }
 
     public async Task<uint?> GetAddressSeqno(Address address)
     {
-        try
+        return await ExecuteWithRetryAsync<uint?>(async () =>
         {
-            var body = new Dictionary<string, object>
+            var bodyString = JsonConvert.SerializeObject(new Dictionary<string, object>
             {
                 { "address", address.ToString() },
                 { "method", "seqno" },
                 { "stack", Array.Empty<string[]>() }
-            };
+            });
 
-            var resp = await _clientFactory.CreateClient().PostAsync(TonStringConstants.RunGetMethod,
-                new StringContent(JsonConvert.SerializeObject(body), Encoding.Default, "application/json"));
+            var resp = await GetApiKeyClient().PostAsync(_option.Url + TonHttpApiUriConstants.RunGetMethod,
+                new StringContent(bodyString, Encoding.Default, "application/json"));
             var method = await resp.Content.DeserializeSnakeCaseHttpContent<RunGetMethodResult>();
+            if (method.ExitCode != 0 && method.ExitCode != 1)
+            {
+                _logger.LogWarning($"[TonCenterApiProvider] Get not expected exit code: {method.ExitCode}");
+                return 0;
+            }
 
-            if (method.ExitCode != 0 && method.ExitCode != 1) return 0;
+            if (method.Stack == null || method.Stack.Length == 0)
+            {
+                _logger.LogWarning("[TonCenterApiProvider] Get empty stack.");
+                return 0;
+            }
+
             var value = method.Stack[0].ToString();
             if (value == null) return 0;
-
             var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(value);
-            var num = Convert.ToUInt32(data[TonStringConstants.Value], 16);
+            return Convert.ToUInt32(data[TonStringConstants.Value], 16);
+        }, "GetAddressSeqno");
+    }
 
-            return num;
-        }
-        catch (Exception e)
+    private async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> operation, string operationDescription,
+        int maxRetries = 10, int delayInSeconds = 10)
+    {
+        var retryCount = 0;
+        while (retryCount < maxRetries)
         {
-            _logger.LogError(e, $"[TonCenterApiProvider] Get Address Seqno error");
-            throw;
+            try
+            {
+                return await operation();
+            }
+            catch (HttpRequestException he) when (he.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                _logger.LogWarning(he,
+                    "[TonCenterApiProvider] {OperationDescription} - 429 Too Many Requests. Retrying in {DelaySeconds} seconds... (Attempt {RetryCount}/{MaxRetries})",
+                    operationDescription, delayInSeconds, retryCount + 1, maxRetries);
+                retryCount++;
+
+                await Task.Delay(TimeSpan.FromSeconds(delayInSeconds));
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e,
+                    "[TonCenterApiProvider] {OperationDescription} failed on attempt {RetryCount}/{MaxRetries}",
+                    operationDescription, retryCount + 1, maxRetries);
+                throw;
+            }
         }
+
+        throw new Exception(
+            $"[TonCenterApiProvider] {operationDescription} - Exceeded max retry attempts ({maxRetries}).");
+    }
+
+    private HttpClient GetApiKeyClient()
+    {
+        var client = _clientFactory.CreateClient();
+
+        if (!string.IsNullOrEmpty(_option.ApiKey)) client.DefaultRequestHeaders.Add("X-Api-Key", _option.ApiKey);
+
+        client.DefaultRequestHeaders.Add("accept", "application/json");
+
+        return client;
     }
 }
