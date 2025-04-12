@@ -26,6 +26,7 @@ public interface ICrossChainRequestProvider
 
     public Task SetAsync(CrossChainDataDto data);
     public Task<CrossChainDataDto> GetAsync(string messageId);
+    public string Ensure128BytesMessageId(string originMessageId);
 }
 
 public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientDependency
@@ -199,7 +200,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         return reportContext;
     }
 
-    private static string Ensure128BytesMessageId(string originMessageId)
+    public string Ensure128BytesMessageId(string originMessageId)
     {
         var messageIdBytes = ByteStringHelper.FromHexString(originMessageId).ToByteArray();
         switch (messageIdBytes.Length)
