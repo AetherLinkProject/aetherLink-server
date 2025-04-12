@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -172,10 +173,10 @@ public class TonCenterApiProvider : ITonCenterApiProvider, ISingletonDependency
             {
                 return await operation();
             }
-            catch (HttpRequestException he)
+            catch (HttpRequestException he) when (he.StatusCode == HttpStatusCode.TooManyRequests)
             {
                 _logger.LogWarning(he,
-                    "[TonCenterApiProvider] {OperationDescription} Retrying in {DelaySeconds} seconds... (Attempt {RetryCount}/{MaxRetries})",
+                    "[TonCenterApiProvider] {OperationDescription} - 429 Too Many Requests. Retrying in {DelaySeconds} seconds... (Attempt {RetryCount}/{MaxRetries})",
                     operationDescription, delayInSeconds, retryCount + 1, maxRetries);
                 retryCount++;
 
