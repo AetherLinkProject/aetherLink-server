@@ -47,24 +47,24 @@ public class TokenSwapper : ITokenSwapper, ITransientDependency
 
             var tokenSwapConfigId = GenerateTokenSwapId(reportContext, tokenTransferMetadata);
             var tokenSwapConfig = await _storageProvider.GetAsync<TokenSwapConfigDto>(tokenSwapConfigId);
-            // if (tokenSwapConfig == null)
-            // {
-            // todo for testnet debug
-            _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
-
-            var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenTransferMetadata.TargetChainId,
-                reportContext.SourceChainId, reportContext.Receiver, tokenTransferMetadata.TokenAddress,
-                tokenTransferMetadata.Symbol);
-
-            if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.ExtraData))
+            if (tokenSwapConfig == null)
             {
-                _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
-                throw new InvalidDataException("Could not find token swap config");
-            }
+                // todo for testnet debug
+                _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in local storage");
 
-            tokenSwapConfig = indexerConfig.TokenSwapConfig;
-            await _storageProvider.SetAsync(tokenSwapConfigId, tokenSwapConfig);
-            // }
+                var indexerConfig = await _aeFinderProvider.GetTokenSwapConfigAsync(tokenTransferMetadata.TargetChainId,
+                    reportContext.SourceChainId, reportContext.Receiver, tokenTransferMetadata.TokenAddress,
+                    tokenTransferMetadata.Symbol);
+
+                if (string.IsNullOrEmpty(indexerConfig?.TokenSwapConfig?.ExtraData))
+                {
+                    _logger.LogDebug($"[TokenSwapper] Cannot find token swap config {tokenSwapConfigId} in indexer");
+                    throw new InvalidDataException("Could not find token swap config");
+                }
+
+                tokenSwapConfig = indexerConfig.TokenSwapConfig;
+                await _storageProvider.SetAsync(tokenSwapConfigId, tokenSwapConfig);
+            }
 
             tokenTransferMetadata.ExtraDataString = tokenSwapConfig.ExtraData;
             if (string.IsNullOrEmpty(tokenTransferMetadata.Symbol))

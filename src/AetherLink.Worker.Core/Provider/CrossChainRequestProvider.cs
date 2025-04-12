@@ -105,6 +105,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         {
             _logger.LogError(e,
                 $"[CrossChainRequestProvider] Start cross chain request from EVM failed, messageId: {request.MessageId}");
+            throw;
         }
     }
 
@@ -112,8 +113,6 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
     {
         try
         {
-            _logger.LogDebug(
-                $"[CrossChainRequestProvider] Start CrossChainRequest From {request.ChainId} transactionId: {request.TransactionId}");
             var crossChainRequestStartArgs = new CrossChainRequestStartArgs
             {
                 Message = request.Message,
@@ -134,6 +133,9 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
             }
 
             await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
+
+            _logger.LogDebug(
+                $"[CrossChainRequestProvider] Start CrossChainRequest From: {request.ChainId} To: {request.TargetChainId} MessageId: {crossChainRequestStartArgs.ReportContext.MessageId} transactionId: {request.TransactionId}");
         }
         catch (Exception e)
         {
