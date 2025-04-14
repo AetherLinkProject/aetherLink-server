@@ -114,8 +114,8 @@ namespace AetherLink.Worker
             var dashboardOptions = new DashboardOptions { Authorization = new[] { new CustomAuthorizeFilter() } };
             app.UseHangfireDashboard("/hangfire", dashboardOptions);
 
-            ConfigureBackgroundWorker(context);
             AsyncHelper.RunSync(async () => { await context.ServiceProvider.GetService<IServer>().StartAsync(); });
+            ConfigureBackgroundWorker(context);
         }
 
         private void ConfigureBackgroundWorker(ApplicationInitializationContext context)
