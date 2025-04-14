@@ -9,8 +9,6 @@ public static class RedisKeyConstants
     public const string CrossChainDataKey = "crosschaindata";
     public const string TonEpochStorageKey = "TonEpochStorageKey";
     public const string SearchHeightKey = "SearchHeight";
-    public const string EvmWebsocketSubscribedHeightKey = "EvmWebsocketSubscribedHeight";
-    public const string EvmHttpConsumedHeightKey = "EvmHttpConsumedHeight";
     public const string PlainDataFeedsKey = "PlainDataFeeds";
     public const string UnconfirmedSearchHeightKey = "UnconfirmedSearchHeight";
 
