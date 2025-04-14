@@ -141,9 +141,9 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
 
     private EvmReceivedMessageDto DecodeFilterLog(FilterLog log)
     {
-        EvmReceivedMessageDto messagePendingToCrossChain = null;
         try
         {
+            // Check only cross chain request send events
             var decoded = Event<SendEventDTO>.DecodeEvent(log);
             if (decoded != null) return GenerateEvmReceivedMessage(decoded);
 
