@@ -19,4 +19,5 @@ public class EvmOptions
     public int PingDelay { get; set; } = 50000;
     public string TransmitTypeHash { get; set; }
     public string DomainSeparator { get; set; }
+    public int SubscribeBlocksDelay { get; set; } = 100;
 }
