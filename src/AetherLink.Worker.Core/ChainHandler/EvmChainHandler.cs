@@ -11,17 +11,18 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.ChainHandler;
 
-// Writer
-public class EvmChainWriter : ChainWriter, ISingletonDependency
+#region EvmBase
+
+public abstract class EvmBaseChainWriter : ChainWriter
 {
-    public override long ChainId => ChainIdConstants.EVM;
-    private readonly IEvmProvider _evmContractProvider;
+    public abstract override long ChainId { get; }
+    private readonly IEvmProvider _evmProvider;
     private readonly EvmOptions _evmOptions;
 
-    public EvmChainWriter(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    protected EvmBaseChainWriter(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> optionsSnapshot)
     {
-        _evmContractProvider = evmContractProvider;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
+        _evmProvider = evmProvider;
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, optionsSnapshot.Value);
     }
 
     public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
@@ -31,235 +32,150 @@ public class EvmChainWriter : ChainWriter, ISingletonDependency
         var messageBytes = EvmHelper.GenerateMessageBytes(crossChainData.Message);
         var tokenTransferMetadataBytes =
             EvmHelper.GenerateTokenTransferMetadataBytes(crossChainData.TokenTransferMetadata);
-        var (rs, ss, rawVs) = EvmHelper.AggregateSignatures(signatures.Values.ToList());
-        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes,
-            tokenTransferMetadataBytes, rs, ss, rawVs);
+
+        return await _evmProvider.TransmitAsync(
+            _evmOptions,
+            contextBytes,
+            messageBytes,
+            tokenTransferMetadataBytes,
+            signatures.Values.ToArray());
     }
 }
 
-public class BscChainWriter : ChainWriter, ISingletonDependency
+public abstract class EvmBaseChainReader : ChainReader
 {
-    public override long ChainId => ChainIdConstants.BSC;
-    private readonly IEvmProvider _evmContractProvider;
+    public abstract override long ChainId { get; }
+
+    private readonly IEvmProvider _evmProvider;
     private readonly EvmOptions _evmOptions;
 
-    public BscChainWriter(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    protected EvmBaseChainReader(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> optionsSnapshot)
     {
-        _evmContractProvider = evmContractProvider;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
+        _evmProvider = evmProvider;
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, optionsSnapshot.Value);
     }
 
-    public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
-        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
-    {
-        var contextBytes = EvmHelper.GenerateReportContextBytes(reportContext);
-        var messageBytes = EvmHelper.GenerateMessageBytes(crossChainData.Message);
-        var tokenTransferMetadata = EvmHelper.GenerateTokenTransferMetadataBytes(crossChainData.TokenTransferMetadata);
-        var (rs, ss, rawVs) = EvmHelper.AggregateSignatures(signatures.Values.ToList());
-        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata,
-            rs, ss, rawVs);
-    }
-}
+    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)
+        => new() { State = await _evmProvider.GetTransactionResultAsync(_evmOptions, transactionId) };
 
-public class SEPOLIAChainWriter : ChainWriter, ISingletonDependency
-{
-    public override long ChainId => ChainIdConstants.SEPOLIA;
-    private readonly IEvmProvider _evmContractProvider;
-    private readonly EvmOptions _evmOptions;
-
-    public SEPOLIAChainWriter(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    public override string ConvertBytesToAddressStr(byte[] addressBytes)
     {
-        _evmContractProvider = evmContractProvider;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
+        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
     }
 
-    public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
-        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
+    public override Task<byte[]> CallTransactionAsync(byte[] transaction)
     {
-        var contextBytes = EvmHelper.GenerateReportContextBytes(reportContext);
-        var messageBytes = EvmHelper.GenerateMessageBytes(crossChainData.Message);
-        var tokenTransferMetadata = EvmHelper.GenerateTokenTransferMetadataBytes(crossChainData.TokenTransferMetadata);
-        var (rs, ss, rawVs) = EvmHelper.AggregateSignatures(signatures.Values.ToList());
-        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata,
-            rs, ss, rawVs);
+        throw new System.NotImplementedException();
     }
 }
 
-public class BscTestChainWriter : ChainWriter, ISingletonDependency
-{
-    public override long ChainId => ChainIdConstants.BSCTEST;
-    private readonly IEvmProvider _evmContractProvider;
-    private readonly EvmOptions _evmOptions;
+#endregion
 
-    public BscTestChainWriter(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
-    {
-        _evmContractProvider = evmContractProvider;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
-    }
+#region Writer
 
-    public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
-        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
-    {
-        var contextBytes = EvmHelper.GenerateReportContextBytes(reportContext);
-        var messageBytes = EvmHelper.GenerateMessageBytes(crossChainData.Message);
-        var tokenTransferMetadata = EvmHelper.GenerateTokenTransferMetadataBytes(crossChainData.TokenTransferMetadata);
-        var (rs, ss, rawVs) = EvmHelper.AggregateSignatures(signatures.Values.ToList());
-        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata,
-            rs, ss, rawVs);
-    }
-}
-
-public class BaseSepoliaWriter : ChainWriter, ISingletonDependency
-{
-    public override long ChainId => ChainIdConstants.BASESEPOLIA;
-    private readonly IEvmProvider _evmContractProvider;
-    private readonly EvmOptions _evmOptions;
-
-    public BaseSepoliaWriter(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
-    {
-        _evmContractProvider = evmContractProvider;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
-    }
-
-    public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
-        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
-    {
-        var contextBytes = EvmHelper.GenerateReportContextBytes(reportContext);
-        var messageBytes = EvmHelper.GenerateMessageBytes(crossChainData.Message);
-        var tokenTransferMetadata = EvmHelper.GenerateTokenTransferMetadataBytes(crossChainData.TokenTransferMetadata);
-        var (rs, ss, rawVs) = EvmHelper.AggregateSignatures(signatures.Values.ToList());
-        return await _evmContractProvider.TransmitAsync(_evmOptions, contextBytes, messageBytes, tokenTransferMetadata,
-            rs, ss, rawVs);
-    }
-}
-
-// Reader
-public class EvmChainReader : ChainReader, ISingletonDependency
+// Writer
+public class EvmChainWriter : EvmBaseChainWriter, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.EVM;
-    private readonly IEvmProvider _evmProvider;
-    private readonly EvmOptions _evmOptions;
 
-    public EvmChainReader(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    public EvmChainWriter(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+        : base(evmProvider, evmOptions)
     {
-        _evmProvider = evmContractProvider;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
-    }
-
-    public override Task<byte[]> CallTransactionAsync(byte[] transaction)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
-        { State = await _evmProvider.GetTransactionResultAsync(_evmOptions, transactionId) };
-
-    public override string ConvertBytesToAddressStr(byte[] addressBytes)
-    {
-        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
     }
 }
 
-public class BscChainReader : ChainReader, ISingletonDependency
+public class BscChainWriter : EvmBaseChainWriter, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.BSC;
-    private readonly IEvmProvider _evmProvider;
-    private readonly EvmOptions _evmOptions;
 
-    public BscChainReader(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    public BscChainWriter(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+        : base(evmProvider, evmOptions)
     {
-        _evmProvider = evmContractProvider;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
-    }
-
-    public override Task<byte[]> CallTransactionAsync(byte[] transaction)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
-        { State = await _evmProvider.GetTransactionResultAsync(_evmOptions, transactionId) };
-
-    public override string ConvertBytesToAddressStr(byte[] addressBytes)
-    {
-        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
     }
 }
 
-public class BscTestChainReader : ChainReader, ISingletonDependency
-{
-    public override long ChainId => ChainIdConstants.BSCTEST;
-    private readonly IEvmProvider _evmProvider;
-    private readonly EvmOptions _evmOptions;
-
-    public BscTestChainReader(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
-    {
-        _evmProvider = evmContractProvider;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
-    }
-
-    public override Task<byte[]> CallTransactionAsync(byte[] transaction)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
-        { State = await _evmProvider.GetTransactionResultAsync(_evmOptions, transactionId) };
-
-    public override string ConvertBytesToAddressStr(byte[] addressBytes)
-    {
-        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
-    }
-}
-
-public class SEPOLIAChainReader : ChainReader, ISingletonDependency
+public class SEPOLIAChainWriter : EvmBaseChainWriter, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.SEPOLIA;
-    private readonly IEvmProvider _evmProvider;
-    private readonly EvmOptions _evmOptions;
 
-    public SEPOLIAChainReader(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    public SEPOLIAChainWriter(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+        : base(evmProvider, evmOptions)
     {
-        _evmProvider = evmContractProvider;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
-    }
-
-    public override Task<byte[]> CallTransactionAsync(byte[] transaction)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
-        { State = await _evmProvider.GetTransactionResultAsync(_evmOptions, transactionId) };
-
-    public override string ConvertBytesToAddressStr(byte[] addressBytes)
-    {
-        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
     }
 }
 
-public class BaseSepoliaChainReader : ChainReader, ISingletonDependency
+public class BscTestChainWriter : EvmBaseChainWriter, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.BSCTEST;
+
+    public BscTestChainWriter(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+        : base(evmProvider, evmOptions)
+    {
+    }
+}
+
+public class BaseSepoliaWriter : EvmBaseChainWriter, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.BASESEPOLIA;
-    private readonly IEvmProvider _evmProvider;
-    private readonly EvmOptions _evmOptions;
 
-    public BaseSepoliaChainReader(IEvmProvider evmContractProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    public BaseSepoliaWriter(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+        : base(evmProvider, evmOptions)
     {
-        _evmProvider = evmContractProvider;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
-    }
-
-    public override Task<byte[]> CallTransactionAsync(byte[] transaction)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
-        { State = await _evmProvider.GetTransactionResultAsync(_evmOptions, transactionId) };
-
-    public override string ConvertBytesToAddressStr(byte[] addressBytes)
-    {
-        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
     }
 }
+
+#endregion
+
+#region Reader
+
+public class EvmChainReader : EvmBaseChainReader, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.EVM;
+
+    public EvmChainReader(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+        : base(evmProvider, evmOptions)
+    {
+    }
+}
+
+public class BscChainReader : EvmBaseChainReader, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.BSC;
+
+    public BscChainReader(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+        : base(evmProvider, evmOptions)
+    {
+    }
+}
+
+public class BscTestChainReader : EvmBaseChainReader, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.BSCTEST;
+
+    public BscTestChainReader(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+        : base(evmProvider, evmOptions)
+    {
+    }
+}
+
+public class SEPOLIAChainReader : EvmBaseChainReader, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.SEPOLIA;
+
+    public SEPOLIAChainReader(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+        : base(evmProvider, evmOptions)
+    {
+    }
+}
+
+public class BaseSepoliaChainReader : EvmBaseChainReader, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.BASESEPOLIA;
+
+    public BaseSepoliaChainReader(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+        : base(evmProvider, evmOptions)
+    {
+    }
+}
+
+#endregion

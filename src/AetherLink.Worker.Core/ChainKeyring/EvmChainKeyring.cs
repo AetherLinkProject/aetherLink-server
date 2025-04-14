@@ -7,97 +7,66 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.ChainKeyring;
 
-public class EvmChainKeyring : ChainKeyring, ISingletonDependency
+public abstract class EvmBaseChainKeyring : ChainKeyring
+{
+    public abstract override long ChainId { get; }
+    private readonly EvmOptions _evmOptions;
+    private readonly string[] _distPublicKey;
+
+    protected EvmBaseChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    {
+        _distPublicKey = evmOptions.Value.DistPublicKey;
+        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
+    }
+
+    public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
+        => EvmHelper.OffChainSign(reportContext, report, _evmOptions);
+
+    public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
+        byte[] sign) => EvmHelper.OffChainVerify(reportContext, index, report, sign, _distPublicKey, _evmOptions);
+}
+
+public class EvmChainKeyring : EvmBaseChainKeyring, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.EVM;
-    private readonly EvmOptions _evmOptions;
-    private string[] _distPublicKey;
 
-    public EvmChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    public EvmChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions) : base(evmOptions)
     {
-        _distPublicKey = evmOptions.Value.DistPublicKey;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
-
-    public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
-        => EvmHelper.OffChainSign(reportContext, report, _evmOptions);
-
-    public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
-        byte[] sign) => EvmHelper.OffChainVerify(reportContext, index, report, sign, _distPublicKey);
 }
 
-public class SEPOLIAChainKeyring : ChainKeyring, ISingletonDependency
+public class SEPOLIAChainKeyring : EvmBaseChainKeyring, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.SEPOLIA;
-    private readonly EvmOptions _evmOptions;
-    private string[] _distPublicKey;
 
-    public SEPOLIAChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    public SEPOLIAChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions) : base(evmOptions)
     {
-        _distPublicKey = evmOptions.Value.DistPublicKey;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
-
-    public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
-        => EvmHelper.OffChainSign(reportContext, report, _evmOptions);
-
-    public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
-        byte[] sign) => EvmHelper.OffChainVerify(reportContext, index, report, sign, _distPublicKey);
 }
 
-public class BaseSepoliaChainKeyring : ChainKeyring, ISingletonDependency
+public class BaseSepoliaChainKeyring : EvmBaseChainKeyring, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.BASESEPOLIA;
-    private readonly EvmOptions _evmOptions;
-    private string[] _distPublicKey;
 
-    public BaseSepoliaChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    public BaseSepoliaChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions) : base(evmOptions)
     {
-        _distPublicKey = evmOptions.Value.DistPublicKey;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
-
-    public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
-        => EvmHelper.OffChainSign(reportContext, report, _evmOptions);
-
-    public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
-        byte[] sign) => EvmHelper.OffChainVerify(reportContext, index, report, sign, _distPublicKey);
 }
 
-public class BscChainKeyring : ChainKeyring, ISingletonDependency
+public class BscChainKeyring : EvmBaseChainKeyring, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.BSC;
-    private readonly EvmOptions _evmOptions;
-    private string[] _distPublicKey;
 
-    public BscChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    public BscChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions) : base(evmOptions)
     {
-        _distPublicKey = evmOptions.Value.DistPublicKey;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
-
-    public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
-        => EvmHelper.OffChainSign(reportContext, report, _evmOptions);
-
-    public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
-        byte[] sign) => EvmHelper.OffChainVerify(reportContext, index, report, sign, _distPublicKey);
 }
 
-public class BscTestChainKeyring : ChainKeyring, ISingletonDependency
+public class BscTestChainKeyring : EvmBaseChainKeyring, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.BSCTEST;
-    private readonly EvmOptions _evmOptions;
-    private string[] _distPublicKey;
 
-    public BscTestChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions)
+    public BscTestChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions) : base(evmOptions)
     {
-        _distPublicKey = evmOptions.Value.DistPublicKey;
-        _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
-
-    public override byte[] OffChainSign(ReportContextDto reportContext, CrossChainReportDto report)
-        => EvmHelper.OffChainSign(reportContext, report, _evmOptions);
-
-    public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
-        byte[] sign) => EvmHelper.OffChainVerify(reportContext, index, report, sign, _distPublicKey);
 }
