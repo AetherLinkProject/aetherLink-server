@@ -26,6 +26,7 @@ public interface ICrossChainRequestProvider
 
     public Task SetAsync(CrossChainDataDto data);
     public Task<CrossChainDataDto> GetAsync(string messageId);
+    public string Ensure128BytesMessageId(string originMessageId);
 }
 
 public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientDependency
@@ -113,8 +114,6 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
     {
         try
         {
-            _logger.LogDebug(
-                $"[CrossChainRequestProvider] Start CrossChainRequest From {request.ChainId} transactionId: {request.TransactionId}");
             var crossChainRequestStartArgs = new CrossChainRequestStartArgs
             {
                 Message = request.Message,
@@ -135,6 +134,9 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
             }
 
             await _backgroundJobManager.EnqueueAsync(crossChainRequestStartArgs);
+
+            _logger.LogDebug(
+                $"[CrossChainRequestProvider] Start CrossChainRequest From: {request.ChainId} To: {request.TargetChainId} MessageId: {crossChainRequestStartArgs.ReportContext.MessageId} transactionId: {request.TransactionId}");
         }
         catch (Exception e)
         {
@@ -198,7 +200,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         return reportContext;
     }
 
-    private static string Ensure128BytesMessageId(string originMessageId)
+    public string Ensure128BytesMessageId(string originMessageId)
     {
         var messageIdBytes = ByteStringHelper.FromHexString(originMessageId).ToByteArray();
         switch (messageIdBytes.Length)
