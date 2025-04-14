@@ -38,7 +38,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         _provider = provider;
         _evmOptions = evmOptions.Value;
         Timer.Period = workerOptions.Value.EvmSearchTimer;
-        Initialize().GetAwaiter().GetResult();
+        AsyncHelper.RunSync(InitializeAsync);
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
@@ -104,7 +104,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         _heightMap[networkName] = blockHeight;
     }
 
-    private async Task Initialize()
+    private async Task InitializeAsync()
     {
         _logger.LogDebug("[EvmSearchWorker] Start consumption height setting");
 

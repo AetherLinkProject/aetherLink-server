@@ -85,60 +85,6 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
     public async Task StartCrossChainRequestsFromEvm(List<EvmReceivedMessageDto> requests)
         => await Task.WhenAll(requests.Select(_crossChainRequestProvider.StartCrossChainRequestFromEvm));
 
-    public async Task<List<FilterLog>> SearchRequestsAsync(EvmOptions options, long consumedBlockHeight)
-    {
-        var networkName = options.NetworkName;
-
-        try
-        {
-            var web3 = new Web3(options.Api);
-            var latestBlock = (long)(await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()).Value;
-            if (consumedBlockHeight + options.SubscribeBlocksDelay >= latestBlock)
-            {
-                _logger.LogInformation(
-                    $"[EvmSearchWorkerProvider] {networkName} All blocks up to {latestBlock} have been processed.");
-                return new();
-            }
-
-            _logger.LogInformation(
-                $"[EvmSearchWorkerProvider] {networkName} Starting HTTP query from block {consumedBlockHeight} to latestBlock {latestBlock}");
-
-            var from = consumedBlockHeight + 1;
-            var pendingRequest = new List<FilterLog>();
-
-            _logger.LogInformation(
-                $"[EvmSearchWorkerProvider] {networkName} Processed blocks from {from} to {latestBlock}.");
-            for (var curFrom = from; curFrom <= latestBlock; curFrom += EvmSubscribeConstants.SubscribeBlockStep)
-            {
-                var currentTo = Math.Min(curFrom + EvmSubscribeConstants.SubscribeBlockStep - 1, latestBlock);
-                var filterInput = new NewFilterInput
-                {
-                    FromBlock = new BlockParameter((ulong)curFrom),
-                    ToBlock = new BlockParameter((ulong)currentTo),
-                    Address = new[] { options.ContractAddress }
-                };
-
-                try
-                {
-                    pendingRequest.AddRange(await web3.Eth.Filters.GetLogs.SendRequestAsync(filterInput));
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(
-                        $"[EvmSearchWorkerProvider] {networkName} Error processing blocks {curFrom} to {currentTo}: {ex.Message}");
-                    throw;
-                }
-            }
-
-            return pendingRequest;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, $"[EvmSearchWorkerProvider] {networkName} Error processing http subscribe.");
-            return new();
-        }
-    }
-
     private EvmReceivedMessageDto DecodeFilterLog(FilterLog log)
     {
         try
@@ -156,31 +102,6 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
             _logger.LogError(e, $"[EvmSearchWorkerProvider] Decode {log.TransactionHash} fail at {log.BlockNumber}.");
             throw;
         }
-    }
-
-    public async Task DecodeAndStartCrossChainAsync(FilterLog log)
-    {
-        EvmReceivedMessageDto messagePendingToCrossChain = null;
-        try
-        {
-            var decoded = Event<SendEventDTO>.DecodeEvent(log);
-            if (decoded == null)
-            {
-                _logger.LogWarning($"[EvmSearchWorkerProvider] Failed to decode event at: {log.BlockNumber}");
-                return;
-            }
-
-            messagePendingToCrossChain = GenerateEvmReceivedMessage(decoded);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, $"[EvmSearchWorkerProvider] Decode {log.TransactionHash} fail at {log.BlockNumber}.");
-        }
-
-        await _crossChainRequestProvider.StartCrossChainRequestFromEvm(messagePendingToCrossChain);
-
-        _logger.LogDebug(
-            $"[EvmSearchWorkerProvider] Start cross chain request {messagePendingToCrossChain.MessageId} successful at: {log.TransactionHash} {log.BlockNumber}");
     }
 
     private EvmReceivedMessageDto GenerateEvmReceivedMessage(EventLog<SendEventDTO> eventData)
