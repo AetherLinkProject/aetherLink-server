@@ -153,8 +153,8 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task ExecuteRampManuallyExecutedAsync(string chainId, long to, long from)
     {
         var manuallyExecutes = await _provider.SearchRampManuallyExecutedAsync(chainId, to, from);
-        var requestManuallyExecutedTasks = manuallyExecutes.Select(requestCancelled =>
-            _provider.HandleRampRequestManuallyExecutedLogEventAsync(requestCancelled));
+        var requestManuallyExecutedTasks = manuallyExecutes.Select(manuallyExecuted =>
+            _provider.HandleRampRequestManuallyExecutedLogEventAsync(manuallyExecuted));
         _reporter.RecordManuallyExecutedAsync(chainId, manuallyExecutes.Count);
 
         _logger.LogDebug("[Search] {chain} found a total of {count} ramp manually executed.", chainId,
