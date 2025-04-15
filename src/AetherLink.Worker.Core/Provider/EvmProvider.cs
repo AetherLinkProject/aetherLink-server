@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AetherLink.Worker.Core.ChainHandler;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexTypes;
@@ -49,6 +50,9 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
 
             _logger.LogDebug(
                 $"[Evm] Current Gas Price: {Web3.Convert.FromWei(gasPrice, Nethereum.Util.UnitConversion.EthUnit.Gwei)} Gwei");
+
+            _logger.LogDebug(
+                $"contextBytes: {ByteString.CopyFrom(contextBytes).ToBase64()} messageBytes: {ByteString.CopyFrom(messageBytes).ToBase64()} tokenTransferMetadataBytes: {ByteString.CopyFrom(tokenTransferMetadataBytes).ToBase64()}");
 
             var gas = await function.EstimateGasAsync(
                 from: account.TransactionManager.Account.Address,
