@@ -4,6 +4,7 @@ using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using Google.Protobuf;
 using Nethereum.ABI;
+using Nethereum.Model;
 using Nethereum.Signer;
 using Nethereum.Util;
 
@@ -14,8 +15,7 @@ public class EvmHelper
     public static byte[] OffChainSign(ReportContextDto context, CrossChainReportDto report, EvmOptions chainConfig)
     {
         var reportHash = GenerateReportHash(context, report, chainConfig);
-        var ethSigner = new EthereumMessageSigner();
-        var signature = ethSigner.Sign(reportHash, chainConfig.SignerSecret);
+        var signature = new EthECKey(chainConfig.SignerSecret).SignAndCalculateV(reportHash).CreateStringSignature();
         return ByteStringHelper.FromHexString(signature).ToByteArray();
     }
 
@@ -24,9 +24,9 @@ public class EvmHelper
     {
         if (sign.Length <= 0 || index < 0 || index > oracleNodeAddressList.Length) return false;
         var reportHash = GenerateReportHash(context, report, chainConfig);
-        var ethSigner = new EthereumMessageSigner();
-        var recoveredAddress = ethSigner.EcRecover(reportHash, sign.ToHex());
-        return oracleNodeAddressList[index] == recoveredAddress;
+        var signer =
+            EthECKey.RecoverFromSignature(EthECDSASignatureFactory.ExtractECDSASignature(sign.ToHex()), reportHash);
+        return oracleNodeAddressList[index] == signer.GetPublicAddress();
     }
 
     private static byte[] GenerateReportHash(ReportContextDto context, CrossChainReportDto report,
