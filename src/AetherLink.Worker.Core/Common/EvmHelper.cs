@@ -37,17 +37,19 @@ public class EvmHelper
         var tokenTransferMetadataDecode = GenerateTokenTransferMetadataBytes(report.TokenTransferMetadataDto);
 
         var abiEncode = new ABIEncode();
+        var transmitTypeHashBytes = ByteStringHelper.FromHexString(chainConfig.TransmitTypeHash).ToByteArray();
         var result = abiEncode.GetABIEncoded(
-            new ABIValue("bytes32", ByteStringHelper.FromHexString(chainConfig.TransmitTypeHash).ToByteArray()),
+            new ABIValue("bytes32", transmitTypeHashBytes),
             new ABIValue("bytes32", reportContextDecoded),
             new ABIValue("bytes32", message),
             new ABIValue("bytes32", tokenTransferMetadataDecode));
         var structHash = Sha3Keccack.Current.CalculateHash(result);
 
         var reportHashAbiEncode = new ABIEncode();
+        var domainSeparatorBytes = ByteStringHelper.FromHexString(chainConfig.DomainSeparator).ToByteArray();
         var encoded = reportHashAbiEncode.GetABIEncodedPacked(
             new ABIValue("string", EvmTransactionConstants.EIP721Prefix),
-            new ABIValue("bytes32", ByteStringHelper.FromHexString(chainConfig.DomainSeparator).ToByteArray()),
+            new ABIValue("bytes32", domainSeparatorBytes),
             new ABIValue("bytes32", structHash));
         return Sha3Keccack.Current.CalculateHash(encoded);
     }
