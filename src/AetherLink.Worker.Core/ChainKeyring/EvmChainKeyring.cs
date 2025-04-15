@@ -2,8 +2,6 @@ using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
-using Google.Protobuf;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
@@ -12,12 +10,12 @@ namespace AetherLink.Worker.Core.ChainKeyring;
 public abstract class EvmBaseChainKeyring : ChainKeyring
 {
     public abstract override long ChainId { get; }
+    private readonly string[] _addressList;
     private readonly EvmOptions _evmOptions;
-    private readonly string[] _distPublicKey;
 
     protected EvmBaseChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions)
     {
-        _distPublicKey = evmOptions.Value.DistPublicKey;
+        _addressList = evmOptions.Value.OracleNodeAddressList;
         _evmOptions = EvmHelper.GetEvmContractConfig(ChainId, evmOptions.Value);
     }
 
@@ -25,7 +23,7 @@ public abstract class EvmBaseChainKeyring : ChainKeyring
         => EvmHelper.OffChainSign(reportContext, report, _evmOptions);
 
     public override bool OffChainVerify(ReportContextDto reportContext, int index, CrossChainReportDto report,
-        byte[] sign) => EvmHelper.OffChainVerify(reportContext, index, report, sign, _distPublicKey, _evmOptions);
+        byte[] sign) => EvmHelper.OffChainVerify(reportContext, index, report, sign, _addressList, _evmOptions);
 }
 
 public class EvmChainKeyring : EvmBaseChainKeyring, ISingletonDependency

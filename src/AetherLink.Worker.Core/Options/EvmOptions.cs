@@ -5,7 +5,7 @@ namespace AetherLink.Worker.Core.Options;
 public class EvmContractsOptions
 {
     public Dictionary<string, EvmOptions> ContractConfig { get; set; } = new();
-    public string[] DistPublicKey { get; set; }
+    public string[] OracleNodeAddressList { get; set; }
 }
 
 public class EvmOptions

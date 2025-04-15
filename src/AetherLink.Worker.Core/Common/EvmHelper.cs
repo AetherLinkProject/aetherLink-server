@@ -1,12 +1,10 @@
-using System.Collections.Generic;
-using System.Linq;
 using AElf;
-using AElf.Cryptography;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using Google.Protobuf;
 using Nethereum.ABI;
+using Nethereum.Signer;
 using Nethereum.Util;
 
 namespace AetherLink.Worker.Core.Common;
@@ -16,17 +14,19 @@ public class EvmHelper
     public static byte[] OffChainSign(ReportContextDto context, CrossChainReportDto report, EvmOptions chainConfig)
     {
         var reportHash = GenerateReportHash(context, report, chainConfig);
-        var privateKey = ByteArrayHelper.HexStringToByteArray(chainConfig.SignerSecret);
-        return CryptoHelper.SignWithPrivateKey(privateKey, reportHash);
+        var ethSigner = new EthereumMessageSigner();
+        var signature = ethSigner.Sign(reportHash, chainConfig.SignerSecret);
+        return ByteStringHelper.FromHexString(signature).ToByteArray();
     }
 
     public static bool OffChainVerify(ReportContextDto context, int index, CrossChainReportDto report, byte[] sign,
-        string[] distPublicKey, EvmOptions chainConfig)
+        string[] oracleNodeAddressList, EvmOptions chainConfig)
     {
-        if (sign.Length <= 0 || index < 0 || index > distPublicKey.Length) return false;
+        if (sign.Length <= 0 || index < 0 || index > oracleNodeAddressList.Length) return false;
         var reportHash = GenerateReportHash(context, report, chainConfig);
-        CryptoHelper.RecoverPublicKey(sign, reportHash, out var pubkey);
-        return pubkey != null && distPublicKey[index] == pubkey.ToHex();
+        var ethSigner = new EthereumMessageSigner();
+        var recoveredAddress = ethSigner.EcRecover(reportHash, sign.ToHex());
+        return oracleNodeAddressList[index] == recoveredAddress;
     }
 
     private static byte[] GenerateReportHash(ReportContextDto context, CrossChainReportDto report,
