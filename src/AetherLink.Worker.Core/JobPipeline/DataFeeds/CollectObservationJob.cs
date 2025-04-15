@@ -157,11 +157,11 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
                         plainData = _objectMapper.Map<CollectObservationJobArgs, PlainDataFeedsDto>(args);
                         plainData.OldData = "";
                     }
-                    else if (plainData.OldData != null && resp == plainData.OldData)
-                    {
-                        _logger.LogDebug("[Step2] New collect result is same as old data {data}", resp);
-                        return "";
-                    }
+                    // else if (plainData.OldData != null && resp == plainData.OldData)
+                    // {
+                    //     _logger.LogDebug("[Step2] New collect result is same as old data {data}", resp);
+                    //     return "";
+                    // }
 
                     plainData.NewData = resp;
                     await _dataMessageProvider.SetAsync(plainData);
