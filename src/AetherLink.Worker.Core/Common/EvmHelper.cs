@@ -32,14 +32,14 @@ public class EvmHelper
     private static byte[] GenerateReportHash(ReportContextDto context, CrossChainReportDto report,
         EvmOptions chainConfig)
     {
-        var reportContextDecoded = GenerateReportContextBytes(context);
-        var message = GenerateMessageBytes(report.Message);
-        var tokenTransferMetadataDecode = GenerateTokenTransferMetadataBytes(report.TokenTransferMetadataDto);
+        var reportContextDecoded = Sha3Keccack.Current.CalculateHash(GenerateReportContextBytes(context));
+        var message = Sha3Keccack.Current.CalculateHash(GenerateMessageBytes(report.Message));
+        var tokenTransferMetadataDecode =
+            Sha3Keccack.Current.CalculateHash(GenerateTokenTransferMetadataBytes(report.TokenTransferMetadataDto));
 
         var abiEncode = new ABIEncode();
-        var transmitTypeHashBytes = ByteStringHelper.FromHexString(chainConfig.TransmitTypeHash).ToByteArray();
         var result = abiEncode.GetABIEncoded(
-            new ABIValue("bytes32", transmitTypeHashBytes),
+            new ABIValue("bytes32", ByteStringHelper.FromHexString(chainConfig.TransmitTypeHash).ToByteArray()),
             new ABIValue("bytes32", reportContextDecoded),
             new ABIValue("bytes32", message),
             new ABIValue("bytes32", tokenTransferMetadataDecode));
