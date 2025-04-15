@@ -15,7 +15,8 @@ public class EvmHelper
     public static byte[] OffChainSign(ReportContextDto context, CrossChainReportDto report, EvmOptions chainConfig)
     {
         var reportHash = GenerateReportHash(context, report, chainConfig);
-        var signature = new EthECKey(chainConfig.SignerSecret).SignAndCalculateV(reportHash).CreateStringSignature();
+        var signer = new MessageSigner();
+        var signature = signer.Sign(reportHash, chainConfig.SignerSecret);
         return ByteStringHelper.FromHexString(signature).ToByteArray();
     }
 
@@ -24,9 +25,9 @@ public class EvmHelper
     {
         if (sign.Length <= 0 || index < 0 || index > oracleNodeAddressList.Length) return false;
         var reportHash = GenerateReportHash(context, report, chainConfig);
-        var signer =
-            EthECKey.RecoverFromSignature(EthECDSASignatureFactory.ExtractECDSASignature(sign.ToHex()), reportHash);
-        return oracleNodeAddressList[index] == signer.GetPublicAddress();
+        var signer = new MessageSigner();
+        var address = signer.EcRecover(reportHash, sign.ToHex());
+        return oracleNodeAddressList[index] == address;
     }
 
     private static byte[] GenerateReportHash(ReportContextDto context, CrossChainReportDto report,
