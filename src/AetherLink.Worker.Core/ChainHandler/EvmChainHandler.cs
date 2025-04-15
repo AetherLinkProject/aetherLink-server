@@ -38,7 +38,8 @@ public abstract class EvmBaseChainWriter : ChainWriter
             contextBytes,
             messageBytes,
             tokenTransferMetadataBytes,
-            signatures.Values.ToArray());
+            signatures.Values.ToArray()
+        );
     }
 }
 
