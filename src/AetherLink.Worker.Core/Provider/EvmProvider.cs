@@ -57,7 +57,8 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
                 contextBytes,
                 messageBytes,
                 tokenTransferMetadataBytes,
-                signatures);
+                signatures
+            );
             gas.Value = BigInteger.Multiply(gas.Value, 2);
             _logger.LogDebug($"[Evm] Estimate transmit gas result: {gas.ToUlong()}");
 
