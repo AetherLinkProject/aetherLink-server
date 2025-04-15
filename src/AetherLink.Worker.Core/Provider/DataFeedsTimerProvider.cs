@@ -45,12 +45,12 @@ public class DataFeedsTimerProvider : ISingletonDependency
 
         // this epoch not finished, Wait for transmitted log event.
         _epochDict.TryGetValue(argId, out var epoch);
-        // if (request.Epoch == epoch && request.Epoch != 0)
-        // {
-        //     _logger.LogInformation("[DataFeedsTimer] The last epoch {Epoch} wasn't finished. reqId {reqId}", epoch,
-        //         reqId);
-        //     return;
-        // }
+        if (request.Epoch == epoch && request.Epoch != 0)
+        {
+            _logger.LogInformation("[DataFeedsTimer] The last epoch {Epoch} wasn't finished. reqId {reqId}", epoch,
+                reqId);
+            return;
+        }
 
         // when node restart _epochDict request is existed, and epoch is 0, 0 => newEpoch
         _logger.LogInformation("[DataFeedsTimer] {reqId} Local epoch will updated, {oldEpoch} => {newEpoch}", reqId,
