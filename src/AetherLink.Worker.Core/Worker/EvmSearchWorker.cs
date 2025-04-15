@@ -61,7 +61,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
             if (consumedBlockHeight + options.SubscribeBlocksDelay >= latestBlock)
             {
                 _logger.LogDebug(
-                    $"[EvmSearchWorker] Current: {consumedBlockHeight} Latest: {latestBlock}, Waiting for syncing {networkName} latest block info.");
+                    $"[EvmSearchWorker] Current: {consumedBlockHeight}, Latest: {latestBlock}, Waiting for syncing {networkName} latest block info.");
                 return;
             }
 
