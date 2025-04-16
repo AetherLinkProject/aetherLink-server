@@ -68,14 +68,14 @@ public class GeneratePartialSignatureJob : AsyncBackgroundJob<GeneratePartialSig
 
             if (jobSpec.Type == DataFeedsType.PlainDataFeeds)
             {
-                // var pendingConfirmData = Encoding.UTF8.GetString(observation.ToByteArray());
-                // var plainData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
-                // if (pendingConfirmData != plainData.NewData)
-                // {
-                //     _logger.LogError("[step4] Local data {ld} is inconsistent with the leader's data {pd}.",
-                //         plainData.NewData, pendingConfirmData);
-                //     return;
-                // }
+                var pendingConfirmData = Encoding.UTF8.GetString(observation.ToByteArray());
+                var plainData = await _dataMessageProvider.GetPlainDataFeedsAsync(args);
+                if (pendingConfirmData != plainData.NewData)
+                {
+                    _logger.LogError("[step4] Local data {ld} is inconsistent with the leader's data {pd}.",
+                        plainData.NewData, pendingConfirmData);
+                    return;
+                }
             }
             else
             {

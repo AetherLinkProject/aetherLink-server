@@ -93,7 +93,8 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
             var decoded = Event<SendEventDTO>.DecodeEvent(log);
             if (decoded != null) return GenerateEvmReceivedMessage(decoded);
 
-            _logger.LogWarning($"[EvmSearchWorkerProvider] Failed to decode event at: {log.BlockNumber}");
+            _logger.LogWarning(
+                $"[EvmSearchWorkerProvider] Failed to decode event to sendEvent {log.TransactionHash} at {log.BlockNumber}");
 
             return new();
         }
