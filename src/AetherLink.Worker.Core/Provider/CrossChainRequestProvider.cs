@@ -186,6 +186,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
             case ChainIdConstants.BSCTEST:
             case ChainIdConstants.SEPOLIA:
             case ChainIdConstants.BASESEPOLIA:
+            case ChainIdConstants.BASE:
                 var checksumAddress = new AddressUtil().ConvertToChecksumAddress(
                     ByteString.FromBase64(request.Receiver).ToHex(true));
                 reportContext.Receiver = checksumAddress;

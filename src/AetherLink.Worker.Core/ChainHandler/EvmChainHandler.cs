@@ -125,6 +125,16 @@ public class BaseSepoliaWriter : EvmBaseChainWriter, ISingletonDependency
     }
 }
 
+public class BaseWriter : EvmBaseChainWriter, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.BASE;
+
+    public BaseWriter(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+        : base(evmProvider, evmOptions)
+    {
+    }
+}
+
 #endregion
 
 #region Reader
@@ -174,6 +184,16 @@ public class BaseSepoliaChainReader : EvmBaseChainReader, ISingletonDependency
     public override long ChainId => ChainIdConstants.BASESEPOLIA;
 
     public BaseSepoliaChainReader(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
+        : base(evmProvider, evmOptions)
+    {
+    }
+}
+
+public class BaseChainReader : EvmBaseChainReader, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.BASE;
+
+    public BaseChainReader(IEvmProvider evmProvider, IOptionsSnapshot<EvmContractsOptions> evmOptions)
         : base(evmProvider, evmOptions)
     {
     }

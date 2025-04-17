@@ -10,5 +10,4 @@ public class EvmTransactionConstants
 public class EvmSubscribeConstants
 {
     public const int SubscribeBlockStep = 1000;
-    public const int SubscribeBlockSaveStep = 10;
 }

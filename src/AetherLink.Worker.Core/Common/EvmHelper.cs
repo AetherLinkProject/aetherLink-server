@@ -102,6 +102,9 @@ public class EvmHelper
             case ChainIdConstants.BASESEPOLIA:
                 options.ContractConfig.TryGetValue("BASESEPOLIA", out chainConfig);
                 break;
+            case ChainIdConstants.BASE:
+                options.ContractConfig.TryGetValue("BASE", out chainConfig);
+                break;
         }
 
         return chainConfig;

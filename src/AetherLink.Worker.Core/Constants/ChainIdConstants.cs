@@ -11,4 +11,5 @@ public static class ChainIdConstants
     public const long EVM = 1;
     public const long SEPOLIA = 11155111;
     public const long BASESEPOLIA = 84532;
+    public const long BASE = 8453;
 }

@@ -53,6 +53,15 @@ public class BaseSepoliaChainKeyring : EvmBaseChainKeyring, ISingletonDependency
     }
 }
 
+public class BaseChainKeyring : EvmBaseChainKeyring, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.BASE;
+
+    public BaseChainKeyring(IOptionsSnapshot<EvmContractsOptions> evmOptions) : base(evmOptions)
+    {
+    }
+}
+
 public class BscChainKeyring : EvmBaseChainKeyring, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.BSC;
