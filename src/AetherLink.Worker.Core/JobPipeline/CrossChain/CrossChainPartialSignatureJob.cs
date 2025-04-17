@@ -51,7 +51,7 @@ public class CrossChainPartialSignatureJob : AsyncBackgroundJob<CrossChainPartia
         try
         {
             var crossChainData = await _crossChainRequestProvider.GetAsync(messageId);
-            if (crossChainData == null || roundId > crossChainData.ReportContext.RoundId)
+            if (crossChainData == null)
             {
                 await _retryProvider.RetryWithIdAsync(args,
                     IdGeneratorHelper.GenerateId(messageId, roundId), backOff: true);
@@ -71,6 +71,11 @@ public class CrossChainPartialSignatureJob : AsyncBackgroundJob<CrossChainPartia
             {
                 _logger.LogWarning($"[CrossChain] The request {messageId} from leader is too old.");
                 return;
+            }
+
+            if (roundId > crossChainData.ReportContext.RoundId)
+            {
+                _logger.LogDebug($"[CrossChain] Start request at advanced round {roundId}.");
             }
 
             if (!_offChainKeyring.TryGetValue(reportContext.TargetChainId, out var signer))

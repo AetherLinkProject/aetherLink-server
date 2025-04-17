@@ -26,6 +26,7 @@ public interface ICrossChainRequestProvider
 
     public Task SetAsync(CrossChainDataDto data);
     public Task<CrossChainDataDto> GetAsync(string messageId);
+    public string Ensure128BytesMessageId(string originMessageId);
 }
 
 public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientDependency
@@ -185,6 +186,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
             case ChainIdConstants.BSCTEST:
             case ChainIdConstants.SEPOLIA:
             case ChainIdConstants.BASESEPOLIA:
+            case ChainIdConstants.BASE:
                 var checksumAddress = new AddressUtil().ConvertToChecksumAddress(
                     ByteString.FromBase64(request.Receiver).ToHex(true));
                 reportContext.Receiver = checksumAddress;
@@ -199,7 +201,7 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         return reportContext;
     }
 
-    private static string Ensure128BytesMessageId(string originMessageId)
+    public string Ensure128BytesMessageId(string originMessageId)
     {
         var messageIdBytes = ByteStringHelper.FromHexString(originMessageId).ToByteArray();
         switch (messageIdBytes.Length)

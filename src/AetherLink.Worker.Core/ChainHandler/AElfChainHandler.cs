@@ -9,139 +9,117 @@ using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Worker.Core.ChainHandler;
 
-// Writer
-public class AElfChainWriter : ChainWriter, ISingletonDependency
+#region AElfBase
+
+public abstract class AElfBaseChainWriter : ChainWriter
 {
-    public override long ChainId => ChainIdConstants.AELF;
+    public abstract override long ChainId { get; }
     private readonly IContractProvider _contractProvider;
     private readonly IOracleContractProvider _oracleContractProvider;
+
+    protected AElfBaseChainWriter(IOracleContractProvider oracleContractProvider, IContractProvider contractProvider)
+    {
+        _oracleContractProvider = oracleContractProvider;
+        _contractProvider = contractProvider;
+    }
+
+    public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
+        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
+        => await _contractProvider.SendCommitAsync(ChainHelper.ConvertChainIdToBase58((int)ChainId),
+            await _oracleContractProvider.GenerateCommitDataAsync(reportContext, signatures, crossChainData));
+}
+
+public abstract class AElfBaseChainReader : ChainReader
+{
+    public abstract override long ChainId { get; }
+
+    private readonly IContractProvider _contractProvider;
+
+    protected AElfBaseChainReader(IContractProvider contractProvider)
+    {
+        _contractProvider = contractProvider;
+    }
+
+    public override Task<byte[]> CallTransactionAsync(byte[] transaction)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
+    {
+        State = await AELFHelper.GetTransactionResultAsync(_contractProvider,
+            ChainHelper.ConvertChainIdToBase58((int)ChainId), transactionId)
+    };
+
+    public override string ConvertBytesToAddressStr(byte[] addressBytes)
+    {
+        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
+    }
+}
+
+#endregion
+
+#region Writer
+
+public class AElfChainWriter : AElfBaseChainWriter, ISingletonDependency
+{
+    public override long ChainId => ChainIdConstants.AELF;
 
     public AElfChainWriter(IOracleContractProvider oracleContractProvider, IContractProvider contractProvider)
+        : base(oracleContractProvider, contractProvider)
     {
-        _oracleContractProvider = oracleContractProvider;
-        _contractProvider = contractProvider;
     }
-
-    public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
-        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
-        => await _contractProvider.SendCommitAsync(ChainHelper.ConvertChainIdToBase58((int)ChainId),
-            await _oracleContractProvider.GenerateCommitDataAsync(reportContext, signatures, crossChainData));
 }
 
-public class TDVVChainWriter : ChainWriter, ISingletonDependency
+public class TDVVChainWriter : AElfBaseChainWriter, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.TDVV;
-    private readonly IContractProvider _contractProvider;
-    private readonly IOracleContractProvider _oracleContractProvider;
 
     public TDVVChainWriter(IOracleContractProvider oracleContractProvider, IContractProvider contractProvider)
+        : base(oracleContractProvider, contractProvider)
     {
-        _contractProvider = contractProvider;
-        _oracleContractProvider = oracleContractProvider;
     }
-
-    public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
-        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
-        => await _contractProvider.SendCommitAsync(ChainHelper.ConvertChainIdToBase58((int)ChainId),
-            await _oracleContractProvider.GenerateCommitDataAsync(reportContext, signatures, crossChainData));
 }
 
-public class TDVWChainWriter : ChainWriter, ISingletonDependency
+public class TDVWChainWriter : AElfBaseChainWriter, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.TDVW;
-    private readonly IContractProvider _contractProvider;
-    private readonly IOracleContractProvider _oracleContractProvider;
 
     public TDVWChainWriter(IOracleContractProvider oracleContractProvider, IContractProvider contractProvider)
+        : base(oracleContractProvider, contractProvider)
     {
-        _contractProvider = contractProvider;
-        _oracleContractProvider = oracleContractProvider;
     }
-
-    public override async Task<string> SendCommitTransactionAsync(ReportContextDto reportContext,
-        Dictionary<int, byte[]> signatures, CrossChainDataDto crossChainData)
-        => await _contractProvider.SendCommitAsync(ChainHelper.ConvertChainIdToBase58((int)ChainId),
-            await _oracleContractProvider.GenerateCommitDataAsync(reportContext, signatures, crossChainData));
 }
 
-// Reader
-public class AElfChainReader : ChainReader, ISingletonDependency
+#endregion
+
+#region Reader
+
+public class AElfChainReader : AElfBaseChainReader, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.AELF;
-    private readonly IContractProvider _contractProvider;
 
-    public AElfChainReader(IContractProvider contractProvider)
+    public AElfChainReader(IContractProvider contractProvider) : base(contractProvider)
     {
-        _contractProvider = contractProvider;
-    }
-
-    public override Task<byte[]> CallTransactionAsync(byte[] transaction)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
-    {
-        State = await AELFHelper.GetTransactionResultAsync(_contractProvider,
-            ChainHelper.ConvertChainIdToBase58((int)ChainId), transactionId)
-    };
-
-    public override string ConvertBytesToAddressStr(byte[] addressBytes)
-    {
-        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
     }
 }
 
-public class TDVVChainReader : ChainReader, ISingletonDependency
+public class TDVVChainReader : AElfBaseChainReader, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.TDVV;
-    private readonly IContractProvider _contractProvider;
 
-    public TDVVChainReader(IContractProvider contractProvider)
+    public TDVVChainReader(IContractProvider contractProvider) : base(contractProvider)
     {
-        _contractProvider = contractProvider;
-    }
-
-    public override Task<byte[]> CallTransactionAsync(byte[] transaction)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId) => new()
-    {
-        State = await AELFHelper.GetTransactionResultAsync(_contractProvider,
-            ChainHelper.ConvertChainIdToBase58((int)ChainId), transactionId)
-    };
-
-    public override string ConvertBytesToAddressStr(byte[] addressBytes)
-    {
-        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
     }
 }
 
-public class TDVWChainReader : ChainReader, ISingletonDependency
+public class TDVWChainReader : AElfBaseChainReader, ISingletonDependency
 {
     public override long ChainId => ChainIdConstants.TDVW;
-    private readonly IContractProvider _contractProvider;
 
-    public TDVWChainReader(IContractProvider contractProvider)
+    public TDVWChainReader(IContractProvider contractProvider) : base(contractProvider)
     {
-        _contractProvider = contractProvider;
-    }
-
-    public override Task<byte[]> CallTransactionAsync(byte[] transaction)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public override async Task<TransactionResultDto> GetTransactionResultAsync(string transactionId)=> new()
-    {
-        State = await AELFHelper.GetTransactionResultAsync(_contractProvider,
-            ChainHelper.ConvertChainIdToBase58((int)ChainId), transactionId)
-    };
-
-    public override string ConvertBytesToAddressStr(byte[] addressBytes)
-    {
-        return AElf.Types.Address.FromBytes(addressBytes).ToBase58();
     }
 }
+
+#endregion

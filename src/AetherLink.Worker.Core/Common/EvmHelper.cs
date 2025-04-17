@@ -1,12 +1,11 @@
-using System.Collections.Generic;
-using System.Linq;
 using AElf;
-using AElf.Cryptography;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using Google.Protobuf;
 using Nethereum.ABI;
+using Nethereum.Model;
+using Nethereum.Signer;
 using Nethereum.Util;
 
 namespace AetherLink.Worker.Core.Common;
@@ -15,63 +14,56 @@ public class EvmHelper
 {
     public static byte[] OffChainSign(ReportContextDto context, CrossChainReportDto report, EvmOptions chainConfig)
     {
-        var reportHash = GenerateReportHash(context, report);
-        var privateKey = ByteArrayHelper.HexStringToByteArray(chainConfig.SignerSecret);
-        return CryptoHelper.SignWithPrivateKey(privateKey, reportHash);
+        var reportHash = GenerateReportHash(context, report, chainConfig);
+        var signer = new MessageSigner();
+        var signature = signer.Sign(reportHash, chainConfig.SignerSecret);
+        return ByteStringHelper.FromHexString(signature).ToByteArray();
     }
 
     public static bool OffChainVerify(ReportContextDto context, int index, CrossChainReportDto report, byte[] sign,
-        string[] distPublicKey)
+        string[] oracleNodeAddressList, EvmOptions chainConfig)
     {
-        if (sign.Length <= 0 || index < 0 || index > distPublicKey.Length) return false;
-        var reportHash = GenerateReportHash(context, report);
-        CryptoHelper.RecoverPublicKey(sign, reportHash, out var pubkey);
-        return pubkey != null && distPublicKey[index] == pubkey.ToHex();
+        if (sign.Length <= 0 || index < 0 || index > oracleNodeAddressList.Length) return false;
+        var reportHash = GenerateReportHash(context, report, chainConfig);
+        var signer = new MessageSigner();
+        var address = signer.EcRecover(reportHash, sign.ToHex());
+        return oracleNodeAddressList[index] == address;
     }
 
-    private static byte[] GenerateReportHash(ReportContextDto context, CrossChainReportDto report)
+    private static byte[] GenerateReportHash(ReportContextDto context, CrossChainReportDto report,
+        EvmOptions chainConfig)
     {
-        var reportContextDecoded = GenerateReportContextBytes(context);
-        var message = GenerateMessageBytes(report.Message);
-        var tokenTransferMetadataDecode = GenerateTokenTransferMetadataBytes(report.TokenTransferMetadataDto);
-        return GenerateReportHash(reportContextDecoded, message, tokenTransferMetadataDecode);
-    }
+        var reportContextDecoded = Sha3Keccack.Current.CalculateHash(GenerateReportContextBytes(context));
+        var message = Sha3Keccack.Current.CalculateHash(GenerateMessageBytes(report.Message));
+        var tokenTransferMetadataDecode =
+            Sha3Keccack.Current.CalculateHash(GenerateTokenTransferMetadataBytes(report.TokenTransferMetadataDto));
 
-    public static ( byte[][], byte[][], byte[]) AggregateSignatures(List<byte[]> signatureByteList)
-    {
-        var signaturesCount = signatureByteList.Count;
-        var r = new byte[signaturesCount][];
-        var s = new byte[signaturesCount][];
-        var v = new byte[32];
-        var index = 0;
-        foreach (var signatureBytes in signatureByteList)
-        {
-            r[index] = signatureBytes.Take(32).ToArray();
-            s[index] = signatureBytes.Skip(32).Take(32).ToArray();
-            v[index] = signatureBytes.Last();
-            index++;
-        }
-
-        return (r, s, v);
-    }
-
-    private static byte[] GenerateReportHash(byte[] reportContext, byte[] message, byte[] tokenTransferMetadata)
-    {
         var abiEncode = new ABIEncode();
-        var result = abiEncode.GetABIEncoded(reportContext, message, tokenTransferMetadata);
-        return Sha3Keccack.Current.CalculateHash(result);
+        var result = abiEncode.GetABIEncoded(
+            new ABIValue("bytes32", ByteStringHelper.FromHexString(chainConfig.TransmitTypeHash).ToByteArray()),
+            new ABIValue("bytes32", reportContextDecoded),
+            new ABIValue("bytes32", message),
+            new ABIValue("bytes32", tokenTransferMetadataDecode));
+        var structHash = Sha3Keccack.Current.CalculateHash(result);
+
+        var reportHashAbiEncode = new ABIEncode();
+        var domainSeparatorBytes = ByteStringHelper.FromHexString(chainConfig.DomainSeparator).ToByteArray();
+        var encoded = reportHashAbiEncode.GetABIEncodedPacked(
+            new ABIValue("string", EvmTransactionConstants.EIP721Prefix),
+            new ABIValue("bytes32", domainSeparatorBytes),
+            new ABIValue("bytes32", structHash));
+        return Sha3Keccack.Current.CalculateHash(encoded);
     }
 
     public static byte[] GenerateReportContextBytes(ReportContextDto reportContext)
     {
         var abiEncode = new ABIEncode();
-        var encoded = abiEncode.GetABIEncoded(
+        return abiEncode.GetABIEncoded(
             new ABIValue("bytes32", ByteStringHelper.FromHexString(reportContext.MessageId).ToByteArray()),
             new ABIValue("uint256", reportContext.SourceChainId),
             new ABIValue("uint256", reportContext.TargetChainId),
             new ABIValue("string", reportContext.Sender),
             new ABIValue("address", reportContext.Receiver));
-        return encoded;
     }
 
     public static byte[] GenerateTokenTransferMetadataBytes(TokenTransferMetadataDto tokenTransferMetadata)
@@ -79,14 +71,13 @@ public class EvmHelper
         if (tokenTransferMetadata == null) return new byte[] { };
 
         var abiEncode = new ABIEncode();
-        var encoded = abiEncode.GetABIEncoded(
+        return abiEncode.GetABIEncoded(
             new ABIValue("uint256", tokenTransferMetadata.TargetChainId),
             new ABIValue("string", tokenTransferMetadata.TokenAddress),
             new ABIValue("string", tokenTransferMetadata.Symbol),
             new ABIValue("uint256", tokenTransferMetadata.Amount),
             new ABIValue("bytes", ByteString.FromBase64(tokenTransferMetadata.ExtraDataString).ToByteArray())
         );
-        return encoded;
     }
 
     public static byte[] GenerateMessageBytes(string message) => ByteString.FromBase64(message).ToByteArray();
@@ -110,6 +101,9 @@ public class EvmHelper
                 break;
             case ChainIdConstants.BASESEPOLIA:
                 options.ContractConfig.TryGetValue("BASESEPOLIA", out chainConfig);
+                break;
+            case ChainIdConstants.BASE:
+                options.ContractConfig.TryGetValue("BASE", out chainConfig);
                 break;
         }
 

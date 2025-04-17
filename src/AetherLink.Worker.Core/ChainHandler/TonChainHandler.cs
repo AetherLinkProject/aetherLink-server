@@ -81,7 +81,7 @@ public class TonChainWriter : ChainWriter
         }, (uint)seqno).Sign(TonHelper.GetSecretKeyFromPrivateKey(_privateOptions.TransmitterSecretKey));
 
         _logger.LogDebug(
-            $"[TonChainWriter] Ready to commit , sourceChainId:{reportContext.SourceChainId} targetChainId:{reportContext.TargetChainId} messageId:{reportContext.MessageId}");
+            $"[TonChainWriter] Ready to commit, sourceChainId:{reportContext.SourceChainId} targetChainId:{reportContext.TargetChainId} messageId:{reportContext.MessageId}");
 
         return await _tonCenterApiProvider.CommitTransaction(msg.Cell);
     }

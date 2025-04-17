@@ -119,9 +119,8 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
             _objectMapper.Map<RampRequestCancelledDto, CrossChainRequestCancelJobArgs>(rampCancelled));
 
     public async Task HandleRampRequestManuallyExecutedLogEventAsync(RampRequestManuallyExecutedDto manuallyExecuted)
-        => await _backgroundJobManager.EnqueueAsync(
-            _objectMapper
-                .Map<RampRequestManuallyExecutedDto, CrossChainRequestManuallyExecuteJobArgs>(manuallyExecuted));
+        => await _backgroundJobManager.EnqueueAsync(_objectMapper
+            .Map<RampRequestManuallyExecutedDto, CrossChainRequestManuallyExecuteJobArgs>(manuallyExecuted));
 
     private static string GetSearchHeightRedisKey(string chainId)
         => IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, chainId);

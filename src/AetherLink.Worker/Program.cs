@@ -45,7 +45,6 @@ namespace AetherLink.Worker
                 var app = builder.Build();
                 await app.InitializeApplicationAsync();
                 await app.RunAsync();
-                await CreateHostBuilder(args).RunConsoleAsync();
                 return 0;
             }
             catch (Exception ex)
@@ -55,14 +54,8 @@ namespace AetherLink.Worker
             }
             finally
             {
-                Log.CloseAndFlush();
+                await Log.CloseAndFlushAsync();
             }
         }
-
-        private static IHostBuilder CreateHostBuilder(string[] args) => Host.CreateDefaultBuilder(args)
-            .ConfigureAppConfiguration(build => { build.AddJsonFile("appsettings.secrets.json", optional: true); })
-            .ConfigureServices((hostContext, services) => { services.AddApplication<AetherLinkServerWorkerModule>(); })
-            .UseAutofac()
-            .UseSerilog();
     }
 }
