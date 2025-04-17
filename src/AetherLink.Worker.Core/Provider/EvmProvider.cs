@@ -51,9 +51,6 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
             _logger.LogDebug(
                 $"[Evm] Current Gas Price: {Web3.Convert.FromWei(gasPrice, Nethereum.Util.UnitConversion.EthUnit.Gwei)} Gwei");
 
-            _logger.LogDebug(
-                $"contextBytes: {ByteString.CopyFrom(contextBytes).ToBase64()} messageBytes: {ByteString.CopyFrom(messageBytes).ToBase64()} tokenTransferMetadataBytes: {ByteString.CopyFrom(tokenTransferMetadataBytes).ToBase64()}");
-
             var gas = await function.EstimateGasAsync(
                 from: account.TransactionManager.Account.Address,
                 gasPrice,
