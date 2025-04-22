@@ -49,14 +49,14 @@ public class PeerManager : IPeerManager, ISingletonDependency
     public int GetCurrentRoundId(long startTime)
     {
         var unixCurrentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-        return (int)(unixCurrentTime - startTime / RequestProgressConstants.CheckRequestEndTimeoutWindow) + 1;
+        return (int)((unixCurrentTime - startTime) / RequestProgressConstants.CheckRequestEndTimeoutWindow) + 1;
     }
 
     public int GetCurrentRoundId(DateTime startTime)
     {
         var unixCurrentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         var unixStartTime = new DateTimeOffset(startTime).ToUnixTimeMilliseconds();
-        return (int)(unixCurrentTime - unixStartTime / RequestProgressConstants.CheckRequestEndTimeoutWindow) + 1;
+        return (int)((unixCurrentTime - unixStartTime) / RequestProgressConstants.CheckRequestEndTimeoutWindow) + 1;
     }
 
     public async Task BroadcastAsync<TResponse>(Func<AetherlinkClient, TResponse> func)
