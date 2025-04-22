@@ -44,14 +44,15 @@ public class RequestStartProcessJob : AsyncBackgroundJob<RequestStartProcessJobA
             }
             else if (job.State == RequestState.RequestCanceled || args.Epoch < job.Epoch) return;
 
-            job.RoundId = args.RoundId;
+            var currentRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime);
+            job.RoundId = currentRoundId;
             job.State = RequestState.RequestStart;
             await _jobProvider.SetAsync(job);
 
             _logger.LogDebug("[Step1] {name} start startTime {time}, blockTime {blockTime}", argId, args.StartTime,
                 job.TransactionBlockTime);
 
-            if (_peerManager.IsLeader(args.Epoch, args.RoundId))
+            if (_peerManager.IsLeader(args.Epoch, currentRoundId))
             {
                 _logger.LogInformation("[Step1][Leader] {name} Is Leader.", argId);
                 await _backgroundJobManager.EnqueueAsync(
@@ -62,7 +63,7 @@ public class RequestStartProcessJob : AsyncBackgroundJob<RequestStartProcessJobA
                 {
                     RequestId = args.RequestId,
                     ChainId = args.ChainId,
-                    RoundId = args.RoundId,
+                    RoundId = currentRoundId,
                     Epoch = args.Epoch
                 }));
             }
