@@ -66,8 +66,6 @@ public class AutomationTransmitted : AsyncBackgroundJob<BroadcastTransmitResultA
                                 if (upkeepId != transmitted.RequestId.ToHex() ||
                                     transmitted.EpochAndRound < job.Epoch) break;
 
-                                _schedulerService.CancelCronUpkeep(job);
-
                                 break;
                             case TriggerType.Log:
                                 var report = await _oracleContractProvider.GetTransmitReportByTransactionIdAsync(

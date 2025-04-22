@@ -43,7 +43,6 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
         var upkeepId = args.RequestId;
         var epoch = args.Epoch;
         var roundId = args.RoundId;
-        var blockTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
         var context = new OCRContext
         {
             RequestId = upkeepId,
@@ -56,12 +55,13 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
         try
         {
             var job = await _jobProvider.GetAsync(args);
-            if (job == null) job = _mapper.Map<AutomationStartJobArgs, JobDto>(args);
+            if (job == null)
+            {
+                job = _mapper.Map<AutomationStartJobArgs, JobDto>(args);
+                job.RequestReceiveTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
+            }
             else if (job.State == RequestState.RequestCanceled || epoch < job.Epoch) return;
-            else if (job.RoundId == 0 && job.State == RequestState.RequestEnd)
-                blockTime = DateTimeOffset.FromUnixTimeMilliseconds(job.TransactionBlockTime).DateTime;
 
-            job.RequestReceiveTime = _schedulerService.UpdateBlockTime(blockTime);
             job.RoundId = roundId;
             job.State = RequestState.RequestStart;
             await _jobProvider.SetAsync(job);
@@ -80,8 +80,6 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
                     .ToByteArray());
                 await _peerManager.BroadcastAsync(p => p.QueryReportSignatureAsync(request));
             }
-
-            _schedulerService.StartCronUpkeepScheduler(job);
 
             _logger.LogInformation($"[Automation] {id} Waiting for request end.");
         }

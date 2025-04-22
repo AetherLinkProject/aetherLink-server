@@ -128,14 +128,19 @@ public class AutomationPartSign : AsyncBackgroundJob<ReportSignatureRequestArgs>
             return false;
         }
 
-        if (localRound > argRoundId || argEpoch < localEpoch)
+        var newRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime);
+        if (argRoundId != newRoundId)
         {
-            _logger.LogInformation("[Automation] {RequestId} is not match, epoch:{epoch} round:{RoundId}.", argRequestId,
-                localEpoch, localRound);
+            _logger.LogInformation("[Automation] {RequestId} round is not match, round:{RoundId}.", argRequestId,
+                localRound);
             return false;
         }
 
-        return true;
+        if (argEpoch == localEpoch) return true;
+
+        _logger.LogInformation("[Automation] {RequestId} epoch is not match, epoch:{epoch}.", argRequestId, localEpoch);
+
+        return false;
     }
 
     private async Task<bool> ValidateLeaderUpkeepTriggerAsync(ReportSignatureRequestArgs args)

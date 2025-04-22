@@ -119,14 +119,19 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
             return false;
         }
 
-        if (reqRoundId > argRoundId || argEpoch < reqEpoch)
+        var newRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime);
+        if (argRoundId != newRoundId)
         {
-            _logger.LogInformation("[Step2] {RequestId} is not match, epoch:{epoch} round:{RoundId}.", reqRequestId,
-                reqEpoch, reqRoundId);
+            _logger.LogInformation("[Step2] {RequestId} round is not match, round:{RoundId}.", reqRequestId,
+                reqRoundId);
             return false;
         }
 
-        return true;
+        if (argEpoch >= reqEpoch) return true;
+
+        _logger.LogInformation("[Step2] {RequestId} epoch is not match, epoch:{epoch}.", reqRequestId, reqEpoch);
+
+        return false;
     }
 
     private async Task<string> GetDataFeedsDataAsync(CollectObservationJobArgs args, DataFeedsJobSpec dataSpec)

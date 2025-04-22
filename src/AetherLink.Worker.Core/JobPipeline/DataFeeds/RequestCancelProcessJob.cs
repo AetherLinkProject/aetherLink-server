@@ -67,11 +67,10 @@ public class RequestCancelProcessJob : AsyncBackgroundJob<RequestCancelProcessJo
                 return;
             }
 
-            if (commitment.RequestTypeIndex == RequestTypeConst.Automation) _schedulerService.CancelCronUpkeep(job);
+            _schedulerService.CancelAllSchedule(job);
 
             job.State = RequestState.RequestCanceled;
             await _jobProvider.SetAsync(job);
-            _schedulerService.CancelAllSchedule(job);
         }
         catch (Exception e)
         {

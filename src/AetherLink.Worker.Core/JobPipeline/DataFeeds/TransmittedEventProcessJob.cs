@@ -49,9 +49,8 @@ public class TransmittedEventProcessJob : AsyncBackgroundJob<TransmittedEventPro
             {
                 if (AutomationHelper.GetTriggerType(commitment) == TriggerType.Log)
                 {
-                    var report =
-                        await _oracleContractProvider.GetTransmitReportByTransactionIdAsync(chainId,
-                            args.TransactionId);
+                    var report = await _oracleContractProvider.GetTransmitReportByTransactionIdAsync(chainId,
+                        args.TransactionId);
                     var payload = LogTriggerCheckData.Parser.ParseFrom(report.Result);
                     var triggerKey =
                         AutomationHelper.GetLogTriggerKeyByPayload(chainId, requestId, payload.ToByteArray());
@@ -80,12 +79,11 @@ public class TransmittedEventProcessJob : AsyncBackgroundJob<TransmittedEventPro
                 }
             }
 
-            if (commitment.RequestTypeIndex == RequestTypeConst.Automation) _schedulerService.CancelCronUpkeep(job);
-            else _schedulerService.CancelAllSchedule(job);
+            _schedulerService.CancelAllSchedule(job);
 
             _logger.LogInformation("[Transmitted] {name} epoch:{epoch} end", argId, job.Epoch);
 
-            job.TransactionBlockTime = args.StartTime;
+            job.RequestReceiveTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
             job.State = RequestState.RequestEnd;
             job.RoundId = 0;
             job.Epoch = args.Epoch;

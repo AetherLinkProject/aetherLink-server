@@ -63,12 +63,8 @@ public class TransmitResultProcessJob : AsyncBackgroundJob<TransmitResultProcess
                         break;
                     }
 
-                    var executeTime = DateTime.Now.Subtract(job.RequestReceiveTime).TotalSeconds;
-                    _logger.LogInformation(
-                        "[Step6] {ReqId}-{epoch}-{round} Transmitted validate successful, execute {time}s.", reqId,
-                        epoch, roundId, executeTime);
-                    
-                    _reporter.RecordDatafeedJob(chainId, reqId, epoch, roundId, executeTime);
+                    _logger.LogInformation("[Step6] {ReqId}-{epoch}-{round} Transmitted validate successful.", reqId,
+                        epoch, roundId);
 
                     _schedulerService.CancelAllSchedule(job);
                     break;
