@@ -54,7 +54,7 @@ public class DataFeedsTimerProvider : ISingletonDependency
         _epochDict.TryGetValue(argId, out var epoch);
         if (request.Epoch == epoch && request.Epoch != 0)
         {
-            var newRoundId = _peerManager.GetCurrentRoundId(requestStartArgs.StartTime);
+            var newRoundId = _peerManager.GetCurrentRoundId(request.RequestReceiveTime);
             if (newRoundId <= request.RoundId)
             {
                 _logger.LogDebug("[DataFeedsTimer] The last round {Epoch} wasn't finished. reqId {reqId}",
@@ -62,7 +62,7 @@ public class DataFeedsTimerProvider : ISingletonDependency
                 return;
             }
 
-            _logger.LogInformation("[DataFeedsTimer] {reqId} New round will start, {or} => {ne}", reqId,
+            _logger.LogInformation("[DataFeedsTimer] {reqId} New round will start, {or} => {nr}", reqId,
                 request.RoundId, newRoundId);
             requestStartArgs.RoundId = newRoundId;
         }

@@ -51,7 +51,7 @@ public class AutomationTimerProvider : ISingletonDependency
         _epochDict.TryGetValue(argId, out var epoch);
         if (request.Epoch == epoch && request.Epoch != 0)
         {
-            var newRoundId = _peerManager.GetCurrentRoundId(requestStartArgs.StartTime);
+            var newRoundId = _peerManager.GetCurrentRoundId(request.RequestReceiveTime);
             if (newRoundId <= request.RoundId)
             {
                 _logger.LogDebug("[AutomationTimer] The last round {Epoch} wasn't finished. reqId {reqId}",
