@@ -32,7 +32,7 @@ public class RequestStartProcessJob : AsyncBackgroundJob<RequestStartProcessJobA
 
     public override async Task ExecuteAsync(RequestStartProcessJobArgs args)
     {
-        var argId = IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch, args.RoundId);
+        var argId = IdGeneratorHelper.GenerateId(args.ChainId, args.RequestId, args.Epoch);
 
         try
         {
@@ -42,12 +42,19 @@ public class RequestStartProcessJob : AsyncBackgroundJob<RequestStartProcessJobA
                 job = _objectMapper.Map<RequestStartProcessJobArgs, JobDto>(args);
                 job.RequestReceiveTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
             }
-            else if (job.State == RequestState.RequestCanceled || args.Epoch < job.Epoch) return;
+            else if (job.State == RequestState.RequestCanceled)
+            {
+                _logger.LogDebug("[Step1] {name} is canceled", argId);
+                return;
+            }
+            else if (args.Epoch < job.Epoch)
+            {
+                _logger.LogDebug("[Step1] {name} epoch {ae} is older than local {je} canceled", argId, args.Epoch,
+                    job.Epoch);
+                return;
+            }
 
             var currentRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime);
-            _logger.LogDebug("[Step1] {name} start round {round} startTime: {startTime} requestReceiverTime: {receive}",
-                argId, currentRoundId, args.StartTime, job.RequestReceiveTime);
-
             job.RoundId = currentRoundId;
             job.State = RequestState.RequestStart;
             await _jobProvider.SetAsync(job);

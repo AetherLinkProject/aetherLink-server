@@ -70,10 +70,10 @@ public class DataFeedsTimerProvider : ISingletonDependency
         {
             _logger.LogInformation("[DataFeedsTimer] {reqId} New epoch will start, {oldEpoch} => {newEpoch}", reqId,
                 requestStartArgs.Epoch, request.Epoch);
-            requestStartArgs.Epoch = request.Epoch;
             _epochDict[argId] = request.Epoch;
         }
 
+        requestStartArgs.Epoch = request.Epoch;
         await _backgroundJobManager.EnqueueAsync(requestStartArgs);
     }
 }
