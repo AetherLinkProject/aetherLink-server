@@ -45,6 +45,9 @@ public class RequestStartProcessJob : AsyncBackgroundJob<RequestStartProcessJobA
             else if (job.State == RequestState.RequestCanceled || args.Epoch < job.Epoch) return;
 
             var currentRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime);
+            _logger.LogDebug("[Step1] {name} start round {round} startTime: {startTime}", argId, currentRoundId,
+                args.StartTime);
+
             job.RoundId = currentRoundId;
             job.State = RequestState.RequestStart;
             await _jobProvider.SetAsync(job);
