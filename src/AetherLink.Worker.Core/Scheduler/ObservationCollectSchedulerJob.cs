@@ -34,10 +34,10 @@ public class ObservationCollectSchedulerJob : IObservationCollectSchedulerJob, I
     private readonly IStateProvider _stateProvider;
     private readonly IReportProvider _reportProvider;
     private readonly IDataMessageProvider _dataMessageProvider;
-    private readonly ILogger<ResetRequestSchedulerJob> _logger;
+    private readonly ILogger<ObservationCollectSchedulerJob> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
 
-    public ObservationCollectSchedulerJob(IObjectMapper objectMapper, ILogger<ResetRequestSchedulerJob> logger,
+    public ObservationCollectSchedulerJob(IObjectMapper objectMapper, ILogger<ObservationCollectSchedulerJob> logger,
         IOptionsSnapshot<OracleInfoOptions> options, IStateProvider stateProvider, IReportProvider reportProvider,
         IPeerManager peerManager, IBackgroundJobManager backgroundJobManager, IDataMessageProvider dataMessageProvider)
     {

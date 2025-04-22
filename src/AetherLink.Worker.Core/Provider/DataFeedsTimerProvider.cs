@@ -76,13 +76,4 @@ public class DataFeedsTimerProvider : ISingletonDependency
 
         await _backgroundJobManager.EnqueueAsync(requestStartArgs);
     }
-
-    private bool IsRoundIdNeedUpdate(JobDto originData) => CalculateCurrentRound(originData) > originData.RoundId;
-
-    private int CalculateCurrentRound(JobDto originData)
-    {
-        var currentTimestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-        var elapsedMilliseconds = currentTimestamp - originData.TransactionBlockTime;
-        return (int)(elapsedMilliseconds / 300000) + 1;
-    }
 }
