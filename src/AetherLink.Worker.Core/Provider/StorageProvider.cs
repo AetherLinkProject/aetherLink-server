@@ -18,6 +18,7 @@ public interface IStorageProvider
     public Task SetAsync<T>(string key, T data, TimeSpan? expiry);
     public Task<T> GetAsync<T>(string key) where T : class, new();
     public Task<Dictionary<string, T>> GetAsync<T>(List<string> keys) where T : class, new();
+    public Task<IEnumerable<T>> GetFilteredAsync<T>(string prefix, Func<T, bool> filter) where T : class, new();
     public Task RemoveAsync(string key);
 }
 
@@ -65,6 +66,36 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
         {
             _logger.LogError(e, $"Get {key} error.");
             return null;
+        }
+    }
+
+    public async Task<IEnumerable<T>> GetFilteredAsync<T>(string prefix, Func<T, bool> filter) where T : class, new()
+    {
+        try
+        {
+            await ConnectAsync();
+            var result = new List<T>();
+            var cursor = 0L;
+            do
+            {
+                var scanResult =
+                    await RedisDatabase.ExecuteAsync("SCAN", cursor.ToString(), "MATCH", prefix + "*", "COUNT", 1000);
+                var resultArray = (RedisResult[])scanResult;
+                cursor = Convert.ToInt64((string)resultArray[0]);
+                var keys = ((RedisResult[])resultArray[1]).Select(x => x.ToString());
+                foreach (var key in keys)
+                {
+                    var obj = await GetAsync<T>(key);
+                    if (obj != null && filter(obj)) result.Add(obj);
+                }
+            } while (cursor != 0);
+
+            return result;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"Failed to fetch and filter keys with prefix: {prefix}");
+            return Enumerable.Empty<T>();
         }
     }
 

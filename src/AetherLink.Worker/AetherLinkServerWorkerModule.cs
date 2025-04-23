@@ -115,6 +115,10 @@ namespace AetherLink.Worker
             app.UseHangfireDashboard("/hangfire", dashboardOptions);
 
             AsyncHelper.RunSync(async () => { await context.ServiceProvider.GetService<IServer>().StartAsync(); });
+            AsyncHelper.RunSync(async () =>
+            {
+                await context.ServiceProvider.GetService<IRequestStatusChecker>().StartAsync();
+            });
             ConfigureBackgroundWorker(context);
         }
 

@@ -1,6 +1,7 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
+using AElf;
+using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Logging;
@@ -28,17 +29,11 @@ public class CrossChainManuallyExecuteJob : IAsyncBackgroundJob<CrossChainReques
     {
         try
         {
-            var rampMessageData = await _crossChainRequestProvider.GetAsync(args.MessageId);
+            var rampMessageData = await TryGetRampMessageDataAsync(args.MessageId);
             if (rampMessageData == null)
             {
-                var messageId128 = _crossChainRequestProvider.Ensure128BytesMessageId(args.MessageId);
-                rampMessageData = await _crossChainRequestProvider.GetAsync(messageId128);
-
-                if (rampMessageData == null)
-                {
-                    _logger.LogWarning($"[CrossChainManuallyExecute] {args.MessageId} not exist");
-                    return;
-                }
+                _logger.LogWarning($"[CrossChainManuallyExecute] {args.MessageId} not exist");
+                return;
             }
 
             // reset RequestReceiveTime to ManuallyExecute transaction block time
@@ -54,6 +49,27 @@ public class CrossChainManuallyExecuteJob : IAsyncBackgroundJob<CrossChainReques
         catch (Exception e)
         {
             _logger.LogError(e, $"[CrossChainManuallyExecute] {args.MessageId} manually execute failed");
+        }
+    }
+
+    private async Task<CrossChainDataDto> TryGetRampMessageDataAsync(string messageId)
+    {
+        try
+        {
+            var rampMessageData = await _crossChainRequestProvider.GetAsync(messageId);
+            if (rampMessageData != null) return rampMessageData;
+
+            var messageId128 = _crossChainRequestProvider.Ensure128BytesMessageId(messageId);
+            rampMessageData = await _crossChainRequestProvider.GetAsync(messageId128);
+            if (rampMessageData != null) return rampMessageData;
+
+            var messageBase64 = ByteStringHelper.FromHexString(messageId).ToBase64();
+            return await _crossChainRequestProvider.GetAsync(messageBase64);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"[CrossChainManuallyExecute] Get {messageId} Ramp message data failed.");
+            return null;
         }
     }
 }
