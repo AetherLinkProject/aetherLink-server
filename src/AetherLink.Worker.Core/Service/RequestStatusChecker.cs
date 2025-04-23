@@ -41,7 +41,11 @@ public class RequestStatusChecker : IRequestStatusChecker, ISingletonDependency
         try
         {
             var results = await _storageProvider.GetFilteredAsync<CrossChainDataDto>(
-                RedisKeyConstants.CrossChainDataKey, t => t.State != CrossChainState.Committed);
+                RedisKeyConstants.CrossChainDataKey,
+                t => t.State is not (CrossChainState.Committed and CrossChainState.Confirmed));
+            if (results == null) return;
+
+            _logger.LogDebug($"[RequestStatusChecker] Found {results.Count()} tasks that need to be restarted");
 
             await Task.WhenAll(results.Select(RestartCrossChainRequestAsync));
         }
