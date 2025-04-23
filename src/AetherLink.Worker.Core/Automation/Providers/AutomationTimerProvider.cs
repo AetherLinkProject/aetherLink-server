@@ -38,16 +38,16 @@ public class AutomationTimerProvider : ISingletonDependency
         var argId = IdGeneratorHelper.GenerateId(chainId, reqId);
         _logger.LogInformation("[AutomationTimer] {name} Execute checking.", argId);
 
+        var requestStartArgs = _objectMapper.Map<AutomationJobArgs, AutomationStartJobArgs>(args);
         var request = await _jobProvider.GetAsync(args);
         if (request == null)
         {
             // only new request will update epochDict from args Epoch, others will updated epoch by request epoch from transmitted logevent
             _epochDict[argId] = args.Epoch;
-            await _jobManager.EnqueueAsync(_objectMapper.Map<AutomationJobArgs, AutomationStartJobArgs>(args));
+            await _jobManager.EnqueueAsync(requestStartArgs);
             return;
         }
 
-        var requestStartArgs = _objectMapper.Map<AutomationJobArgs, AutomationStartJobArgs>(args);
         _epochDict.TryGetValue(argId, out var epoch);
         if (request.Epoch == epoch && request.Epoch != 0)
         {
@@ -68,10 +68,10 @@ public class AutomationTimerProvider : ISingletonDependency
             _logger.LogInformation("[AutomationTimer] {reqId} Local epoch will updated, {oldEpoch} => {newEpoch}",
                 reqId,
                 requestStartArgs.Epoch, request.Epoch);
-            requestStartArgs.Epoch = request.Epoch;
             _epochDict[argId] = request.Epoch;
         }
 
+        requestStartArgs.Epoch = request.Epoch;
         await _jobManager.EnqueueAsync(requestStartArgs);
     }
 }

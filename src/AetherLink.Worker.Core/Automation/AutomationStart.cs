@@ -60,9 +60,20 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
                 job = _mapper.Map<AutomationStartJobArgs, JobDto>(args);
                 job.RequestReceiveTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
             }
-            else if (job.State == RequestState.RequestCanceled || epoch < job.Epoch) return;
+            else if (job.State == RequestState.RequestCanceled)
+            {
+                _logger.LogDebug("[Automation] {name} is canceled", id);
+                return;
+            }
+            else if (args.Epoch < job.Epoch)
+            {
+                _logger.LogDebug("[Automation] {name} epoch {ae} is older than local {je} canceled", id, args.Epoch,
+                    job.Epoch);
+                return;
+            }
 
-            job.RoundId = roundId;
+            var currentRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime);
+            job.RoundId = currentRoundId;
             job.State = RequestState.RequestStart;
             await _jobProvider.SetAsync(job);
 
@@ -71,7 +82,7 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
             var commitment = await _contractProvider.GetRequestCommitmentAsync(chainId, upkeepId);
             var payload = AutomationHelper.GetUpkeepPerformData(commitment);
 
-            if (_peerManager.IsLeader(epoch, roundId))
+            if (_peerManager.IsLeader(epoch, currentRoundId))
             {
                 _logger.LogInformation($"[Automation][Leader] {id} Is Leader.");
                 var request = new QueryReportSignatureRequest { Context = context, Payload = payload };

@@ -39,18 +39,17 @@ public class DataFeedsTimerProvider : ISingletonDependency
         var argId = IdGeneratorHelper.GenerateId(chainId, reqId);
         _logger.LogInformation("[DataFeedsTimer] {name} Execute checking.", argId);
 
+        var requestStartArgs = _objectMapper.Map<DataFeedsProcessJobArgs, RequestStartProcessJobArgs>(args);
         var request = await _jobProvider.GetAsync(args);
         if (request == null)
         {
             // only new request will update epochDict from args Epoch, others will updated epoch by request epoch from transmitted logevent
             _epochDict[argId] = args.Epoch;
-            await _backgroundJobManager.EnqueueAsync(
-                _objectMapper.Map<DataFeedsProcessJobArgs, RequestStartProcessJobArgs>(args));
+            await _backgroundJobManager.EnqueueAsync(requestStartArgs);
             return;
         }
 
         // this epoch not finished, Wait for transmitted log event.
-        var requestStartArgs = _objectMapper.Map<DataFeedsProcessJobArgs, RequestStartProcessJobArgs>(args);
         _epochDict.TryGetValue(argId, out var epoch);
         if (request.Epoch == epoch && request.Epoch != 0)
         {
