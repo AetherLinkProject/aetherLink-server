@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Automation.Providers;
-using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
@@ -72,7 +71,7 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
                 return;
             }
 
-            var currentRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime);
+            var currentRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime, job.RequestEndTimeoutWindow);
             job.RoundId = currentRoundId;
             job.State = RequestState.RequestStart;
             await _jobProvider.SetAsync(job);

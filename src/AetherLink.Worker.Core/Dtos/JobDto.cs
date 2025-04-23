@@ -1,4 +1,5 @@
 using System;
+using AetherLink.Worker.Core.Constants;
 
 namespace AetherLink.Worker.Core.Dtos;
 
@@ -8,4 +9,5 @@ public class JobDto : OracleRequestBase
     public RequestState State { get; set; }
     public long TransactionBlockTime { get; set; }
     public string JobSpec { get; set; }
+    public int RequestEndTimeoutWindow { get; set; } = RequestProgressConstants.DefaultRequestEndTimeoutWindow;
 }

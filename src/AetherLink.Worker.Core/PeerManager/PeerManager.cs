@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
-using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,8 +16,7 @@ public interface IPeerManager
     public int GetPeersCount();
     public bool IsLeader(long epoch, int roundId);
     public bool IsLeader(OCRContext context);
-    public int GetCurrentRoundId(long startTime);
-    public int GetCurrentRoundId(DateTime startTime);
+    public int GetCurrentRoundId(DateTime startTime, int timeoutWindow);
     public Task BroadcastAsync<TResponse>(Func<AetherlinkClient, TResponse> func);
     public Task CommitToLeaderAsync<TResponse>(Func<AetherlinkClient, TResponse> func, long epoch, int roundId);
     public Task CommitToLeaderAsync<TResponse>(Func<AetherlinkClient, TResponse> func, OCRContext context);
@@ -46,17 +44,11 @@ public class PeerManager : IPeerManager, ISingletonDependency
     public bool IsLeader(long epoch, int roundId) => LeaderElection(epoch, roundId) == _ownerIndex;
     public bool IsLeader(OCRContext context) => LeaderElection(context.Epoch, context.RoundId) == _ownerIndex;
 
-    public int GetCurrentRoundId(long startTime)
-    {
-        var unixCurrentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-        return (int)((unixCurrentTime - startTime) / RequestProgressConstants.CheckRequestEndTimeoutWindow);
-    }
-
-    public int GetCurrentRoundId(DateTime startTime)
+    public int GetCurrentRoundId(DateTime startTime, int timeoutWindow)
     {
         var unixCurrentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         var unixStartTime = new DateTimeOffset(startTime).ToUnixTimeMilliseconds();
-        return (int)((unixCurrentTime - unixStartTime) / RequestProgressConstants.CheckRequestEndTimeoutWindow);
+        return (int)((unixCurrentTime - unixStartTime) / timeoutWindow);
     }
 
     public async Task BroadcastAsync<TResponse>(Func<AetherlinkClient, TResponse> func)

@@ -54,7 +54,7 @@ public class RequestStartProcessJob : AsyncBackgroundJob<RequestStartProcessJobA
                 return;
             }
 
-            var currentRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime);
+            var currentRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime, job.RequestEndTimeoutWindow);
             job.RoundId = currentRoundId;
             job.State = RequestState.RequestStart;
             await _jobProvider.SetAsync(job);

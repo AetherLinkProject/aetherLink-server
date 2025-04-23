@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Common;
-using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.PeerManager;
 using Microsoft.Extensions.Logging;
@@ -53,7 +51,8 @@ public class DataFeedsTimerProvider : ISingletonDependency
         _epochDict.TryGetValue(argId, out var epoch);
         if (request.Epoch == epoch && request.Epoch != 0)
         {
-            var newRoundId = _peerManager.GetCurrentRoundId(request.RequestReceiveTime);
+            var newRoundId =
+                _peerManager.GetCurrentRoundId(request.RequestReceiveTime, request.RequestEndTimeoutWindow);
             if (newRoundId <= request.RoundId)
             {
                 _logger.LogDebug("[DataFeedsTimer] The last round {Epoch} wasn't finished. reqId {reqId}",

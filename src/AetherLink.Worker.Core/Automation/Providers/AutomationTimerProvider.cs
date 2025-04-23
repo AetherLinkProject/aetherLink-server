@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Automation.Args;
@@ -51,7 +50,8 @@ public class AutomationTimerProvider : ISingletonDependency
         _epochDict.TryGetValue(argId, out var epoch);
         if (request.Epoch == epoch && request.Epoch != 0)
         {
-            var newRoundId = _peerManager.GetCurrentRoundId(request.RequestReceiveTime);
+            var newRoundId =
+                _peerManager.GetCurrentRoundId(request.RequestReceiveTime, request.RequestEndTimeoutWindow);
             if (newRoundId <= request.RoundId)
             {
                 _logger.LogDebug("[AutomationTimer] The last round {Epoch} wasn't finished. reqId {reqId}",
@@ -66,8 +66,7 @@ public class AutomationTimerProvider : ISingletonDependency
         else
         {
             _logger.LogInformation("[AutomationTimer] {reqId} Local epoch will updated, {oldEpoch} => {newEpoch}",
-                reqId,
-                requestStartArgs.Epoch, request.Epoch);
+                reqId, requestStartArgs.Epoch, request.Epoch);
             _epochDict[argId] = request.Epoch;
         }
 

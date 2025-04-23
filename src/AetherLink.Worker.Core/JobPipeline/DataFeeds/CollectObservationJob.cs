@@ -119,7 +119,7 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
             return false;
         }
 
-        var newRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime);
+        var newRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime,job.RequestEndTimeoutWindow);
         if (argRoundId != newRoundId)
         {
             _logger.LogInformation("[Step2] {RequestId} round is not match, round:{RoundId}.", reqRequestId,
@@ -127,7 +127,7 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
             return false;
         }
 
-        if (argEpoch >= reqEpoch) return true;
+        if (argEpoch == reqEpoch) return true;
 
         _logger.LogInformation("[Step2] {RequestId} epoch is not match, epoch:{epoch}.", reqRequestId, reqEpoch);
 
