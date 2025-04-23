@@ -42,7 +42,7 @@ public class RequestStatusChecker : IRequestStatusChecker, ISingletonDependency
         {
             var results = await _storageProvider.GetFilteredAsync<CrossChainDataDto>(
                 RedisKeyConstants.CrossChainDataKey,
-                t => t.State is not (CrossChainState.Committed and CrossChainState.Confirmed));
+                t => t.State != CrossChainState.Committed && t.State != CrossChainState.Confirmed);
             if (results == null) return;
 
             _logger.LogDebug($"[RequestStatusChecker] Found {results.Count()} tasks that need to be restarted");
@@ -63,7 +63,7 @@ public class RequestStatusChecker : IRequestStatusChecker, ISingletonDependency
                 _objectMapper.Map<CrossChainDataDto, CrossChainRequestStartArgs>(data));
 
             _logger.LogDebug(
-                $"[RequestStatusChecker] Scheduler message execute. messageId {data.ReportContext.MessageId}, reqState:{data.State}, hangfireId:{hangfireJobId}");
+                $"[RequestStatusChecker] Message restart. messageId {data.ReportContext.MessageId}, reqState:{data.State}, hangfireId:{hangfireJobId}");
         }
         catch (Exception e)
         {
