@@ -23,15 +23,13 @@ public class RequestStatusChecker : IRequestStatusChecker, ISingletonDependency
     private readonly IStorageProvider _storageProvider;
     private readonly ILogger<RequestStatusChecker> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
-    private readonly ICrossChainRequestProvider _crossChainProvider;
 
-    public RequestStatusChecker(ILogger<RequestStatusChecker> logger, ICrossChainRequestProvider crossChainProvider,
-        IStorageProvider storageProvider, IObjectMapper objectMapper, IBackgroundJobManager backgroundJobManager)
+    public RequestStatusChecker(ILogger<RequestStatusChecker> logger, IStorageProvider storageProvider,
+        IObjectMapper objectMapper, IBackgroundJobManager backgroundJobManager)
     {
         _logger = logger;
         _objectMapper = objectMapper;
         _storageProvider = storageProvider;
-        _crossChainProvider = crossChainProvider;
         _backgroundJobManager = backgroundJobManager;
     }
 
@@ -42,7 +40,11 @@ public class RequestStatusChecker : IRequestStatusChecker, ISingletonDependency
         {
             var results = await _storageProvider.GetFilteredAsync<CrossChainDataDto>(
                 RedisKeyConstants.CrossChainDataKey,
-                t => t.State != CrossChainState.Committed && t.State != CrossChainState.Confirmed);
+                t =>
+                    t.State != CrossChainState.Committed &&
+                    t.State != CrossChainState.Confirmed &&
+                    t.RequestReceiveTime >= DateTime.UtcNow.AddDays(-7)
+            );
 
             _logger.LogDebug($"[RequestStatusChecker] Found {results.Count()} tasks that need to be restarted");
 
