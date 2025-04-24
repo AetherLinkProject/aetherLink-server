@@ -26,6 +26,5 @@ public static class RedisKeyConstants
 
 public static class RedisNetworkConstants
 {
-    public const int DefaultGetDelayTime = 50;
     public const int DefaultScanDelayTime = 100;
 }

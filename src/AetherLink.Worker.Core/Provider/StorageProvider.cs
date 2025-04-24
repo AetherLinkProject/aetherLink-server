@@ -83,13 +83,18 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
                     await RedisDatabase.ExecuteAsync("SCAN", cursor.ToString(), "MATCH", prefix + "*", "COUNT", 1000);
                 var resultArray = (RedisResult[])scanResult;
                 cursor = Convert.ToInt64((string)resultArray[0]);
-                var keys = ((RedisResult[])resultArray[1]).Select(x => x.ToString());
-                foreach (var key in keys)
-                {
-                    var obj = await GetAsync<T>(key);
-                    if (obj != null && filter(obj)) result.Add(obj);
 
-                    await Task.Delay(RedisNetworkConstants.DefaultGetDelayTime);
+                var keys = ((RedisResult[])resultArray[1]).Select(x => x.ToString()).ToArray();
+                if (keys.Length > 0)
+                {
+                    var values = await RedisDatabase.StringGetAsync(keys.Select(k => (RedisKey)k).ToArray());
+                    for (var i = 0; i < keys.Length; i++)
+                    {
+                        var value = values[i];
+                        if (!value.HasValue) continue;
+                        var obj = _serializer.Deserialize<T>(value);
+                        if (obj != null && filter(obj)) result.Add(obj);
+                    }
                 }
 
                 await Task.Delay(RedisNetworkConstants.DefaultScanDelayTime);
