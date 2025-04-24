@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices.ComTypes;
 using AetherLink.Indexer;
 using AetherLink.Indexer.Constants;
 using AetherLink.Indexer.Dtos;
@@ -70,9 +71,10 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
     public async Task<GrainResultDto<List<EvmRampRequestGrainDto>>> SearchEvmRequestsAsync(string network, long to,
         long from)
     {
-        if (!_options.ContractConfig.TryGetValue(network, out var op))
+        var op = _options.ContractConfig.Values.FirstOrDefault(t => t.NetworkName == network);
+        if (op == null || string.IsNullOrEmpty(op.Api) || string.IsNullOrEmpty(op.ContractAddress))
         {
-            _logger.LogError($"[EvmGrain] Not exist network {network}");
+            _logger.LogError($"[EvmGrain] Invalid network {network}");
         }
 
         var pendingRequests = new List<EvmRampRequestGrainDto>();
