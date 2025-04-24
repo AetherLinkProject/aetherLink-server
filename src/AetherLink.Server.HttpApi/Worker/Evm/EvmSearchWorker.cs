@@ -38,7 +38,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var result = await client.GetBlockHeightAsync();
         if (!result.Success)
         {
-            _logger.LogWarning("[RequestSearchWorker]Get Block Height failed");
+            _logger.LogWarning("[EvmSearchWorker] Get Block Height failed");
             return;
         }
 
@@ -53,7 +53,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var consumedHeight = await client.GetConsumedHeightAsync();
         if (!consumedHeight.Success)
         {
-            _logger.LogWarning($"[RequestSearchWorker] Get {networkName} consumed block height failed");
+            _logger.LogWarning($"[EvmSearchWorker] Get {networkName} consumed block height failed");
             return;
         }
 
@@ -61,7 +61,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         if (consumedBlockHeight == 0)
         {
             await client.UpdateConsumedHeightAsync(confirmedHeight);
-            _logger.LogInformation($"[RequestSearchWorker] Initial {networkName} consumed block height. ");
+            _logger.LogInformation($"[EvmSearchWorker] Initial {networkName} consumed block height. ");
             return;
         }
 
@@ -112,7 +112,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
             MessageId = messageId,
             Status = CrossChainStatus.Started.ToString()
         });
-        _logger.LogDebug($"[EvmSearchServer] Create {grainId} {messageId} started {result.Success}");
+        _logger.LogDebug($"[EvmSearchWorker] Create {grainId} {messageId} started {result.Success}");
 
         var messageGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(messageId);
         var messageResult = await messageGrain.UpdateAsync(new()
@@ -124,7 +124,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
             Status = CrossChainStatus.Started.ToString()
         });
 
-        _logger.LogDebug($"[EvmSearchServer] Create {grainId} message grain {messageResult.Success}");
+        _logger.LogDebug($"[EvmSearchWorker] Create {grainId} message grain {messageResult.Success}");
     }
 
     private async Task HandleCommittedAsync(EvmRampRequestGrainDto metadata)
@@ -136,13 +136,13 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var transactionIdGrainResponse = await transactionIdGrainClient.GetAsync();
         if (!transactionIdGrainResponse.Success)
         {
-            _logger.LogDebug($"[EvmSearchServer] Get TransactionIdGrain {messageId} failed.");
+            _logger.LogDebug($"[EvmSearchWorker] Get TransactionIdGrain {messageId} failed.");
             return;
         }
 
         if (transactionIdGrainResponse.Data == null)
         {
-            _logger.LogWarning($"[EvmSearchServer] TransactionId grain {messageId} not exist, no need to update.");
+            _logger.LogWarning($"[EvmSearchWorker] TransactionId grain {messageId} not exist, no need to update.");
             return;
         }
 
@@ -151,14 +151,14 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var response = await requestGrain.GetAsync();
         if (!response.Success)
         {
-            _logger.LogWarning($"[EvmSearchServer] Get crossChainRequestGrain {crossChainGrainId} failed.");
+            _logger.LogWarning($"[EvmSearchWorker] Get crossChainRequestGrain {crossChainGrainId} failed.");
             return;
         }
 
         if (response.Data == null)
         {
             _logger.LogWarning(
-                $"[EvmSearchServer] TransactionId grain {crossChainGrainId} not exist, no need to update.");
+                $"[EvmSearchWorker] TransactionId grain {crossChainGrainId} not exist, no need to update.");
             await requestGrain.CreateAsync(new()
             {
                 MessageId = messageId,
@@ -170,6 +170,6 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var result = await requestGrain.UpdateAsync(response.Data);
 
         _logger.LogDebug(
-            $"[EvmSearchServer] Update {metadata.TransactionId} {messageId} committed {result.Success}");
+            $"[EvmSearchWorker] Update {metadata.TransactionId} {messageId} committed {result.Success}");
     }
 }

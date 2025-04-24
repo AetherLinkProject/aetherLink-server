@@ -41,16 +41,24 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
         var currentState = new List<EvmChainGrainDto>();
         foreach (var op in _options.ContractConfig.Values)
         {
-            var tempWeb3 = new Web3(op.Api);
-            var latestBlockHeight = await _indexer.GetLatestBlockHeightAsync(tempWeb3);
-
-            _logger.LogDebug($"Updated {op.NetworkName} index height to {latestBlockHeight}");
-
-            currentState.Add(new()
+            try
             {
-                NetworkName = op.NetworkName,
-                ConsumedBlockHeight = latestBlockHeight
-            });
+                var tempWeb3 = new Web3(op.Api);
+                var latestBlockHeight = await _indexer.GetLatestBlockHeightAsync(tempWeb3);
+
+                _logger.LogDebug($"[EvmGrain] Updated {op.NetworkName} index height to {latestBlockHeight}");
+
+                currentState.Add(new()
+                {
+                    NetworkName = op.NetworkName,
+                    ConsumedBlockHeight = latestBlockHeight
+                });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e,$"[EvmGrain] Updated {op.NetworkName} index height failed.");
+                continue;
+            }
         }
 
         State.ChainItems = currentState;
@@ -65,7 +73,7 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
     {
         if (!_options.ContractConfig.TryGetValue(network, out var op))
         {
-            _logger.LogError($"Not exist network {network}");
+            _logger.LogError($"[EvmGrain] Not exist network {network}");
         }
 
         var pendingRequests = new List<EvmRampRequestGrainDto>();
@@ -82,7 +90,7 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
             catch (Exception ex)
             {
                 _logger.LogError(
-                    $"[EvmSearchWorker] {network} Error processing blocks {curFrom} to {currentTo}: {ex.Message}");
+                    $"[EvmGrain] {network} Error processing blocks {curFrom} to {currentTo}: {ex.Message}");
                 throw;
             }
         }
@@ -123,13 +131,13 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
             }
 
             _logger.LogWarning(
-                $"[EvmSearchWorkerProvider] Failed to decode event to sendEvent {log.TransactionHash} at {log.BlockNumber}");
+                $"[EvmGrain] Failed to decode event to sendEvent {log.TransactionHash} at {log.BlockNumber}");
 
             return new();
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"[EvmSearchWorkerProvider] Decode {log.TransactionHash} fail at {log.BlockNumber}.");
+            _logger.LogError(e, $"[EvmGrain] Decode {log.TransactionHash} fail at {log.BlockNumber}.");
             throw;
         }
     }
