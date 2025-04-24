@@ -1,4 +1,5 @@
 using System;
+using AetherLink.Worker.Core.Constants;
 
 namespace AetherLink.Worker.Core.Dtos;
 
@@ -17,4 +18,5 @@ public class CrossChainDataDto
     public long ResendTransactionBlockHeight { get; set; }
     public DateTime ResendTransactionBlockTime { get; set; }
     public int NextCommitDelayTime { get; set; }
+    public int RequestEndTimeoutWindow { get; set; } = RequestProgressConstants.DefaultRequestEndTimeoutWindow;
 }
