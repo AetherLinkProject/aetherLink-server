@@ -111,9 +111,10 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
     {
         context.AddBackgroundWorkerAsync<ConfirmBlockHeightSearchWorker>();
         context.AddBackgroundWorkerAsync<RequestSearchWorker>();
-        context.AddBackgroundWorkerAsync<EvmSearchWorker>();
         context.AddBackgroundWorkerAsync<CommitSearchWorker>();
         context.AddBackgroundWorkerAsync<TransactionSearchWorker>();
+        context.AddBackgroundWorkerAsync<EvmSearchWorker>();
+        context.AddBackgroundWorkerAsync<EvmChainStatusSyncWorker>();
     }
 
     private void ConfigureLocalization()

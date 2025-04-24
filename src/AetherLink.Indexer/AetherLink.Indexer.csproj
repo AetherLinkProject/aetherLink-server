@@ -9,6 +9,7 @@
         <PackageReference Include="Nethereum.Contracts" Version="4.26.0" />
         <PackageReference Include="Nethereum.JsonRpc.WebSocketClient" Version="4.26.0" />
         <PackageReference Include="Nethereum.RPC.Reactive" Version="4.26.0" />
+        <PackageReference Include="Nethereum.Web3" Version="4.20.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Volo.Abp.Core" Version="8.0.0" />
         <PackageReference Include="GraphQL" Version="7.0.0" />
