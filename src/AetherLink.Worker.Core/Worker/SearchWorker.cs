@@ -62,7 +62,8 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
             ExecuteRequestCanceledAsync(chainId, blockLatestHeight, startHeight),
             ExecuteRampRequestsAsync(chainId, blockLatestHeight, startHeight),
             ExecuteRampManuallyExecutedAsync(chainId, blockLatestHeight, startHeight),
-            ExecuteRampRequestsCanceledAsync(chainId, blockLatestHeight, startHeight)
+            ExecuteRampRequestsCanceledAsync(chainId, blockLatestHeight, startHeight),
+            ExecuteRampCommitAcceptedAsync(chainId, blockLatestHeight, startHeight)
         );
 
         _logger.LogDebug("[Search] {chain} search log took {time} ms.", chainId,
@@ -158,6 +159,20 @@ public class SearchWorker : AsyncPeriodicBackgroundWorkerBase
         _reporter.RecordManuallyExecutedAsync(chainId, manuallyExecutes.Count);
 
         _logger.LogDebug("[Search] {chain} found a total of {count} ramp manually executed.", chainId,
+            manuallyExecutes.Count);
+
+        await Task.WhenAll(requestManuallyExecutedTasks);
+    }
+
+    // search ramp commit accepted event 
+    private async Task ExecuteRampCommitAcceptedAsync(string chainId, long to, long from)
+    {
+        var manuallyExecutes = await _provider.SearchRampCommitAcceptedAsync(chainId, to, from);
+        var requestManuallyExecutedTasks = manuallyExecutes.Select(manuallyExecuted =>
+            _provider.HandleRampRequestCommitAcceptedLogEventAsync(manuallyExecuted));
+        _reporter.RecordCommitAcceptedAsync(chainId, manuallyExecutes.Count);
+
+        _logger.LogDebug("[Search] {chain} found a total of {count} ramp commit accepted.", chainId,
             manuallyExecutes.Count);
 
         await Task.WhenAll(requestManuallyExecutedTasks);

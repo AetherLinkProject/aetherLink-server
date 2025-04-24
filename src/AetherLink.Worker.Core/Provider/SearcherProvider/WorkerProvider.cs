@@ -29,10 +29,12 @@ public interface IWorkerProvider
     public Task HandleRequestCancelledLogEventAsync(RequestCancelledDto requestCancelled);
     public Task HandleRampRequestCancelledLogEventAsync(RampRequestCancelledDto rampCancelled);
     public Task HandleRampRequestManuallyExecutedLogEventAsync(RampRequestManuallyExecutedDto manuallyExecuted);
+    public Task HandleRampRequestCommitAcceptedLogEventAsync(RampCommitReportAcceptedDto commitReportAccepted);
     public Task<long> GetStartHeightAsync(string chainId);
     public Task<long> GetUnconfirmedStartHeightAsync(string chainId);
     public Task SetLatestSearchHeightAsync(string chainId, long searchHeight);
     public Task SetLatestUnconfirmedHeightAsync(string chainId, long unconfirmedHeight);
+    public Task<List<RampCommitReportAcceptedDto>> SearchRampCommitAcceptedAsync(string chainId, long to, long from);
 
     public Task<List<RampRequestManuallyExecutedDto>> SearchRampManuallyExecutedAsync(string chainId, long to,
         long from);
@@ -78,6 +80,9 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
     public async Task<List<RampRequestManuallyExecutedDto>> SearchRampManuallyExecutedAsync(string chainId, long to,
         long from) => await _aeFinderProvider.SubscribeRampRequestManuallyExecutedAsync(chainId, to, from);
 
+    public async Task<List<RampCommitReportAcceptedDto>> SearchRampCommitAcceptedAsync(string chainId, long to,
+        long from) => await _aeFinderProvider.SubscribeRampCommitReportAsync(chainId, to, from);
+
     public async Task HandleJobAsync(OcrLogEventDto logEvent)
     {
         if (!_requestJob.TryGetValue(logEvent.RequestTypeIndex, out var request))
@@ -121,6 +126,10 @@ public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependen
     public async Task HandleRampRequestManuallyExecutedLogEventAsync(RampRequestManuallyExecutedDto manuallyExecuted)
         => await _backgroundJobManager.EnqueueAsync(_objectMapper
             .Map<RampRequestManuallyExecutedDto, CrossChainRequestManuallyExecuteJobArgs>(manuallyExecuted));
+
+    public async Task HandleRampRequestCommitAcceptedLogEventAsync(RampCommitReportAcceptedDto commitReportAccepted)
+        => await _backgroundJobManager.EnqueueAsync(_objectMapper
+            .Map<RampCommitReportAcceptedDto, CrossChainCommitAcceptedJobArgs>(commitReportAccepted));
 
     private static string GetSearchHeightRedisKey(string chainId)
         => IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, chainId);
