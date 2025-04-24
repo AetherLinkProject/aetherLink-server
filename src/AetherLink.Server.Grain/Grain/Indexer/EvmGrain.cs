@@ -26,8 +26,8 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
     private readonly IEvmIndexerProvider _indexer;
     private readonly EvmContractsOptions _options;
 
-    public EvmGrain(IEvmIndexerProvider indexer, ILogger<EvmGrain> logger,
-        IOptionsSnapshot<EvmContractsOptions> options)
+    public EvmGrain(IOptionsSnapshot<EvmContractsOptions> options, IEvmIndexerProvider indexer,
+        ILogger<EvmGrain> logger)
     {
         _logger = logger;
         _indexer = indexer;
@@ -43,16 +43,14 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
         {
             var tempWeb3 = new Web3(op.Api);
             var latestBlockHeight = await _indexer.GetLatestBlockHeightAsync(tempWeb3);
+
+            _logger.LogDebug($"Updated {op.NetworkName} index height to {latestBlockHeight}");
+
             currentState.Add(new()
             {
                 NetworkName = op.NetworkName,
                 ConsumedBlockHeight = latestBlockHeight
             });
-        }
-
-        foreach (var item in currentState)
-        {
-            _logger.LogDebug($"Updated {item.NetworkName} index height to {item.ConsumedBlockHeight}");
         }
 
         State.ChainItems = currentState;
