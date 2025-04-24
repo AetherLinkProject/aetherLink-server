@@ -34,6 +34,8 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
+        _logger.LogDebug("[EvmSearchWorker] Start ...");
+
         var client = _clusterClient.GetGrain<IEvmGrain>(GrainKeyConstants.ConfirmBlockHeightGrainKey);
         var result = await client.GetBlockHeightAsync();
         if (!result.Success)
@@ -47,6 +49,8 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
     private async Task HandleRequestsAsync(string networkName, long confirmedHeight)
     {
+        _logger.LogDebug($"[EvmSearchWorker] Start handler {networkName} request ...");
+
         var grainId =
             GrainIdHelper.GenerateGrainId(GrainKeyConstants.RequestWorkerConsumedBlockHeightGrainKey, networkName);
         var client = _clusterClient.GetGrain<IEvmConsumedBlockHeightGrain>(grainId);
@@ -66,6 +70,8 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         }
 
         var safeBlockHeight = confirmedHeight - _options.SubscribeBlocksDelay;
+        _logger.LogDebug($"[EvmSearchWorker] Current safe block height: {safeBlockHeight}.");
+
         if (consumedBlockHeight >= safeBlockHeight)
         {
             _logger.LogDebug(
@@ -82,6 +88,8 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         await Task.WhenAll(requests.Data.Select(HandleCrossChainRequestAsync));
 
         await client.UpdateConsumedHeightAsync(confirmedHeight);
+
+        _logger.LogInformation($"[EvmSearchWorker] {networkName} confirmed at {confirmedHeight}");
     }
 
     private async Task HandleCrossChainRequestAsync(EvmRampRequestGrainDto metadata)
