@@ -70,7 +70,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         }
 
         var safeBlockHeight = confirmedHeight - _options.SubscribeBlocksDelay;
-        _logger.LogDebug($"[EvmSearchWorker] Current safe block height: {safeBlockHeight}.");
+        _logger.LogDebug($"[EvmSearchWorker] {networkName} Current safe block height: {safeBlockHeight}.");
 
         if (consumedBlockHeight >= safeBlockHeight)
         {

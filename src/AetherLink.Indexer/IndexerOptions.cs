@@ -26,5 +26,4 @@ public class EvmOptions
     public string ContractAddress { get; set; }
     public string Api { get; set; }
     public string NetworkName { get; set; }
-    public int SubscribeBlocksDelay { get; set; } = 100;
 }
