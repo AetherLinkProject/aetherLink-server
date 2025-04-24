@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AetherLink.Worker.Core.Constants;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -87,7 +88,11 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
                 {
                     var obj = await GetAsync<T>(key);
                     if (obj != null && filter(obj)) result.Add(obj);
+
+                    await Task.Delay(RedisNetworkConstants.DefaultGetDelayTime);
                 }
+
+                await Task.Delay(RedisNetworkConstants.DefaultScanDelayTime);
             } while (cursor != 0);
 
             return result;

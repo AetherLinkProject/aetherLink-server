@@ -23,3 +23,9 @@ public static class RedisKeyConstants
     public const string UpkeepInfoKey = "UpkeepInfo";
     public const string UpkeepLogTriggerInfoKey = "UpkeepLogTriggerInfo";
 }
+
+public static class RedisNetworkConstants
+{
+    public const int DefaultGetDelayTime = 50;
+    public const int DefaultScanDelayTime = 100;
+}
