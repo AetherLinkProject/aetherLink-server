@@ -137,7 +137,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
     private async Task HandleCommittedAsync(EvmRampRequestGrainDto metadata)
     {
-        var messageId = metadata.TransactionId;
+        var messageId = metadata.MessageId;
 
         // find request by message id
         var transactionIdGrainClient = _clusterClient.GetGrain<ITransactionIdGrain>(messageId);
