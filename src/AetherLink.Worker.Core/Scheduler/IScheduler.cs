@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using AElf.CSharp.Core;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
@@ -110,10 +111,12 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
             CancelSchedulerByName(schedulerName);
         }
 
+        var nextRound = _crossChainScheduler.CalculateCurrentRoundId(crossChainData).Add(1);
         switch (type)
         {
             case CrossChainSchedulerType.CheckCommittedScheduler:
-                overTime = crossChainData.RequestReceiveTime.AddMinutes(_options.CheckCommittedTimeoutWindow);
+                overTime = crossChainData.RequestReceiveTime.AddMinutes(
+                    _options.CheckCommittedTimeoutWindow * nextRound);
                 registry.Schedule(() => _crossChainScheduler.Execute(crossChainData)).WithName(schedulerName)
                     .NonReentrant().ToRunOnceAt(overTime);
                 break;

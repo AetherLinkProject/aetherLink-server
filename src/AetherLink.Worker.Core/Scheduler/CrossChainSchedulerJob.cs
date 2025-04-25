@@ -15,6 +15,7 @@ public interface ICrossChainSchedulerJob
 {
     public Task Execute(CrossChainDataDto crossChainData);
     public Task Resend(CrossChainDataDto job);
+    public int CalculateCurrentRoundId(CrossChainDataDto data);
 }
 
 public class CrossChainSchedulerJob : ICrossChainSchedulerJob, ITransientDependency
@@ -41,9 +42,7 @@ public class CrossChainSchedulerJob : ICrossChainSchedulerJob, ITransientDepende
             _logger.LogInformation(
                 $"[CrossChainSchedulerJob] Scheduler message execute. messageId {reportContext.MessageId}, roundId:{reportContext.RoundId}, reqState:{data.State}");
 
-            var unixCurrentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            var unixStartTime = new DateTimeOffset(data.RequestReceiveTime).ToUnixTimeMilliseconds();
-            var currentRound = (int)((unixCurrentTime - unixStartTime) / data.RequestEndTimeoutWindow);
+            var currentRound = CalculateCurrentRoundId(data);
             if (currentRound > RetryConstants.MaximumRetryTimes)
             {
                 _logger.LogWarning(
@@ -88,5 +87,12 @@ public class CrossChainSchedulerJob : ICrossChainSchedulerJob, ITransientDepende
         {
             _logger.LogError(e, "[CrossChainSchedulerJob] Resend cross chain job failed.");
         }
+    }
+
+    public int CalculateCurrentRoundId(CrossChainDataDto data)
+    {
+        var unixCurrentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        var unixStartTime = new DateTimeOffset(data.RequestReceiveTime).ToUnixTimeMilliseconds();
+        return (int)((unixCurrentTime - unixStartTime) / data.RequestEndTimeoutWindow);
     }
 }

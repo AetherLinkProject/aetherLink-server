@@ -170,7 +170,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
             await requestGrain.CreateAsync(new()
             {
                 MessageId = messageId,
-                Status = CrossChainStatus.Committed.ToString(),
+                Status = CrossChainStatus.Committed.ToString()
             });
             return;
         }
