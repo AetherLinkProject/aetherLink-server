@@ -87,7 +87,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var requests = await evmIndexerGrainClient.SearchEvmRequestsAsync(networkName, safeBlockHeight, from);
         await Task.WhenAll(requests.Data.Select(HandleCrossChainRequestAsync));
 
-        await client.UpdateConsumedHeightAsync(confirmedHeight);
+        await client.UpdateConsumedHeightAsync(safeBlockHeight);
 
         _logger.LogInformation($"[EvmSearchWorker] {networkName} confirmed at {confirmedHeight}");
     }
