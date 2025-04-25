@@ -43,12 +43,12 @@ public class CrossChainSchedulerJob : ICrossChainSchedulerJob, ITransientDepende
                 $"[CrossChainSchedulerJob] Scheduler message execute. messageId {reportContext.MessageId}, roundId:{reportContext.RoundId}, reqState:{data.State}");
 
             var currentRound = CalculateCurrentRoundId(data);
-            // if (currentRound > RetryConstants.MaximumRetryTimes)
-            // {
-            //     _logger.LogWarning(
-            //         $"[CrossChainSchedulerJob] Task {reportContext.MessageId} has reached the maximum number of retries. Please intervene manually as soon as possible..");
-            //     return;
-            // }
+            if (currentRound > RetryConstants.MaximumRetryTimes)
+            {
+                _logger.LogWarning(
+                    $"[CrossChainSchedulerJob] Task {reportContext.MessageId} has reached the maximum number of retries. Please intervene manually as soon as possible..");
+                // return;
+            }
 
             data.ReportContext.RoundId = currentRound;
             await _crossChainRequestProvider.SetAsync(data);
