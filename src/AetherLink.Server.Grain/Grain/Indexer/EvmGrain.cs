@@ -38,8 +38,9 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
     public async Task UpdateLatestBlockHeightAsync()
     {
         if (string.IsNullOrEmpty(State.Id)) State.Id = this.GetPrimaryKeyString();
+        var currentState = State.ChainItems?.ToDictionary(x => x.NetworkName, x => x)
+                           ?? new Dictionary<string, EvmChainGrainDto>();
 
-        var currentState = new List<EvmChainGrainDto>();
         foreach (var op in _options.ContractConfig.Values)
         {
             try
@@ -49,11 +50,11 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
 
                 _logger.LogDebug($"[EvmGrain] Updated {op.NetworkName} index height to {latestBlockHeight}");
 
-                currentState.Add(new()
+                currentState[op.NetworkName] = new EvmChainGrainDto
                 {
                     NetworkName = op.NetworkName,
                     ConsumedBlockHeight = latestBlockHeight
-                });
+                };
             }
             catch (Exception e)
             {
@@ -61,7 +62,8 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
             }
         }
 
-        State.ChainItems = currentState;
+        State.ChainItems = currentState.Values.ToList();
+
         await WriteStateAsync();
     }
 

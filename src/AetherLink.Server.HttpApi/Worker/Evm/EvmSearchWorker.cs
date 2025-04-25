@@ -34,7 +34,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        _logger.LogDebug("[EvmSearchWorker] Start ...");
+        _logger.LogDebug("[EvmSearchWorker] Start to search EVM requests...");
 
         var client = _clusterClient.GetGrain<IEvmGrain>(GrainKeyConstants.ConfirmBlockHeightGrainKey);
         var result = await client.GetBlockHeightAsync();
