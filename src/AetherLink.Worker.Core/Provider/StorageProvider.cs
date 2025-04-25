@@ -79,8 +79,15 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
             var cursor = 0L;
             do
             {
-                var scanResult =
-                    await RedisDatabase.ExecuteAsync("SCAN", cursor.ToString(), "MATCH", prefix + "*", "COUNT", 1000);
+                var scanResult = await RedisDatabase.ExecuteAsync(
+                    RedisNetworkConstants.ScanCommand,
+                    cursor.ToString(),
+                    "MATCH",
+                    prefix + "*",
+                    "COUNT",
+                    RedisNetworkConstants.DefaultScanStep
+                );
+
                 var resultArray = (RedisResult[])scanResult;
                 cursor = Convert.ToInt64((string)resultArray[0]);
 
