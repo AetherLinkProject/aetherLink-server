@@ -15,17 +15,16 @@ public enum DataFeedsType
 
 public enum SchedulerType
 {
-    CheckRequestEndScheduler,
     ObservationCollectWaitingScheduler
-}
-
-public enum UpkeepSchedulerType
-{
-    CheckCronUpkeepEndScheduler
 }
 
 public enum CrossChainSchedulerType
 {
     CheckCommittedScheduler,
     ResendPendingScheduler
+}
+
+public class RequestProgressConstants
+{
+    public const int DefaultRequestEndTimeoutWindow = 300000;
 }

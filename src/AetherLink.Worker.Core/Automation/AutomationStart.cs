@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Automation.Providers;
-using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
@@ -43,7 +42,6 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
         var upkeepId = args.RequestId;
         var epoch = args.Epoch;
         var roundId = args.RoundId;
-        var blockTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
         var context = new OCRContext
         {
             RequestId = upkeepId,
@@ -56,13 +54,25 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
         try
         {
             var job = await _jobProvider.GetAsync(args);
-            if (job == null) job = _mapper.Map<AutomationStartJobArgs, JobDto>(args);
-            else if (job.State == RequestState.RequestCanceled || epoch < job.Epoch) return;
-            else if (job.RoundId == 0 && job.State == RequestState.RequestEnd)
-                blockTime = DateTimeOffset.FromUnixTimeMilliseconds(job.TransactionBlockTime).DateTime;
+            if (job == null)
+            {
+                job = _mapper.Map<AutomationStartJobArgs, JobDto>(args);
+                job.RequestReceiveTime = DateTimeOffset.FromUnixTimeMilliseconds(args.StartTime).DateTime;
+            }
+            else if (job.State == RequestState.RequestCanceled)
+            {
+                _logger.LogDebug("[Automation] {name} is canceled", id);
+                return;
+            }
+            else if (args.Epoch < job.Epoch)
+            {
+                _logger.LogDebug("[Automation] {name} epoch {ae} is older than local {je} canceled", id, args.Epoch,
+                    job.Epoch);
+                return;
+            }
 
-            job.RequestReceiveTime = _schedulerService.UpdateBlockTime(blockTime);
-            job.RoundId = roundId;
+            var currentRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime, job.RequestEndTimeoutWindow);
+            job.RoundId = currentRoundId;
             job.State = RequestState.RequestStart;
             await _jobProvider.SetAsync(job);
 
@@ -71,7 +81,7 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
             var commitment = await _contractProvider.GetRequestCommitmentAsync(chainId, upkeepId);
             var payload = AutomationHelper.GetUpkeepPerformData(commitment);
 
-            if (_peerManager.IsLeader(epoch, roundId))
+            if (_peerManager.IsLeader(epoch, currentRoundId))
             {
                 _logger.LogInformation($"[Automation][Leader] {id} Is Leader.");
                 var request = new QueryReportSignatureRequest { Context = context, Payload = payload };
@@ -80,8 +90,6 @@ public class AutomationStart : AsyncBackgroundJob<AutomationStartJobArgs>, ITran
                     .ToByteArray());
                 await _peerManager.BroadcastAsync(p => p.QueryReportSignatureAsync(request));
             }
-
-            _schedulerService.StartCronUpkeepScheduler(job);
 
             _logger.LogInformation($"[Automation] {id} Waiting for request end.");
         }

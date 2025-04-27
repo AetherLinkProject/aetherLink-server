@@ -119,14 +119,19 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
             return false;
         }
 
-        if (reqRoundId > argRoundId || argEpoch < reqEpoch)
+        var newRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime,job.RequestEndTimeoutWindow);
+        if (argRoundId != newRoundId)
         {
-            _logger.LogInformation("[Step2] {RequestId} is not match, epoch:{epoch} round:{RoundId}.", reqRequestId,
-                reqEpoch, reqRoundId);
+            _logger.LogInformation("[Step2] {RequestId} round is not match, round:{RoundId}.", reqRequestId,
+                reqRoundId);
             return false;
         }
 
-        return true;
+        if (argEpoch == reqEpoch) return true;
+
+        _logger.LogInformation("[Step2] {RequestId} epoch is not match, epoch:{epoch}.", reqRequestId, reqEpoch);
+
+        return false;
     }
 
     private async Task<string> GetDataFeedsDataAsync(CollectObservationJobArgs args, DataFeedsJobSpec dataSpec)
@@ -156,6 +161,11 @@ public class CollectObservationJob : AsyncBackgroundJob<CollectObservationJobArg
                     {
                         plainData = _objectMapper.Map<CollectObservationJobArgs, PlainDataFeedsDto>(args);
                         plainData.OldData = "";
+                    }
+                    else if (plainData.OldData != null && resp == plainData.OldData)
+                    {
+                        _logger.LogDebug("[Step2] New collect result is same as old data {data}", resp);
+                        return "";
                     }
 
                     plainData.NewData = resp;

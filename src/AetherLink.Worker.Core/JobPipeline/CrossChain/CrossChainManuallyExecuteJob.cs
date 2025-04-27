@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using AetherLink.Worker.Core.Provider;
@@ -28,17 +27,11 @@ public class CrossChainManuallyExecuteJob : IAsyncBackgroundJob<CrossChainReques
     {
         try
         {
-            var rampMessageData = await _crossChainRequestProvider.GetAsync(args.MessageId);
+            var rampMessageData = await _crossChainRequestProvider.TryGetRampMessageDataAsync(args.MessageId);
             if (rampMessageData == null)
             {
-                var messageId128 = _crossChainRequestProvider.Ensure128BytesMessageId(args.MessageId);
-                rampMessageData = await _crossChainRequestProvider.GetAsync(messageId128);
-
-                if (rampMessageData == null)
-                {
-                    _logger.LogWarning($"[CrossChainManuallyExecute] {args.MessageId} not exist");
-                    return;
-                }
+                _logger.LogWarning($"[CrossChainManuallyExecute] {args.MessageId} not exist");
+                return;
             }
 
             // reset RequestReceiveTime to ManuallyExecute transaction block time

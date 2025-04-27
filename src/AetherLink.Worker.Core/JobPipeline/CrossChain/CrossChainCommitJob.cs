@@ -67,7 +67,7 @@ public class CrossChainCommitJob : AsyncBackgroundJob<CrossChainCommitJobArgs>, 
     private async Task<string> TryToSendTransactionAsync(IChainWriter writer, ReportContextDto reportContext,
         Dictionary<int, byte[]> partialSignatures, CrossChainDataDto crossChainData)
     {
-        for (var i = 0; i < RetryConstants.DefaultDelay; i++)
+        for (var i = 0; i < RetryConstants.MaximumRetryTimes; i++)
         {
             _logger.LogDebug(
                 $"[CrossChain][Leader] Get message ready to send, MateData: {JsonSerializer.Serialize(reportContext)},CrossChainDataDto: {JsonSerializer.Serialize(crossChainData)} Signature: {string.Join(", ", partialSignatures.Select(kvp => $"Key: {kvp.Key}, Value: {Convert.ToBase64String(kvp.Value)}"))}");

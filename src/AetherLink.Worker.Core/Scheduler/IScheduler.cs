@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using AElf.CSharp.Core;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
@@ -18,11 +19,9 @@ public interface ISchedulerService
     public void StartScheduler(JobDto job, SchedulerType type);
     public void StartScheduler(LogTriggerDto upkeep);
     public void StartScheduler(CrossChainDataDto crossChainData, CrossChainSchedulerType type);
-    public void StartCronUpkeepScheduler(JobDto job);
     public void CancelScheduler(JobDto job, SchedulerType type);
     public void CancelScheduler(CrossChainDataDto crossChainData);
     public void CancelLogUpkeep(LogTriggerDto upkeep);
-    public void CancelCronUpkeep(JobDto job);
     public void CancelAllSchedule(JobDto job);
     public void CancelAllSchedule(CrossChainDataDto job);
     public void CancelLogUpkeepAllSchedule(LogUpkeepInfoDto upkeep);
@@ -35,24 +34,19 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
     private readonly ILogger<SchedulerService> _logger;
     private readonly object _upkeepSchedulesLock = new();
     private readonly ICrossChainSchedulerJob _crossChainScheduler;
-    private readonly IResetRequestSchedulerJob _resetRequestScheduler;
     private readonly IObservationCollectSchedulerJob _observationScheduler;
     private readonly IResetLogTriggerSchedulerJob _resetLogTriggerScheduler;
-    private readonly IResetCronUpkeepSchedulerJob _resetCronUpkeepScheduler;
     private readonly ConcurrentDictionary<string, HashSet<string>> _upkeepSchedules = new();
 
-    public SchedulerService(IResetRequestSchedulerJob resetRequestScheduler, ILogger<SchedulerService> logger,
-        IOptionsSnapshot<SchedulerOptions> schedulerOptions, IObservationCollectSchedulerJob observationScheduler,
-        IResetLogTriggerSchedulerJob resetLogTriggerScheduler, IResetCronUpkeepSchedulerJob resetCronUpkeepScheduler,
+    public SchedulerService(ILogger<SchedulerService> logger, IOptionsSnapshot<SchedulerOptions> schedulerOptions,
+        IObservationCollectSchedulerJob observationScheduler, IResetLogTriggerSchedulerJob resetLogTriggerScheduler,
         ICrossChainSchedulerJob crossChainScheduler)
     {
         _logger = logger;
         _options = schedulerOptions.Value;
         _crossChainScheduler = crossChainScheduler;
         _observationScheduler = observationScheduler;
-        _resetRequestScheduler = resetRequestScheduler;
         _resetLogTriggerScheduler = resetLogTriggerScheduler;
-        _resetCronUpkeepScheduler = resetCronUpkeepScheduler;
         ListenForStart();
         ListenForEnd();
         ListenForError();
@@ -72,11 +66,6 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
                 overTime = DateTime.Now.AddMinutes(_options.ObservationCollectTimeoutWindow);
                 registry.Schedule(() => _observationScheduler.Execute(job)).WithName(schedulerName).NonReentrant()
                     .ToRunOnceAt(overTime);
-                break;
-            case SchedulerType.CheckRequestEndScheduler:
-                overTime = job.RequestReceiveTime.AddMinutes(_options.CheckRequestEndTimeoutWindow);
-                registry.Schedule(() => _resetRequestScheduler.Execute(job)).WithName(schedulerName)
-                    .NonReentrant().ToRunOnceAt(overTime);
                 break;
             default:
                 overTime = DateTime.MinValue;
@@ -122,10 +111,12 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
             CancelSchedulerByName(schedulerName);
         }
 
+        var nextRound = _crossChainScheduler.CalculateCurrentRoundId(crossChainData).Add(1);
         switch (type)
         {
             case CrossChainSchedulerType.CheckCommittedScheduler:
-                overTime = crossChainData.RequestReceiveTime.AddMinutes(_options.CheckCommittedTimeoutWindow);
+                overTime = crossChainData.RequestReceiveTime.AddMinutes(
+                    _options.CheckCommittedTimeoutWindow * nextRound);
                 registry.Schedule(() => _crossChainScheduler.Execute(crossChainData)).WithName(schedulerName)
                     .NonReentrant().ToRunOnceAt(overTime);
                 break;
@@ -148,22 +139,6 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
 
         _logger.LogInformation(
             $"[SchedulerService] Registry cross chain scheduler {schedulerName} OverTime:{overTime}");
-        JobManager.Initialize(registry);
-    }
-
-    public void StartCronUpkeepScheduler(JobDto job)
-    {
-        JobManager.UseUtcTime();
-        var registry = new Registry();
-        var schedulerName = GenerateScheduleName(job.ChainId, job.RequestId,
-            UpkeepSchedulerType.CheckCronUpkeepEndScheduler);
-        CancelSchedulerByName(schedulerName);
-        var overTime = job.RequestReceiveTime.AddMinutes(_options.CheckRequestEndTimeoutWindow);
-        registry.Schedule(() => _resetCronUpkeepScheduler.Execute(job)).WithName(schedulerName)
-            .NonReentrant().ToRunOnceAt(overTime);
-
-        if (DateTime.UtcNow > overTime) return;
-        _logger.LogDebug("[SchedulerService] Registry scheduler {name} OverTime:{overTime}", schedulerName, overTime);
         JobManager.Initialize(registry);
     }
 
@@ -206,9 +181,6 @@ public class SchedulerService : ISchedulerService, ISingletonDependency
             CancelSchedulerByName(GenerateScheduleName(upkeep));
         }
     }
-
-    public void CancelCronUpkeep(JobDto job) => CancelSchedulerByName(GenerateScheduleName(job.ChainId, job.RequestId,
-        UpkeepSchedulerType.CheckCronUpkeepEndScheduler));
 
     public void CancelAllSchedule(JobDto job)
     {

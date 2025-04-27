@@ -1,12 +1,10 @@
 using System;
 using System.Threading.Tasks;
-using AElf.CSharp.Core;
+using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.JobPipeline.Args;
-using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -17,23 +15,21 @@ public interface ICrossChainSchedulerJob
 {
     public Task Execute(CrossChainDataDto crossChainData);
     public Task Resend(CrossChainDataDto job);
+    public int CalculateCurrentRoundId(CrossChainDataDto data);
 }
 
 public class CrossChainSchedulerJob : ICrossChainSchedulerJob, ITransientDependency
 {
     private readonly IObjectMapper _objectMapper;
-    private readonly SchedulerOptions _schedulerOptions;
     private readonly ILogger<CrossChainSchedulerJob> _logger;
     private readonly IBackgroundJobManager _backgroundJobManager;
     private readonly ICrossChainRequestProvider _crossChainRequestProvider;
 
     public CrossChainSchedulerJob(IBackgroundJobManager backgroundJobManager, IObjectMapper objectMapper,
-        ILogger<CrossChainSchedulerJob> logger, IOptions<SchedulerOptions> schedulerOptions,
-        ICrossChainRequestProvider crossChainRequestProvider)
+        ILogger<CrossChainSchedulerJob> logger, ICrossChainRequestProvider crossChainRequestProvider)
     {
         _logger = logger;
         _objectMapper = objectMapper;
-        _schedulerOptions = schedulerOptions.Value;
         _backgroundJobManager = backgroundJobManager;
         _crossChainRequestProvider = crossChainRequestProvider;
     }
@@ -45,12 +41,9 @@ public class CrossChainSchedulerJob : ICrossChainSchedulerJob, ITransientDepende
             var reportContext = data.ReportContext;
             _logger.LogInformation(
                 $"[CrossChainSchedulerJob] Scheduler message execute. messageId {reportContext.MessageId}, roundId:{reportContext.RoundId}, reqState:{data.State}");
-            data.ReportContext.RoundId++;
 
-            var receiveTime = data.RequestReceiveTime;
-            while (DateTime.UtcNow > receiveTime) receiveTime = receiveTime.AddMinutes(_schedulerOptions.RetryTimeOut);
-            data.RequestReceiveTime = receiveTime;
-
+            var currentRound = CalculateCurrentRoundId(data);
+            data.ReportContext.RoundId = currentRound;
             await _crossChainRequestProvider.SetAsync(data);
 
             var hangfireJobId = await _backgroundJobManager.EnqueueAsync(
@@ -87,5 +80,12 @@ public class CrossChainSchedulerJob : ICrossChainSchedulerJob, ITransientDepende
         {
             _logger.LogError(e, "[CrossChainSchedulerJob] Resend cross chain job failed.");
         }
+    }
+
+    public int CalculateCurrentRoundId(CrossChainDataDto data)
+    {
+        var unixCurrentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        var unixStartTime = new DateTimeOffset(data.RequestReceiveTime).ToUnixTimeMilliseconds();
+        return (int)((unixCurrentTime - unixStartTime) / data.RequestEndTimeoutWindow);
     }
 }

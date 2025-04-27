@@ -16,15 +16,14 @@ public class TonIndexerOption
     public string LatestTransactionLt { get; set; } = "28227653000001";
 }
 
-public class EvmIndexerOptionsMap
+public class EvmContractsOptions
 {
-    public Dictionary<string, EvmIndexerOptions> ChainInfos { get; set; } = new();
+    public Dictionary<string, EvmOptions> ContractConfig { get; set; } = new();
 }
 
-public class EvmIndexerOptions
+public class EvmOptions
 {
-    public string WsUrl { get; set; }
     public string ContractAddress { get; set; }
+    public string Api { get; set; }
     public string NetworkName { get; set; }
-    public int PingDelay { get; set; } = 5000;
 }

@@ -26,7 +26,7 @@ public interface ICrossChainRequestProvider
 
     public Task SetAsync(CrossChainDataDto data);
     public Task<CrossChainDataDto> GetAsync(string messageId);
-    public string Ensure128BytesMessageId(string originMessageId);
+    public Task<CrossChainDataDto> TryGetRampMessageDataAsync(string messageId);
 }
 
 public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientDependency
@@ -201,7 +201,28 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         return reportContext;
     }
 
-    public string Ensure128BytesMessageId(string originMessageId)
+    public async Task<CrossChainDataDto> TryGetRampMessageDataAsync(string messageId)
+    {
+        try
+        {
+            var rampMessageData = await GetAsync(messageId);
+            if (rampMessageData != null) return rampMessageData;
+
+            var messageId128 = Ensure128BytesMessageId(messageId);
+            rampMessageData = await GetAsync(messageId128);
+            if (rampMessageData != null) return rampMessageData;
+
+            var messageBase64 = ByteStringHelper.FromHexString(messageId).ToBase64();
+            return await GetAsync(messageBase64);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"[CrossChainManuallyExecute] Get {messageId} Ramp message data failed.");
+            return null;
+        }
+    }
+
+    private string Ensure128BytesMessageId(string originMessageId)
     {
         var messageIdBytes = ByteStringHelper.FromHexString(originMessageId).ToByteArray();
         switch (messageIdBytes.Length)

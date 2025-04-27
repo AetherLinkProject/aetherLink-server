@@ -97,7 +97,7 @@ public static class AELFHelper
     public static async Task<ChainHandler.TransactionState> GetTransactionResultAsync(
         IContractProvider contractProvider, string chainId, string transactionId)
     {
-        for (var i = 0; i < RetryConstants.DefaultDelay; i++)
+        for (var i = 0; i < RetryConstants.MaximumRetryTimes; i++)
         {
             var txResult = await contractProvider.GetTxResultAsync(chainId, transactionId);
             switch (txResult.Status)

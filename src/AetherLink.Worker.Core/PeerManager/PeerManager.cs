@@ -16,6 +16,7 @@ public interface IPeerManager
     public int GetPeersCount();
     public bool IsLeader(long epoch, int roundId);
     public bool IsLeader(OCRContext context);
+    public int GetCurrentRoundId(DateTime startTime, int timeoutWindow);
     public Task BroadcastAsync<TResponse>(Func<AetherlinkClient, TResponse> func);
     public Task CommitToLeaderAsync<TResponse>(Func<AetherlinkClient, TResponse> func, long epoch, int roundId);
     public Task CommitToLeaderAsync<TResponse>(Func<AetherlinkClient, TResponse> func, OCRContext context);
@@ -42,6 +43,13 @@ public class PeerManager : IPeerManager, ISingletonDependency
     public int GetPeersCount() => _peersCount;
     public bool IsLeader(long epoch, int roundId) => LeaderElection(epoch, roundId) == _ownerIndex;
     public bool IsLeader(OCRContext context) => LeaderElection(context.Epoch, context.RoundId) == _ownerIndex;
+
+    public int GetCurrentRoundId(DateTime startTime, int timeoutWindow)
+    {
+        var unixCurrentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        var unixStartTime = new DateTimeOffset(startTime).ToUnixTimeMilliseconds();
+        return (int)((unixCurrentTime - unixStartTime) / timeoutWindow);
+    }
 
     public async Task BroadcastAsync<TResponse>(Func<AetherlinkClient, TResponse> func)
     {

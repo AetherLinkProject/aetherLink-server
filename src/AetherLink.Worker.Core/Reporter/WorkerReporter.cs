@@ -13,6 +13,7 @@ public interface IWorkerReporter
     void RecordTransmittedAsync(string chainId, int count);
     void RecordCanceledAsync(string chainId, int count);
     void RecordManuallyExecutedAsync(string chainId, int count);
+    void RecordCommitAcceptedAsync(string chainId, int count);
     void RecordRampJobAsync(string chainId, int count);
 }
 
@@ -54,4 +55,7 @@ public class WorkerReporter : IWorkerReporter, ISingletonDependency
 
     public void RecordManuallyExecutedAsync(string chainId, int count) =>
         _workerGauge.WithLabels(chainId, Definition.ManuallyExecutedGaugeLabel).Inc(count);
+
+    public void RecordCommitAcceptedAsync(string chainId, int count) =>
+        _workerGauge.WithLabels(chainId, Definition.CommitAcceptedGaugeLabel).Inc(count);
 }

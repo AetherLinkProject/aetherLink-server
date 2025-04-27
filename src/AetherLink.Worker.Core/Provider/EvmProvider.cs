@@ -99,7 +99,7 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
     {
         var account = GetWeb3Account(evmOptions);
 
-        for (var i = 0; i < RetryConstants.DefaultDelay; i++)
+        for (var i = 0; i < RetryConstants.MaximumRetryTimes; i++)
         {
             var receipt = await account.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionId);
             if (receipt != null && receipt.Status != null && receipt.Status == new HexBigInteger(1))

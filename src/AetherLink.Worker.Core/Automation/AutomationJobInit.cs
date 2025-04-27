@@ -46,7 +46,7 @@ public class AutomationJobInit : AsyncBackgroundJob<AutomationJobArgs>, ITransie
             _logger.LogInformation($"[Automation] Get a new upkeep {jobId} at blockHeight:{args.BlockHeight}.");
             var commitment = await _oracleContractProvider.GetRequestCommitmentByTxAsync(chainId, args.TransactionId);
             var triggerDataStr = AutomationHelper.GetTriggerData(commitment);
-            
+
             _logger.LogDebug($"Get automation job spec: {triggerDataStr}");
             switch (AutomationHelper.GetTriggerType(commitment))
             {
@@ -109,7 +109,6 @@ public class AutomationJobInit : AsyncBackgroundJob<AutomationJobArgs>, ITransie
 
         _logger.LogDebug("Starting save upkeep info in storage");
         await _storageProvider.SetAsync(IdGeneratorHelper.GenerateUpkeepInfoId(chainId, upkeepId), upkeepInfo);
-        // await _upkeepStorage.SetAsync(IdGeneratorHelper.GenerateUpkeepInfoId(chainId, upkeepId), upkeepInfo);
         await _filterStorage.AddFilterAsync(upkeepInfo);
     }
 }

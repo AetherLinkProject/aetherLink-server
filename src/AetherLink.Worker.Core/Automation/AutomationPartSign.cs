@@ -6,7 +6,6 @@ using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Automation.Providers;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Dtos;
-using AetherLink.Worker.Core.JobPipeline;
 using AetherLink.Worker.Core.JobPipeline.DataFeeds;
 using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
@@ -128,14 +127,19 @@ public class AutomationPartSign : AsyncBackgroundJob<ReportSignatureRequestArgs>
             return false;
         }
 
-        if (localRound > argRoundId || argEpoch < localEpoch)
+        var newRoundId = _peerManager.GetCurrentRoundId(job.RequestReceiveTime, job.RequestEndTimeoutWindow);
+        if (argRoundId != newRoundId)
         {
-            _logger.LogInformation("[Automation] {RequestId} is not match, epoch:{epoch} round:{RoundId}.", argRequestId,
-                localEpoch, localRound);
+            _logger.LogInformation("[Automation] {RequestId} round is not match, round:{RoundId}.", argRequestId,
+                localRound);
             return false;
         }
 
-        return true;
+        if (argEpoch == localEpoch) return true;
+
+        _logger.LogInformation("[Automation] {RequestId} epoch is not match, epoch:{epoch}.", argRequestId, localEpoch);
+
+        return false;
     }
 
     private async Task<bool> ValidateLeaderUpkeepTriggerAsync(ReportSignatureRequestArgs args)

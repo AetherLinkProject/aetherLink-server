@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Automation.Args;
 using AetherLink.Worker.Core.Common;
+using AetherLink.Worker.Core.PeerManager;
 using AetherLink.Worker.Core.Provider;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.BackgroundJobs;
@@ -12,6 +13,7 @@ namespace AetherLink.Worker.Core.Automation.Providers;
 
 public class AutomationTimerProvider : ISingletonDependency
 {
+    private readonly IPeerManager _peerManager;
     private readonly IJobProvider _jobProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly IBackgroundJobManager _jobManager;
@@ -19,11 +21,12 @@ public class AutomationTimerProvider : ISingletonDependency
     private readonly ConcurrentDictionary<string, long> _epochDict = new();
 
     public AutomationTimerProvider(IBackgroundJobManager jobManager, ILogger<AutomationTimerProvider> logger,
-        IObjectMapper objectMapper, IJobProvider jobProvider)
+        IObjectMapper objectMapper, IJobProvider jobProvider, IPeerManager peerManager)
     {
         _logger = logger;
         _jobManager = jobManager;
         _jobProvider = jobProvider;
+        _peerManager = peerManager;
         _objectMapper = objectMapper;
     }
 
@@ -34,32 +37,40 @@ public class AutomationTimerProvider : ISingletonDependency
         var argId = IdGeneratorHelper.GenerateId(chainId, reqId);
         _logger.LogInformation("[AutomationTimer] {name} Execute checking.", argId);
 
+        var requestStartArgs = _objectMapper.Map<AutomationJobArgs, AutomationStartJobArgs>(args);
         var request = await _jobProvider.GetAsync(args);
         if (request == null)
         {
             // only new request will update epochDict from args Epoch, others will updated epoch by request epoch from transmitted logevent
             _epochDict[argId] = args.Epoch;
-            await _jobManager.EnqueueAsync(_objectMapper.Map<AutomationJobArgs, AutomationStartJobArgs>(args));
+            await _jobManager.EnqueueAsync(requestStartArgs);
             return;
         }
 
-        // this epoch not finished, Wait for transmitted log event.
         _epochDict.TryGetValue(argId, out var epoch);
         if (request.Epoch == epoch && request.Epoch != 0)
         {
-            _logger.LogInformation("[AutomationTimer] The last epoch {Epoch} wasn't finished. reqId {reqId}", epoch,
-                reqId);
-            return;
+            var newRoundId =
+                _peerManager.GetCurrentRoundId(request.RequestReceiveTime, request.RequestEndTimeoutWindow);
+            if (newRoundId <= request.RoundId)
+            {
+                _logger.LogDebug("[AutomationTimer] The last round {Epoch} wasn't finished. reqId {reqId}",
+                    request.RoundId, reqId);
+                return;
+            }
+
+            _logger.LogInformation("[AutomationTimer] {reqId} New round will updated, {or} => {ne}", reqId,
+                request.RoundId, newRoundId);
+            requestStartArgs.RoundId = newRoundId;
+        }
+        else
+        {
+            _logger.LogInformation("[AutomationTimer] {reqId} Local epoch will updated, {oldEpoch} => {newEpoch}",
+                reqId, requestStartArgs.Epoch, request.Epoch);
+            _epochDict[argId] = request.Epoch;
         }
 
-        // when node restart _epochDict request is existed, and epoch is 0, 0 => newEpoch
-        _logger.LogInformation("[AutomationTimer] {reqId} Local epoch will updated, {oldEpoch} => {newEpoch}", reqId,
-            epoch, request.Epoch);
-
-        var requestStartArgs = _objectMapper.Map<AutomationJobArgs, AutomationStartJobArgs>(args);
         requestStartArgs.Epoch = request.Epoch;
         await _jobManager.EnqueueAsync(requestStartArgs);
-
-        _epochDict[argId] = request.Epoch;
     }
 }

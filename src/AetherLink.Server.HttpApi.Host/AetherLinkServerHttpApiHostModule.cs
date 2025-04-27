@@ -21,12 +21,14 @@ using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
 using Volo.Abp.Swashbuckle;
+using Volo.Abp.Threading;
 
 namespace AetherLinkServer;
 
 [DependsOn(
     typeof(AetherLinkServerHttpApiModule),
     typeof(AbpAspNetCoreSerilogModule),
+    typeof(AbpBackgroundWorkersModule),
     typeof(AetherLinkIndexerModule),
     typeof(AbpSwashbuckleModule),
     typeof(AbpAutoMapperModule),
@@ -109,11 +111,18 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
 
     private void ConfigureWorker(ApplicationInitializationContext context)
     {
-        context.AddBackgroundWorkerAsync<ConfirmBlockHeightSearchWorker>();
-        context.AddBackgroundWorkerAsync<RequestSearchWorker>();
-        context.AddBackgroundWorkerAsync<EvmSearchWorker>();
-        context.AddBackgroundWorkerAsync<CommitSearchWorker>();
-        context.AddBackgroundWorkerAsync<TransactionSearchWorker>();
+        // context.AddBackgroundWorkerAsync<ConfirmBlockHeightSearchWorker>();
+        // context.AddBackgroundWorkerAsync<RequestSearchWorker>();
+        // context.AddBackgroundWorkerAsync<CommitSearchWorker>();
+        // context.AddBackgroundWorkerAsync<TransactionSearchWorker>();
+        // context.AddBackgroundWorkerAsync<EvmSearchWorker>();
+        // context.AddBackgroundWorkerAsync<EvmChainStatusSyncWorker>();
+        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<ConfirmBlockHeightSearchWorker>());
+        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<RequestSearchWorker>());
+        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<CommitSearchWorker>());
+        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<TransactionSearchWorker>());
+        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<EvmSearchWorker>());
+        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<EvmChainStatusSyncWorker>());
     }
 
     private void ConfigureLocalization()
