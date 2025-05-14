@@ -19,4 +19,5 @@ public class EvmOptions
     public string DomainSeparator { get; set; }
     public int SubscribeBlocksDelay { get; set; } = 100;
     public double MinGasPrice { get; set; } = 0.05;
+    public int SearchDelayTime { get; set; } = 500;
 }
