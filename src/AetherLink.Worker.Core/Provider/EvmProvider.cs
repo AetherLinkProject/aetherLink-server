@@ -45,7 +45,7 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
             var function = GetTransmitFunction(evmOptions);
             var account = GetWeb3Account(evmOptions);
             var gasPrice = await account.Eth.GasPrice.SendRequestAsync();
-            var minGasPrice = Web3.Convert.ToWei(5, Nethereum.Util.UnitConversion.EthUnit.Gwei);
+            var minGasPrice = Web3.Convert.ToWei(evmOptions.MinGasPrice, Nethereum.Util.UnitConversion.EthUnit.Gwei);
             if (gasPrice.Value < minGasPrice) gasPrice = new HexBigInteger(minGasPrice);
 
             _logger.LogDebug(
