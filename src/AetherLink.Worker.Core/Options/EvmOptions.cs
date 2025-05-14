@@ -18,5 +18,5 @@ public class EvmOptions
     public string TransmitTypeHash { get; set; }
     public string DomainSeparator { get; set; }
     public int SubscribeBlocksDelay { get; set; } = 100;
-    public float MinGasPrice { get; set; } = 1;
+    public double MinGasPrice { get; set; } = 0.05;
 }
