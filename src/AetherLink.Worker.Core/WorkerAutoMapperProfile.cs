@@ -14,6 +14,7 @@ public class AetherLinkServerWorkerAutoMapperProfile : Profile
         CreateMap<TransmittedDto, TransmittedEventProcessJobArgs>();
         CreateMap<RequestCancelledDto, RequestCancelProcessJobArgs>();
 
+        CreateMap<JobDto, DataFeedsProcessJobArgs>();
         CreateMap<DataFeedsProcessJobArgs, RequestStartProcessJobArgs>();
         CreateMap<RequestStartProcessJobArgs, JobDto>()
             .ForMember(t => t.TransactionBlockTime, m => m.MapFrom(f => f.StartTime));
