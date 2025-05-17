@@ -43,12 +43,11 @@ public class DataFeedsJobChecker : IDataFeedsJobChecker, ISingletonDependency
 
     public async Task StartAsync()
     {
-        // if (!_options.EnableJobChecker)
-        // {
-        //     _logger.LogInformation("[DataFeedsJobChecker] JobChecker is disabled. Skipping execution.");
-        //     return;
-        // }
-        // await MockJobs();
+        if (!_options.EnableJobChecker)
+        {
+            _logger.LogInformation("[DataFeedsJobChecker] JobChecker is disabled. Skipping execution.");
+            return;
+        }
 
         var jobsBefore = JobStorage.Current.GetConnection().GetRecurringJobs();
         _logger.LogInformation($"[DataFeedsJobChecker] Recurring jobs before restart: {jobsBefore.Count}");
@@ -112,55 +111,5 @@ public class DataFeedsJobChecker : IDataFeedsJobChecker, ISingletonDependency
         {
             _logger.LogError(e, "[DataFeedsJobChecker] Reset DataFeeds recurring job failed.");
         }
-    }
-
-    private async Task MockJobs()
-    {
-        // 3 需要重启的任务
-        for (int i = 0; i < 3; i++)
-        {
-            var job = new JobDto
-            {
-                ChainId = "mock-chain",
-                RequestId = $"restart-{Guid.NewGuid()}",
-                State = RequestState.RequestStart,
-                RequestReceiveTime = DateTime.UtcNow.AddMinutes(-i),
-                TransactionBlockTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                JobSpec = JsonConvert.SerializeObject(new DataFeedsDto
-                {
-                    Cron = "*/5 * * * *",
-                    DataFeedsJobSpec = new DataFeedsJobSpec
-                    {
-                        Type = DataFeedsType.PriceFeeds,
-                        CurrencyPair = "BTC/USDT",
-                        Url = "http://mock"
-                    }
-                })
-            };
-            var key = IdGeneratorHelper.GenerateId(RedisKeyConstants.JobKey, job.ChainId, job.RequestId);
-            await _storageProvider.SetAsync(key, job);
-        }
-        // 1 已取消的任务
-        var canceledJob = new JobDto
-        {
-            ChainId = "mock-chain",
-            RequestId = $"canceled-{Guid.NewGuid()}",
-            State = RequestState.RequestCanceled,
-            RequestReceiveTime = DateTime.UtcNow.AddMinutes(-10),
-            TransactionBlockTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            JobSpec = JsonConvert.SerializeObject(new DataFeedsDto
-            {
-                Cron = "*/10 * * * *",
-                DataFeedsJobSpec = new DataFeedsJobSpec
-                {
-                    Type = DataFeedsType.PriceFeeds,
-                    CurrencyPair = "ETH/USDT",
-                    Url = "http://mock"
-                }
-            })
-        };
-        var canceledKey = IdGeneratorHelper.GenerateId(RedisKeyConstants.JobKey, canceledJob.ChainId, canceledJob.RequestId);
-        await _storageProvider.SetAsync(canceledKey, canceledJob);
-        _logger.LogInformation("[DataFeedsJobChecker] Mock jobs inserted: 3 restart, 1 canceled.");
     }
 }
