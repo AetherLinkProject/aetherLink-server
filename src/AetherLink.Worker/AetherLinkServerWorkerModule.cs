@@ -87,6 +87,7 @@ namespace AetherLink.Worker
             Configure<SchedulerOptions>(configuration.GetSection("Scheduler"));
             Configure<PriceFeedsOptions>(configuration.GetSection("PriceFeeds"));
             Configure<ProcessJobOptions>(configuration.GetSection("ProcessJob"));
+            Configure<CheckerOptions>(configuration.GetSection("DataFeedChecker"));
             Configure<EvmContractsOptions>(configuration.GetSection("EvmContracts"));
             Configure<OracleInfoOptions>(configuration.GetSection("OracleChainInfo"));
             Configure<TonChainStatesOptions>(configuration.GetSection("TonChainStates"));
@@ -118,6 +119,10 @@ namespace AetherLink.Worker
             AsyncHelper.RunSync(async () =>
             {
                 await context.ServiceProvider.GetService<IRequestStatusChecker>().StartAsync();
+            });
+            AsyncHelper.RunSync(async () =>
+            {
+                await context.ServiceProvider.GetService<IDataFeedsJobChecker>().StartAsync();
             });
             ConfigureBackgroundWorker(context);
         }
