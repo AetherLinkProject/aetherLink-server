@@ -99,11 +99,11 @@ public class DataFeedsJobChecker : IDataFeedsJobChecker, ISingletonDependency
 
             var recurringId = IdGeneratorHelper.GenerateId(job.ChainId, job.RequestId);
             _recurringJobManager.RemoveIfExists(recurringId);
-            _logger.LogInformation($"[DataFeedsJobChecker] Removed recurring job: {recurringId}");
-
-            _recurringJobManager.AddOrUpdate<DataFeedsTimerProvider>(
-                recurringId, timer => timer.ExecuteAsync(args), () => dataFeedsDto.Cron
-            );
+            // _logger.LogInformation($"[DataFeedsJobChecker] Removed recurring job: {recurringId}");
+            //
+            // _recurringJobManager.AddOrUpdate<DataFeedsTimerProvider>(
+            //     recurringId, timer => timer.ExecuteAsync(args), () => dataFeedsDto.Cron
+            // );
 
             _logger.LogDebug(
                 $"[DataFeedsJobChecker] DataFeeds recurring job {recurringId} restart. reqId {job.RequestId}, cron:{dataFeedsDto.Cron}");
