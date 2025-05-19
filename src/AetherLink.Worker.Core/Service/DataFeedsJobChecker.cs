@@ -14,6 +14,7 @@ using AetherLink.Worker.Core.Common;
 using System.Collections.Generic;
 using AetherLink.Worker.Core.Options;
 using Microsoft.Extensions.Options;
+using Volo.Abp.ObjectMapping;
 
 namespace AetherLink.Worker.Core.Service;
 
@@ -24,15 +25,17 @@ public interface IDataFeedsJobChecker
 
 public class DataFeedsJobChecker : IDataFeedsJobChecker, ISingletonDependency
 {
+    private readonly IObjectMapper _mapper;
     private readonly CheckerOptions _options;
     private readonly IStorageProvider _storageProvider;
     private readonly ILogger<DataFeedsJobChecker> _logger;
     private readonly IRecurringJobManager _recurringJobManager;
 
     public DataFeedsJobChecker(ILogger<DataFeedsJobChecker> logger, IStorageProvider storageProvider,
-        IRecurringJobManager recurringJobManager, IOptionsSnapshot<CheckerOptions> options)
+        IRecurringJobManager recurringJobManager, IOptionsSnapshot<CheckerOptions> options, IObjectMapper mapper)
     {
         _logger = logger;
+        _mapper = mapper;
         _options = options.Value;
         _storageProvider = storageProvider;
         _recurringJobManager = recurringJobManager;
@@ -56,7 +59,7 @@ public class DataFeedsJobChecker : IDataFeedsJobChecker, ISingletonDependency
 
             _logger.LogDebug($"[DataFeedsJobChecker] Found {results.Count()} DataFeeds jobs that need to be restarted");
 
-            await ProcessJobsSequentially(results, RestartDataFeedsJobAsync);
+            await ProcessJobsSequentiallyAsync(results, RestartDataFeedsJobAsync);
         }
         catch (Exception e)
         {
@@ -67,7 +70,7 @@ public class DataFeedsJobChecker : IDataFeedsJobChecker, ISingletonDependency
         _logger.LogInformation($"[DataFeedsJobChecker] Recurring jobs after restart: {jobsAfter.Count}");
     }
 
-    private async Task ProcessJobsSequentially(IEnumerable<JobDto> jobs, Func<JobDto, Task> processor)
+    private async Task ProcessJobsSequentiallyAsync(IEnumerable<JobDto> jobs, Func<JobDto, Task> processor)
     {
         foreach (var job in jobs)
         {
@@ -89,12 +92,10 @@ public class DataFeedsJobChecker : IDataFeedsJobChecker, ISingletonDependency
         try
         {
             var dataFeedsDto = JsonConvert.DeserializeObject<DataFeedsDto>(job.JobSpec);
-            var args = new DataFeedsProcessJobArgs
-            {
-                DataFeedsDto = dataFeedsDto,
-                JobSpec = job.JobSpec,
-                BlockHeight = job.TransactionBlockTime
-            };
+
+            var args = _mapper.Map<JobDto, DataFeedsProcessJobArgs>(job);
+            args.DataFeedsDto = dataFeedsDto;
+
             var recurringId = IdGeneratorHelper.GenerateId(job.ChainId, job.RequestId);
             _recurringJobManager.RemoveIfExists(recurringId);
             _logger.LogInformation($"[DataFeedsJobChecker] Removed recurring job: {recurringId}");
