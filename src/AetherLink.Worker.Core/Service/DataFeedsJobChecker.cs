@@ -52,7 +52,7 @@ public class DataFeedsJobChecker : IDataFeedsJobChecker, ISingletonDependency
         var jobsBefore = JobStorage.Current.GetConnection().GetRecurringJobs();
         
         _logger.LogInformation($"[DataFeedsJobChecker] Recurring jobs before restart: {jobsBefore.Count}");
-        _logger.LogInformation("[DataFeedsJobChecker] Starting DataFeedsJobChecker ....");
+        // _logger.LogInformation("[DataFeedsJobChecker] Starting DataFeedsJobChecker ....");
         try
         {
             var results = await _storageProvider.GetFilteredAsync<JobDto>(
