@@ -35,10 +35,10 @@ public class DataFeedsJobChecker : IDataFeedsJobChecker, ISingletonDependency
         IRecurringJobManager recurringJobManager, IOptionsSnapshot<CheckerOptions> options, IObjectMapper mapper)
     {
         _logger = logger;
+        _mapper = mapper;
         _options = options.Value;
         _storageProvider = storageProvider;
         _recurringJobManager = recurringJobManager;
-        _mapper = mapper;
     }
 
     public async Task StartAsync()
@@ -50,9 +50,8 @@ public class DataFeedsJobChecker : IDataFeedsJobChecker, ISingletonDependency
         }
 
         var jobsBefore = JobStorage.Current.GetConnection().GetRecurringJobs();
-        
         _logger.LogInformation($"[DataFeedsJobChecker] Recurring jobs before restart: {jobsBefore.Count}");
-        // _logger.LogInformation("[DataFeedsJobChecker] Starting DataFeedsJobChecker ....");
+        _logger.LogInformation("[DataFeedsJobChecker] Starting DataFeedsJobChecker ....");
         try
         {
             var results = await _storageProvider.GetFilteredAsync<JobDto>(
@@ -100,7 +99,7 @@ public class DataFeedsJobChecker : IDataFeedsJobChecker, ISingletonDependency
             var recurringId = IdGeneratorHelper.GenerateId(job.ChainId, job.RequestId);
             _recurringJobManager.RemoveIfExists(recurringId);
             _logger.LogInformation($"[DataFeedsJobChecker] Removed recurring job: {recurringId}");
-            
+
             _recurringJobManager.AddOrUpdate<DataFeedsTimerProvider>(
                 recurringId, timer => timer.ExecuteAsync(args), () => dataFeedsDto.Cron
             );
