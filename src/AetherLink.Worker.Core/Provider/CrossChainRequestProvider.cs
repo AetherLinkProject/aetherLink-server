@@ -27,6 +27,9 @@ public interface ICrossChainRequestProvider
     public Task SetAsync(CrossChainDataDto data);
     public Task<CrossChainDataDto> GetAsync(string messageId);
     public Task<CrossChainDataDto> TryGetRampMessageDataAsync(string messageId);
+
+    public Task SetMessageAssociationAsync(string messageId, string associatedId);
+    public Task<MessageAssociationDto> GetMessageAssociationAsync(string messageId);
 }
 
 public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientDependency
@@ -240,5 +243,22 @@ public class CrossChainRequestProvider : ICrossChainRequestProvider, ITransientD
         }
 
         return Base64.ToBase64String(messageIdBytes);
+    }
+
+    public async Task SetMessageAssociationAsync(string messageId, string associatedId)
+    {
+        var key = IdGeneratorHelper.GenerateId(RedisKeyConstants.MessageAssociationKey, messageId);
+        var association = new MessageAssociationDto
+        {
+            MessageId = messageId,
+            AssociatedId = associatedId
+        };
+        await _storageProvider.SetAsync(key, association);
+    }
+
+    public async Task<MessageAssociationDto> GetMessageAssociationAsync(string messageId)
+    {
+        var key = IdGeneratorHelper.GenerateId(RedisKeyConstants.MessageAssociationKey, messageId);
+        return await _storageProvider.GetAsync<MessageAssociationDto>(key);
     }
 }

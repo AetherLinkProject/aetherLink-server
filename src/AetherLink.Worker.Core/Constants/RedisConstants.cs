@@ -24,6 +24,8 @@ public static class RedisKeyConstants
     public const string UpkeepLogTriggerInfoKey = "UpkeepLogTriggerInfo";
 
     public const string CompensationForCanceledTasksHeight = "CompensationForCanceledTasksHeight";
+
+    public const string MessageAssociationKey = "MessageAssociation";
 }
 
 public static class RedisNetworkConstants

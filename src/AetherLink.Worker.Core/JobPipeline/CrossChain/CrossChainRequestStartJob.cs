@@ -28,10 +28,10 @@ public class CrossChainRequestStartJob : AsyncBackgroundJob<CrossChainRequestSta
     {
         _logger = logger;
         _peerManager = peerManager;
+        _objectMapper = objectMapper;
         _schedulerService = schedulerService;
         _backgroundJobManager = backgroundJobManager;
         _crossChainRequestProvider = crossChainRequestProvider;
-        _objectMapper = objectMapper;
     }
 
     public override async Task ExecuteAsync(CrossChainRequestStartArgs args)
@@ -41,8 +41,30 @@ public class CrossChainRequestStartJob : AsyncBackgroundJob<CrossChainRequestSta
         var reportContext = args.ReportContext;
         try
         {
+            var association = await _crossChainRequestProvider.GetMessageAssociationAsync(reportContext.MessageId);
+            if (association != null)
+            {
+                _logger.LogInformation(
+                    $"[CrossChain] Request {reportContext.MessageId} already committed, skip start job.");
+                return;
+            }
+
+            var crossChainData = await _crossChainRequestProvider.GetAsync(reportContext.MessageId);
+            if (crossChainData != null)
+            {
+                switch (crossChainData.State)
+                {
+                    case CrossChainState.Committed:
+                        _logger.LogInformation(
+                            $"[CrossChain] Request {reportContext.MessageId} already committed, skip start job.");
+                        return;
+                    case CrossChainState.RequestCanceled:
+                        _logger.LogWarning($"[CrossChain] Request {reportContext.MessageId} canceled");
+                        return;
+                }
+            }
+
             // new request, new round request, resend request
-            var crossChainData = await _crossChainRequestProvider.GetAsync(args.ReportContext.MessageId);
             if (crossChainData == null)
             {
                 crossChainData = _objectMapper.Map<CrossChainRequestStartArgs, CrossChainDataDto>(args);
@@ -50,11 +72,6 @@ public class CrossChainRequestStartJob : AsyncBackgroundJob<CrossChainRequestSta
                 crossChainData.RequestReceiveTime = receivedTime;
                 _logger.LogDebug(
                     $"[CrossChain] Get new CrossChain request {reportContext.MessageId} at {receivedTime}");
-            }
-            else if (crossChainData.State == CrossChainState.RequestCanceled)
-            {
-                _logger.LogWarning($"[CrossChain] Request {reportContext.MessageId} canceled");
-                return;
             }
 
             crossChainData.State = CrossChainState.RequestStart;
