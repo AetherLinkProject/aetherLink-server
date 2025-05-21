@@ -24,6 +24,10 @@ public interface IWorkerProvider
     public Task<List<TransmittedDto>> SearchTransmittedAsync(string chainId, long to, long from);
     public Task<List<RequestCancelledDto>> SearchRequestCanceledAsync(string chainId, long to, long from);
     public Task<List<RampRequestCancelledDto>> SearchRampRequestCanceledAsync(string chainId, long to, long from);
+    public Task<List<RampRequestManuallyExecutedDto>> SearchRampManuallyExecutedAsync(string chainId, long to,
+        long from);
+    public Task<List<RampCommitReportAcceptedDto>> SearchRampCommitAcceptedAsync(string chainId, long to,
+        long from);
     public Task HandleJobAsync(OcrLogEventDto logEvent);
     public Task HandleTransmittedLogEventAsync(TransmittedDto transmitted);
     public Task HandleRequestCancelledLogEventAsync(RequestCancelledDto requestCancelled);
@@ -34,10 +38,6 @@ public interface IWorkerProvider
     public Task<long> GetUnconfirmedStartHeightAsync(string chainId);
     public Task SetLatestSearchHeightAsync(string chainId, long searchHeight);
     public Task SetLatestUnconfirmedHeightAsync(string chainId, long unconfirmedHeight);
-    public Task<List<RampCommitReportAcceptedDto>> SearchRampCommitAcceptedAsync(string chainId, long to, long from);
-
-    public Task<List<RampRequestManuallyExecutedDto>> SearchRampManuallyExecutedAsync(string chainId, long to,
-        long from);
 }
 
 public class WorkerProvider : AbpRedisCache, IWorkerProvider, ISingletonDependency
