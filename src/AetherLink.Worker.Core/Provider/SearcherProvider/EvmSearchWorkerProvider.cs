@@ -9,7 +9,6 @@ using AetherLink.Indexer.Dtos;
 using AetherLink.Worker.Core.Common;
 using AetherLink.Worker.Core.Constants;
 using AetherLink.Worker.Core.Dtos;
-using AetherLink.Worker.Core.Options;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Nethereum.ABI.Decoders;
@@ -18,6 +17,8 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
 using Nethereum.Web3;
 using Volo.Abp.DependencyInjection;
+using AetherLink.Worker.Core.JobPipeline.Args;
+using Volo.Abp.BackgroundJobs;
 
 namespace AetherLink.Worker.Core.Provider.SearcherProvider;
 
@@ -26,22 +27,27 @@ public interface IEvmSearchWorkerProvider
     Task<long> GetStartHeightAsync(string networkName);
     Task SaveConsumedHeightAsync(string network, long height);
     Task<long> GetLatestBlockHeightAsync(Web3 web3);
-    Task<List<EvmReceivedMessageDto>> GetEvmLogsAsync(Web3 web3, string contractAddress, long from, long to);
     Task StartCrossChainRequestsFromEvm(List<EvmReceivedMessageDto> requests);
+    Task HandleForwardedEventsFromEvm(List<ForwardedEventDto> events);
+
+    Task<(List<EvmReceivedMessageDto> sendRequests, List<ForwardedEventDto> forwardedEvents)> GetEvmLogsAsync(Web3 web3,
+        string contractAddress, long from, long to);
 }
 
 public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDependency
 {
     private readonly IStorageProvider _storageProvider;
     private readonly ILogger<EvmSearchWorkerProvider> _logger;
+    private readonly IBackgroundJobManager _backgroundJobManager;
     private readonly ICrossChainRequestProvider _crossChainRequestProvider;
 
 
     public EvmSearchWorkerProvider(ILogger<EvmSearchWorkerProvider> logger, IStorageProvider storageProvider,
-        ICrossChainRequestProvider crossChainRequestProvider)
+        ICrossChainRequestProvider crossChainRequestProvider, IBackgroundJobManager backgroundJobManager)
     {
         _logger = logger;
         _storageProvider = storageProvider;
+        _backgroundJobManager = backgroundJobManager;
         _crossChainRequestProvider = crossChainRequestProvider;
     }
 
@@ -57,8 +63,8 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
     public async Task<long> GetLatestBlockHeightAsync(Web3 web3) =>
         (long)(await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()).Value;
 
-    public async Task<List<EvmReceivedMessageDto>> GetEvmLogsAsync(Web3 web3, string contractAddress,
-        long fromBlockHeight, long toBlockHeight)
+    public async Task<(List<EvmReceivedMessageDto> sendRequests, List<ForwardedEventDto> forwardedEvents)>
+        GetEvmLogsAsync(Web3 web3, string contractAddress, long fromBlockHeight, long toBlockHeight)
     {
         _logger.LogDebug(
             $"[EvmSearchWorkerProvider] Search {contractAddress} blocks from {fromBlockHeight} to {toBlockHeight}.");
@@ -69,10 +75,29 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
             Address = new[] { contractAddress }
         };
 
+        var sendRequests = new List<EvmReceivedMessageDto>();
+        var forwardedEvents = new List<ForwardedEventDto>();
+
         try
         {
             var logs = await web3.Eth.Filters.GetLogs.SendRequestAsync(filterInput);
-            return logs.Select(DecodeFilterLog).ToList();
+            foreach (var log in logs)
+            {
+                var sendEvent = TryDecodeSendEvent(log);
+                if (sendEvent != null)
+                {
+                    sendRequests.Add(sendEvent);
+                    continue;
+                }
+
+                var forwardedEvent = TryDecodeForwardedEvent(log);
+                if (forwardedEvent != null)
+                {
+                    forwardedEvents.Add(forwardedEvent);
+                }
+            }
+
+            return (sendRequests, forwardedEvents);
         }
         catch (Exception ex)
         {
@@ -82,27 +107,46 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
         }
     }
 
-    public async Task StartCrossChainRequestsFromEvm(List<EvmReceivedMessageDto> requests)
-        => await Task.WhenAll(requests.Select(_crossChainRequestProvider.StartCrossChainRequestFromEvm));
-
-    private EvmReceivedMessageDto DecodeFilterLog(FilterLog log)
+    private EvmReceivedMessageDto TryDecodeSendEvent(FilterLog log)
     {
         try
         {
-            // Check only cross chain request send events
             var decoded = Event<SendEventDTO>.DecodeEvent(log);
             if (decoded != null) return GenerateEvmReceivedMessage(decoded);
-
-            _logger.LogWarning(
-                $"[EvmSearchWorkerProvider] Failed to decode event to sendEvent {log.TransactionHash} at {log.BlockNumber}");
-
-            return new();
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"[EvmSearchWorkerProvider] Decode {log.TransactionHash} fail at {log.BlockNumber}.");
-            throw;
+            _logger.LogError(e,
+                $"[EvmSearchWorkerProvider] Decode sendEvent {log.TransactionHash} fail at {log.BlockNumber}.");
         }
+
+        return null;
+    }
+
+    private ForwardedEventDto TryDecodeForwardedEvent(FilterLog log)
+    {
+        try
+        {
+            var decoded = Event<ForwardMessageCalledEventDTO>.DecodeEvent(log);
+            if (decoded != null) return GenerateForwardedEventDto(decoded);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,
+                $"[EvmSearchWorkerProvider] Decode forwardedEvent {log.TransactionHash} fail at {log.BlockNumber}.");
+        }
+
+        return null;
+    }
+
+    private ForwardedEventDto GenerateForwardedEventDto(EventLog<ForwardMessageCalledEventDTO> eventData)
+    {
+        var ev = eventData.Event;
+        var messageId = ByteString.CopyFrom(ev.MessageId).ToHex();
+        var receivedMessage = new ForwardedEventDto { MessageId = messageId };
+        _logger.LogInformation(
+            $"[EvmSearchWorkerProvider] Get evm forwarded event {eventData.Log.TransactionHash} {messageId}");
+        return receivedMessage;
     }
 
     private EvmReceivedMessageDto GenerateEvmReceivedMessage(EventLog<SendEventDTO> eventData)
@@ -125,13 +169,12 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
         };
 
         if (sendRequestData.TokenTransferMetadataBytes.Length > 0)
-        {
             receivedMessage.TokenTransferMetadataInfo =
                 DecodeTokenTransferMetadata(sendRequestData.TokenTransferMetadataBytes);
-        }
 
         _logger.LogInformation(
             $"[EvmSearchWorkerProvider] Get evm cross chain request {eventData.Log.TransactionHash} {messageId} from {sender} to {(long)sendRequestData.TargetChainId} {sendRequestData.Receiver}");
+
         return receivedMessage;
     }
 
@@ -191,4 +234,11 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
 
     private static string GetSearchHeightRedisKey(string chainId)
         => IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, chainId);
+
+    public async Task StartCrossChainRequestsFromEvm(List<EvmReceivedMessageDto> requests)
+        => await Task.WhenAll(requests.Select(_crossChainRequestProvider.StartCrossChainRequestFromEvm));
+
+    public async Task HandleForwardedEventsFromEvm(List<ForwardedEventDto> events)
+        => await Task.WhenAll(events.Select(evt => _backgroundJobManager.EnqueueAsync(
+            new CrossChainCommitAcceptedJobArgs { MessageId = evt.MessageId })));
 }
