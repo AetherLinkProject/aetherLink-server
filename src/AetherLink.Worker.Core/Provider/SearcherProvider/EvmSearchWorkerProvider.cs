@@ -19,6 +19,7 @@ using Nethereum.Web3;
 using Volo.Abp.DependencyInjection;
 using AetherLink.Worker.Core.JobPipeline.Args;
 using Volo.Abp.BackgroundJobs;
+using System.Text.Json;
 
 namespace AetherLink.Worker.Core.Provider.SearcherProvider;
 
@@ -53,15 +54,45 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
 
     public async Task<long> GetStartHeightAsync(string networkName)
     {
-        var latestBlockHeight = await _storageProvider.GetAsync<SearchHeightDto>(GetSearchHeightRedisKey(networkName));
-        return latestBlockHeight?.BlockHeight ?? 0;
+        try
+        {
+            var latestBlockHeight =
+                await _storageProvider.GetAsync<SearchHeightDto>(GetSearchHeightRedisKey(networkName));
+            return latestBlockHeight?.BlockHeight ?? 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"[EvmSearchWorkerProvider] GetStartHeightAsync failed for network: {networkName}");
+            return 0;
+        }
     }
 
-    public async Task SaveConsumedHeightAsync(string network, long height) =>
-        await _storageProvider.SetAsync(GetSearchHeightRedisKey(network), new SearchHeightDto { BlockHeight = height });
+    public async Task SaveConsumedHeightAsync(string network, long height)
+    {
+        try
+        {
+            await _storageProvider.SetAsync(GetSearchHeightRedisKey(network),
+                new SearchHeightDto { BlockHeight = height });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                $"[EvmSearchWorkerProvider] SaveConsumedHeightAsync failed for network: {network}, height: {height}");
+        }
+    }
 
-    public async Task<long> GetLatestBlockHeightAsync(Web3 web3) =>
-        (long)(await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()).Value;
+    public async Task<long> GetLatestBlockHeightAsync(Web3 web3)
+    {
+        try
+        {
+            return (long)(await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()).Value;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[EvmSearchWorkerProvider] GetLatestBlockHeightAsync failed.");
+            return -1;
+        }
+    }
 
     public async Task<(List<EvmReceivedMessageDto> sendRequests, List<ForwardedEventDto> forwardedEvents)>
         GetEvmLogsAsync(Web3 web3, string contractAddress, long fromBlockHeight, long toBlockHeight)
@@ -117,7 +148,7 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
         catch (Exception e)
         {
             _logger.LogError(e,
-                $"[EvmSearchWorkerProvider] Decode sendEvent {log.TransactionHash} fail at {log.BlockNumber}.");
+                $"[EvmSearchWorkerProvider] Decode sendEvent {log.TransactionHash} fail at {log.BlockNumber}. Log: {JsonSerializer.Serialize(log)}");
         }
 
         return null;
@@ -133,7 +164,7 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
         catch (Exception e)
         {
             _logger.LogError(e,
-                $"[EvmSearchWorkerProvider] Decode forwardedEvent {log.TransactionHash} fail at {log.BlockNumber}.");
+                $"[EvmSearchWorkerProvider] Decode forwardedEvent {log.TransactionHash} fail at {log.BlockNumber}. Log: {System.Text.Json.JsonSerializer.Serialize(log)}");
         }
 
         return null;
@@ -153,8 +184,19 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
     {
         var blockNumber = eventData.Log.BlockNumber;
         var sendRequestData = eventData.Event;
-        var messageId = ByteString.CopyFrom(sendRequestData.MessageId).ToBase64();
-        var sender = ByteStringHelper.FromHexString(sendRequestData.Sender).ToBase64();
+        string messageId = string.Empty;
+        string sender = string.Empty;
+        try
+        {
+            messageId = ByteString.CopyFrom(sendRequestData.MessageId).ToBase64();
+            sender = ByteStringHelper.FromHexString(sendRequestData.Sender).ToBase64();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                $"[EvmSearchWorkerProvider] Error decoding MessageId or Sender. Data: {System.Text.Json.JsonSerializer.Serialize(sendRequestData)}");
+        }
+
         var receivedMessage = new EvmReceivedMessageDto
         {
             MessageId = messageId,
@@ -227,7 +269,8 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
         }
         catch (Exception ex)
         {
-            _logger.LogError($"[EvmSearchWorkerProvider] Error decoding TokenTransferMetadataBytes: {ex.Message}");
+            _logger.LogError(ex,
+                $"[EvmSearchWorkerProvider] Error decoding TokenTransferMetadataBytes: {ex.Message}. Bytes: {Convert.ToBase64String(metadataBytes)}");
             return new();
         }
     }
@@ -236,9 +279,29 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
         => IdGeneratorHelper.GenerateId(RedisKeyConstants.SearchHeightKey, chainId);
 
     public async Task StartCrossChainRequestsFromEvm(List<EvmReceivedMessageDto> requests)
-        => await Task.WhenAll(requests.Select(_crossChainRequestProvider.StartCrossChainRequestFromEvm));
+    {
+        try
+        {
+            await Task.WhenAll(requests.Select(_crossChainRequestProvider.StartCrossChainRequestFromEvm));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                $"[EvmSearchWorkerProvider] StartCrossChainRequestsFromEvm failed. Requests: {JsonSerializer.Serialize(requests)}");
+        }
+    }
 
     public async Task HandleForwardedEventsFromEvm(List<ForwardedEventDto> events)
-        => await Task.WhenAll(events.Select(evt => _backgroundJobManager.EnqueueAsync(
-            new CrossChainCommitAcceptedJobArgs { MessageId = evt.MessageId })));
+    {
+        try
+        {
+            await Task.WhenAll(events.Select(evt => _backgroundJobManager.EnqueueAsync(
+                new CrossChainCommitAcceptedJobArgs { MessageId = evt.MessageId })));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                $"[EvmSearchWorkerProvider] HandleForwardedEventsFromEvm failed. Events: {JsonSerializer.Serialize(events)}");
+        }
+    }
 }
