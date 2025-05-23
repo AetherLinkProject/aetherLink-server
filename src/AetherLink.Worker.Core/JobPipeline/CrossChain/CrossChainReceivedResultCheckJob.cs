@@ -61,8 +61,8 @@ public class CrossChainReceivedResultCheckJob : IAsyncBackgroundJob<CrossChainRe
         }
         if (crossChainData.State == CrossChainState.RequestCanceled)
         {
-            _schedulerService.CancelScheduler(crossChainData);
             _logger.LogWarning($"[CrossChain] CrossChain request {messageId} canceled");
+            
             return;
         }
         switch (transactionResult.State)
