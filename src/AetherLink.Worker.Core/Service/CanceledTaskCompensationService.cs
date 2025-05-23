@@ -12,20 +12,20 @@ using AetherLink.Worker.Core.Common;
 
 namespace AetherLink.Worker.Core.Service;
 
-public interface ICompensationForCanceledTasksService
+public interface ICanceledTaskCompensationService
 {
     Task StartAsync();
 }
 
-public class CompensationForCanceledTasksService : ICompensationForCanceledTasksService, ISingletonDependency
+public class CanceledTaskCompensationService : ICanceledTaskCompensationService, ISingletonDependency
 {
     private readonly IWorkerProvider _workerProvider;
     private readonly IStorageProvider _storageProvider;
     private readonly IAeFinderProvider _aeFinderProvider;
-    private readonly ILogger<CompensationForCanceledTasksService> _logger;
+    private readonly ILogger<CanceledTaskCompensationService> _logger;
 
-    public CompensationForCanceledTasksService(IAeFinderProvider aeFinderProvider, IWorkerProvider workerProvider,
-        IStorageProvider storageProvider, ILogger<CompensationForCanceledTasksService> logger)
+    public CanceledTaskCompensationService(IAeFinderProvider aeFinderProvider, IWorkerProvider workerProvider,
+        IStorageProvider storageProvider, ILogger<CanceledTaskCompensationService> logger)
     {
         _logger = logger;
         _workerProvider = workerProvider;
@@ -63,13 +63,13 @@ public class CompensationForCanceledTasksService : ICompensationForCanceledTasks
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError(e, "[Compensation] CompensationForCanceledTasksService failed for chain.");
+                    _logger.LogError(e, "[Compensation] CanceledTaskCompensationService failed for chain.");
                 }
             }));
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "[Compensation] CompensationForCanceledTasksService failed.");
+            _logger.LogError(e, "[Compensation] CanceledTaskCompensationService failed.");
         }
     }
 

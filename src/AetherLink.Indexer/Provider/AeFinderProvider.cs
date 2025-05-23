@@ -74,7 +74,7 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         catch (Exception e)
         {
             _logger.LogError(e, "[Indexer] Subscribe Logs failed.");
-            return new List<OcrLogEventDto>();
+            throw;
         }
     }
 
@@ -114,7 +114,7 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         catch (Exception e)
         {
             _logger.LogError(e, "[Indexer] Subscribe ramp requests failed.");
-            return new List<RampRequestDto>();
+            throw;
         }
     }
 
@@ -144,7 +144,7 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         catch (Exception e)
         {
             _logger.LogError(e, "[Indexer] SubscribeTransmitted failed.");
-            return new List<TransmittedDto>();
+            throw;
         }
     }
 
@@ -174,7 +174,7 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         catch (Exception e)
         {
             _logger.LogError(e, "[Indexer] Subscribe RampCommitted log failed.");
-            return new();
+            throw;
         }
     }
 
@@ -201,7 +201,7 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         catch (Exception e)
         {
             _logger.LogError(e, "[Indexer] SubscribeRequestCancelled failed.");
-            return new List<RequestCancelledDto>();
+            throw;
         }
     }
 
@@ -229,7 +229,7 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         catch (Exception e)
         {
             _logger.LogError(e, "[Indexer] SubscribeRequestCancelled failed.");
-            return new List<RampRequestCancelledDto>();
+            throw;
         }
     }
 
@@ -261,7 +261,7 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         catch (Exception e)
         {
             _logger.LogError(e, "[Indexer] SubscribeRequestCancelled failed.");
-            return new List<RampRequestManuallyExecutedDto>();
+            throw;
         }
     }
 
