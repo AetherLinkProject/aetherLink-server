@@ -22,6 +22,7 @@ using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
+using AetherLink.Metric;
 
 namespace AetherLinkServer;
 
@@ -32,7 +33,8 @@ namespace AetherLinkServer;
     typeof(AetherLinkIndexerModule),
     typeof(AbpSwashbuckleModule),
     typeof(AbpAutoMapperModule),
-    typeof(AbpAutofacModule)
+    typeof(AbpAutofacModule),
+    typeof(AetherLinkMetricModule)
 )]
 public class AetherLinkServerHttpApiHostModule : AbpModule
 {

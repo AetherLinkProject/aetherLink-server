@@ -33,6 +33,7 @@
     </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\AetherLink.Indexer\AetherLink.Indexer.csproj" />
+      <ProjectReference Include="..\AetherLink.Metric\AetherLink.Metric.csproj" />
       <ProjectReference Include="..\AetherLink.Server.HttpApi\AetherLink.Server.HttpApi.csproj" />
     </ItemGroup>
 </Project>
