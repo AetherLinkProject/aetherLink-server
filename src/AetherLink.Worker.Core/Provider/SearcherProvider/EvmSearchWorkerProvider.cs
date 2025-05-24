@@ -164,7 +164,7 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
         catch (Exception e)
         {
             _logger.LogError(e,
-                $"[EvmSearchWorkerProvider] Decode forwardedEvent {log.TransactionHash} fail at {log.BlockNumber}. Log: {System.Text.Json.JsonSerializer.Serialize(log)}");
+                $"[EvmSearchWorkerProvider] Decode forwardedEvent {log.TransactionHash} fail at {log.BlockNumber}. Log: {JsonSerializer.Serialize(log)}");
         }
 
         return null;
@@ -173,30 +173,28 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
     private ForwardedEventDto GenerateForwardedEventDto(EventLog<ForwardMessageCalledEventDTO> eventData)
     {
         var ev = eventData.Event;
-        var messageId = ByteString.CopyFrom(ev.MessageId).ToHex();
-        var receivedMessage = new ForwardedEventDto { MessageId = messageId };
-        _logger.LogInformation(
-            $"[EvmSearchWorkerProvider] Get evm forwarded event {eventData.Log.TransactionHash} {messageId}");
-        return receivedMessage;
+        try
+        {
+            var messageId = ByteString.CopyFrom(ev.MessageId).ToHex();
+            var receivedMessage = new ForwardedEventDto { MessageId = messageId };
+            _logger.LogInformation(
+                $"[EvmSearchWorkerProvider] Get evm forwarded event {eventData.Log.TransactionHash} {messageId}");
+            return receivedMessage;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,
+                $"[EvmSearchWorkerProvider] Generate forwardedEvent failed Log: {JsonSerializer.Serialize(ev)}");
+            return new();
+        }
     }
 
     private EvmReceivedMessageDto GenerateEvmReceivedMessage(EventLog<SendEventDTO> eventData)
     {
         var blockNumber = eventData.Log.BlockNumber;
         var sendRequestData = eventData.Event;
-        string messageId = string.Empty;
-        string sender = string.Empty;
-        try
-        {
-            messageId = ByteString.CopyFrom(sendRequestData.MessageId).ToBase64();
-            sender = ByteStringHelper.FromHexString(sendRequestData.Sender).ToBase64();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex,
-                $"[EvmSearchWorkerProvider] Error decoding MessageId or Sender. Data: {System.Text.Json.JsonSerializer.Serialize(sendRequestData)}");
-        }
-
+        var messageId = ByteString.CopyFrom(sendRequestData.MessageId).ToBase64();
+        var sender = ByteStringHelper.FromHexString(sendRequestData.Sender).ToBase64();
         var receivedMessage = new EvmReceivedMessageDto
         {
             MessageId = messageId,
@@ -284,10 +282,11 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
         {
             await Task.WhenAll(requests.Select(_crossChainRequestProvider.StartCrossChainRequestFromEvm));
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            _logger.LogError(ex,
+            _logger.LogError(e,
                 $"[EvmSearchWorkerProvider] StartCrossChainRequestsFromEvm failed. Requests: {JsonSerializer.Serialize(requests)}");
+            throw;
         }
     }
 
@@ -298,10 +297,11 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
             await Task.WhenAll(events.Select(evt => _backgroundJobManager.EnqueueAsync(
                 new CrossChainCommitAcceptedJobArgs { MessageId = evt.MessageId })));
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            _logger.LogError(ex,
+            _logger.LogError(e,
                 $"[EvmSearchWorkerProvider] HandleForwardedEventsFromEvm failed. Events: {JsonSerializer.Serialize(events)}");
+            throw;
         }
     }
 }
