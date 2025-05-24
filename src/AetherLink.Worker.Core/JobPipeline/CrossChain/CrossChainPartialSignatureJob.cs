@@ -61,10 +61,14 @@ public class CrossChainPartialSignatureJob : AsyncBackgroundJob<CrossChainPartia
                 return;
             }
 
-            if (crossChainData.State == CrossChainState.RequestCanceled)
+            switch (crossChainData.State)
             {
-                _logger.LogWarning($"[CrossChain] The request {messageId} canceled");
-                return;
+                case CrossChainState.Committed:
+                    _logger.LogInformation($"[CrossChain] The request {messageId} already committed, skip partial signature job.");
+                    return;
+                case CrossChainState.RequestCanceled:
+                    _logger.LogWarning($"[CrossChain] The request {messageId} canceled");
+                    return;
             }
 
             if (roundId < crossChainData.ReportContext.RoundId)

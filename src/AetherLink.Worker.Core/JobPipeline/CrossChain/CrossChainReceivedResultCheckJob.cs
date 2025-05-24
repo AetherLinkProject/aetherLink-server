@@ -43,25 +43,28 @@ public class CrossChainReceivedResultCheckJob : IAsyncBackgroundJob<CrossChainRe
             $"[CrossChain] Get Leader commit {messageId} report result: {args.CommitTransactionId}");
 
         var crossChainData = await _requestProvider.GetAsync(messageId);
-        if (crossChainData == null)
-        {
-            _logger.LogWarning($"[CrossChain] Get not exist job {messageId} from leader");
-            return;
-        }
-
-        if (crossChainData.State == CrossChainState.RequestCanceled)
-        {
-            _logger.LogWarning($"[CrossChain] CrossChain request {messageId} canceled");
-            return;
-        }
-
         if (!_chainReaders.TryGetValue(reportContext.TargetChainId, out var reader))
         {
             _logger.LogWarning($"[CrossChain] Unknown target chain id: {reportContext.TargetChainId}");
             return;
         }
-
         var transactionResult = await reader.GetTransactionResultAsync(args.CommitTransactionId);
+        if (crossChainData == null)
+        {
+            _logger.LogWarning($"[CrossChain] Get not exist job {messageId} from leader");
+            if (transactionResult.State != TransactionState.Success) return;
+            
+            await _requestProvider.SetMessageAssociationAsync(messageId, args.CommitTransactionId);
+            _logger.LogInformation($"[CrossChain] Pre-bind messageId {messageId} with transactionId {args.CommitTransactionId} as transaction succeeded but job not exist.");
+            
+            return;
+        }
+        if (crossChainData.State == CrossChainState.RequestCanceled)
+        {
+            _logger.LogWarning($"[CrossChain] CrossChain request {messageId} canceled");
+            
+            return;
+        }
         switch (transactionResult.State)
         {
             case TransactionState.Success:
@@ -69,12 +72,10 @@ public class CrossChainReceivedResultCheckJob : IAsyncBackgroundJob<CrossChainRe
                 await _requestProvider.SetAsync(crossChainData);
                 _schedulerService.CancelScheduler(crossChainData);
                 _logger.LogInformation($"[CrossChain] CrossChain request job {messageId} commit successful.");
-
                 break;
             case TransactionState.Pending:
                 _logger.LogInformation($"[CrossChain] CrossChain request job {messageId} commit is pending.");
                 await _jobManager.EnqueueAsync(args, delay: TimeSpan.FromSeconds(RetryConstants.CheckResultDelay));
-
                 break;
             case TransactionState.NotExist:
             case TransactionState.Fail:
