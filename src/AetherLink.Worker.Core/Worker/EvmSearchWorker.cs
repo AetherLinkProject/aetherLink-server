@@ -75,14 +75,17 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
                 try
                 {
-                    var request = await _provider.GetEvmLogsAsync(web3, options.ContractAddress, curFrom, currentTo);
+                    var (sendRequests, forwardedEvents) =
+                        await _provider.GetEvmLogsAsync(web3, options.ContractAddress, curFrom, currentTo);
 
-                    await _provider.StartCrossChainRequestsFromEvm(request);
+                    if (sendRequests.Count != 0) await _provider.StartCrossChainRequestsFromEvm(sendRequests);
+                    if (forwardedEvents.Count != 0) await _provider.HandleForwardedEventsFromEvm(forwardedEvents);
+
                     await SaveBlockHeightAsync(networkName, currentTo);
 
                     _logger.LogDebug(
                         $"[EvmSearchWorker] {networkName} Trigger search delay, will be executed after {options.SearchDelayTime} milliseconds.");
-                    
+
                     await Task.Delay(options.SearchDelayTime);
                 }
                 catch (Exception ex)
