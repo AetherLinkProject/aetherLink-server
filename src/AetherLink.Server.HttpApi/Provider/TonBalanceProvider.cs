@@ -1,21 +1,19 @@
-using System.Net.Http;
-using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using Microsoft.Extensions.Options;
+using AetherLink.Server.HttpApi.Options;
+using AetherLink.Server.HttpApi.Constants;
 
-public class TonBalanceProvider : IChainBalanceProvider
+public class TonBalanceProvider : ChainBalanceProvider
 {
-    private readonly HttpClient _httpClient;
-    private readonly string _tonApiUrl;
+    public TonBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options)
+        : base(httpClient, options, ChainConstants.Ton) { }
 
-    public TonBalanceProvider(HttpClient httpClient, string tonApiUrl)
+    public override async Task<decimal> GetBalanceAsync(string address)
     {
-        _httpClient = httpClient;
-        _tonApiUrl = tonApiUrl;
-    }
-
-    public async Task<decimal> GetBalanceAsync(string address)
-    {
-        var response = await _httpClient.GetAsync(_tonApiUrl + address);
+        var request = new HttpRequestMessage(HttpMethod.Get, $"{Url}?address={address}");
+        if (!string.IsNullOrEmpty(ApiKey))
+            request.Headers.Add("X-Api-Key", ApiKey);
+        var response = await HttpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
         var json = JObject.Parse(content);

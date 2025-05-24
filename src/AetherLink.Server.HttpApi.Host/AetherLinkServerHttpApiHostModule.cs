@@ -3,9 +3,6 @@ using System.Linq;
 using AetherLink.Indexer;
 using AetherLink.Server.HttpApi;
 using AetherLink.Server.HttpApi.Options;
-using AetherLink.Server.HttpApi.Worker.AELF;
-using AetherLink.Server.HttpApi.Worker.Evm;
-using AetherLink.Server.HttpApi.Worker.Ton;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.Extensions.Configuration;
@@ -23,6 +20,7 @@ using Volo.Abp.Modularity;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
 using AetherLink.Metric;
+using Prometheus;
 
 namespace AetherLinkServer;
 
@@ -47,6 +45,11 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         ConfigureSwaggerServices(context, configuration);
         Configure<AELFOptions>(configuration.GetSection("AELF"));
         Configure<TonOptions>(configuration.GetSection("Ton"));
+        Configure<BalanceMonitorOptions>(configuration.GetSection("BalanceMonitor"));
+        context.Services.AddHttpClient();
+        var metricsOption = configuration.GetSection("Metrics").Get<MetricsOption>();
+        context.Services.AddMetricServer(options => { options.Port = metricsOption.Port; });
+        ConfigureBalanceProviders(context);
     }
 
     private void ConfigureConventionalControllers()
@@ -107,6 +110,7 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseConfiguredEndpoints();
+        app.UseEndpoints(endpoints => { endpoints.MapMetrics(); });
 
         ConfigureWorker(context);
     }
@@ -119,12 +123,13 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         // context.AddBackgroundWorkerAsync<TransactionSearchWorker>();
         // context.AddBackgroundWorkerAsync<EvmSearchWorker>();
         // context.AddBackgroundWorkerAsync<EvmChainStatusSyncWorker>();
-        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<ConfirmBlockHeightSearchWorker>());
-        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<RequestSearchWorker>());
-        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<CommitSearchWorker>());
-        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<TransactionSearchWorker>());
-        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<EvmSearchWorker>());
-        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<EvmChainStatusSyncWorker>());
+        // AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<ConfirmBlockHeightSearchWorker>());
+        // AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<RequestSearchWorker>());
+        // AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<CommitSearchWorker>());
+        // AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<TransactionSearchWorker>());
+        // AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<EvmSearchWorker>());
+        // AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<EvmChainStatusSyncWorker>());
+        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<BalanceMonitorWorker>());
     }
 
     private void ConfigureLocalization()
@@ -182,5 +187,13 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
                 });
             }
         );
+    }
+
+    private void ConfigureBalanceProviders(ServiceConfigurationContext context)
+    {
+        // Register all chain balance providers here
+        context.Services.AddSingleton<IChainBalanceProvider, TonBalanceProvider>();
+        context.Services.AddSingleton<IChainBalanceProvider, EvmBalanceProvider>();
+        // 如需支持更多链，继续AddSingleton<IChainBalanceProvider, XxxBalanceProvider>()
     }
 }
