@@ -26,10 +26,9 @@
 | F004 | Project Backend API                               | ✅     | High     |        |                   |          |            |                  | Provides REST/gRPC API for external integration                      |
 | F005 | Node Management                                   | ✅     | Medium   |        |                   |          |            |                  | Node registration, permission, and health monitoring                  |
 | F006 | Cross-chain Message Relay                         | ✅     | Medium   |        |                   |          |            |                  | Handles cross-chain message delivery and verification                 |
-| F007 | Solana Cross-chain Call                           | 🚧     | High     |        |                   |          |            |                  | Implement cross-chain call support for Solana                        |
-| F008 | TON Address Balance Monitoring                    | 🔜     | Low      |        |                   |          |            |                  | Monitor address balances on TON chain                                |
-| F009 | EVM Chain Address Balance Monitoring              | 🔜     | Low      |        |                   |          |            |                  | Monitor address balances on EVM-compatible chains                    |
-| F010 | Github Unit Test Coverage                         | 🔜     | Routine  |        |                   |          |            |                  | Integrate and track unit test coverage via Github                    |
+| F007 | TON Address Balance Monitoring                    | 🔜     | Low      |        |                   |          |            |                  | Monitor address balances on TON chain                                |
+| F008 | EVM Chain Address Balance Monitoring              | 🔜     | Low      |        |                   |          |            |                  | Monitor address balances on EVM-compatible chains                    |
+| F009 | Github Unit Test Coverage                         | 🔜     | Routine  |        |                   |          |            |                  | Integrate and track unit test coverage via Github                    |
 
 ## Technical Debt & Refactoring
 
@@ -41,8 +40,7 @@
 | ID  | Bug Description                                              | Status | Priority | Branch | Assigned To (MAC) | Unit Tests | Regression Tests | Notes |
 | --- |--------------------------------------------------------------| ------ | -------- | ------ | ----------------- | ---------- | ---------------- | ----- |
 | B01 | Oracle Node Periodic DataFeeds Job Cancellation Check        | 🔜     | Medium   |        |                   |            |                  | Periodically check if existing DataFeeds Jobs have been cancelled    |
-| B02 | Decentralized Node Price Fetching                            | 🔜     | Medium   |        |                   |            |                  | Each node fetches price data independently instead of using centralized service |
-| B03 | OCR Leader Exception Handling                                | 🔜     | Medium   |        |                   |            |                  | Design and implement OCR Leader exception handling (refer to ChainLink or other oracles) |
+| B02 | OCR Leader Exception Handling                                | 🔜     | Medium   |        |                   |            |                  | Design and implement OCR Leader exception handling (refer to ChainLink or other oracles) |
 
 ## Development Metrics
 
