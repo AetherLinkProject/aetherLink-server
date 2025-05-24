@@ -41,6 +41,8 @@ public class RequestStatusChecker : IRequestStatusChecker, ISingletonDependency
             var results = await _storageProvider.GetFilteredAsync<CrossChainDataDto>(
                 RedisKeyConstants.CrossChainDataKey,
                 t =>
+                    t.ReportContext != null &&
+                    !string.IsNullOrEmpty(t.ReportContext.MessageId) &&
                     t.State != CrossChainState.Committed &&
                     t.State != CrossChainState.Confirmed &&
                     t.RequestReceiveTime >= DateTime.UtcNow.AddDays(-7)

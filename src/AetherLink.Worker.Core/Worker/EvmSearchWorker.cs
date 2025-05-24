@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AetherLink.Worker.Core.Constants;
-using AetherLink.Worker.Core.Dtos;
 using AetherLink.Worker.Core.Options;
 using AetherLink.Worker.Core.Provider.SearcherProvider;
 using Microsoft.Extensions.DependencyInjection;
@@ -69,7 +67,6 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
                 $"[EvmSearchWorker] {networkName} Starting HTTP query from block {consumedBlockHeight} to latestBlock {latestBlock}");
 
             var from = consumedBlockHeight + 1;
-            var pendingRequests = new List<EvmReceivedMessageDto>();
 
             _logger.LogInformation($"[EvmSearchWorker] {networkName} Processed blocks from {from} to {latestBlock}.");
             for (var curFrom = from; curFrom <= latestBlock; curFrom += EvmSubscribeConstants.SubscribeBlockStep)
@@ -79,7 +76,14 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
                 try
                 {
                     var request = await _provider.GetEvmLogsAsync(web3, options.ContractAddress, curFrom, currentTo);
-                    pendingRequests.AddRange(request);
+
+                    await _provider.StartCrossChainRequestsFromEvm(request);
+                    await SaveBlockHeightAsync(networkName, currentTo);
+
+                    _logger.LogDebug(
+                        $"[EvmSearchWorker] {networkName} Trigger search delay, will be executed after {options.SearchDelayTime} milliseconds.");
+                    
+                    await Task.Delay(options.SearchDelayTime);
                 }
                 catch (Exception ex)
                 {
@@ -88,9 +92,6 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
                     throw;
                 }
             }
-
-            await _provider.StartCrossChainRequestsFromEvm(pendingRequests);
-            await SaveBlockHeightAsync(networkName, latestBlock);
         }
         catch (Exception e)
         {
