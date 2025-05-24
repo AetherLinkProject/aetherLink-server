@@ -39,7 +39,7 @@
 
 | ID  | Bug Description                                              | Status | Priority | Branch | Assigned To (MAC) | Unit Tests | Regression Tests | Notes |
 | --- |--------------------------------------------------------------| ------ | -------- | ------ | ----------------- | ---------- | ---------------- | ----- |
-| B01 | Oracle Node Periodic DataFeeds Job Cancellation Check        | 🔜     | Medium   |        |                   |            |                  | Periodically check if existing DataFeeds Jobs have been cancelled    |
+| B01 | Oracle Node Periodic DataFeeds Job Cancellation Check        | ✅     | Medium   |        |                   |            |                  | Periodically check if existing DataFeeds Jobs have been cancelled    |
 | B02 | OCR Leader Exception Handling                                | 🔜     | Medium   |        |                   |            |                  | Design and implement OCR Leader exception handling (refer to ChainLink or other oracles) |
 
 ## Development Metrics
