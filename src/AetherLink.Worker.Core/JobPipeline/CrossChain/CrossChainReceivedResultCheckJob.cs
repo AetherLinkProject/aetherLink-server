@@ -65,6 +65,7 @@ public class CrossChainReceivedResultCheckJob : IAsyncBackgroundJob<CrossChainRe
             
             return;
         }
+        
         switch (transactionResult.State)
         {
             case TransactionState.Success:
