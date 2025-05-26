@@ -63,7 +63,7 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
         catch (Exception ex)
         {
             _logger.LogError(ex, $"[EvmSearchWorkerProvider] GetStartHeightAsync failed for network: {networkName}");
-            return 0;
+            throw;
         }
     }
 
@@ -74,10 +74,11 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
             await _storageProvider.SetAsync(GetSearchHeightRedisKey(network),
                 new SearchHeightDto { BlockHeight = height });
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            _logger.LogError(ex,
+            _logger.LogError(e,
                 $"[EvmSearchWorkerProvider] SaveConsumedHeightAsync failed for network: {network}, height: {height}");
+            throw;
         }
     }
 
@@ -185,7 +186,7 @@ public class EvmSearchWorkerProvider : IEvmSearchWorkerProvider, ISingletonDepen
         {
             _logger.LogError(e,
                 $"[EvmSearchWorkerProvider] Generate forwardedEvent failed Log: {JsonSerializer.Serialize(ev)}");
-            return new();
+            return null;
         }
     }
 
