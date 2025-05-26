@@ -23,7 +23,7 @@ public static class RedisKeyConstants
     public const string UpkeepInfoKey = "UpkeepInfo";
     public const string UpkeepLogTriggerInfoKey = "UpkeepLogTriggerInfo";
 
-    public const string CompensationForCanceledTasksHeight = "CompensationForCanceledTasksHeight";
+    public const string CanceledTaskCompensationHeight = "CanceledTaskCompensationHeight";
 
     public const string MessageAssociationKey = "MessageAssociation";
 }

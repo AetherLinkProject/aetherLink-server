@@ -294,7 +294,7 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
         catch (Exception e)
         {
             _logger.LogError(e, "[Indexer] GetOracleConfig failed.");
-            return "";
+            throw;
         }
     }
 

@@ -74,7 +74,7 @@ public class CanceledTaskCompensationService : ICanceledTaskCompensationService,
     }
 
     private static string GetCompensationHeightRedisKey(string chainId)
-        => IdGeneratorHelper.GenerateId(RedisKeyConstants.CompensationForCanceledTasksHeight, chainId);
+        => IdGeneratorHelper.GenerateId(RedisKeyConstants.CanceledTaskCompensationHeight, chainId);
 
     private async Task<long> GetCompensationStartHeightAsync(string chainId)
     {
