@@ -126,7 +126,7 @@ namespace AetherLink.Worker
             });
             AsyncHelper.RunSync(async () =>
             {
-                await context.ServiceProvider.GetService<ICompensationForCanceledTasksService>().StartAsync();
+                await context.ServiceProvider.GetService<ICanceledTaskCompensationService>().StartAsync();
             });
 
             ConfigureBackgroundWorker(context);
