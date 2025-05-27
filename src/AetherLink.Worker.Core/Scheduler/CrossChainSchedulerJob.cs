@@ -86,6 +86,7 @@ public class CrossChainSchedulerJob : ICrossChainSchedulerJob, ITransientDepende
     {
         var unixCurrentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         var unixStartTime = new DateTimeOffset(data.RequestReceiveTime).ToUnixTimeMilliseconds();
-        return (int)((unixCurrentTime - unixStartTime) / data.RequestEndTimeoutWindow);
+        // return (int)((unixCurrentTime - unixStartTime) / data.RequestEndTimeoutWindow);
+        return (int)((unixCurrentTime - unixStartTime) / 120000);
     }
 }
