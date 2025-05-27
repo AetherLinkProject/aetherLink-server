@@ -55,6 +55,8 @@ public class CrossChainCommitJob : AsyncBackgroundJob<CrossChainCommitJobArgs>, 
         _logger.LogInformation(
             $"[CrossChain][Leader] Commit {reportContext.MessageId} report success, transaction id: {transactionId}.");
 
+        await Task.Delay(120000);
+        
         var finishArgs = _objectMapper.Map<CrossChainCommitJobArgs, CrossChainReceivedResultCheckJobArgs>(args);
         finishArgs.CommitTransactionId = transactionId;
         await _backgroundJobManager.EnqueueAsync(finishArgs);
