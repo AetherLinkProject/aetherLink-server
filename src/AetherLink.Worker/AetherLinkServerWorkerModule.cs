@@ -124,6 +124,11 @@ namespace AetherLink.Worker
             {
                 await context.ServiceProvider.GetService<IDataFeedsJobChecker>().StartAsync();
             });
+            AsyncHelper.RunSync(async () =>
+            {
+                await context.ServiceProvider.GetService<ICanceledTaskCompensationService>().StartAsync();
+            });
+
             ConfigureBackgroundWorker(context);
         }
 
