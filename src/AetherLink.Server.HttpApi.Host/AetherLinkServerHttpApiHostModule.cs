@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using AetherLink.Indexer;
+using AetherLink.Metric;
 using AetherLink.Server.HttpApi;
 using AetherLink.Server.HttpApi.Options;
 using AetherLink.Server.HttpApi.Worker.AELF;
@@ -30,6 +31,7 @@ namespace AetherLinkServer;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpBackgroundWorkersModule),
     typeof(AetherLinkIndexerModule),
+    typeof(AetherLinkMetricModule),
     typeof(AbpSwashbuckleModule),
     typeof(AbpAutoMapperModule),
     typeof(AbpAutofacModule)
