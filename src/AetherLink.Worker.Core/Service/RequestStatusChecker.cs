@@ -35,6 +35,7 @@ public class RequestStatusChecker : IRequestStatusChecker, ISingletonDependency
 
     public async Task StartAsync()
     {
+        
         _logger.LogInformation("[RequestStatusChecker] Starting RequestStatusChecker ....");
         try
         {
