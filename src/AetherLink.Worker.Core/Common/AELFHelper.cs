@@ -109,6 +109,8 @@ public static class AELFHelper
                 case TransactionState.Mined:
                     return ChainHandler.TransactionState.Success;
                 default:
+                    if (!string.IsNullOrEmpty(txResult.Error) && txResult.Error.Contains("cannot be forwarded twice."))
+                        return ChainHandler.TransactionState.Success;
                     return ChainHandler.TransactionState.Fail;
             }
         }
