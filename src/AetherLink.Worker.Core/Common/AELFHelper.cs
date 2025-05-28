@@ -80,6 +80,7 @@ public static class AELFHelper
         {
             ReportContext = new()
             {
+                MessageId = HashHelper.ComputeFrom(reportContext.MessageId),
                 SourceChainId = reportContext.SourceChainId,
                 TargetChainId = reportContext.TargetChainId,
                 Sender = ByteString.FromBase64(reportContext.Sender),
@@ -88,8 +89,8 @@ public static class AELFHelper
             Message = ByteString.FromBase64(message),
             TokenTransferMetadata = tokenTransferMetadata
         };
-        report.ReportContext.MessageId = HashHelper.ConcatAndCompute(HashHelper.ComputeFrom(report),
-            HashHelper.ComputeFrom(reportContext.MessageId));
+        // report.ReportContext.MessageId = HashHelper.ConcatAndCompute(HashHelper.ComputeFrom(report),
+        //     HashHelper.ComputeFrom(reportContext.MessageId));
 
         return report;
     }
