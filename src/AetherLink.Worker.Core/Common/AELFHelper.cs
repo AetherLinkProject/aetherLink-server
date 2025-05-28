@@ -80,7 +80,7 @@ public static class AELFHelper
         {
             ReportContext = new()
             {
-                MessageId = HashHelper.ComputeFrom(reportContext.MessageId),
+                MessageId = Hash.LoadFromBase64(reportContext.MessageId),
                 SourceChainId = reportContext.SourceChainId,
                 TargetChainId = reportContext.TargetChainId,
                 Sender = ByteString.FromBase64(reportContext.Sender),
