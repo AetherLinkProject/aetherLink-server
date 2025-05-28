@@ -76,12 +76,12 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
         {
             await ConnectAsync();
             var result = new List<T>();
-            var cursor = 0L;
+            var cursor = "0";
             do
             {
                 var scanResult = await RedisDatabase.ExecuteAsync(
                     RedisNetworkConstants.ScanCommand,
-                    cursor.ToString(),
+                    cursor,
                     "MATCH",
                     prefix + "*",
                     "COUNT",
@@ -89,7 +89,7 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
                 );
 
                 var resultArray = (RedisResult[])scanResult;
-                cursor = Convert.ToInt64((string)resultArray[0]);
+                cursor = (string)resultArray[0];
 
                 var keys = ((RedisResult[])resultArray[1]).Select(x => x.ToString()).ToArray();
                 if (keys.Length > 0)
@@ -105,7 +105,7 @@ public class StorageProvider : AbpRedisCache, IStorageProvider, ITransientDepend
                 }
 
                 await Task.Delay(RedisNetworkConstants.DefaultScanDelayTime);
-            } while (cursor != 0);
+            } while (cursor != "0");
 
             return result;
         }
