@@ -8,6 +8,7 @@ public class EvmRampRequestGrainDto
     [Id(2)] public long TargetChainId { get; set; }
     [Id(3)] public long SourceChainId { get; set; }
     [Id(4)] public CrossChainTransactionType Type { get; set; }
+    [Id(5)] public long StartTime { get; set; }
 }
 
 public enum CrossChainTransactionType

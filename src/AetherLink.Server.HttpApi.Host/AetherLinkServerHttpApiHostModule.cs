@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using AetherLink.Indexer;
+using AetherLink.Metric;
 using AetherLink.Server.HttpApi;
 using AetherLink.Server.HttpApi.Options;
 using AetherLink.Server.HttpApi.Worker.AELF;
@@ -22,6 +23,7 @@ using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
+using Prometheus;
 
 namespace AetherLinkServer;
 
@@ -30,6 +32,7 @@ namespace AetherLinkServer;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpBackgroundWorkersModule),
     typeof(AetherLinkIndexerModule),
+    typeof(AetherLinkMetricModule),
     typeof(AbpSwashbuckleModule),
     typeof(AbpAutoMapperModule),
     typeof(AbpAutofacModule)
@@ -45,6 +48,10 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         ConfigureSwaggerServices(context, configuration);
         Configure<AELFOptions>(configuration.GetSection("AELF"));
         Configure<TonOptions>(configuration.GetSection("Ton"));
+        Configure<BalanceMonitorOptions>(configuration.GetSection("BalanceMonitor"));
+        context.Services.AddHttpClient();
+        var metricsOption = configuration.GetSection("Metrics").Get<MetricsOption>();
+        context.Services.AddMetricServer(options => { options.Port = metricsOption.Port; });
     }
 
     private void ConfigureConventionalControllers()
@@ -104,6 +111,7 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         app.UseAbpSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "Support APP API"); });
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
+        app.UseHttpMetrics();
         app.UseConfiguredEndpoints();
 
         ConfigureWorker(context);
@@ -123,6 +131,7 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<TransactionSearchWorker>());
         AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<EvmSearchWorker>());
         AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<EvmChainStatusSyncWorker>());
+        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<BalanceMonitorWorker>());
     }
 
     private void ConfigureLocalization()

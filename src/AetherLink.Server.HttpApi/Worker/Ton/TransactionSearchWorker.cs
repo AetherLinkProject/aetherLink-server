@@ -9,26 +9,32 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
-using Org.BouncyCastle.Utilities.Encoders;
 using TonSdk.Core.Boc;
+using AetherLink.Server.HttpApi.Reporter;
+using Org.BouncyCastle.Utilities.Encoders;
 
 namespace AetherLink.Server.HttpApi.Worker.Ton;
 
 public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly TonOptions _options;
+    private readonly IJobsReporter _jobsReporter;
     private readonly IClusterClient _clusterClient;
+    private readonly ICrossChainReporter _crossChainReporter;
     private readonly ILogger<TransactionSearchWorker> _logger;
 
     public TransactionSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        IOptionsSnapshot<TonOptions> options, IClusterClient clusterClient, ILogger<TransactionSearchWorker> logger) :
-        base(timer, serviceScopeFactory)
+        IOptionsSnapshot<TonOptions> options, IClusterClient clusterClient, ILogger<TransactionSearchWorker> logger,
+        ICrossChainReporter crossChainReporter, IJobsReporter jobsReporter) : base(timer, serviceScopeFactory)
     {
         _logger = logger;
         _options = options.Value;
+        _jobsReporter = jobsReporter;
         _clusterClient = clusterClient;
         timer.Period = _options.TransactionSearchTimer;
+        _crossChainReporter = crossChainReporter;
     }
+
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
@@ -113,6 +119,8 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
     private async Task CreateRequestAsync(TonTransactionGrainDto transaction)
     {
+        _jobsReporter.ReportCommittedReport(TonTransactionConstants.TonChainId.ToString(),
+            StartedRequestTypeName.Crosschain);
         var messageId = HashHelper.ComputeFrom(transaction.Hash).ToHex();
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(messageId);
         if (transaction.OutMsgs == null)
@@ -124,12 +132,16 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var receiveSlice = Cell.From(transaction.OutMsgs[0].MessageContent.Body).Parse();
         var _ = (long)receiveSlice.LoadInt(TonTransactionConstants.DefaultIntSize);
         var targetChainId = (long)receiveSlice.LoadInt(TonTransactionConstants.ChainIdSize);
+        _crossChainReporter.ReportCrossChainRequest(messageId, TonTransactionConstants.TonChainId.ToString(),
+            targetChainId.ToString());
+        var startTime = transaction.StartTime;
         var crossChainRequestData = new CrossChainRequestGrainDto
         {
             SourceChainId = TonTransactionConstants.TonChainId,
             TargetChainId = targetChainId,
             MessageId = messageId,
-            Status = CrossChainStatus.Started.ToString()
+            Status = CrossChainStatus.Started.ToString(),
+            StartTime = startTime
         };
 
         var result = await requestGrain.CreateAsync(crossChainRequestData);

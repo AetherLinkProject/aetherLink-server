@@ -9,23 +9,28 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
+using AetherLink.Server.HttpApi.Reporter;
 
 namespace AetherLink.Server.HttpApi.Worker.AELF;
 
 public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly AELFOptions _options;
+    private readonly IJobsReporter _jobsReporter;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<RequestSearchWorker> _logger;
+    private readonly ICrossChainReporter _crossChainReporter;
 
     public RequestSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        IOptionsSnapshot<AELFOptions> options, IClusterClient clusterClient,
-        ILogger<RequestSearchWorker> logger) : base(timer, serviceScopeFactory)
+        IOptionsSnapshot<AELFOptions> options, IClusterClient clusterClient, ILogger<RequestSearchWorker> logger,
+        IJobsReporter jobsReporter, ICrossChainReporter crossChainReporter) : base(timer, serviceScopeFactory)
     {
         _logger = logger;
         _options = options.Value;
+        _jobsReporter = jobsReporter;
         _clusterClient = clusterClient;
         timer.Period = _options.RequestSearchTimer;
+        _crossChainReporter = crossChainReporter;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
@@ -72,33 +77,76 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
             $"[RequestSearchWorker] Get {chainId} Block Height {confirmedHeight}");
 
         var aeFinderGrainClient = _clusterClient.GetGrain<IAeFinderGrain>(GrainKeyConstants.SearchRampRequestsGrainKey);
-        var requests =
-            await aeFinderGrainClient.SearchRampRequestsAsync(chainId, confirmedHeight, consumedBlockHeight);
-        if (!requests.Success)
+        try
         {
-            _logger.LogError($"[RequestSearchWorker] {chainId} Get requests failed");
-        }
+            var rampTask = aeFinderGrainClient.SearchRampRequestsAsync(chainId, confirmedHeight, consumedBlockHeight);
+            var jobTask = aeFinderGrainClient.SearchOracleJobsAsync(chainId, confirmedHeight, consumedBlockHeight);
+            await Task.WhenAll(rampTask, jobTask);
 
-        var tasks = requests.Data.Select(HandleRampRequestAsync);
-        await Task.WhenAll(tasks);
-        _logger.LogDebug("[RequestSearchWorker] {chain} found a total of {count} ramp requests.", chainId,
-            tasks.Count());
+            var rampResult = rampTask.Result;
+            var jobResult = jobTask.Result;
+
+            if (!rampResult.Success || !jobResult.Success)
+            {
+                _logger.LogWarning(
+                    $"[RequestSearchWorker] Ramp or Job query failed, will retry this range. ramp:{rampResult.Success}, job:{jobResult.Success}");
+                return;
+            }
+
+            await HandleRampRequestsAsync(rampResult.Data, chainId);
+            await HandleJobTasksAsync(jobResult.Data, chainId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "[RequestSearchWorker] Exception in concurrent ramp/job query, will retry this range.");
+            return;
+        }
 
         await client.UpdateConsumedHeightAsync(confirmedHeight);
         _logger.LogDebug($"[RequestSearchWorker] {chainId} Block Height consumed at {confirmedHeight}");
     }
 
+    private async Task HandleRampRequestsAsync(List<AELFRampRequestGrainDto> rampRequests, string chainId)
+    {
+        var tasks = rampRequests.Select(HandleRampRequestAsync);
+        await Task.WhenAll(tasks);
+        _logger.LogDebug($"[RequestSearchWorker] {chainId} found a total of {rampRequests.Count} ramp requests.");
+    }
+
+    private async Task HandleJobTasksAsync(List<AELFJobGrainDto> jobTasks, string chainId)
+    {
+        foreach (var taskType in jobTasks.Select(job => job.RequestTypeIndex switch
+                 {
+                     RequestTypeConst.Datafeeds => StartedRequestTypeName.Datafeeds,
+                     RequestTypeConst.Vrf => StartedRequestTypeName.Vrf,
+                     RequestTypeConst.Automation => StartedRequestTypeName.Automation,
+                     _ => "unknown"
+                 }))
+        {
+            _jobsReporter.ReportStartedRequest(chainId, taskType);
+            _logger.LogDebug($"[RequestSearchWorker] {chainId} {taskType} started_request: 1");
+        }
+    }
+
     private async Task HandleRampRequestAsync(AELFRampRequestGrainDto requestData)
     {
         _logger.LogDebug($"[RequestSearchWorker] Start to create cross chain request for {requestData.MessageId}");
+
+        _jobsReporter.ReportStartedRequest(requestData.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
+        _crossChainReporter.ReportCrossChainRequest(requestData.MessageId, requestData.SourceChainId.ToString(),
+            requestData.TargetChainId.ToString());
+
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(requestData.TransactionId);
+        var startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var result = await requestGrain.UpdateAsync(new()
         {
             Id = requestData.MessageId,
             SourceChainId = requestData.SourceChainId,
             TargetChainId = requestData.TargetChainId,
             MessageId = requestData.MessageId,
-            Status = CrossChainStatus.Started.ToString()
+            Status = CrossChainStatus.Started.ToString(),
+            StartTime = startTime
         });
 
         _logger.LogDebug($"[RequestSearchWorker] Update {requestData.TransactionId} started {result.Success}");
@@ -106,6 +154,7 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var transactionIdGrainClient = _clusterClient.GetGrain<ITransactionIdGrain>(requestData.MessageId);
         var transactionIdUpdateResult =
             await transactionIdGrainClient.UpdateAsync(new() { GrainId = requestData.TransactionId });
+
         _logger.LogDebug(
             $"[RequestSearchWorker] Update {requestData.TransactionId} messageId {requestData.MessageId} started {transactionIdUpdateResult.Success}");
     }

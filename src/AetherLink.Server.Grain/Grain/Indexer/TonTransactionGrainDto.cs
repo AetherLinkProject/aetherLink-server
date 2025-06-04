@@ -8,6 +8,7 @@ public class TonTransactionGrainDto
     [Id(2)] public string TraceId { get; set; }
     [Id(3)] public TonInMessageGrainDto InMsg { get; set; }
     [Id(4)] public List<TonInMessageGrainDto> OutMsgs { get; set; }
+    [Id(5)] public long StartTime { get; set; }
 }
 
 [GenerateSerializer]

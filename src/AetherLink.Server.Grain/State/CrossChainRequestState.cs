@@ -8,5 +8,5 @@ public class CrossChainRequestState
     [Id(2)] public long TargetChainId { get; set; }
     [Id(3)] public string MessageId { get; set; }
     [Id(4)] public string Status { get; set; }
-    [Id(5)] public string LastModifyTime { get; set; }
+    [Id(5)] public long StartTime { get; set; } // 任务开始时间（毫秒）
 }

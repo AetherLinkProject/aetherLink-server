@@ -14,6 +14,9 @@ public interface IAeFinderGrain : IGrainWithStringKey
 
     Task<GrainResultDto<List<AELFRampRequestGrainDto>>> SearchRequestsCommittedAsync(string chainId, long targetHeight,
         long startHeight);
+
+    Task<GrainResultDto<List<AELFJobGrainDto>>> SearchOracleJobsAsync(string chainId, long targetHeight,
+        long startHeight);
 }
 
 public class AeFinderGrain : Grain<AeFinderState>, IAeFinderGrain
@@ -82,5 +85,30 @@ public class AeFinderGrain : Grain<AeFinderState>, IAeFinderGrain
         }).ToList();
 
         return new() { Data = data };
+    }
+
+    public async Task<GrainResultDto<List<AELFJobGrainDto>>> SearchOracleJobsAsync(string chainId, long targetHeight,
+        long startHeight)
+    {
+        try
+        {
+            var ocrJobEvents = await _indexer.SubscribeLogsAsync(chainId, targetHeight, startHeight);
+            var jobs = ocrJobEvents.Select(e => new AELFJobGrainDto
+            {
+                RequestTypeIndex = e.RequestTypeIndex,
+                TransactionId = e.TransactionId,
+                BlockHeight = e.BlockHeight,
+                BlockHash = e.BlockHash,
+                StartTime = e.StartTime,
+                RequestId = e.RequestId
+            }).ToList();
+            return new() { Data = jobs, Success = true };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                $"[AeFinderGrain] SearchOracleJobsAsync failed for {chainId} {startHeight}-{targetHeight}");
+            return new() { Data = new List<AELFJobGrainDto>(), Success = false, Message = ex.Message };
+        }
     }
 }

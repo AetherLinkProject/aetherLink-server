@@ -46,7 +46,6 @@ public class CrossChainRequestGrain : Grain<CrossChainRequestState>, ICrossChain
     {
         State = _objectMapper.Map<CrossChainRequestGrainDto, CrossChainRequestState>(input);
         if (string.IsNullOrEmpty(State.Id)) State.Id = this.GetPrimaryKeyString();
-        State.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
 
         await WriteStateAsync();
 
