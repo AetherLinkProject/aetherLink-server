@@ -9,6 +9,12 @@ public static class MetricsConstants
     public const int AddressDelayMs = 1000;
     public const string ChainTon = "ton";
     public const string ChainEvm = "evm";
+    public const string StartedRequestCounter = "started_request";
+    public const string CommittedReportCounter = "committed_report";
+    public const string ExecutionDurationHistogram = "task_execution_duration";
+    public const string CrossChainRequestCounter = "cross_chain_request";
+    public const string CrossChainQueryHitCounter = "cross_chain_query_hit_count";
+    public const string CrossChainQueryTotalCounter = "cross_chain_query_total_count";
 }
 
 public static class RequestTypeConst

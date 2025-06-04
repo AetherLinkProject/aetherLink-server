@@ -1,4 +1,5 @@
 using Prometheus;
+using AetherLink.Server.HttpApi.Constants;
 
 namespace AetherLink.Server.HttpApi.Reporter
 {
@@ -18,21 +19,21 @@ namespace AetherLink.Server.HttpApi.Reporter
         public CrossChainReporter()
         {
             _crossChainRequestCounter = Metrics.CreateCounter(
-                "cross_chain_request",
+                MetricsConstants.CrossChainRequestCounter,
                 "Number of crosschain requests (by MessageId, SourceChain, TargetChain)",
                 new CounterConfiguration
                 {
                     LabelNames = new[] { "MessageId", "SourceChain", "TargetChain" }
                 });
             _crossChainQueryHitCounter = Metrics.CreateCounter(
-                "cross_chain_query_hit_count",
+                MetricsConstants.CrossChainQueryHitCounter,
                 "Number of cross-chain query hits (by id, chain, hit)",
                 new CounterConfiguration
                 {
                     LabelNames = new[] { "id", "chain", "hit" }
                 });
             _crossChainQueryTotalCounter = Metrics.CreateCounter(
-                "cross_chain_query_total_count",
+                MetricsConstants.CrossChainQueryTotalCounter,
                 "Total number of cross-chain queries (by id)",
                 new CounterConfiguration
                 {
