@@ -48,6 +48,10 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         ConfigureSwaggerServices(context, configuration);
         Configure<AELFOptions>(configuration.GetSection("AELF"));
         Configure<TonOptions>(configuration.GetSection("Ton"));
+        Configure<BalanceMonitorOptions>(configuration.GetSection("BalanceMonitor"));
+        context.Services.AddHttpClient();
+        var metricsOption = configuration.GetSection("Metrics").Get<MetricsOption>();
+        context.Services.AddMetricServer(options => { options.Port = metricsOption.Port; });
     }
 
     private void ConfigureConventionalControllers()
