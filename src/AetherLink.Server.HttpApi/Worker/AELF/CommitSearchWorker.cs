@@ -9,21 +9,24 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
+using AetherLink.Server.HttpApi.Reporter;
 
 namespace AetherLink.Server.HttpApi.Worker.AELF;
 
 public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly AELFOptions _options;
+    private readonly IJobsReporter _jobsReporter;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<CommitSearchWorker> _logger;
 
     public CommitSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        IOptionsSnapshot<AELFOptions> options, IClusterClient clusterClient, ILogger<CommitSearchWorker> logger) : base(
-        timer, serviceScopeFactory)
+        IOptionsSnapshot<AELFOptions> options, IClusterClient clusterClient, ILogger<CommitSearchWorker> logger,
+        IJobsReporter jobsReporter) : base(timer, serviceScopeFactory)
     {
         _logger = logger;
         _options = options.Value;
+        _jobsReporter = jobsReporter;
         _clusterClient = clusterClient;
         timer.Period = _options.CommitSearchTimer;
     }
@@ -91,7 +94,26 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task HandleReportCommittedAsync(AELFRampRequestGrainDto requestData)
     {
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(requestData.MessageId);
-        var result = await requestGrain.UpdateAsync(new()
+        var result = await requestGrain.GetAsync();
+        if (result.Data.Status == CrossChainStatus.Committed.ToString())
+        {
+            _logger.LogInformation($"[CommitSearchWorker] MessageId {requestData.MessageId} already committed, skip duration report.");
+            return;
+        }
+
+        _logger.LogInformation($"[CommitSearchWorker] Reporting committed for MessageId {requestData.MessageId}, ChainId {requestData.SourceChainId}");
+
+        _jobsReporter.ReportCommittedReport(requestData.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
+
+        long startTime = result.Data.StartTime;
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var duration = (now - startTime) / 1000.0;
+
+        _logger.LogInformation($"[CommitSearchWorker] ReportExecutionDuration: MessageId={requestData.MessageId}, ChainId={requestData.SourceChainId}, Duration={duration}s");
+
+        _jobsReporter.ReportExecutionDuration(requestData.SourceChainId.ToString(), StartedRequestTypeName.Crosschain, duration);
+
+        var updateResult = await requestGrain.UpdateAsync(new()
         {
             Id = requestData.MessageId,
             SourceChainId = requestData.SourceChainId,
@@ -100,6 +122,6 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
             Status = CrossChainStatus.Committed.ToString()
         });
 
-        _logger.LogDebug($"[CommitSearchWorker] Update {requestData.MessageId} committed {result.Success}");
+        _logger.LogDebug($"[CommitSearchWorker] Update {requestData.MessageId} committed {updateResult.Success}");
     }
 }

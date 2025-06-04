@@ -3,6 +3,8 @@ using AetherLink.Server.HttpApi.Dtos;
 using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
+using AetherLink.Server.HttpApi.Constants;
+using AetherLink.Server.HttpApi.Reporter;
 
 namespace AetherLink.Server.HttpApi.Application;
 
@@ -16,26 +18,36 @@ public class AetherLinkRequestService : AetherLinkServerAppService, IAetherLinkR
 {
     private readonly IObjectMapper _objectMapper;
     private readonly IClusterClient _clusterClient;
+    private readonly ICrossChainReporter _crossChainReporter;
     private readonly ILogger<AetherLinkRequestService> _logger;
 
     public AetherLinkRequestService(IClusterClient clusterClient, IObjectMapper objectMapper,
-        ILogger<AetherLinkRequestService> logger)
+        ILogger<AetherLinkRequestService> logger, ICrossChainReporter crossChainReporter)
     {
         _logger = logger;
         _objectMapper = objectMapper;
         _clusterClient = clusterClient;
+        _crossChainReporter = crossChainReporter;
     }
 
     public async Task<BasicResponseDto<GetCrossChainRequestStatusResponse>> GetCrossChainRequestStatusAsync(
         GetCrossChainRequestStatusInput input)
     {
-        string crossChainRequestGrainId;
+        var crossChainRequestGrainId = string.Empty;
+        if (string.IsNullOrEmpty(input.TraceId) && string.IsNullOrEmpty(input.TransactionId))
+        {
+            throw new UserFriendlyException("Invalid parameter: transactionId and traceId cannot both be empty.");
+        }
+
+        _crossChainReporter.ReportCrossChainQueryTotalCount(input.TransactionId ?? input.TraceId);
+
         if (!string.IsNullOrEmpty(input.TraceId))
         {
             var traceGrain = _clusterClient.GetGrain<ITraceIdGrain>(input.TraceId);
             var traceResponse = await traceGrain.GetAsync();
             if (!traceResponse.Success)
             {
+                _crossChainReporter.ReportCrossChainQueryHitCount(input.TraceId, MetricsConstants.ChainTon, false);
                 throw new UserFriendlyException($"Not found traceId {input.TraceId}.");
             }
 
@@ -50,23 +62,37 @@ public class AetherLinkRequestService : AetherLinkServerAppService, IAetherLinkR
                 var tempGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(input.TransactionId);
                 var tempResult = await tempGrain.GetAsync();
                 if (tempResult is not { Success: true } || tempResult.Data == null)
+                {
+                    _crossChainReporter.ReportCrossChainQueryHitCount(input.TransactionId, MetricsConstants.ChainEvm,
+                        false);
                     return new();
-                // throw new UserFriendlyException("Failed to get cross chain transaction");
+                }
+
                 crossChainRequestGrainId = tempResult.Data.MessageId;
             }
-            else crossChainRequestGrainId = input.TransactionId;
+            else
+            {
+                crossChainRequestGrainId = input.TransactionId;
+            }
 
             _logger.LogDebug(
                 $"[AetherLinkRequestService]Get CrossChainRequest status query by TransactionId {crossChainRequestGrainId}");
         }
-        else
-        {
-            throw new UserFriendlyException("Not found.");
-        }
 
         var orderGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(crossChainRequestGrainId);
         var result = await orderGrain.GetAsync();
-        if (!result.Success) throw new UserFriendlyException("Failed to get cross chain transaction");
+        if (!result.Success)
+        {
+            if (!string.IsNullOrEmpty(input.TraceId))
+                _crossChainReporter.ReportCrossChainQueryHitCount(input.TraceId, MetricsConstants.ChainTon, false);
+            else if (!string.IsNullOrEmpty(input.TransactionId) && input.TransactionId.StartsWith("0x"))
+                _crossChainReporter.ReportCrossChainQueryHitCount(input.TransactionId, MetricsConstants.ChainEvm,
+                    false);
+            throw new UserFriendlyException("Failed to get cross chain transaction");
+        }
+
+        _crossChainReporter.ReportCrossChainQueryHitCount(crossChainRequestGrainId,
+            result.Data.SourceChainId.ToString(), true);
         var response = _objectMapper.Map<CrossChainRequestGrainDto, GetCrossChainRequestStatusResponse>(result.Data);
         return new() { Data = response };
     }

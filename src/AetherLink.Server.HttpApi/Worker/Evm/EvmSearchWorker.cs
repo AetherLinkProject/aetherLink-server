@@ -9,17 +9,20 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
+using AetherLink.Server.HttpApi.Reporter;
 
 namespace AetherLink.Server.HttpApi.Worker.Evm;
 
 public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly EVMOptions _options;
+    private readonly IJobsReporter _jobsReporter;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<EvmSearchWorker> _logger;
 
     public EvmSearchWorker(
         AbpAsyncTimer timer,
+        IJobsReporter jobsReporter,
         IClusterClient clusterClient,
         ILogger<EvmSearchWorker> logger,
         IOptionsSnapshot<EVMOptions> options,
@@ -28,6 +31,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
     {
         _logger = logger;
         _options = options.Value;
+        _jobsReporter = jobsReporter;
         _clusterClient = clusterClient;
         timer.Period = _options.TransactionSearchTimer;
     }
@@ -111,6 +115,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
     {
         var grainId = metadata.TransactionId;
         var messageId = metadata.MessageId;
+        var startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(grainId);
         var result = await requestGrain.UpdateAsync(new()
         {
@@ -118,7 +123,8 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
             SourceChainId = metadata.SourceChainId,
             TargetChainId = metadata.TargetChainId,
             MessageId = messageId,
-            Status = CrossChainStatus.Started.ToString()
+            Status = CrossChainStatus.Started.ToString(),
+            StartTime = startTime
         });
         _logger.LogDebug($"[EvmSearchWorker] Create {grainId} {messageId} started {result.Success}");
 
@@ -129,7 +135,8 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
             SourceChainId = metadata.SourceChainId,
             TargetChainId = metadata.TargetChainId,
             MessageId = messageId,
-            Status = CrossChainStatus.Started.ToString()
+            Status = CrossChainStatus.Started.ToString(),
+            StartTime = startTime
         });
 
         _logger.LogDebug($"[EvmSearchWorker] Create {grainId} message grain {messageResult.Success}");
@@ -138,8 +145,6 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task HandleCommittedAsync(EvmRampRequestGrainDto metadata)
     {
         var messageId = metadata.MessageId;
-
-        // find request by message id
         var transactionIdGrainClient = _clusterClient.GetGrain<ITransactionIdGrain>(messageId);
         var transactionIdGrainResponse = await transactionIdGrainClient.GetAsync();
         if (!transactionIdGrainResponse.Success)
@@ -175,9 +180,30 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
             return;
         }
 
+        if (response.Data.Status == CrossChainStatus.Committed.ToString())
+        {
+            _logger.LogInformation($"[EvmSearchWorker] MessageId {messageId} already committed, skip duration report.");
+            return;
+        }
+
+        _logger.LogInformation(
+            $"[EvmSearchWorker] Reporting committed for MessageId {messageId}, ChainId {metadata.SourceChainId}");
+
+        _jobsReporter.ReportCommittedReport(metadata.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
+
+        var startTime = response.Data.StartTime;
+        if (startTime > 0)
+        {
+            var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var duration = (now - startTime) / 1000.0;
+            _logger.LogInformation(
+                $"[EvmSearchWorker] ReportExecutionDuration: MessageId={messageId}, ChainId={metadata.SourceChainId}, Duration={duration}s");
+            _jobsReporter.ReportExecutionDuration(metadata.SourceChainId.ToString(), StartedRequestTypeName.Crosschain,
+                duration);
+        }
+
         var result = await requestGrain.UpdateAsync(response.Data);
 
-        _logger.LogDebug(
-            $"[EvmSearchWorker] Update {metadata.TransactionId} {messageId} committed {result.Success}");
+        _logger.LogDebug($"[EvmSearchWorker] Update {metadata.TransactionId} {messageId} committed {result.Success}");
     }
 }

@@ -23,6 +23,7 @@ using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
+using Prometheus;
 
 namespace AetherLinkServer;
 
@@ -106,6 +107,7 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         app.UseAbpSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "Support APP API"); });
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
+        app.UseHttpMetrics();
         app.UseConfiguredEndpoints();
 
         ConfigureWorker(context);

@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices.ComTypes;
 using AetherLink.Indexer;
 using AetherLink.Indexer.Constants;
 using AetherLink.Indexer.Dtos;
@@ -116,7 +115,8 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
                     MessageId = ByteString.CopyFrom(decodedSendEvent.Event.MessageId).ToBase64(),
                     TargetChainId = (long)decodedSendEvent.Event.TargetChainId,
                     SourceChainId = (long)decodedSendEvent.Event.SourceChainId,
-                    Type = CrossChainTransactionType.CrossChainSend
+                    Type = CrossChainTransactionType.CrossChainSend,
+                    StartTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                 };
             }
 
