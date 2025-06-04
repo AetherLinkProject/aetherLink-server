@@ -1,4 +1,5 @@
 using Prometheus;
+using AetherLink.Server.HttpApi.Constants;
 
 namespace AetherLink.Server.HttpApi.Reporter
 {
@@ -18,21 +19,21 @@ namespace AetherLink.Server.HttpApi.Reporter
         public JobsReporter()
         {
             _startedRequestCounter = Metrics.CreateCounter(
-                "started_request",
+                MetricsConstants.StartedRequestCounter,
                 "Number of started business tasks (by chain & type)",
                 new CounterConfiguration
                 {
                     LabelNames = new[] { "chain", "task_type" }
                 });
             _committedReportCounter = Metrics.CreateCounter(
-                "committed_report",
+                MetricsConstants.CommittedReportCounter,
                 "Number of committed reports",
                 new CounterConfiguration
                 {
                     LabelNames = new[] { "chain", "type" }
                 });
             _executionDurationHistogram = Metrics.CreateHistogram(
-                "task_execution_duration",
+                MetricsConstants.ExecutionDurationHistogram,
                 "Time between task start and commit (seconds)",
                 new HistogramConfiguration
                 {

@@ -30,10 +30,11 @@ public class BalanceMonitorWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
+        _logger.LogInformation("[BalanceMonitorWorker] Starting.");
         var chains = _options.Chains;
         if (chains == null || chains.Count == 0)
         {
-            _logger.LogInformation("No chains configured for balance monitoring.");
+            _logger.LogInformation("[BalanceMonitorWorker] No chains configured for balance monitoring.");
             return;
         }
 
@@ -43,12 +44,12 @@ public class BalanceMonitorWorker : AsyncPeriodicBackgroundWorkerBase
             .ToList();
         if (validChains.Count == 0)
         {
-            _logger.LogWarning("No configured chains have a registered provider.");
+            _logger.LogWarning("[BalanceMonitorWorker] No configured chains have a registered provider.");
             return;
         }
 
         _logger.LogInformation(
-            $"BalanceMonitorWorker starting. Monitoring chains: {string.Join(", ", validChains.Select(c => $"{c.ChainName}({c.Addresses.Count})"))}");
+            $"[BalanceMonitorWorker] Monitoring chains: {string.Join(", ", validChains.Select(c => $"{c.ChainName}({c.Addresses.Count})"))}");
         var chainTasks =
             validChains.Select(chain => Task.Run(() => ProcessChainAsync(chain.ChainName, chain.Addresses)));
         await Task.WhenAll(chainTasks);
@@ -58,7 +59,7 @@ public class BalanceMonitorWorker : AsyncPeriodicBackgroundWorkerBase
     {
         if (!_providers.TryGetValue(chainName.ToLower(), out var provider))
         {
-            _logger.LogWarning($"No provider found for chain: {chainName}");
+            _logger.LogWarning($"[BalanceMonitorWorker] No provider found for chain: {chainName}");
             return;
         }
 
@@ -79,11 +80,11 @@ public class BalanceMonitorWorker : AsyncPeriodicBackgroundWorkerBase
                 {
                     retryCount++;
                     _logger.LogWarning(ex,
-                        $"Failed to get {chainName} balance for {address}, attempt {retryCount}/{MetricsConstants.MaxRetries}");
+                        $"[BalanceMonitorWorker] Failed to get {chainName} balance for {address}, attempt {retryCount}/{MetricsConstants.MaxRetries}");
                     if (retryCount >= MetricsConstants.MaxRetries)
                     {
                         _logger.LogError(
-                            $"[{chainName.ToUpper()}] Giving up on {address} after {MetricsConstants.MaxRetries} attempts.");
+                            $"[BalanceMonitorWorker][{chainName.ToUpper()}] Giving up on {address} after {MetricsConstants.MaxRetries} attempts.");
                     }
                     else
                     {
@@ -94,10 +95,11 @@ public class BalanceMonitorWorker : AsyncPeriodicBackgroundWorkerBase
 
             await Task.Delay(MetricsConstants.AddressDelayMs);
         }
+
         if (balanceDict.Count > 0)
         {
             var summary = string.Join(", ", balanceDict.Select(kv => $"{kv.Key}:{kv.Value}"));
-            _logger.LogInformation($"[{chainName.ToUpper()}] Balances: {{ {summary} }}");
+            _logger.LogInformation($"[BalanceMonitorWorker][{chainName.ToUpper()}] Balances: {{ {summary} }}");
         }
     }
 }
