@@ -131,6 +131,7 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<TransactionSearchWorker>());
         AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<EvmSearchWorker>());
         AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<EvmChainStatusSyncWorker>());
+        AsyncHelper.RunSync(() => context.AddBackgroundWorkerAsync<BalanceMonitorWorker>());
     }
 
     private void ConfigureLocalization()
