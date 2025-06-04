@@ -1,4 +1,4 @@
-namespace AetherLink.Server.HttpApi.Options;
+ namespace AetherLink.Server.HttpApi.Options;
 
 using System.Collections.Generic;
 
