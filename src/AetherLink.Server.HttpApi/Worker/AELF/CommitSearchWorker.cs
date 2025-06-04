@@ -1,3 +1,4 @@
+using AElf;
 using AetherLink.Server.Grains;
 using AetherLink.Server.Grains.Grain.Indexer;
 using AetherLink.Server.Grains.Grain.Request;
@@ -94,6 +95,7 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task HandleReportCommittedAsync(AELFRampRequestGrainDto requestData)
     {
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(requestData.MessageId);
+        var messageId = ByteStringHelper.FromHexString(requestData.MessageId).ToBase64();
         var result = await requestGrain.GetAsync();
         if (result.Data.Status == CrossChainStatus.Committed.ToString())
         {
@@ -105,7 +107,7 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         _jobsReporter.ReportCommittedReport(requestData.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
 
-        long startTime = result.Data.StartTime;
+        var startTime = result.Data.StartTime;
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var duration = (now - startTime) / 1000.0;
 
@@ -115,10 +117,10 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         var updateResult = await requestGrain.UpdateAsync(new()
         {
-            Id = requestData.MessageId,
+            Id = messageId,
             SourceChainId = requestData.SourceChainId,
             TargetChainId = requestData.TargetChainId,
-            MessageId = requestData.MessageId,
+            MessageId = messageId,
             Status = CrossChainStatus.Committed.ToString()
         });
 

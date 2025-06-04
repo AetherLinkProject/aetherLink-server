@@ -101,13 +101,26 @@ public class EvmProvider : IEvmProvider, ISingletonDependency
 
         for (var i = 0; i < RetryConstants.MaximumRetryTimes; i++)
         {
-            var receipt = await account.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionId);
-            if (receipt != null && receipt.Status != null && receipt.Status == new HexBigInteger(1))
-                return TransactionState.Success;
+            try
+            {
+                var receipt = await account.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionId);
+                if (receipt != null && receipt.Status != null && receipt.Status == new HexBigInteger(1))
+                    return TransactionState.Success;
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message != null && ex.Message.Contains("Duplicate report: already processed"))
+                {
+                    _logger.LogWarning($"[Evm] {transactionId} duplicate report detected, treat as success.");
+                    return TransactionState.Success;
+                }
+                _logger.LogWarning($"[Evm] {transactionId} exception in {i} times: {ex.Message}");
+            }
 
             _logger.LogWarning(
                 $"[Evm][Leader] {transactionId} send transaction failed in {i} times, will send it later.");
-            Thread.Sleep((i + 1) * 1000 * 2);
+
+            await Task.Delay((i + 1) * 1000 * 2);
         }
 
         return TransactionState.Fail;
