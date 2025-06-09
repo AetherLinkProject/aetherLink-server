@@ -9,6 +9,7 @@ public static class MetricsConstants
     public const int AddressDelayMs = 1000;
     public const string ChainTon = "ton";
     public const string ChainEvm = "evm";
+    public const string ChainAelf = "aelf";
     public const string StartedRequestCounter = "started_request";
     public const string CommittedReportCounter = "committed_report";
     public const string ExecutionDurationHistogram = "task_execution_duration";

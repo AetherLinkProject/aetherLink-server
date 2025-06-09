@@ -10,7 +10,6 @@
         <PackageReference Include="Microsoft.Orleans.Core" Version="8.1.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
-        <PackageReference Include="prometheus-net" Version="8.2.1" />
         <PackageReference Include="StackExchange.Redis" Version="2.6.122" />
         <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.0" />
         <PackageReference Include="TonSdk.Core" Version="0.3.9" />
