@@ -39,20 +39,8 @@ public class BalanceMonitorWorker : AsyncPeriodicBackgroundWorkerBase
             return;
         }
 
-        // Only process chains that are both configured and have a registered provider
-        var validChains = chains.Where(c => _providers.ContainsKey(c.Key.ToLower()))
-            .Select(c => new { ChainName = c.Key, Addresses = c.Value.Addresses })
-            .ToList();
-        if (validChains.Count == 0)
-        {
-            _logger.LogWarning("[BalanceMonitorWorker] No configured chains have a registered provider.");
-            return;
-        }
-
-        _logger.LogInformation(
-            $"[BalanceMonitorWorker] Monitoring chains: {string.Join(", ", validChains.Select(c => $"{c.ChainName}({c.Addresses.Count})"))}");
         var chainTasks =
-            validChains.Select(chain => Task.Run(() => ProcessChainAsync(chain.ChainName, chain.Addresses)));
+            chains.Select(chain => Task.Run(() => ProcessChainAsync(chain.Key, chain.Value.Addresses)));
         await Task.WhenAll(chainTasks);
     }
 
