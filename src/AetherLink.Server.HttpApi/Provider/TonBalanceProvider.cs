@@ -32,6 +32,6 @@ public class TonBalanceProvider : ChainBalanceProvider
         var json = JObject.Parse(content);
         var balanceStr = json["result"]?.ToString() ?? "0";
         decimal.TryParse(balanceStr, out var balance);
-        return balance;
+        return balance / 1_000_000_000m;
     }
 }
