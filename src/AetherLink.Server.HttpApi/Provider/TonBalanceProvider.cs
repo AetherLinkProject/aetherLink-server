@@ -7,8 +7,19 @@ public class TonBalanceProvider : ChainBalanceProvider
 {
     public override string ChainType => ChainTypesConstants.Ton;
 
+    protected readonly HttpClient HttpClient;
+    protected readonly string ChainName;
+    protected readonly IOptionsSnapshot<BalanceMonitorOptions> Options;
+
     public TonBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options)
-        : base(httpClient, options, ChainNamesConstants.Ton) { }
+    {
+        Options = options;
+        HttpClient = httpClient;
+        ChainName = ChainNamesConstants.Ton;
+    }
+
+    protected string Url => Options.Value.Chains[ChainName].Url;
+    protected string ApiKey => Options.Value.Chains[ChainName].ApiKey;
 
     public override async Task<decimal> GetBalanceAsync(string address)
     {
@@ -23,4 +34,4 @@ public class TonBalanceProvider : ChainBalanceProvider
         decimal.TryParse(balanceStr, out var balance);
         return balance;
     }
-} 
+}

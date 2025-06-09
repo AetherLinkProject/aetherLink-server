@@ -44,10 +44,10 @@ public class BalanceMonitorWorker : AsyncPeriodicBackgroundWorkerBase
     private async Task ProcessChainAsync(string chainName, ChainBalanceMonitorOptions chainOptions)
     {
         var addresses = chainOptions.Addresses;
-        var chainType = chainOptions.ChainType?.ToLower();
-        if (string.IsNullOrEmpty(chainType) || !_providerByType.TryGetValue(chainType, out var provider))
+        var key = chainName.ToLower();
+        if (!_providerByType.TryGetValue(key, out var provider))
         {
-            _logger.LogWarning($"[BalanceMonitorWorker] No provider found for chainType: {chainType} (chain: {chainName})");
+            _logger.LogWarning($"[BalanceMonitorWorker] No provider found for chain: {chainName}");
             return;
         }
 
