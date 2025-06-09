@@ -31,6 +31,7 @@ public class BalanceMonitorWorker : AsyncPeriodicBackgroundWorkerBase
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
         _logger.LogInformation("[BalanceMonitorWorker] Starting.");
+        
         var chains = _options.Chains;
         if (chains == null || chains.Count == 0)
         {
