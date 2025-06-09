@@ -1,4 +1,4 @@
- namespace AetherLink.Server.HttpApi.Options;
+namespace AetherLink.Server.HttpApi.Options;
 
 using System.Collections.Generic;
 
@@ -13,4 +13,5 @@ public class ChainBalanceMonitorOptions
     public List<string> Addresses { get; set; } = new();
     public string Url { get; set; }
     public string ApiKey { get; set; }
+    public string ChainType { get; set; }
 } 

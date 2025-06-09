@@ -12,7 +12,7 @@ public class BalanceMonitorWorker : AsyncPeriodicBackgroundWorkerBase
     private readonly BalanceMonitorOptions _options;
     private readonly BalanceReporter _balanceReporter;
     private readonly ILogger<BalanceMonitorWorker> _logger;
-    private readonly Dictionary<string, IChainBalanceProvider> _providers;
+    private readonly Dictionary<string, IChainBalanceProvider> _providerByType;
 
     public BalanceMonitorWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IOptionsSnapshot<BalanceMonitorOptions> options, IEnumerable<IChainBalanceProvider> providers,
@@ -22,16 +22,13 @@ public class BalanceMonitorWorker : AsyncPeriodicBackgroundWorkerBase
         _options = options.Value;
         timer.Period = _options.Period;
         _balanceReporter = balanceReporter;
-        _providers = providers.ToDictionary(
-            p => p.ChainKey.ToLower(),
-            p => p
-        );
+        _providerByType = providers.ToDictionary(p => p.ChainType.ToLower(), p => p);
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
         _logger.LogInformation("[BalanceMonitorWorker] Starting.");
-        
+
         var chains = _options.Chains;
         if (chains == null || chains.Count == 0)
         {
@@ -40,22 +37,24 @@ public class BalanceMonitorWorker : AsyncPeriodicBackgroundWorkerBase
         }
 
         var chainTasks =
-            chains.Select(chain => Task.Run(() => ProcessChainAsync(chain.Key, chain.Value.Addresses)));
+            chains.Select(chain => Task.Run(() => ProcessChainAsync(chain.Key, chain.Value)));
         await Task.WhenAll(chainTasks);
     }
 
-    private async Task ProcessChainAsync(string chainName, List<string> addresses)
+    private async Task ProcessChainAsync(string chainName, ChainBalanceMonitorOptions chainOptions)
     {
-        if (!_providers.TryGetValue(chainName.ToLower(), out var provider))
+        var addresses = chainOptions.Addresses;
+        var chainType = chainOptions.ChainType?.ToLower();
+        if (string.IsNullOrEmpty(chainType) || !_providerByType.TryGetValue(chainType, out var provider))
         {
-            _logger.LogWarning($"[BalanceMonitorWorker] No provider found for chain: {chainName}");
+            _logger.LogWarning($"[BalanceMonitorWorker] No provider found for chainType: {chainType} (chain: {chainName})");
             return;
         }
 
         var balanceDict = new Dictionary<string, decimal>();
         foreach (var address in addresses)
         {
-            var retryCount = 0;
+            int retryCount = 0;
             while (retryCount < MetricsConstants.MaxRetries)
             {
                 try
