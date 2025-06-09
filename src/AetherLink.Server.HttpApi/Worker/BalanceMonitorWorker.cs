@@ -47,14 +47,15 @@ public class BalanceMonitorWorker : AsyncPeriodicBackgroundWorkerBase
         var chainType = chainOptions.ChainType?.ToLower();
         if (string.IsNullOrEmpty(chainType) || !_providerByType.TryGetValue(chainType, out var provider))
         {
-            _logger.LogWarning($"[BalanceMonitorWorker] No provider found for chainType: {chainType} (chain: {chainName})");
+            _logger.LogWarning(
+                $"[BalanceMonitorWorker] No provider found for chainType: {chainType} (chain: {chainName})");
             return;
         }
 
         var balanceDict = new Dictionary<string, decimal>();
         foreach (var address in addresses)
         {
-            int retryCount = 0;
+            var retryCount = 0;
             while (retryCount < MetricsConstants.MaxRetries)
             {
                 try
