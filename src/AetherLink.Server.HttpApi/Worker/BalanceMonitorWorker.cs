@@ -54,7 +54,7 @@ public class BalanceMonitorWorker : AsyncPeriodicBackgroundWorkerBase
         var balanceDict = new Dictionary<string, decimal>();
         foreach (var address in addresses)
         {
-            int retryCount = 0;
+            var retryCount = 0;
             while (retryCount < MetricsConstants.MaxRetries)
             {
                 try
