@@ -88,6 +88,9 @@ public class AetherLinkRequestService : AetherLinkServerAppService, IAetherLinkR
             else if (!string.IsNullOrEmpty(input.TransactionId) && input.TransactionId.StartsWith("0x"))
                 _crossChainReporter.ReportCrossChainQueryHitCount(input.TransactionId, MetricsConstants.ChainEvm,
                     false);
+            else
+                _crossChainReporter.ReportCrossChainQueryHitCount(input.TransactionId, MetricsConstants.ChainAelf,
+                    false);
             throw new UserFriendlyException("Failed to get cross chain transaction");
         }
 

@@ -16,5 +16,12 @@ public class AetherLinkServerHttpApiModule : AbpModule
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<AetherLinkServerHttpApiModule>(); });
         context.Services.AddSingleton<IJobsReporter, JobsReporter>();
         context.Services.AddSingleton<ICrossChainReporter, CrossChainReporter>();
+        context.Services.AddSingleton<IChainBalanceProvider, EthBalanceProvider>();
+        context.Services.AddSingleton<IChainBalanceProvider, SepoliaBalanceProvider>();
+        context.Services.AddSingleton<IChainBalanceProvider, BscBalanceProvider>();
+        context.Services.AddSingleton<IChainBalanceProvider, BscTestBalanceProvider>();
+        context.Services.AddSingleton<IChainBalanceProvider, BaseBalanceProvider>();
+        context.Services.AddSingleton<IChainBalanceProvider, BaseSepoliaBalanceProvider>();
+        context.Services.AddSingleton<IChainBalanceProvider, TonBalanceProvider>();
     }
 }

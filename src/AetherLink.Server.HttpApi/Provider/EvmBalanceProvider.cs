@@ -3,15 +3,21 @@ using Microsoft.Extensions.Options;
 using AetherLink.Server.HttpApi.Options;
 using AetherLink.Server.HttpApi.Constants;
 
-public class EvmBalanceProvider : ChainBalanceProvider
+public abstract class EvmBaseBalanceProvider : ChainBalanceProvider
 {
-    public override string ChainType => ChainTypesConstants.Evm;
+    protected readonly HttpClient HttpClient;
+    protected readonly string ChainName;
+    protected readonly IOptionsSnapshot<BalanceMonitorOptions> Options;
 
-    public EvmBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options,
-        string chainName = ChainNamesConstants.Eth)
-        : base(httpClient, options, chainName)
+    protected EvmBaseBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options, string chainName)
     {
+        HttpClient = httpClient;
+        Options = options;
+        ChainName = chainName;
     }
+
+    protected string Url => Options.Value.Chains[ChainName].Url;
+    protected string ApiKey => Options.Value.Chains[ChainName].ApiKey;
 
     public override async Task<decimal> GetBalanceAsync(string address)
     {
@@ -41,50 +47,56 @@ public class EvmBalanceProvider : ChainBalanceProvider
     }
 }
 
-public class EthBalanceProvider : EvmBalanceProvider
+public class EthBalanceProvider : EvmBaseBalanceProvider
 {
     public EthBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options)
         : base(httpClient, options, ChainNamesConstants.Eth)
     {
     }
+    public override string ChainType => ChainTypesConstants.Eth;
 }
 
-public class SepoliaBalanceProvider : EvmBalanceProvider
+public class SepoliaBalanceProvider : EvmBaseBalanceProvider
 {
     public SepoliaBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options)
-        : base(httpClient, options, "sepolia")
+        : base(httpClient, options, ChainNamesConstants.Sepolia)
     {
     }
+    public override string ChainType => ChainTypesConstants.Sepolia;
 }
 
-public class BscBalanceProvider : EvmBalanceProvider
+public class BscBalanceProvider : EvmBaseBalanceProvider
 {
     public BscBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options)
-        : base(httpClient, options, ChainConstants.Bsc)
+        : base(httpClient, options, ChainNamesConstants.Bsc)
     {
     }
+    public override string ChainType => ChainTypesConstants.Bsc;
 }
 
-public class BscTestBalanceProvider : EvmBalanceProvider
+public class BscTestBalanceProvider : EvmBaseBalanceProvider
 {
     public BscTestBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options)
-        : base(httpClient, options, "bsctest")
+        : base(httpClient, options, ChainNamesConstants.BscTest)
     {
     }
+    public override string ChainType => ChainTypesConstants.BscTest;
 }
 
-public class BaseBalanceProvider : EvmBalanceProvider
+public class BaseBalanceProvider : EvmBaseBalanceProvider
 {
     public BaseBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options)
-        : base(httpClient, options, ChainConstants.Base)
+        : base(httpClient, options, ChainNamesConstants.Base)
     {
     }
+    public override string ChainType => ChainTypesConstants.Base;
 }
 
-public class BaseSepoliaBalanceProvider : EvmBalanceProvider
+public class BaseSepoliaBalanceProvider : EvmBaseBalanceProvider
 {
     public BaseSepoliaBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options)
-        : base(httpClient, options, "basesepolia")
+        : base(httpClient, options, ChainNamesConstants.BaseSepolia)
     {
     }
+    public override string ChainType => ChainTypesConstants.BaseSepolia;
 }
