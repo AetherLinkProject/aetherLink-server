@@ -35,14 +35,19 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         _crossChainReporter = crossChainReporter;
     }
 
-
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
         _logger.LogInformation("[TonSearchWorker] Start searching TON transactions...");
         var client = _clusterClient.GetGrain<ITonIndexerGrain>(GrainKeyConstants.SearchTransactionGrainKey);
         var result = await client.SearchTonTransactionsAsync();
 
-        if (!result.Success) return;
+        if (!result.Success)
+        {
+            _logger.LogWarning("[TonSearchWorker] Search TON transactions failed...");
+            return;
+        }
+
+        _logger.LogInformation($"[TonSearchWorker] Get {result.Data.Count} TON transactions...");
         await Task.WhenAll(result.Data.Select(HandlerTonTransactionAsync));
     }
 
