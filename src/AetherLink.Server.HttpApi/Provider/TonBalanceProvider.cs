@@ -5,8 +5,10 @@ using AetherLink.Server.HttpApi.Constants;
 
 public class TonBalanceProvider : ChainBalanceProvider
 {
+    public override string ChainType => ChainTypesConstants.Ton;
+
     public TonBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options)
-        : base(httpClient, options, ChainConstants.Ton) { }
+        : base(httpClient, options, ChainNamesConstants.Ton) { }
 
     public override async Task<decimal> GetBalanceAsync(string address)
     {

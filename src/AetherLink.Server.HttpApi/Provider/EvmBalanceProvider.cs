@@ -5,9 +5,11 @@ using AetherLink.Server.HttpApi.Constants;
 
 public class EvmBalanceProvider : ChainBalanceProvider
 {
+    public override string ChainType => ChainTypesConstants.Evm;
+
     public EvmBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options,
-        string chainKey = ChainConstants.Evm)
-        : base(httpClient, options, chainKey)
+        string chainName = ChainNamesConstants.Eth)
+        : base(httpClient, options, chainName)
     {
     }
 
@@ -42,7 +44,7 @@ public class EvmBalanceProvider : ChainBalanceProvider
 public class EthBalanceProvider : EvmBalanceProvider
 {
     public EthBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options)
-        : base(httpClient, options, ChainConstants.Eth)
+        : base(httpClient, options, ChainNamesConstants.Eth)
     {
     }
 }
