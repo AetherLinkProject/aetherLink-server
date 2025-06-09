@@ -115,7 +115,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
     {
         var grainId = metadata.TransactionId;
         var messageId = metadata.MessageId;
-        var startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var startTime = metadata.BlockTime;
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(grainId);
         var result = await requestGrain.UpdateAsync(new()
         {
@@ -191,7 +191,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         _jobsReporter.ReportCommittedReport(metadata.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
 
-        var startTime = response.Data.StartTime;
+        var startTime = response.Data.StartTime > 0 ? response.Data.StartTime : metadata.BlockTime;
         if (startTime > 0)
         {
             var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();

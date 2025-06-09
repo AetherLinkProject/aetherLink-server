@@ -87,7 +87,9 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
             try
             {
                 var request = await _indexer.GetEvmLogsAsync(web3, op.ContractAddress, curFrom, currentTo);
-                pendingRequests.AddRange(request.Select(TryToDecodeFilterLog));
+                var decodedTasks = request.Select(log => TryToDecodeFilterLogAsync(log, web3));
+                var decodedResults = await Task.WhenAll(decodedTasks);
+                pendingRequests.AddRange(decodedResults);
             }
             catch (Exception ex)
             {
@@ -100,11 +102,16 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
         return new() { Success = true, Data = pendingRequests };
     }
 
-
-    private EvmRampRequestGrainDto TryToDecodeFilterLog(FilterLog log)
+    private async Task<EvmRampRequestGrainDto> TryToDecodeFilterLogAsync(FilterLog log, Web3 web3)
     {
         try
         {
+            long blockTime = 0;
+            if (log.BlockNumber != null)
+            {
+                var block = await _indexer.GetBlockByNumberAsync(web3, (long)log.BlockNumber.Value);
+                blockTime = (long)(block.Timestamp.Value * 1000); 
+            }
             // Check only cross chain request send events
             var decodedSendEvent = Event<SendEventDTO>.DecodeEvent(log);
             if (decodedSendEvent != null)
@@ -116,7 +123,7 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
                     TargetChainId = (long)decodedSendEvent.Event.TargetChainId,
                     SourceChainId = (long)decodedSendEvent.Event.SourceChainId,
                     Type = CrossChainTransactionType.CrossChainSend,
-                    StartTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                    BlockTime = blockTime
                 };
             }
 
@@ -129,7 +136,8 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
                     MessageId = decodedForward.Event.MessageId.ToHex(),
                     TargetChainId = (long)decodedForward.Event.TargetChainId,
                     SourceChainId = (long)decodedForward.Event.SourceChainId,
-                    Type = CrossChainTransactionType.CrossChainReceive
+                    Type = CrossChainTransactionType.CrossChainReceive,
+                    BlockTime = blockTime
                 };
             }
 

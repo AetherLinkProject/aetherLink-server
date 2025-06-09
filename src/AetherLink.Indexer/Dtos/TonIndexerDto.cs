@@ -14,6 +14,7 @@ public class TonTransactionDto
     public string TraceId { get; set; }
     public TonInMessageDto InMsg { get; set; }
     public List<TonInMessageDto> OutMsgs { get; set; }
+    public long Now { get; set; }
 }
 
 public class TonInMessageDto
