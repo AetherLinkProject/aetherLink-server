@@ -9,7 +9,8 @@ public abstract class EvmBaseBalanceProvider : ChainBalanceProvider
     protected readonly string ChainName;
     protected readonly IOptionsSnapshot<BalanceMonitorOptions> Options;
 
-    protected EvmBaseBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options, string chainName)
+    protected EvmBaseBalanceProvider(HttpClient httpClient, IOptionsSnapshot<BalanceMonitorOptions> options,
+        string chainName)
     {
         HttpClient = httpClient;
         Options = options;
@@ -39,9 +40,11 @@ public abstract class EvmBaseBalanceProvider : ChainBalanceProvider
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
         var json = JObject.Parse(content);
-        var resultHex = json["result"]?.ToString() ?? "0x0";
-        var balanceWei =
-            System.Numerics.BigInteger.Parse(resultHex.Substring(2), System.Globalization.NumberStyles.HexNumber);
+        var resultStr = json["result"]?.ToString() ?? "0";
+        System.Numerics.BigInteger balanceWei;
+        balanceWei = resultStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+            ? System.Numerics.BigInteger.Parse(resultStr.Substring(2), System.Globalization.NumberStyles.HexNumber)
+            : System.Numerics.BigInteger.Parse(resultStr);
         var balance = (decimal)balanceWei / 1_000_000_000_000_000_000m;
         return balance;
     }
@@ -53,6 +56,7 @@ public class EthBalanceProvider : EvmBaseBalanceProvider
         : base(httpClient, options, ChainNamesConstants.Eth)
     {
     }
+
     public override string ChainType => ChainTypesConstants.Eth;
 }
 
@@ -62,6 +66,7 @@ public class SepoliaBalanceProvider : EvmBaseBalanceProvider
         : base(httpClient, options, ChainNamesConstants.Sepolia)
     {
     }
+
     public override string ChainType => ChainTypesConstants.Sepolia;
 }
 
@@ -71,6 +76,7 @@ public class BscBalanceProvider : EvmBaseBalanceProvider
         : base(httpClient, options, ChainNamesConstants.Bsc)
     {
     }
+
     public override string ChainType => ChainTypesConstants.Bsc;
 }
 
@@ -80,6 +86,7 @@ public class BscTestBalanceProvider : EvmBaseBalanceProvider
         : base(httpClient, options, ChainNamesConstants.BscTest)
     {
     }
+
     public override string ChainType => ChainTypesConstants.BscTest;
 }
 
@@ -89,6 +96,7 @@ public class BaseBalanceProvider : EvmBaseBalanceProvider
         : base(httpClient, options, ChainNamesConstants.Base)
     {
     }
+
     public override string ChainType => ChainTypesConstants.Base;
 }
 
@@ -98,5 +106,6 @@ public class BaseSepoliaBalanceProvider : EvmBaseBalanceProvider
         : base(httpClient, options, ChainNamesConstants.BaseSepolia)
     {
     }
+
     public override string ChainType => ChainTypesConstants.BaseSepolia;
 }
