@@ -38,6 +38,7 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
+        _logger.LogInformation("[TonSearchWorker] Start searching TON transactions...");
         var client = _clusterClient.GetGrain<ITonIndexerGrain>(GrainKeyConstants.SearchTransactionGrainKey);
         var result = await client.SearchTonTransactionsAsync();
 
@@ -134,7 +135,7 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var targetChainId = (long)receiveSlice.LoadInt(TonTransactionConstants.ChainIdSize);
         _crossChainReporter.ReportCrossChainRequest(messageId, TonTransactionConstants.TonChainId.ToString(),
             targetChainId.ToString());
-        var startTime = transaction.StartTime;
+        var startTime = transaction.Now;
         var crossChainRequestData = new CrossChainRequestGrainDto
         {
             SourceChainId = TonTransactionConstants.TonChainId,
