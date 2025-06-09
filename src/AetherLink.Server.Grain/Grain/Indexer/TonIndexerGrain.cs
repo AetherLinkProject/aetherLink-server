@@ -35,11 +35,14 @@ public class TonIndexerGrain : Grain<TonIndexerState>, ITonIndexerGrain
 
         if (!transactions.Any() ||
             (transactions.Count == 1 && transactions[0].Lt.ToString() == State.LatestTransactionLt))
+        {
+            _logger.LogDebug($"[TonIndexerGrain] Don't get new Ton transaction");
             return new() { Message = "Empty data", Data = new() };
+        }
 
         var latestTransactionLt = transactions.Last().Lt.ToString();
         State.LatestTransactionLt = latestTransactionLt;
-        
+
         _logger.LogInformation($"[TonIndexerGrain] Update LatestTransactionLt to {latestTransactionLt}");
 
         await WriteStateAsync();
