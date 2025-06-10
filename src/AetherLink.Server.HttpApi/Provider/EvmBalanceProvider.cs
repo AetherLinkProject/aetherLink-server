@@ -41,8 +41,7 @@ public abstract class EvmBaseBalanceProvider : ChainBalanceProvider
         var content = await response.Content.ReadAsStringAsync();
         var json = JObject.Parse(content);
         var resultStr = json["result"]?.ToString() ?? "0";
-        System.Numerics.BigInteger balanceWei;
-        balanceWei = resultStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+        var balanceWei = resultStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
             ? System.Numerics.BigInteger.Parse(resultStr.Substring(2), System.Globalization.NumberStyles.HexNumber)
             : System.Numerics.BigInteger.Parse(resultStr);
         var balance = (decimal)(balanceWei * 100000 / 1_000_000_000_000_000_000) / 1000000;
