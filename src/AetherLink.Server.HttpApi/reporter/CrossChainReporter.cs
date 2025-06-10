@@ -1,3 +1,4 @@
+using AetherLink.Metric;
 using Prometheus;
 using AetherLink.Server.HttpApi.Constants;
 using Volo.Abp.DependencyInjection;
@@ -12,42 +13,33 @@ namespace AetherLink.Server.HttpApi.Reporter
 
         public CrossChainReporter()
         {
-            _crossChainRequestCounter = Metrics.CreateCounter(
+            _crossChainRequestCounter = MetricsReporter.RegistryCounters(
                 MetricsConstants.CrossChainRequestCounter,
-                "Number of crosschain requests (by MessageId, SourceChain, TargetChain)",
-                new CounterConfiguration
-                {
-                    LabelNames = new[] { "MessageId", "SourceChain", "TargetChain" }
-                });
-            _crossChainQueryHitCounter = Metrics.CreateCounter(
+                MetricsConstants.CrossChainRequestCounterLabels,
+                MetricsConstants.CrossChainRequestCounterHelp);
+            _crossChainQueryHitCounter = MetricsReporter.RegistryCounters(
                 MetricsConstants.CrossChainQueryHitCounter,
-                "Number of cross-chain query hits (by id, chain, hit)",
-                new CounterConfiguration
-                {
-                    LabelNames = new[] { "id", "chain", "hit" }
-                });
-            _crossChainQueryTotalCounter = Metrics.CreateCounter(
+                MetricsConstants.CrossChainQueryHitCounterLabels,
+                MetricsConstants.CrossChainQueryHitCounterHelp);
+            _crossChainQueryTotalCounter = MetricsReporter.RegistryCounters(
                 MetricsConstants.CrossChainQueryTotalCounter,
-                "Total number of cross-chain queries (by id)",
-                new CounterConfiguration
-                {
-                    LabelNames = new[] { "id" }
-                });
+                MetricsConstants.CrossChainQueryTotalCounterLabels,
+                MetricsConstants.CrossChainQueryTotalCounterHelp);
         }
 
         public void ReportCrossChainRequest(string messageId, string sourceChain, string targetChain)
         {
-            _crossChainRequestCounter.WithLabels(messageId, sourceChain, targetChain).Inc(1);
+            _crossChainRequestCounter.WithLabels(messageId, sourceChain, targetChain).Inc();
         }
 
         public void ReportCrossChainQueryHitCount(string id, string chain, bool hit)
         {
-            _crossChainQueryHitCounter.WithLabels(id ?? string.Empty, chain ?? string.Empty, hit ? "1" : "0").Inc(1);
+            _crossChainQueryHitCounter.WithLabels(id ?? string.Empty, chain ?? string.Empty, hit ? "1" : "0").Inc();
         }
 
         public void ReportCrossChainQueryTotalCount(string id)
         {
-            _crossChainQueryTotalCounter.WithLabels(id ?? string.Empty).Inc(1);
+            _crossChainQueryTotalCounter.WithLabels(id ?? string.Empty).Inc();
         }
     }
 }

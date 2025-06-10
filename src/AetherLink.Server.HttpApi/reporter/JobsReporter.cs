@@ -1,6 +1,7 @@
 using Prometheus;
 using AetherLink.Server.HttpApi.Constants;
 using Volo.Abp.DependencyInjection;
+using AetherLink.Metric;
 
 namespace AetherLink.Server.HttpApi.Reporter
 {
@@ -12,28 +13,18 @@ namespace AetherLink.Server.HttpApi.Reporter
 
         public JobsReporter()
         {
-            _startedRequestCounter = Metrics.CreateCounter(
+            _startedRequestCounter = MetricsReporter.RegistryCounters(
                 MetricsConstants.StartedRequestCounter,
-                "Number of started business tasks (by chain & type)",
-                new CounterConfiguration
-                {
-                    LabelNames = new[] { "chain", "task_type" }
-                });
-            _committedReportCounter = Metrics.CreateCounter(
+                MetricsConstants.StartedRequestCounterLabels,
+                MetricsConstants.StartedRequestCounterHelp);
+            _committedReportCounter = MetricsReporter.RegistryCounters(
                 MetricsConstants.CommittedReportCounter,
-                "Number of committed reports",
-                new CounterConfiguration
-                {
-                    LabelNames = new[] { "chain", "type" }
-                });
-            _executionDurationHistogram = Metrics.CreateHistogram(
+                MetricsConstants.CommittedReportCounterLabels,
+                MetricsConstants.CommittedReportCounterHelp);
+            _executionDurationHistogram = MetricsReporter.RegistryHistograms(
                 MetricsConstants.ExecutionDurationHistogram,
-                "Time between task start and commit (seconds)",
-                new HistogramConfiguration
-                {
-                    LabelNames = new[] { "chain", "type" },
-                    Buckets = Histogram.ExponentialBuckets(60, 1.2, 15) // 60s ~ 646s, 60-240s
-                });
+                MetricsConstants.ExecutionDurationHistogramLabels,
+                MetricsConstants.ExecutionDurationHistogramHelp);
         }
 
         public void ReportStartedRequest(string chain, string taskType)
