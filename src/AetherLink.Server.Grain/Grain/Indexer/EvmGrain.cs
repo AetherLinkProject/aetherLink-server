@@ -99,6 +99,8 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
             }
         }
 
+        _logger.LogDebug($"[EvmGrain] {network} get {pendingRequests.Count} requests.");
+
         return new() { Success = true, Data = pendingRequests };
     }
 
@@ -110,8 +112,9 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
             if (log.BlockNumber != null)
             {
                 var block = await _indexer.GetBlockByNumberAsync(web3, (long)log.BlockNumber.Value);
-                blockTime = (long)(block.Timestamp.Value * 1000); 
+                blockTime = (long)(block.Timestamp.Value * 1000);
             }
+
             // Check only cross chain request send events
             var decodedSendEvent = Event<SendEventDTO>.DecodeEvent(log);
             if (decodedSendEvent != null)

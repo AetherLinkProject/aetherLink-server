@@ -31,14 +31,14 @@ public class TonIndexerGrain : Grain<TonIndexerState>, ITonIndexerGrain
         var currentTransactionLt = State.LatestTransactionLt;
         var transactions = await _indexer.SubscribeTransactionAsync(currentTransactionLt);
 
-        _logger.LogDebug($"[TonIndexerGrain] Get total {transactions.Count} Ton transaction");
-
         if (!transactions.Any() ||
             (transactions.Count == 1 && transactions[0].Lt.ToString() == State.LatestTransactionLt))
         {
-            _logger.LogDebug($"[TonIndexerGrain] Don't get new Ton transaction");
+            _logger.LogDebug("[TonIndexerGrain] Don't get new Ton transaction");
             return new() { Message = "Empty data", Data = new() };
         }
+
+        _logger.LogDebug($"[TonIndexerGrain] Get total {transactions.Count} Ton transaction");
 
         var latestTransactionLt = transactions.Last().Lt.ToString();
         State.LatestTransactionLt = latestTransactionLt;
