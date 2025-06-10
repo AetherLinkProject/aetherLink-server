@@ -109,7 +109,7 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         _jobsReporter.ReportCommittedReport(requestData.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
 
-        var duration = (result.Data.StartTime - result.Data.CommitTime) / 1000.0;
+        var duration = (result.Data.CommitTime - result.Data.StartTime) / 1000.0;
 
         _logger.LogInformation(
             $"[CommitSearchWorker] ReportExecutionDuration: MessageId={requestData.MessageId}, ChainId={requestData.SourceChainId}, Duration={duration}s");
