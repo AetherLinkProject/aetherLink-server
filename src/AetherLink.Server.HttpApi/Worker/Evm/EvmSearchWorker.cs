@@ -16,13 +16,13 @@ namespace AetherLink.Server.HttpApi.Worker.Evm;
 public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly EVMOptions _options;
-    private readonly IJobsReporter _jobsReporter;
+    private readonly JobsReporter _jobsReporter;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<EvmSearchWorker> _logger;
 
     public EvmSearchWorker(
         AbpAsyncTimer timer,
-        IJobsReporter jobsReporter,
+        JobsReporter jobsReporter,
         IClusterClient clusterClient,
         ILogger<EvmSearchWorker> logger,
         IOptionsSnapshot<EVMOptions> options,

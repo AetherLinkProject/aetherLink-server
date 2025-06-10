@@ -17,13 +17,13 @@ namespace AetherLink.Server.HttpApi.Worker.AELF;
 public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly AELFOptions _options;
-    private readonly IJobsReporter _jobsReporter;
+    private readonly JobsReporter _jobsReporter;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<CommitSearchWorker> _logger;
 
     public CommitSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IOptionsSnapshot<AELFOptions> options, IClusterClient clusterClient, ILogger<CommitSearchWorker> logger,
-        IJobsReporter jobsReporter) : base(timer, serviceScopeFactory)
+        JobsReporter jobsReporter) : base(timer, serviceScopeFactory)
     {
         _logger = logger;
         _options = options.Value;

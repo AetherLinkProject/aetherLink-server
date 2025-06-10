@@ -18,11 +18,11 @@ public class AetherLinkRequestService : AetherLinkServerAppService, IAetherLinkR
 {
     private readonly IObjectMapper _objectMapper;
     private readonly IClusterClient _clusterClient;
-    private readonly ICrossChainReporter _crossChainReporter;
+    private readonly CrossChainReporter _crossChainReporter;
     private readonly ILogger<AetherLinkRequestService> _logger;
 
     public AetherLinkRequestService(IClusterClient clusterClient, IObjectMapper objectMapper,
-        ILogger<AetherLinkRequestService> logger, ICrossChainReporter crossChainReporter)
+        ILogger<AetherLinkRequestService> logger, CrossChainReporter crossChainReporter)
     {
         _logger = logger;
         _objectMapper = objectMapper;
@@ -81,8 +81,9 @@ public class AetherLinkRequestService : AetherLinkServerAppService, IAetherLinkR
 
         var orderGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(crossChainRequestGrainId);
         var result = await orderGrain.GetAsync();
-        if (!result.Success)
+        if (!result.Success || result.Data == null)
         {
+            _logger.LogError($"[AetherLinkRequestService]GetAsync failed or returned null Data for grainId: {crossChainRequestGrainId}, Success: {result.Success}");
             if (!string.IsNullOrEmpty(input.TraceId))
                 _crossChainReporter.ReportCrossChainQueryHitCount(input.TraceId, MetricsConstants.ChainTon, false);
             else if (!string.IsNullOrEmpty(input.TransactionId) && input.TransactionId.StartsWith("0x"))

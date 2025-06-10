@@ -18,14 +18,14 @@ namespace AetherLink.Server.HttpApi.Worker.Ton;
 public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly TonOptions _options;
-    private readonly IJobsReporter _jobsReporter;
+    private readonly JobsReporter _jobsReporter;
     private readonly IClusterClient _clusterClient;
-    private readonly ICrossChainReporter _crossChainReporter;
+    private readonly CrossChainReporter _crossChainReporter;
     private readonly ILogger<TransactionSearchWorker> _logger;
 
     public TransactionSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IOptionsSnapshot<TonOptions> options, IClusterClient clusterClient, ILogger<TransactionSearchWorker> logger,
-        ICrossChainReporter crossChainReporter, IJobsReporter jobsReporter) : base(timer, serviceScopeFactory)
+        CrossChainReporter crossChainReporter, JobsReporter jobsReporter) : base(timer, serviceScopeFactory)
     {
         _logger = logger;
         _options = options.Value;
