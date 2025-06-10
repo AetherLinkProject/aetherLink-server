@@ -116,6 +116,7 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
     private async Task HandleJobTasksAsync(List<AELFJobGrainDto> jobTasks, string chainId)
     {
+        _logger.LogDebug($"[RequestSearchWorker] {chainId} found a total of {jobTasks.Count} jobs.");
         foreach (var job in jobTasks)
         {
             var taskType = job.RequestTypeIndex switch
