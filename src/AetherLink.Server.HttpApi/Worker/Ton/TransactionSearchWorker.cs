@@ -118,11 +118,13 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
             return;
         }
 
-        crossChainRequestData = response.Data;
-        var result = await requestGrain.UpdateAsync(crossChainRequestData);
-        var duration = (result.Data.CommitTime - result.Data.StartTime) / 1000.0;
+        var duration = (transaction.Now - response.Data.StartTime) / 1000.0;
         _jobsReporter.ReportExecutionDuration(crossChainRequestData.SourceChainId.ToString(),
             StartedRequestTypeName.Crosschain, duration);
+
+        response.Data.CommitTime = transaction.Now;
+        crossChainRequestData = response.Data;
+        var result = await requestGrain.UpdateAsync(crossChainRequestData);
         _logger.LogDebug($"[TonSearchWorker] Update {grainId} request {result.Success}");
     }
 
@@ -143,14 +145,13 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var targetChainId = (long)receiveSlice.LoadInt(TonTransactionConstants.ChainIdSize);
         _crossChainReporter.ReportCrossChainRequest(messageId, TonTransactionConstants.TonChainId.ToString(),
             targetChainId.ToString());
-        var startTime = transaction.Now;
         var crossChainRequestData = new CrossChainRequestGrainDto
         {
             SourceChainId = TonTransactionConstants.TonChainId,
             TargetChainId = targetChainId,
             MessageId = messageId,
             Status = CrossChainStatus.Started.ToString(),
-            StartTime = startTime
+            StartTime = transaction.Now
         };
 
         var result = await requestGrain.CreateAsync(crossChainRequestData);
