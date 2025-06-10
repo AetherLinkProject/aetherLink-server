@@ -42,43 +42,54 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
             return;
         }
 
-        var handleRequestsTasks = result.Data.Select(HandleRequestsAsync);
-        var handleVrfCommitsTasks = result.Data.Select(HandleVrfCommitsAsync);
-        var allTasks = handleRequestsTasks.Concat(handleVrfCommitsTasks);
-        await Task.WhenAll(allTasks);
+        await Task.WhenAll(result.Data.Select(ProcessChainTaskAsync));
     }
 
-    private async Task HandleRequestsAsync(AELFChainGrainDto chain)
+    private async Task ProcessChainTaskAsync(AELFChainGrainDto chain)
+    {
+        try
+        {
+            var chainId = chain.ChainId;
+            var confirmedHeight = chain.LastIrreversibleBlockHeight;
+            var grainId =
+                GrainIdHelper.GenerateGrainId(GrainKeyConstants.CommitWorkerConsumedBlockHeightGrainKey, chainId);
+            var consumedClient = _clusterClient.GetGrain<IAELFConsumedBlockHeightGrain>(grainId);
+            var consumedHeight = await consumedClient.GetConsumedHeightAsync();
+            if (!consumedHeight.Success)
+            {
+                _logger.LogWarning($"[CommitSearchWorker] Get {chainId} consumed block height failed");
+                return;
+            }
+
+            if (consumedHeight.Data == 0)
+            {
+                await consumedClient.UpdateConsumedHeightAsync(confirmedHeight);
+                _logger.LogInformation($"[CommitSearchWorker] Initial {chainId} consumed block height. ");
+                return;
+            }
+
+            var consumedBlockHeight = consumedHeight.Data + 1;
+            if (confirmedHeight < consumedBlockHeight)
+            {
+                _logger.LogWarning(
+                    $"[CommitSearchWorker] Waiting for {chainId} block confirmed, consumedBlockHeight:{consumedBlockHeight} confirmedHeight:{confirmedHeight}.");
+                return;
+            }
+
+            await HandleRequestsAsync(chain, confirmedHeight, consumedBlockHeight, consumedClient);
+            await HandleVrfCommitsAsync(chain, confirmedHeight, consumedBlockHeight);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"[CommitSearchWorker] Exception occurred while processing chain {chain.ChainId}");
+        }
+    }
+
+    private async Task HandleRequestsAsync(AELFChainGrainDto chain, long confirmedHeight, long consumedBlockHeight,
+        IAELFConsumedBlockHeightGrain consumedClient)
     {
         var chainId = chain.ChainId;
-        var confirmedHeight = chain.LastIrreversibleBlockHeight;
-        var grainId = GrainIdHelper.GenerateGrainId(GrainKeyConstants.CommitWorkerConsumedBlockHeightGrainKey, chainId);
-        var client = _clusterClient.GetGrain<IAELFConsumedBlockHeightGrain>(grainId);
-        var consumedHeight = await client.GetConsumedHeightAsync();
-        if (!consumedHeight.Success)
-        {
-            _logger.LogWarning($"[CommitSearchWorker] Get {chainId} consumed block height failed");
-            return;
-        }
-
-        if (consumedHeight.Data == 0)
-        {
-            await client.UpdateConsumedHeightAsync(confirmedHeight);
-            _logger.LogInformation($"[CommitSearchWorker] Initial {chainId} consumed block height. ");
-            return;
-        }
-
-        var consumedBlockHeight = consumedHeight.Data + 1;
-        if (confirmedHeight < consumedBlockHeight)
-        {
-            _logger.LogWarning(
-                $"[CommitSearchWorker] Waiting for {chainId} block confirmed, consumedBlockHeight:{consumedBlockHeight} confirmedHeight:{confirmedHeight}.");
-            return;
-        }
-
-        _logger.LogDebug(
-            $"[CommitSearchWorker] Get {chainId} Block Height {confirmedHeight}");
-
+        _logger.LogDebug($"[CommitSearchWorker] Get {chainId} Block Height {confirmedHeight}");
         var aeFinderGrainClient =
             _clusterClient.GetGrain<IAeFinderGrain>(GrainKeyConstants.SearchRequestsCommittedGrainKey);
         var requests =
@@ -92,9 +103,32 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
         await Task.WhenAll(tasks);
         _logger.LogInformation("[CommitSearchWorker] {chain} found a total of {count} committed report.", chainId,
             tasks.Count());
-
-        await client.UpdateConsumedHeightAsync(confirmedHeight);
+        await consumedClient.UpdateConsumedHeightAsync(confirmedHeight);
         _logger.LogDebug($"[CommitSearchWorker] {chainId} Block Height consumed at {confirmedHeight}");
+    }
+
+    private async Task HandleVrfCommitsAsync(AELFChainGrainDto chain, long confirmedHeight, long consumedBlockHeight)
+    {
+        var aeFinderGrainClient = _clusterClient.GetGrain<IAeFinderGrain>(GrainKeyConstants.SearchRequestsCommittedGrainKey);
+        var jobsResult = await aeFinderGrainClient.SubscribeTransmittedAsync(chain.ChainId, confirmedHeight, consumedBlockHeight);
+        if (jobsResult.Success && jobsResult.Data != null)
+        {
+            foreach (var job in jobsResult.Data)
+            {
+                var vrfJobGrain = _clusterClient.GetGrain<IVrfJobGrain>(job.RequestId);
+                var vrfJob = await vrfJobGrain.GetAsync();
+                if (vrfJob?.Data == null || vrfJob.Data.CommitTime > 0 || job.StartTime <= 0 || vrfJob.Data.StartTime <= 0)
+                {
+                    _logger.LogDebug($"[CommitSearchWorker] VRF RequestId={job.RequestId} does not meet processing conditions, skip");
+                    continue;
+                }
+                var duration = (job.StartTime - vrfJob.Data.StartTime) / 1000.0;
+                _logger.LogInformation($"[CommitSearchWorker] VRF RequestId={job.RequestId}, Duration={duration}s (from job.StartTime)");
+                _jobsReporter.ReportExecutionDuration(chain.ChainId, StartedRequestTypeName.Vrf, duration);
+                vrfJob.Data.CommitTime = job.StartTime;
+                await vrfJobGrain.UpdateAsync(vrfJob.Data);
+            }
+        }
     }
 
     private async Task HandleReportCommittedAsync(AELFRampRequestGrainDto requestData)
@@ -141,36 +175,5 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
         });
 
         _logger.LogDebug($"[CommitSearchWorker] Update {requestData.MessageId} committed {updateResult.Success}");
-    }
-
-    private async Task HandleVrfCommitsAsync(AELFChainGrainDto chain)
-    {
-        var aeFinderGrainClient =
-            _clusterClient.GetGrain<IAeFinderGrain>(GrainKeyConstants.SearchRequestsCommittedGrainKey);
-        var jobsResult =
-            await aeFinderGrainClient.SearchOracleJobsAsync(chain.ChainId, chain.LastIrreversibleBlockHeight, 0);
-        if (jobsResult.Success && jobsResult.Data != null)
-        {
-            foreach (var job in jobsResult.Data)
-            {
-                if (job.RequestTypeIndex != RequestTypeConst.Vrf) continue;
-                var vrfJobGrain = _clusterClient.GetGrain<IVrfJobGrain>(job.RequestId);
-                var vrfJob = await vrfJobGrain.GetAsync();
-                if (vrfJob?.Data == null || vrfJob.Data.CommitTime > 0 || job.StartTime <= 0 ||
-                    vrfJob.Data.StartTime <= 0)
-                {
-                    _logger.LogDebug(
-                        $"[CommitSearchWorker] VRF RequestId={job.RequestId} does not meet processing conditions, skip");
-                    continue;
-                }
-
-                var duration = (job.StartTime - vrfJob.Data.StartTime) / 1000.0;
-                _logger.LogInformation(
-                    $"[CommitSearchWorker] VRF RequestId={job.RequestId}, Duration={duration}s (from job.StartTime)");
-                _jobsReporter.ReportExecutionDuration(chain.ChainId, StartedRequestTypeName.Vrf, duration);
-                vrfJob.Data.CommitTime = job.StartTime;
-                await vrfJobGrain.UpdateAsync(vrfJob.Data);
-            }
-        }
     }
 }
