@@ -45,8 +45,8 @@ public abstract class EvmBaseBalanceProvider : ChainBalanceProvider
         balanceWei = resultStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
             ? System.Numerics.BigInteger.Parse(resultStr.Substring(2), System.Globalization.NumberStyles.HexNumber)
             : System.Numerics.BigInteger.Parse(resultStr);
-        var balance = (decimal)balanceWei / 1_000_000_000_000_000_000m;
-        return Math.Abs(balance);
+        var balance = (decimal)(balanceWei * 100000 / 1_000_000_000_000_000_000) / 1000000;
+        return balance;
     }
 }
 
