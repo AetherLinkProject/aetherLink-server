@@ -94,7 +94,7 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
             }
 
             await HandleRampRequestsAsync(rampResult.Data, chainId);
-            HandleJobTasks(jobResult.Data, chainId);
+            await HandleJobTasksAsync(jobResult.Data, chainId);
         }
         catch (Exception ex)
         {
@@ -114,18 +114,32 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
         _logger.LogDebug($"[RequestSearchWorker] {chainId} found a total of {rampRequests.Count} ramp requests.");
     }
 
-    private void HandleJobTasks(List<AELFJobGrainDto> jobTasks, string chainId)
+    private async Task HandleJobTasksAsync(List<AELFJobGrainDto> jobTasks, string chainId)
     {
-        foreach (var taskType in jobTasks.Select(job => job.RequestTypeIndex switch
-                 {
-                     RequestTypeConst.Datafeeds => StartedRequestTypeName.Datafeeds,
-                     RequestTypeConst.Vrf => StartedRequestTypeName.Vrf,
-                     RequestTypeConst.Automation => StartedRequestTypeName.Automation,
-                     _ => "unknown"
-                 }))
+        foreach (var job in jobTasks)
         {
+            var taskType = job.RequestTypeIndex switch
+            {
+                RequestTypeConst.Datafeeds => StartedRequestTypeName.Datafeeds,
+                RequestTypeConst.Vrf => StartedRequestTypeName.Vrf,
+                RequestTypeConst.Automation => StartedRequestTypeName.Automation,
+                _ => "unknown"
+            };
             _jobsReporter.ReportStartedRequest(chainId, taskType);
             _logger.LogDebug($"[RequestSearchWorker] {chainId} {taskType} started_request: 1");
+
+            if (job.RequestTypeIndex == RequestTypeConst.Vrf)
+            {
+                var vrfJobGrain = _clusterClient.GetGrain<IVrfJobGrain>(job.RequestId);
+                await vrfJobGrain.UpdateAsync(new VrfJobGrainDto
+                {
+                    ChainId = chainId,
+                    RequestId = job.RequestId,
+                    TransactionId = job.TransactionId,
+                    StartTime = job.StartTime,
+                    Status = VrfJobStatusConst.Started
+                });
+            }
         }
     }
 
