@@ -102,6 +102,13 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(requestData.MessageId);
         var messageId = ByteStringHelper.FromHexString(requestData.MessageId).ToBase64();
         var result = await requestGrain.GetAsync();
+        if (!result.Success || result.Data == null)
+        {
+            _logger.LogError(
+                $"[CommitSearchWorker] GetAsync failed or returned null Data for messageId: {requestData.MessageId}, Success: {result.Success}");
+            return;
+        }
+
         if (result.Data.Status == CrossChainStatus.Committed.ToString())
         {
             _logger.LogInformation(
