@@ -78,9 +78,23 @@ public class AeFinderGrain : Grain<AeFinderState>, IAeFinderGrain
     public async Task<GrainResultDto<List<AELFRampRequestGrainDto>>> SearchRequestsCommittedAsync(string chainId,
         long targetHeight, long startHeight)
     {
+        _logger.LogDebug(
+            $"[AeFinderGrain] SearchRequestsCommittedAsync called with chainId={chainId}, targetHeight={targetHeight}, startHeight={startHeight}");
         var result = await _indexer.SubscribeRampCommitReportAsync(chainId, targetHeight, startHeight);
-        if (result == null) return new() { Success = false, Message = "Search failed" };
-        if (result.Count == 0) return new() { Data = new(), Message = "Empty data" };
+        if (result == null)
+        {
+            _logger.LogWarning(
+                $"[AeFinderGrain] SubscribeRampCommitReportAsync returned null for chainId={chainId}, targetHeight={targetHeight}, startHeight={startHeight}");
+            return new() { Success = false, Message = "Search failed" };
+        }
+
+        if (result.Count == 0)
+        {
+            _logger.LogInformation(
+                $"[AeFinderGrain] No committed requests found for chainId={chainId}, targetHeight={targetHeight}, startHeight={startHeight}");
+            return new() { Data = new(), Message = "Empty data" };
+        }
+
         var data = result.Select(r => new AELFRampRequestGrainDto
         {
             TransactionId = r.TransactionId,
@@ -90,6 +104,8 @@ public class AeFinderGrain : Grain<AeFinderState>, IAeFinderGrain
             CommitTime = r.CommitTime
         }).ToList();
 
+        _logger.LogInformation(
+            $"[AeFinderGrain] Found {data.Count} committed requests for chainId={chainId}, targetHeight={targetHeight}, startHeight={startHeight}");
         return new() { Data = data };
     }
 
