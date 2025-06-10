@@ -16,14 +16,14 @@ namespace AetherLink.Server.HttpApi.Worker.AELF;
 public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly AELFOptions _options;
-    private readonly IJobsReporter _jobsReporter;
+    private readonly JobsReporter _jobsReporter;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<RequestSearchWorker> _logger;
-    private readonly ICrossChainReporter _crossChainReporter;
+    private readonly CrossChainReporter _crossChainReporter;
 
     public RequestSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IOptionsSnapshot<AELFOptions> options, IClusterClient clusterClient, ILogger<RequestSearchWorker> logger,
-        IJobsReporter jobsReporter, ICrossChainReporter crossChainReporter) : base(timer, serviceScopeFactory)
+        JobsReporter jobsReporter, CrossChainReporter crossChainReporter) : base(timer, serviceScopeFactory)
     {
         _logger = logger;
         _options = options.Value;

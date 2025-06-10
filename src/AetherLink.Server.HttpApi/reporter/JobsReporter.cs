@@ -3,14 +3,7 @@ using AetherLink.Server.HttpApi.Constants;
 
 namespace AetherLink.Server.HttpApi.Reporter
 {
-    public interface IJobsReporter
-    {
-        void ReportStartedRequest(string chain, string taskType);
-        void ReportCommittedReport(string chain, string type);
-        void ReportExecutionDuration(string chain, string type, double durationSeconds);
-    }
-
-    public class JobsReporter : IJobsReporter
+    public class JobsReporter
     {
         private readonly Counter _startedRequestCounter;
         private readonly Counter _committedReportCounter;
@@ -38,7 +31,7 @@ namespace AetherLink.Server.HttpApi.Reporter
                 new HistogramConfiguration
                 {
                     LabelNames = new[] { "chain", "type" },
-                    Buckets = Histogram.ExponentialBuckets(0.5, 2, 15) // 0.5s ~ 8192s
+                    Buckets = Histogram.ExponentialBuckets(60, 1.2, 15) // 60s ~ 646s, 60-240s
                 });
         }
 
