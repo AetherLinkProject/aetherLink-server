@@ -94,7 +94,7 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
             }
 
             await HandleRampRequestsAsync(rampResult.Data, chainId);
-            await HandleJobTasksAsync(jobResult.Data, chainId);
+            HandleJobTasks(jobResult.Data, chainId);
         }
         catch (Exception ex)
         {
@@ -114,7 +114,7 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
         _logger.LogDebug($"[RequestSearchWorker] {chainId} found a total of {rampRequests.Count} ramp requests.");
     }
 
-    private async Task HandleJobTasksAsync(List<AELFJobGrainDto> jobTasks, string chainId)
+    private void HandleJobTasks(List<AELFJobGrainDto> jobTasks, string chainId)
     {
         foreach (var taskType in jobTasks.Select(job => job.RequestTypeIndex switch
                  {
@@ -138,7 +138,6 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
             requestData.TargetChainId.ToString());
 
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(requestData.TransactionId);
-        var startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var result = await requestGrain.UpdateAsync(new()
         {
             Id = requestData.MessageId,
@@ -146,7 +145,7 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
             TargetChainId = requestData.TargetChainId,
             MessageId = requestData.MessageId,
             Status = CrossChainStatus.Started.ToString(),
-            StartTime = startTime
+            StartTime = requestData.StartTime
         });
 
         _logger.LogDebug($"[RequestSearchWorker] Update {requestData.TransactionId} started {result.Success}");

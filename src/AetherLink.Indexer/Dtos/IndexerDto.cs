@@ -68,6 +68,7 @@ public class RampCommitReportAcceptedDto
     public long TargetChainId { get; set; }
     public string TransactionId { get; set; }
     public string MessageId { get; set; }
+    public long CommitTime { get; set; }
 }
 
 // Cancelled event
