@@ -87,9 +87,11 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
             try
             {
                 var request = await _indexer.GetEvmLogsAsync(web3, op.ContractAddress, curFrom, currentTo);
-                var decodedTasks = request.Select(log => TryToDecodeFilterLogAsync(log, web3));
-                var decodedResults = await Task.WhenAll(decodedTasks);
-                pendingRequests.AddRange(decodedResults);
+                foreach (var log in request)
+                {
+                    pendingRequests.Add(await TryToDecodeFilterLogAsync(log, web3));
+                    await Task.Delay(200);
+                }
             }
             catch (Exception ex)
             {
