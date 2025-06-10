@@ -83,7 +83,8 @@ public class AetherLinkRequestService : AetherLinkServerAppService, IAetherLinkR
         var result = await orderGrain.GetAsync();
         if (!result.Success || result.Data == null)
         {
-            _logger.LogError($"[AetherLinkRequestService]GetAsync failed or returned null Data for grainId: {crossChainRequestGrainId}, Success: {result.Success}");
+            _logger.LogWarning(
+                $"[AetherLinkRequestService]GetAsync failed or returned null Data for grainId: {crossChainRequestGrainId}, Success: {result.Success}");
             if (!string.IsNullOrEmpty(input.TraceId))
                 _crossChainReporter.ReportCrossChainQueryHitCount(input.TraceId, MetricsConstants.ChainTon, false);
             else if (!string.IsNullOrEmpty(input.TransactionId) && input.TransactionId.StartsWith("0x"))
