@@ -53,6 +53,7 @@ public class IndexerTransmittedListDto
 public class TransmittedDto : IndexerBasicDto
 {
     public string TransactionId { get; set; }
+    public string RequestId { get; set; }
     public long Epoch { get; set; }
     public long StartTime { get; set; }
 }

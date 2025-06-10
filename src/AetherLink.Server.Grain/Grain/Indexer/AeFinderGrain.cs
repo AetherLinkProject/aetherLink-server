@@ -19,7 +19,8 @@ public interface IAeFinderGrain : IGrainWithStringKey
     Task<GrainResultDto<List<AELFJobGrainDto>>> SearchOracleJobsAsync(string chainId, long targetHeight,
         long startHeight);
 
-    Task<GrainResultDto<List<TransmittedDto>>> SubscribeTransmittedAsync(string chainId, long targetHeight, long startHeight);
+    Task<GrainResultDto<List<TransmittedGrainDto>>> SubscribeTransmittedAsync(string chainId, long targetHeight,
+        long startHeight);
 }
 
 public class AeFinderGrain : Grain<AeFinderState>, IAeFinderGrain
@@ -117,11 +118,19 @@ public class AeFinderGrain : Grain<AeFinderState>, IAeFinderGrain
         }
     }
 
-    public async Task<GrainResultDto<List<TransmittedDto>>> SubscribeTransmittedAsync(string chainId, long targetHeight, long startHeight)
+    public async Task<GrainResultDto<List<TransmittedGrainDto>>> SubscribeTransmittedAsync(string chainId,
+        long targetHeight, long startHeight)
     {
         var result = await _indexer.SubscribeTransmittedAsync(chainId, targetHeight, startHeight);
         if (result == null) return new() { Success = false, Message = "Search failed" };
         if (result.Count == 0) return new() { Data = new(), Message = "Empty data" };
-        return new() { Data = result };
+        var data = result.Select(r => new TransmittedGrainDto
+        {
+            TransactionId = r.TransactionId,
+            RequestId = r.RequestId,
+            Epoch = r.Epoch,
+            StartTime = r.StartTime
+        }).ToList();
+        return new() { Data = data };
     }
 }
