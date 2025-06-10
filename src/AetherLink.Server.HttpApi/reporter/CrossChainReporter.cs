@@ -3,14 +3,7 @@ using AetherLink.Server.HttpApi.Constants;
 
 namespace AetherLink.Server.HttpApi.Reporter
 {
-    public interface ICrossChainReporter
-    {
-        void ReportCrossChainRequest(string messageId, string sourceChain, string targetChain);
-        void ReportCrossChainQueryHitCount(string id, string chain, bool hit);
-        void ReportCrossChainQueryTotalCount(string id);
-    }
-
-    public class CrossChainReporter : ICrossChainReporter
+    public class CrossChainReporter
     {
         private readonly Counter _crossChainRequestCounter;
         private readonly Counter _crossChainQueryHitCounter;
