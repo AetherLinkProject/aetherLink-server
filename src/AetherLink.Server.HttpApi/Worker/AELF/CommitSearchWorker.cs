@@ -42,11 +42,16 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
             return;
         }
 
-        await Task.WhenAll(result.Data.Select(d => HandleRequestsAsync(d.ChainId, d.LastIrreversibleBlockHeight)));
+        var handleRequestsTasks = result.Data.Select(HandleRequestsAsync);
+        var handleVrfCommitsTasks = result.Data.Select(HandleVrfCommitsAsync);
+        var allTasks = handleRequestsTasks.Concat(handleVrfCommitsTasks);
+        await Task.WhenAll(allTasks);
     }
 
-    private async Task HandleRequestsAsync(string chainId, long confirmedHeight)
+    private async Task HandleRequestsAsync(AELFChainGrainDto chain)
     {
+        var chainId = chain.ChainId;
+        var confirmedHeight = chain.LastIrreversibleBlockHeight;
         var grainId = GrainIdHelper.GenerateGrainId(GrainKeyConstants.CommitWorkerConsumedBlockHeightGrainKey, chainId);
         var client = _clusterClient.GetGrain<IAELFConsumedBlockHeightGrain>(grainId);
         var consumedHeight = await client.GetConsumedHeightAsync();
@@ -129,5 +134,36 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
         });
 
         _logger.LogDebug($"[CommitSearchWorker] Update {requestData.MessageId} committed {updateResult.Success}");
+    }
+
+    private async Task HandleVrfCommitsAsync(AELFChainGrainDto chain)
+    {
+        var aeFinderGrainClient =
+            _clusterClient.GetGrain<IAeFinderGrain>(GrainKeyConstants.SearchRequestsCommittedGrainKey);
+        var jobsResult =
+            await aeFinderGrainClient.SearchOracleJobsAsync(chain.ChainId, chain.LastIrreversibleBlockHeight, 0);
+        if (jobsResult.Success && jobsResult.Data != null)
+        {
+            foreach (var job in jobsResult.Data)
+            {
+                if (job.RequestTypeIndex != RequestTypeConst.Vrf) continue;
+                var vrfJobGrain = _clusterClient.GetGrain<IVrfJobGrain>(job.RequestId);
+                var vrfJob = await vrfJobGrain.GetAsync();
+                if (vrfJob?.Data == null || vrfJob.Data.CommitTime > 0 || job.StartTime <= 0 ||
+                    vrfJob.Data.StartTime <= 0)
+                {
+                    _logger.LogDebug(
+                        $"[CommitSearchWorker] VRF RequestId={job.RequestId} does not meet processing conditions, skip");
+                    continue;
+                }
+
+                var duration = (job.StartTime - vrfJob.Data.StartTime) / 1000.0;
+                _logger.LogInformation(
+                    $"[CommitSearchWorker] VRF RequestId={job.RequestId}, Duration={duration}s (from job.StartTime)");
+                _jobsReporter.ReportExecutionDuration(chain.ChainId, StartedRequestTypeName.Vrf, duration);
+                vrfJob.Data.CommitTime = job.StartTime;
+                await vrfJobGrain.UpdateAsync(vrfJob.Data);
+            }
+        }
     }
 }

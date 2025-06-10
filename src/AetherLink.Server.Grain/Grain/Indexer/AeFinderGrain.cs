@@ -1,6 +1,7 @@
 using AetherLink.Indexer.Provider;
 using AetherLink.Server.Grains.State;
 using Microsoft.Extensions.Logging;
+using AetherLink.Indexer.Dtos;
 
 namespace AetherLink.Server.Grains.Grain.Indexer;
 
@@ -17,6 +18,8 @@ public interface IAeFinderGrain : IGrainWithStringKey
 
     Task<GrainResultDto<List<AELFJobGrainDto>>> SearchOracleJobsAsync(string chainId, long targetHeight,
         long startHeight);
+
+    Task<GrainResultDto<List<TransmittedDto>>> SubscribeTransmittedAsync(string chainId, long targetHeight, long startHeight);
 }
 
 public class AeFinderGrain : Grain<AeFinderState>, IAeFinderGrain
@@ -112,5 +115,13 @@ public class AeFinderGrain : Grain<AeFinderState>, IAeFinderGrain
                 $"[AeFinderGrain] SearchOracleJobsAsync failed for {chainId} {startHeight}-{targetHeight}");
             return new() { Data = new List<AELFJobGrainDto>(), Success = false, Message = ex.Message };
         }
+    }
+
+    public async Task<GrainResultDto<List<TransmittedDto>>> SubscribeTransmittedAsync(string chainId, long targetHeight, long startHeight)
+    {
+        var result = await _indexer.SubscribeTransmittedAsync(chainId, targetHeight, startHeight);
+        if (result == null) return new() { Success = false, Message = "Search failed" };
+        if (result.Count == 0) return new() { Data = new(), Message = "Empty data" };
+        return new() { Data = result };
     }
 }
