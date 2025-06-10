@@ -120,6 +120,9 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         crossChainRequestData = response.Data;
         var result = await requestGrain.UpdateAsync(crossChainRequestData);
+        var duration = (result.Data.CommitTime - result.Data.StartTime) / 1000.0;
+        _jobsReporter.ReportExecutionDuration(crossChainRequestData.SourceChainId.ToString(),
+            StartedRequestTypeName.Crosschain, duration);
         _logger.LogDebug($"[TonSearchWorker] Update {grainId} request {result.Success}");
     }
 
