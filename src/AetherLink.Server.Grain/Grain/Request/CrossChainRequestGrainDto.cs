@@ -9,4 +9,5 @@ public class CrossChainRequestGrainDto
     [Id(3)] public string MessageId { get; set; }
     [Id(4)] public string Status { get; set; }
     [Id(5)] public long StartTime { get; set; }
+    [Id(6)] public long CommitTime { get; set; }
 }

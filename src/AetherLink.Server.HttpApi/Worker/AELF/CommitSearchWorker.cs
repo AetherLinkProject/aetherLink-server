@@ -99,21 +99,23 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var result = await requestGrain.GetAsync();
         if (result.Data.Status == CrossChainStatus.Committed.ToString())
         {
-            _logger.LogInformation($"[CommitSearchWorker] MessageId {requestData.MessageId} already committed, skip duration report.");
+            _logger.LogInformation(
+                $"[CommitSearchWorker] MessageId {requestData.MessageId} already committed, skip duration report.");
             return;
         }
 
-        _logger.LogInformation($"[CommitSearchWorker] Reporting committed for MessageId {requestData.MessageId}, ChainId {requestData.SourceChainId}");
+        _logger.LogInformation(
+            $"[CommitSearchWorker] Reporting committed for MessageId {requestData.MessageId}, ChainId {requestData.SourceChainId}");
 
         _jobsReporter.ReportCommittedReport(requestData.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
 
-        var startTime = result.Data.StartTime;
-        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var duration = (now - startTime) / 1000.0;
+        var duration = (result.Data.StartTime - result.Data.CommitTime) / 1000.0;
 
-        _logger.LogInformation($"[CommitSearchWorker] ReportExecutionDuration: MessageId={requestData.MessageId}, ChainId={requestData.SourceChainId}, Duration={duration}s");
+        _logger.LogInformation(
+            $"[CommitSearchWorker] ReportExecutionDuration: MessageId={requestData.MessageId}, ChainId={requestData.SourceChainId}, Duration={duration}s");
 
-        _jobsReporter.ReportExecutionDuration(requestData.SourceChainId.ToString(), StartedRequestTypeName.Crosschain, duration);
+        _jobsReporter.ReportExecutionDuration(requestData.SourceChainId.ToString(), StartedRequestTypeName.Crosschain,
+            duration);
 
         var updateResult = await requestGrain.UpdateAsync(new()
         {

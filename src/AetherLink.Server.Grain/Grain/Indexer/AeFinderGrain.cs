@@ -64,7 +64,8 @@ public class AeFinderGrain : Grain<AeFinderState>, IAeFinderGrain
             TransactionId = r.TransactionId,
             MessageId = r.MessageId,
             TargetChainId = r.TargetChainId,
-            SourceChainId = r.SourceChainId
+            SourceChainId = r.SourceChainId,
+            StartTime = r.StartTime
         }).ToList();
 
         return new() { Data = data };
@@ -81,7 +82,8 @@ public class AeFinderGrain : Grain<AeFinderState>, IAeFinderGrain
             TransactionId = r.TransactionId,
             MessageId = r.MessageId,
             TargetChainId = r.TargetChainId,
-            SourceChainId = r.SourceChainId
+            SourceChainId = r.SourceChainId,
+            CommitTime = r.CommitTime
         }).ToList();
 
         return new() { Data = data };
