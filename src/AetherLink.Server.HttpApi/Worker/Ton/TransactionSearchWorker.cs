@@ -31,8 +31,8 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         _options = options.Value;
         _jobsReporter = jobsReporter;
         _clusterClient = clusterClient;
-        timer.Period = _options.TransactionSearchTimer;
         _crossChainReporter = crossChainReporter;
+        timer.Period = _options.TransactionSearchTimer;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)

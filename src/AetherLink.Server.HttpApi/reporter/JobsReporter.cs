@@ -1,9 +1,10 @@
 using Prometheus;
 using AetherLink.Server.HttpApi.Constants;
+using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Server.HttpApi.Reporter
 {
-    public class JobsReporter
+    public class JobsReporter : ISingletonDependency
     {
         private readonly Counter _startedRequestCounter;
         private readonly Counter _committedReportCounter;

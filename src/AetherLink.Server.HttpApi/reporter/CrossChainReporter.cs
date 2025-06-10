@@ -1,9 +1,10 @@
 using Prometheus;
 using AetherLink.Server.HttpApi.Constants;
+using Volo.Abp.DependencyInjection;
 
 namespace AetherLink.Server.HttpApi.Reporter
 {
-    public class CrossChainReporter
+    public class CrossChainReporter : ISingletonDependency
     {
         private readonly Counter _crossChainRequestCounter;
         private readonly Counter _crossChainQueryHitCounter;
@@ -49,4 +50,4 @@ namespace AetherLink.Server.HttpApi.Reporter
             _crossChainQueryTotalCounter.WithLabels(id ?? string.Empty).Inc(1);
         }
     }
-} 
+}
