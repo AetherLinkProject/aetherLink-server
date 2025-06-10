@@ -1,7 +1,8 @@
-using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Options;
 using AetherLink.Server.HttpApi.Options;
 using AetherLink.Server.HttpApi.Constants;
+using Nethereum.Web3;
+using Nethereum.Util;
 
 public abstract class EvmBaseBalanceProvider : ChainBalanceProvider
 {
@@ -22,30 +23,10 @@ public abstract class EvmBaseBalanceProvider : ChainBalanceProvider
 
     public override async Task<decimal> GetBalanceAsync(string address)
     {
-        var rpcRequest = new
-        {
-            jsonrpc = "2.0",
-            method = "eth_getBalance",
-            @params = new[] { address, "latest" },
-            id = 1
-        };
-        var request = new HttpRequestMessage(HttpMethod.Post, Url)
-        {
-            Content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(rpcRequest),
-                System.Text.Encoding.UTF8, "application/json")
-        };
-        if (!string.IsNullOrEmpty(ApiKey))
-            request.Headers.Add("X-Api-Key", ApiKey);
-        var response = await HttpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadAsStringAsync();
-        var json = JObject.Parse(content);
-        var resultStr = json["result"]?.ToString() ?? "0";
-        var balanceWei = resultStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
-            ? System.Numerics.BigInteger.Parse(resultStr.Substring(2), System.Globalization.NumberStyles.HexNumber)
-            : System.Numerics.BigInteger.Parse(resultStr);
-        var balance = (decimal)(balanceWei * 100000 / 1_000_000_000_000_000_000) / 1000000;
-        return balance;
+        var web3 = new Web3(Url);
+        var checksumAddress = AddressUtil.Current.ConvertToChecksumAddress(address);
+        var balanceWei = await web3.Eth.GetBalance.SendRequestAsync(checksumAddress);
+        return Web3.Convert.FromWei(balanceWei);
     }
 }
 
