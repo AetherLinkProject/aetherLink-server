@@ -2,6 +2,8 @@ using Prometheus;
 using AetherLink.Server.HttpApi.Constants;
 using Volo.Abp.DependencyInjection;
 using AetherLink.Metric;
+using Microsoft.Extensions.Options;
+using AetherLink.Server.HttpApi.Options;
 
 namespace AetherLink.Server.HttpApi.Reporter
 {
@@ -11,7 +13,7 @@ namespace AetherLink.Server.HttpApi.Reporter
         private readonly Counter _committedReportCounter;
         private readonly Histogram _executionDurationHistogram;
 
-        public JobsReporter()
+        public JobsReporter(IOptions<MetricsBucketsOptions> options)
         {
             _startedRequestCounter = MetricsReporter.RegistryCounters(
                 MetricsConstants.StartedRequestCounter,
@@ -25,22 +27,22 @@ namespace AetherLink.Server.HttpApi.Reporter
                 MetricsConstants.ExecutionDurationHistogram,
                 MetricsConstants.ExecutionDurationHistogramLabels,
                 MetricsConstants.ExecutionDurationHistogramHelp,
-                MetricsConstants.DefaultExecutionDurationBuckets);
+                options.Value.ExecutionDurationBuckets);
         }
 
-        public void ReportStartedRequest(string chain, string taskType)
+        public void ReportStartedRequest(string id, string sourceChain, string targetChain, string type)
         {
-            _startedRequestCounter.WithLabels(chain, taskType).Inc();
+            _startedRequestCounter.WithLabels(id, sourceChain, targetChain, type).Inc();
         }
 
-        public void ReportCommittedReport(string chain, string type)
+        public void ReportCommittedReport(string id, string sourceChain, string targetChain, string type)
         {
-            _committedReportCounter.WithLabels(chain, type).Inc();
+            _committedReportCounter.WithLabels(id, sourceChain, targetChain, type).Inc();
         }
 
-        public void ReportExecutionDuration(string chain, string type, double durationSeconds)
+        public void ReportExecutionDuration(string id, string chain, string type, double durationSeconds)
         {
-            _executionDurationHistogram.WithLabels(chain, type).Observe(durationSeconds);
+            _executionDurationHistogram.WithLabels(id, chain, type).Observe(durationSeconds);
         }
     }
 }

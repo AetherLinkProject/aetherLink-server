@@ -9,6 +9,7 @@ public static class MetricsConstants
     // ===================== Counter =====================
     public const string CrossChainRequestCounter = "cross_chain_request";
     public static readonly string[] CrossChainRequestCounterLabels = { "MessageId", "SourceChain", "TargetChain" };
+
     public const string CrossChainRequestCounterHelp =
         "Number of crosschain requests (by MessageId, SourceChain, TargetChain)";
 
@@ -21,12 +22,16 @@ public static class MetricsConstants
     public const string CrossChainQueryTotalCounterHelp = "Total number of cross-chain queries (by id)";
 
     public const string StartedRequestCounter = "started_request";
-    public static readonly string[] StartedRequestCounterLabels = { "chain", "task_type" };
-    public const string StartedRequestCounterHelp = "Number of started business tasks (by chain & type)";
+    public static readonly string[] StartedRequestCounterLabels = { "id", "source_chain", "target_chain", "type" };
+
+    public const string StartedRequestCounterHelp =
+        "Number of started business tasks (by id, source_chain, target_chain & type)";
 
     public const string CommittedReportCounter = "committed_report";
-    public static readonly string[] CommittedReportCounterLabels = { "chain", "type" };
-    public const string CommittedReportCounterHelp = "Number of committed reports";
+    public static readonly string[] CommittedReportCounterLabels = { "id", "source_chain", "target_chain", "type" };
+
+    public const string CommittedReportCounterHelp =
+        "Number of committed reports (by id, source_chain, target_chain & type)";
 
     // ===================== Histogram =====================
     public const string ExecutionDurationHistogram = "task_execution_duration";
@@ -40,8 +45,6 @@ public static class MetricsConstants
     public const string ChainTon = "ton";
     public const string ChainEvm = "evm";
     public const string ChainAelf = "aelf";
-
-    public static readonly double[] DefaultExecutionDurationBuckets = { 40, 50, 60, 80, 100, 120, 180, 300 };
 }
 
 public static class RequestTypeConst

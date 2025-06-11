@@ -21,18 +21,16 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
     private readonly JobsReporter _jobsReporter;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<RequestSearchWorker> _logger;
-    private readonly CrossChainReporter _crossChainReporter;
 
     public RequestSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IOptionsSnapshot<AELFOptions> options, IClusterClient clusterClient, ILogger<RequestSearchWorker> logger,
-        JobsReporter jobsReporter, CrossChainReporter crossChainReporter) : base(timer, serviceScopeFactory)
+        JobsReporter jobsReporter) : base(timer, serviceScopeFactory)
     {
         _logger = logger;
         _options = options.Value;
         _jobsReporter = jobsReporter;
         _clusterClient = clusterClient;
         timer.Period = _options.RequestSearchTimer;
-        _crossChainReporter = crossChainReporter;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
@@ -128,21 +126,20 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
                 RequestTypeConst.Automation => StartedRequestTypeName.Automation,
                 _ => "unknown"
             };
-            _jobsReporter.ReportStartedRequest(chainId, taskType);
+            _jobsReporter.ReportStartedRequest(job.RequestId, chainId, chainId, taskType);
             _logger.LogDebug($"[RequestSearchWorker] {chainId} {taskType} started_request: 1");
 
-            if (job.RequestTypeIndex == RequestTypeConst.Vrf)
+            if (job.RequestTypeIndex != RequestTypeConst.Vrf) continue;
+
+            var vrfJobGrain = _clusterClient.GetGrain<IVrfJobGrain>(job.RequestId);
+            await vrfJobGrain.UpdateAsync(new VrfJobGrainDto
             {
-                var vrfJobGrain = _clusterClient.GetGrain<IVrfJobGrain>(job.RequestId);
-                await vrfJobGrain.UpdateAsync(new VrfJobGrainDto
-                {
-                    ChainId = chainId,
-                    RequestId = job.RequestId,
-                    TransactionId = job.TransactionId,
-                    StartTime = job.StartTime,
-                    Status = VrfJobStatusConst.Started
-                });
-            }
+                ChainId = chainId,
+                RequestId = job.RequestId,
+                TransactionId = job.TransactionId,
+                StartTime = job.StartTime,
+                Status = VrfJobStatusConst.Started
+            });
         }
     }
 
@@ -153,9 +150,8 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         _logger.LogDebug($"[RequestSearchWorker] Start to create cross chain request for {messageId}");
 
-        _jobsReporter.ReportStartedRequest(data.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
-        _crossChainReporter.ReportCrossChainRequest(messageId, data.SourceChainId.ToString(),
-            data.TargetChainId.ToString());
+        _jobsReporter.ReportStartedRequest(messageId, data.SourceChainId.ToString(), data.TargetChainId.ToString(),
+            StartedRequestTypeName.Crosschain);
 
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(data.TransactionId);
         var result = await requestGrain.UpdateAsync(new()

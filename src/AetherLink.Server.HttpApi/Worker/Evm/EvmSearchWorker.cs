@@ -144,7 +144,8 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         });
         _logger.LogDebug($"[EvmSearchWorker] [HandleRequestStart] messageGrain.UpdateAsync: {messageResult.Success}");
 
-        _jobsReporter.ReportStartedRequest(metadata.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
+        _jobsReporter.ReportStartedRequest(messageId, metadata.SourceChainId.ToString(),
+            metadata.TargetChainId.ToString(), StartedRequestTypeName.Crosschain);
     }
 
     private async Task HandleCommittedAsync(EvmRampRequestGrainDto metadata)
@@ -196,13 +197,14 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
             return;
         }
 
-        _jobsReporter.ReportCommittedReport(metadata.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
+        _jobsReporter.ReportCommittedReport(messageId, metadata.SourceChainId.ToString(),
+            metadata.TargetChainId.ToString(), StartedRequestTypeName.Crosschain);
 
         var duration = (metadata.BlockTime - response.Data.StartTime) / 1000.0;
         _logger.LogInformation(
             $"[EvmSearchWorker] [HandleCommitted] ReportExecutionDuration: MessageId={messageId}, ChainId={metadata.SourceChainId}, Duration={duration}s");
-        _jobsReporter.ReportExecutionDuration(metadata.SourceChainId.ToString(), StartedRequestTypeName.Crosschain,
-            duration);
+        _jobsReporter.ReportExecutionDuration(messageId, metadata.SourceChainId.ToString(),
+            StartedRequestTypeName.Crosschain, duration);
 
         response.Data.CommitTime = metadata.BlockTime;
         var result = await requestGrain.UpdateAsync(response.Data);
