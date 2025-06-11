@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices.ComTypes;
 using AetherLink.Indexer;
 using AetherLink.Indexer.Constants;
 using AetherLink.Indexer.Dtos;
@@ -88,7 +87,11 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
             try
             {
                 var request = await _indexer.GetEvmLogsAsync(web3, op.ContractAddress, curFrom, currentTo);
-                pendingRequests.AddRange(request.Select(TryToDecodeFilterLog));
+                foreach (var log in request)
+                {
+                    pendingRequests.Add(await TryToDecodeFilterLogAsync(log, web3));
+                    await Task.Delay(200);
+                }
             }
             catch (Exception ex)
             {
@@ -98,14 +101,22 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
             }
         }
 
+        _logger.LogDebug($"[EvmGrain] {network} get {pendingRequests.Count} requests.");
+
         return new() { Success = true, Data = pendingRequests };
     }
 
-
-    private EvmRampRequestGrainDto TryToDecodeFilterLog(FilterLog log)
+    private async Task<EvmRampRequestGrainDto> TryToDecodeFilterLogAsync(FilterLog log, Web3 web3)
     {
         try
         {
+            long blockTime = 0;
+            if (log.BlockNumber != null)
+            {
+                var block = await _indexer.GetBlockByNumberAsync(web3, (long)log.BlockNumber.Value);
+                blockTime = (long)(block.Timestamp.Value * 1000);
+            }
+
             // Check only cross chain request send events
             var decodedSendEvent = Event<SendEventDTO>.DecodeEvent(log);
             if (decodedSendEvent != null)
@@ -116,7 +127,8 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
                     MessageId = ByteString.CopyFrom(decodedSendEvent.Event.MessageId).ToBase64(),
                     TargetChainId = (long)decodedSendEvent.Event.TargetChainId,
                     SourceChainId = (long)decodedSendEvent.Event.SourceChainId,
-                    Type = CrossChainTransactionType.CrossChainSend
+                    Type = CrossChainTransactionType.CrossChainSend,
+                    BlockTime = blockTime
                 };
             }
 
@@ -129,7 +141,8 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
                     MessageId = decodedForward.Event.MessageId.ToHex(),
                     TargetChainId = (long)decodedForward.Event.TargetChainId,
                     SourceChainId = (long)decodedForward.Event.SourceChainId,
-                    Type = CrossChainTransactionType.CrossChainReceive
+                    Type = CrossChainTransactionType.CrossChainReceive,
+                    BlockTime = blockTime
                 };
             }
 

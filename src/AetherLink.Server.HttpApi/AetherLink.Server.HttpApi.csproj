@@ -21,6 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\AetherLink.Metric\AetherLink.Metric.csproj" />
         <ProjectReference Include="..\AetherLink.Server.Grain\AetherLink.Server.Grain.csproj" />
     </ItemGroup>
 </Project>

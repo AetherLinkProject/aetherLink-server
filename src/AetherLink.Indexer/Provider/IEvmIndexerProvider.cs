@@ -13,6 +13,7 @@ public interface IEvmIndexerProvider
 {
     Task<long> GetLatestBlockHeightAsync(Web3 web3);
     Task<List<FilterLog>> GetEvmLogsAsync(Web3 web3, string contractAddress, long from, long to);
+    Task<BlockWithTransactions> GetBlockByNumberAsync(Web3 web3, long blockNumber);
 }
 
 public class EvmIndexerProvider : IEvmIndexerProvider, ITransientDependency
@@ -58,6 +59,20 @@ public class EvmIndexerProvider : IEvmIndexerProvider, ITransientDependency
         {
             _logger.LogError(ex,
                 $"[EvmSearchWorkerProvider] Search {contractAddress} blocks from {fromBlockHeight} to {toBlockHeight} failed.");
+            throw;
+        }
+    }
+
+    public async Task<BlockWithTransactions> GetBlockByNumberAsync(Web3 web3, long blockNumber)
+    {
+        try
+        {
+            var blockParameter = new BlockParameter((ulong)blockNumber);
+            return await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(blockParameter);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"[EvmSearchWorkerProvider] Get block {blockNumber} failed.");
             throw;
         }
     }

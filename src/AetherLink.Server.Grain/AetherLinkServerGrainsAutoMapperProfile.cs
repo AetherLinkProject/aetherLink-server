@@ -12,8 +12,11 @@ public class AetherLinkServerGrainsAutoMapperProfile : Profile
     {
         CreateMap<CrossChainRequestGrainDto, CrossChainRequestState>();
         CreateMap<CrossChainRequestState, CrossChainRequestGrainDto>();
-        CreateMap<TonTransactionDto, TonTransactionGrainDto>();
+        CreateMap<TonTransactionDto, TonTransactionGrainDto>()
+            .ForMember(dest => dest.Now, opt => opt.MapFrom(src => src.Now));
         CreateMap<TonInMessageDto, TonInMessageGrainDto>();
         CreateMap<TonMessageContentDto, TonMessageContentGrainDto>();
+        CreateMap<VrfJobGrainDto, VrfJobState>();
+        CreateMap<VrfJobState, VrfJobGrainDto>();
     }
 }

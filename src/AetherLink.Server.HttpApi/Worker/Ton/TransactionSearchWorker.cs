@@ -1,4 +1,3 @@
-using AElf;
 using AetherLink.Server.Grains.Grain.Indexer;
 using AetherLink.Server.Grains.Grain.Request;
 using AetherLink.Server.HttpApi.Constants;
@@ -9,33 +8,44 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
-using Org.BouncyCastle.Utilities.Encoders;
 using TonSdk.Core.Boc;
+using AetherLink.Server.HttpApi.Reporter;
+using Org.BouncyCastle.Utilities.Encoders;
+using AetherLink.Server.HttpApi.Provider;
 
 namespace AetherLink.Server.HttpApi.Worker.Ton;
 
 public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly TonOptions _options;
+    private readonly JobsReporter _jobsReporter;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<TransactionSearchWorker> _logger;
 
     public TransactionSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        IOptionsSnapshot<TonOptions> options, IClusterClient clusterClient, ILogger<TransactionSearchWorker> logger) :
-        base(timer, serviceScopeFactory)
+        IOptionsSnapshot<TonOptions> options, IClusterClient clusterClient, ILogger<TransactionSearchWorker> logger,
+        JobsReporter jobsReporter) : base(timer, serviceScopeFactory)
     {
         _logger = logger;
         _options = options.Value;
+        _jobsReporter = jobsReporter;
         _clusterClient = clusterClient;
         timer.Period = _options.TransactionSearchTimer;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
+        _logger.LogInformation("[TonSearchWorker] Start searching TON transactions...");
         var client = _clusterClient.GetGrain<ITonIndexerGrain>(GrainKeyConstants.SearchTransactionGrainKey);
         var result = await client.SearchTonTransactionsAsync();
 
-        if (!result.Success) return;
+        if (!result.Success)
+        {
+            _logger.LogWarning("[TonSearchWorker] Search TON transactions failed...");
+            return;
+        }
+
+        _logger.LogInformation($"[TonSearchWorker] Get {result.Data.Count} TON transactions...");
         await Task.WhenAll(result.Data.Select(HandlerTonTransactionAsync));
     }
 
@@ -62,58 +72,86 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
     private async Task UpdateRequestStateAsync(TonTransactionGrainDto transaction)
     {
-        var bodySlice = Cell.From(transaction.InMsg.MessageContent.Body).Parse();
-        var opCode = bodySlice.LoadUInt(TonTransactionConstants.DefaultUIntSize);
-        var messageContext = bodySlice.LoadRef().Parse();
-        var messageId = Base64.ToBase64String(messageContext.LoadBytes(TonTransactionConstants.MessageIdBytesSize));
-
-        _logger.LogDebug($"[TonSearchWorker] Get messageId: {messageId} transaction.");
-
-        var transactionIdGrainClient = _clusterClient.GetGrain<ITransactionIdGrain>(messageId);
-        var transactionIdGrainResponse = await transactionIdGrainClient.GetAsync();
-        if (!transactionIdGrainResponse.Success)
+        _logger.LogDebug($"[TonSearchWorker] [UpdateRequestStateAsync] Start. TraceId: {transaction.TraceId}");
+        try
         {
-            _logger.LogDebug($"[TonSearchWorker] Get TransactionIdGrain {messageId} failed.");
-            return;
+            var bodySlice = Cell.From(transaction.InMsg.MessageContent.Body).Parse();
+            var opCode = bodySlice.LoadUInt(TonTransactionConstants.DefaultUIntSize);
+            var messageContext = bodySlice.LoadRef().Parse();
+            var messageId = Base64.ToBase64String(messageContext.LoadBytes(TonTransactionConstants.MessageIdBytesSize));
+            var transactionIdGrainClient = _clusterClient.GetGrain<ITransactionIdGrain>(messageId);
+            _logger.LogDebug(
+                $"[TonSearchWorker] [UpdateRequestStateAsync] Getting TransactionIdGrain for messageId: {messageId}");
+
+            var transactionIdGrainResponse = await transactionIdGrainClient.GetAsync();
+            _logger.LogDebug(
+                $"[TonSearchWorker] [UpdateRequestStateAsync] TransactionIdGrain response: Success={transactionIdGrainResponse.Success}, DataNull={transactionIdGrainResponse.Data == null}");
+            if (!transactionIdGrainResponse.Success)
+            {
+                _logger.LogDebug($"[TonSearchWorker] Get TransactionIdGrain {messageId} failed.");
+                return;
+            }
+
+            if (transactionIdGrainResponse.Data == null)
+            {
+                _logger.LogWarning(
+                    $"[TonSearchWorker] TransactionId grain messageId {messageId} not exist, no need to update.");
+                return;
+            }
+
+            var grainId = transactionIdGrainResponse.Data.GrainId;
+            var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(grainId);
+            var response = await requestGrain.GetAsync();
+            _logger.LogDebug(
+                $"[TonSearchWorker] [UpdateRequestStateAsync] Getting CrossChainRequestGrain for messageId: {messageId} response: Success={response.Success}, DataNull={response.Data == null}");
+            if (!response.Success)
+            {
+                _logger.LogWarning($"[TonSearchWorker] Get crossChainRequestGrain {grainId} failed.");
+                return;
+            }
+
+            var crossChainRequestData = new CrossChainRequestGrainDto
+            {
+                Status = transaction.InMsg.Opcode == TonOpCodeConstants.Forward
+                    ? CrossChainStatus.Committed.ToString()
+                    : CrossChainStatus.PendingResend.ToString()
+            };
+
+            if (response.Data == null)
+            {
+                _logger.LogWarning(
+                    $"[TonSearchWorker] TransactionId grain {grainId} not exist, no need to update. Creating new request.");
+                await requestGrain.CreateAsync(crossChainRequestData);
+                return;
+            }
+
+            var sourceChainName = ChainIdNameHelper.ToChainName(response.Data.SourceChainId);
+            var targetChainName = ChainIdNameHelper.ToChainName(TonTransactionConstants.TonChainId);
+            _jobsReporter.ReportCommittedReport(response.Data.MessageId, sourceChainName, targetChainName,
+                StartedRequestTypeName.Crosschain);
+
+            var duration = transaction.Now - response.Data.StartTime / 1000.0;
+            _logger.LogDebug(
+                $"[TonSearchWorker] [UpdateRequestStateAsync] Reporting execution duration. MessageId: {response.Data.MessageId}, SourceChainId: {response.Data.SourceChainId}, TargetChainId: {TonTransactionConstants.TonChainId}, Duration: {duration}");
+            _jobsReporter.ReportExecutionDuration(response.Data.MessageId, sourceChainName, targetChainName,
+                StartedRequestTypeName.Crosschain, duration);
+
+            response.Data.CommitTime = transaction.Now;
+            crossChainRequestData = response.Data;
+            var result = await requestGrain.UpdateAsync(crossChainRequestData);
+            _logger.LogDebug($"[TonSearchWorker] Update {grainId} request {result.Success}");
         }
-
-        if (transactionIdGrainResponse.Data == null)
+        catch (Exception ex)
         {
-            _logger.LogWarning($"[TonSearchWorker] TransactionId grain {messageId} not exist, no need to update.");
-            return;
+            _logger.LogError(ex,
+                $"[TonSearchWorker] [UpdateRequestStateAsync] Exception occurred. TraceId: {transaction.TraceId}");
+            throw;
         }
-
-        var grainId = transactionIdGrainResponse.Data.GrainId;
-        var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(messageId);
-        var response = await requestGrain.GetAsync();
-        if (!response.Success)
-        {
-            _logger.LogWarning($"[TonSearchWorker] Get crossChainRequestGrain {grainId} failed.");
-            return;
-        }
-
-        var crossChainRequestData = new CrossChainRequestGrainDto
-        {
-            Status = transaction.InMsg.Opcode == TonOpCodeConstants.Forward
-                ? CrossChainStatus.Committed.ToString()
-                : CrossChainStatus.PendingResend.ToString()
-        };
-
-        if (response.Data == null)
-        {
-            _logger.LogWarning($"[TonSearchWorker] TransactionId grain {grainId} not exist, no need to update.");
-            await requestGrain.CreateAsync(crossChainRequestData);
-            return;
-        }
-
-        crossChainRequestData = response.Data;
-        var result = await requestGrain.UpdateAsync(crossChainRequestData);
-        _logger.LogDebug($"[TonSearchWorker] Update {grainId} request {result.Success}");
     }
 
     private async Task CreateRequestAsync(TonTransactionGrainDto transaction)
     {
-        var messageId = HashHelper.ComputeFrom(transaction.Hash).ToHex();
+        var messageId = transaction.Hash;
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(messageId);
         if (transaction.OutMsgs == null)
         {
@@ -129,15 +167,19 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
             SourceChainId = TonTransactionConstants.TonChainId,
             TargetChainId = targetChainId,
             MessageId = messageId,
-            Status = CrossChainStatus.Started.ToString()
+            Status = CrossChainStatus.Started.ToString(),
+            StartTime = transaction.Now
         };
 
-        var result = await requestGrain.CreateAsync(crossChainRequestData);
-        _logger.LogDebug($"[TonSearchWorker] Create {messageId} request {result.Success}");
-
+        await requestGrain.CreateAsync(crossChainRequestData);
         var traceIdGrain = _clusterClient.GetGrain<ITraceIdGrain>(transaction.TraceId);
         var traceCreatedResult = await traceIdGrain.UpdateAsync(new() { GrainId = messageId });
         _logger.LogDebug(
             $"[TonSearchWorker] Create {messageId} request traceId {transaction.TraceId} {traceCreatedResult.Success}");
+
+        var sourceChainName = ChainIdNameHelper.ToChainName(TonTransactionConstants.TonChainId);
+        var targetChainName = ChainIdNameHelper.ToChainName(targetChainId);
+        _jobsReporter.ReportStartedRequest(messageId, sourceChainName, targetChainName,
+            StartedRequestTypeName.Crosschain);
     }
 }

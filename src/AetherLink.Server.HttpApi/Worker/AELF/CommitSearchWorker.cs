@@ -10,98 +10,215 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
+using AetherLink.Server.HttpApi.Reporter;
+using AetherLink.Server.HttpApi.Provider;
 
 namespace AetherLink.Server.HttpApi.Worker.AELF;
 
 public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly AELFOptions _options;
+    private readonly JobsReporter _jobsReporter;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<CommitSearchWorker> _logger;
 
     public CommitSearchWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        IOptionsSnapshot<AELFOptions> options, IClusterClient clusterClient, ILogger<CommitSearchWorker> logger) : base(
-        timer, serviceScopeFactory)
+        IOptionsSnapshot<AELFOptions> options, IClusterClient clusterClient, ILogger<CommitSearchWorker> logger,
+        JobsReporter jobsReporter) : base(timer, serviceScopeFactory)
     {
         _logger = logger;
         _options = options.Value;
+        _jobsReporter = jobsReporter;
         _clusterClient = clusterClient;
         timer.Period = _options.CommitSearchTimer;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        var client = _clusterClient.GetGrain<IAeFinderGrain>(GrainKeyConstants.ConfirmBlockHeightGrainKey);
-        var result = await client.GetBlockHeightAsync();
-        if (!result.Success)
+        _logger.LogInformation("[CommitSearchWorker] Started");
+        try
         {
-            _logger.LogWarning("[CommitSearchWorker] Get Block Height failed");
-            return;
-        }
+            var client = _clusterClient.GetGrain<IAeFinderGrain>(GrainKeyConstants.ConfirmBlockHeightGrainKey);
+            var result = await client.GetBlockHeightAsync();
+            if (!result.Success)
+            {
+                _logger.LogWarning("[CommitSearchWorker] Get Block Height failed");
+                return;
+            }
 
-        await Task.WhenAll(result.Data.Select(d => HandleRequestsAsync(d.ChainId, d.LastIrreversibleBlockHeight)));
+            await Task.WhenAll(result.Data.Select(ProcessChainTaskAsync));
+            _logger.LogInformation(
+                $"[CommitSearchWorker] GetBlockHeightAsync succeeded, chains found: {result.Data?.Count ?? 0}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[CommitSearchWorker] Exception in DoWorkAsync");
+        }
+        finally
+        {
+            _logger.LogInformation("[CommitSearchWorker] DoWorkAsync finished");
+        }
     }
 
-    private async Task HandleRequestsAsync(string chainId, long confirmedHeight)
+    private async Task ProcessChainTaskAsync(AELFChainGrainDto chain)
     {
-        var grainId = GrainIdHelper.GenerateGrainId(GrainKeyConstants.CommitWorkerConsumedBlockHeightGrainKey, chainId);
-        var client = _clusterClient.GetGrain<IAELFConsumedBlockHeightGrain>(grainId);
-        var consumedHeight = await client.GetConsumedHeightAsync();
-        if (!consumedHeight.Success)
+        try
         {
-            _logger.LogWarning($"[CommitSearchWorker] Get {chainId} consumed block height failed");
-            return;
-        }
+            var chainId = chain.ChainId;
+            var confirmedHeight = chain.LastIrreversibleBlockHeight;
+            var grainId =
+                GrainIdHelper.GenerateGrainId(GrainKeyConstants.CommitWorkerConsumedBlockHeightGrainKey, chainId);
+            var consumedClient = _clusterClient.GetGrain<IAELFConsumedBlockHeightGrain>(grainId);
+            var consumedHeight = await consumedClient.GetConsumedHeightAsync();
+            if (!consumedHeight.Success)
+            {
+                _logger.LogWarning($"[CommitSearchWorker] Get {chainId} consumed block height failed");
+                return;
+            }
 
-        if (consumedHeight.Data == 0)
+            if (consumedHeight.Data == 0)
+            {
+                await consumedClient.UpdateConsumedHeightAsync(confirmedHeight);
+                _logger.LogInformation($"[CommitSearchWorker] Initial {chainId} consumed block height. ");
+                return;
+            }
+
+            var consumedBlockHeight = consumedHeight.Data + 1;
+            if (confirmedHeight < consumedBlockHeight)
+            {
+                _logger.LogWarning(
+                    $"[CommitSearchWorker] Waiting for {chainId} block confirmed, consumedBlockHeight:{consumedBlockHeight} confirmedHeight:{confirmedHeight}.");
+                return;
+            }
+
+            await HandleRequestsAsync(chain, confirmedHeight, consumedBlockHeight, consumedClient);
+            await HandleVrfCommitsAsync(chain, confirmedHeight, consumedBlockHeight);
+        }
+        catch (Exception ex)
         {
-            await client.UpdateConsumedHeightAsync(confirmedHeight);
-            _logger.LogInformation($"[CommitSearchWorker] Initial {chainId} consumed block height. ");
-            return;
+            _logger.LogError(ex, $"[CommitSearchWorker] Exception occurred while processing chain {chain.ChainId}");
         }
+    }
 
-        var consumedBlockHeight = consumedHeight.Data + 1;
-        if (confirmedHeight < consumedBlockHeight)
+    private async Task HandleRequestsAsync(AELFChainGrainDto chain, long confirmedHeight, long consumedBlockHeight,
+        IAELFConsumedBlockHeightGrain consumedClient)
+    {
+        var chainId = chain.ChainId;
+        _logger.LogInformation(
+            $"[CommitSearchWorker] HandleRequestsAsync started for chainId={chainId}, confirmedHeight={confirmedHeight}, consumedBlockHeight={consumedBlockHeight}");
+        try
         {
-            _logger.LogWarning(
-                $"[CommitSearchWorker] Waiting for {chainId} block confirmed, consumedBlockHeight:{consumedBlockHeight} confirmedHeight:{confirmedHeight}.");
-            return;
+            var aeFinderGrainClient =
+                _clusterClient.GetGrain<IAeFinderGrain>(GrainKeyConstants.SearchRequestsCommittedGrainKey);
+            var requests =
+                await aeFinderGrainClient.SearchRequestsCommittedAsync(chainId, confirmedHeight, consumedBlockHeight);
+            if (!requests.Success)
+            {
+                _logger.LogError($"[CommitSearchWorker] {chainId} Get requests failed");
+                return;
+            }
+
+            var tasks = requests.Data.Select(HandleReportCommittedAsync);
+            await Task.WhenAll(tasks);
+
+            _logger.LogInformation(
+                $"[CommitSearchWorker] {chainId} found a total of {requests.Data.Count} committed report.");
+            await consumedClient.UpdateConsumedHeightAsync(confirmedHeight);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"[CommitSearchWorker] Exception in HandleRequestsAsync for chainId={chainId}");
+        }
+        finally
+        {
+            _logger.LogInformation($"[CommitSearchWorker] HandleRequestsAsync finished for chainId={chainId}");
+        }
+    }
 
-        _logger.LogDebug(
-            $"[CommitSearchWorker] Get {chainId} Block Height {confirmedHeight}");
-
+    private async Task HandleVrfCommitsAsync(AELFChainGrainDto chain, long confirmedHeight, long consumedBlockHeight)
+    {
         var aeFinderGrainClient =
             _clusterClient.GetGrain<IAeFinderGrain>(GrainKeyConstants.SearchRequestsCommittedGrainKey);
-        var requests =
-            await aeFinderGrainClient.SearchRequestsCommittedAsync(chainId, confirmedHeight, consumedBlockHeight);
-        if (!requests.Success)
+        var jobsResult =
+            await aeFinderGrainClient.SubscribeTransmittedAsync(chain.ChainId, confirmedHeight, consumedBlockHeight);
+        if (jobsResult.Success && jobsResult.Data != null)
         {
-            _logger.LogError($"[CommitSearchWorker] {chainId} Get requests failed");
+            _logger.LogInformation(
+                $"[CommitSearchWorker] SubscribeTransmittedAsync found {jobsResult.Data.Count} VRF jobs for chainId={chain.ChainId}");
+            foreach (var job in jobsResult.Data)
+            {
+                var vrfJobGrain = _clusterClient.GetGrain<IVrfJobGrain>(job.RequestId);
+                var vrfJob = await vrfJobGrain.GetAsync();
+                if (vrfJob?.Data == null)
+                {
+                    _logger.LogInformation(
+                        $"[CommitSearchWorker] VRF job not found, reporting as Datafeeds. RequestId: {job.RequestId}, ChainId: {chain.ChainId}");
+                    _jobsReporter.ReportCommittedReport(job.RequestId, chain.ChainId, chain.ChainId,
+                        StartedRequestTypeName.Datafeeds);
+                    continue;
+                }
+
+                if (vrfJob.Data.CommitTime > 0 || job.StartTime <= 0 || vrfJob.Data.StartTime <= 0)
+                {
+                    _logger.LogDebug(
+                        $"[CommitSearchWorker] VRF job skipped. RequestId: {job.RequestId}, CommitTime: {vrfJob.Data.CommitTime}, JobStartTime: {job.StartTime}, VRFStartTime: {vrfJob.Data.StartTime}");
+                    continue;
+                }
+
+                var duration = (job.StartTime - vrfJob.Data.StartTime) / 1000.0;
+                _logger.LogInformation(
+                    $"[CommitSearchWorker] VRF Commit: RequestId={job.RequestId}, ChainId={chain.ChainId}, StartTime={vrfJob.Data.StartTime}, CommitTime={job.StartTime}, Duration={duration}s");
+
+                _jobsReporter.ReportCommittedReport(job.RequestId, chain.ChainId, chain.ChainId,
+                    StartedRequestTypeName.Vrf);
+
+                _jobsReporter.ReportExecutionDuration(job.RequestId, chain.ChainId, chain.ChainId,
+                    StartedRequestTypeName.Vrf, duration);
+                vrfJob.Data.CommitTime = job.StartTime;
+                await vrfJobGrain.UpdateAsync(vrfJob.Data);
+            }
         }
-
-        var tasks = requests.Data.Select(HandleReportCommittedAsync);
-        await Task.WhenAll(tasks);
-        _logger.LogInformation("[CommitSearchWorker] {chain} found a total of {count} committed report.", chainId,
-            tasks.Count());
-
-        await client.UpdateConsumedHeightAsync(confirmedHeight);
-        _logger.LogDebug($"[CommitSearchWorker] {chainId} Block Height consumed at {confirmedHeight}");
     }
 
     private async Task HandleReportCommittedAsync(AELFRampRequestGrainDto requestData)
     {
-        var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(requestData.MessageId);
         var messageId = ByteStringHelper.FromHexString(requestData.MessageId).ToBase64();
-        var result = await requestGrain.UpdateAsync(new()
+        var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(messageId);
+        var result = await requestGrain.GetAsync();
+        if (!result.Success || result.Data == null)
+        {
+            _logger.LogError(
+                $"[CommitSearchWorker] GetAsync failed or returned null Data for messageId: {messageId}, Success: {result.Success}");
+            return;
+        }
+
+        if (result.Data.Status == CrossChainStatus.Committed.ToString())
+        {
+            return;
+        }
+
+        _logger.LogInformation(
+            $"[CommitSearchWorker] Reporting committed for MessageId {requestData.MessageId}, ChainId {requestData.SourceChainId}");
+
+        var sourceChainName = ChainIdNameHelper.ToChainName(requestData.SourceChainId);
+        var targetChainName = ChainIdNameHelper.ToChainName(requestData.TargetChainId);
+        _jobsReporter.ReportCommittedReport(requestData.MessageId, sourceChainName,
+            targetChainName, StartedRequestTypeName.Crosschain);
+
+        var duration = (requestData.CommitTime - result.Data.StartTime) / 1000.0;
+
+        _jobsReporter.ReportExecutionDuration(requestData.MessageId, sourceChainName, targetChainName,
+            StartedRequestTypeName.Crosschain, duration);
+
+        var updateResult = await requestGrain.UpdateAsync(new()
         {
             Id = messageId,
             SourceChainId = requestData.SourceChainId,
             TargetChainId = requestData.TargetChainId,
             MessageId = messageId,
-            Status = CrossChainStatus.Committed.ToString()
+            Status = CrossChainStatus.Committed.ToString(),
+            StartTime = requestData.StartTime,
+            CommitTime = requestData.CommitTime
         });
-
-        _logger.LogDebug($"[CommitSearchWorker] Update {requestData.MessageId} committed {result.Success}");
     }
 }
