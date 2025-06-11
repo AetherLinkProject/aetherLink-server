@@ -10,8 +10,8 @@ namespace AetherLink.Server.HttpApi.Reporter
     public class JobsReporter : ISingletonDependency
     {
         private readonly Counter _startedRequestCounter;
+        private readonly Gauge _executionDurationGauge;
         private readonly Counter _committedReportCounter;
-        private readonly Histogram _executionDurationHistogram;
 
         public JobsReporter(IOptions<MetricsBucketsOptions> options)
         {
@@ -23,11 +23,10 @@ namespace AetherLink.Server.HttpApi.Reporter
                 MetricsConstants.CommittedReportCounter,
                 MetricsConstants.CommittedReportCounterLabels,
                 MetricsConstants.CommittedReportCounterHelp);
-            _executionDurationHistogram = MetricsReporter.RegistryHistograms(
-                MetricsConstants.ExecutionDurationHistogram,
-                MetricsConstants.ExecutionDurationHistogramLabels,
-                MetricsConstants.ExecutionDurationHistogramHelp,
-                options.Value.ExecutionDurationBuckets);
+            _executionDurationGauge = MetricsReporter.RegistryGauges(
+                MetricsConstants.ExecutionDurationGauge,
+                MetricsConstants.ExecutionDurationGaugeLabels,
+                MetricsConstants.ExecutionDurationGaugeHelp);
         }
 
         public void ReportStartedRequest(string id, string sourceChain, string targetChain, string type)
@@ -43,7 +42,7 @@ namespace AetherLink.Server.HttpApi.Reporter
         public void ReportExecutionDuration(string id, string sourceChain, string targetChain, string type,
             double durationSeconds)
         {
-            _executionDurationHistogram.WithLabels(id, sourceChain, targetChain, type).Observe(durationSeconds);
+            _executionDurationGauge.WithLabels(id, sourceChain, targetChain, type).Set(durationSeconds);
         }
     }
 }

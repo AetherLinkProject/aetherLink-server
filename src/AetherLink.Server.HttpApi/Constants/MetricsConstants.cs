@@ -6,6 +6,10 @@ public static class MetricsConstants
     public const string BalanceGaugeName = "chain_balance_gauge";
     public static readonly string[] BalanceGaugeLabels = { "chain", "address" };
 
+    public const string ExecutionDurationGauge = "task_execution_duration_gauge";
+    public static readonly string[] ExecutionDurationGaugeLabels = { "id", "source_chain", "target_chain", "type" };
+    public const string ExecutionDurationGaugeHelp = "Time between task start and commit (seconds), latest value per label set.";
+
     // ===================== Counter =====================
     public const string CrossChainQueryHitCounter = "cross_chain_query_hit_count";
     public static readonly string[] CrossChainQueryHitCounterLabels = { "id", "chain", "hit" };
@@ -26,11 +30,6 @@ public static class MetricsConstants
 
     public const string CommittedReportCounterHelp =
         "Number of committed reports (by id, source_chain, target_chain & type)";
-
-    // ===================== Histogram =====================
-    public const string ExecutionDurationHistogram = "task_execution_duration";
-    public static readonly string[] ExecutionDurationHistogramLabels = { "id", "source_chain", "target_chain", "type" };
-    public const string ExecutionDurationHistogramHelp = "Time between task start and commit (seconds)";
 
     // ===================== Other =====================
     public const int MaxRetries = 5;
