@@ -162,7 +162,8 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
                     StartedRequestTypeName.Vrf);
 
                 var duration = (job.StartTime - vrfJob.Data.StartTime) / 1000.0;
-                _jobsReporter.ReportExecutionDuration(job.RequestId, chain.ChainId, StartedRequestTypeName.Vrf, duration);
+                _jobsReporter.ReportExecutionDuration(job.RequestId, chain.ChainId, chain.ChainId,
+                    StartedRequestTypeName.Vrf, duration);
                 vrfJob.Data.CommitTime = job.StartTime;
                 await vrfJobGrain.UpdateAsync(vrfJob.Data);
             }
@@ -194,7 +195,8 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         var duration = (requestData.CommitTime - result.Data.StartTime) / 1000.0;
 
-        _jobsReporter.ReportExecutionDuration(requestData.MessageId, requestData.SourceChainId.ToString(), StartedRequestTypeName.Crosschain, duration);
+        _jobsReporter.ReportExecutionDuration(requestData.MessageId, requestData.SourceChainId.ToString(),
+            requestData.TargetChainId.ToString(), StartedRequestTypeName.Crosschain, duration);
 
         var updateResult = await requestGrain.UpdateAsync(new()
         {

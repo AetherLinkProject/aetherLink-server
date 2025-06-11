@@ -117,10 +117,12 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
             return;
         }
 
-        _jobsReporter.ReportCommittedReport(response.Data.MessageId, response.Data.SourceChainId.ToString(), TonTransactionConstants.TonChainId.ToString(), StartedRequestTypeName.Crosschain);
+        _jobsReporter.ReportCommittedReport(response.Data.MessageId, response.Data.SourceChainId.ToString(),
+            TonTransactionConstants.TonChainId.ToString(), StartedRequestTypeName.Crosschain);
 
         var duration = (transaction.Now - response.Data.StartTime) / 1000.0;
-        _jobsReporter.ReportExecutionDuration(response.Data.MessageId, TonTransactionConstants.TonChainId.ToString(), StartedRequestTypeName.Crosschain, duration);
+        _jobsReporter.ReportExecutionDuration(response.Data.MessageId, response.Data.SourceChainId.ToString(),
+            TonTransactionConstants.TonChainId.ToString(), StartedRequestTypeName.Crosschain, duration);
 
         response.Data.CommitTime = transaction.Now;
         crossChainRequestData = response.Data;
@@ -142,7 +144,8 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var _ = (long)receiveSlice.LoadInt(TonTransactionConstants.DefaultIntSize);
         var targetChainId = (long)receiveSlice.LoadInt(TonTransactionConstants.ChainIdSize);
 
-        _jobsReporter.ReportStartedRequest(messageId, TonTransactionConstants.TonChainId.ToString(), targetChainId.ToString(), StartedRequestTypeName.Crosschain);
+        _jobsReporter.ReportStartedRequest(messageId, TonTransactionConstants.TonChainId.ToString(),
+            targetChainId.ToString(), StartedRequestTypeName.Crosschain);
 
         var crossChainRequestData = new CrossChainRequestGrainDto
         {
@@ -161,7 +164,9 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         _logger.LogDebug(
             $"[TonSearchWorker] Create {messageId} request traceId {transaction.TraceId} {traceCreatedResult.Success}");
 
-        _jobsReporter.ReportCommittedReport(messageId, TonTransactionConstants.TonChainId.ToString(), targetChainId.ToString(), StartedRequestTypeName.Crosschain);
-        _jobsReporter.ReportStartedRequest(messageId, TonTransactionConstants.TonChainId.ToString(), targetChainId.ToString(), StartedRequestTypeName.Crosschain);
+        _jobsReporter.ReportCommittedReport(messageId, TonTransactionConstants.TonChainId.ToString(),
+            targetChainId.ToString(), StartedRequestTypeName.Crosschain);
+        _jobsReporter.ReportStartedRequest(messageId, TonTransactionConstants.TonChainId.ToString(),
+            targetChainId.ToString(), StartedRequestTypeName.Crosschain);
     }
 }

@@ -204,7 +204,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         _logger.LogInformation(
             $"[EvmSearchWorker] [HandleCommitted] ReportExecutionDuration: MessageId={messageId}, ChainId={metadata.SourceChainId}, Duration={duration}s");
         _jobsReporter.ReportExecutionDuration(messageId, metadata.SourceChainId.ToString(),
-            StartedRequestTypeName.Crosschain, duration);
+            metadata.TargetChainId.ToString(), StartedRequestTypeName.Crosschain, duration);
 
         response.Data.CommitTime = metadata.BlockTime;
         var result = await requestGrain.UpdateAsync(response.Data);
