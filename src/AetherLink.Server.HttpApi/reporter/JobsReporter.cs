@@ -40,9 +40,10 @@ namespace AetherLink.Server.HttpApi.Reporter
             _committedReportCounter.WithLabels(id, sourceChain, targetChain, type).Inc();
         }
 
-        public void ReportExecutionDuration(string id, string chain, string type, double durationSeconds)
+        public void ReportExecutionDuration(string id, string sourceChain, string targetChain, string type,
+            double durationSeconds)
         {
-            _executionDurationHistogram.WithLabels(id, chain, type).Observe(durationSeconds);
+            _executionDurationHistogram.WithLabels(id, sourceChain, targetChain, type).Observe(durationSeconds);
         }
     }
 }

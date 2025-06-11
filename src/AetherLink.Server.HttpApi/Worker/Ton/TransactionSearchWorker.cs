@@ -143,10 +143,6 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var receiveSlice = Cell.From(transaction.OutMsgs[0].MessageContent.Body).Parse();
         var _ = (long)receiveSlice.LoadInt(TonTransactionConstants.DefaultIntSize);
         var targetChainId = (long)receiveSlice.LoadInt(TonTransactionConstants.ChainIdSize);
-
-        _jobsReporter.ReportStartedRequest(messageId, TonTransactionConstants.TonChainId.ToString(),
-            targetChainId.ToString(), StartedRequestTypeName.Crosschain);
-
         var crossChainRequestData = new CrossChainRequestGrainDto
         {
             SourceChainId = TonTransactionConstants.TonChainId,
@@ -156,16 +152,12 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
             StartTime = transaction.Now
         };
 
-        var result = await requestGrain.CreateAsync(crossChainRequestData);
-        _logger.LogDebug($"[TonSearchWorker] Create {messageId} request {result.Success}");
-
+        await requestGrain.CreateAsync(crossChainRequestData);
         var traceIdGrain = _clusterClient.GetGrain<ITraceIdGrain>(transaction.TraceId);
         var traceCreatedResult = await traceIdGrain.UpdateAsync(new() { GrainId = messageId });
         _logger.LogDebug(
             $"[TonSearchWorker] Create {messageId} request traceId {transaction.TraceId} {traceCreatedResult.Success}");
 
-        _jobsReporter.ReportCommittedReport(messageId, TonTransactionConstants.TonChainId.ToString(),
-            targetChainId.ToString(), StartedRequestTypeName.Crosschain);
         _jobsReporter.ReportStartedRequest(messageId, TonTransactionConstants.TonChainId.ToString(),
             targetChainId.ToString(), StartedRequestTypeName.Crosschain);
     }
