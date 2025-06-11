@@ -49,6 +49,7 @@ public class AetherLinkServerHttpApiHostModule : AbpModule
         Configure<AELFOptions>(configuration.GetSection("AELF"));
         Configure<TonOptions>(configuration.GetSection("Ton"));
         Configure<BalanceMonitorOptions>(configuration.GetSection("BalanceMonitor"));
+        Configure<MetricsBucketsOptions>(configuration.GetSection("MetricsBuckets"));
         context.Services.AddHttpClient();
         var metricsOption = configuration.GetSection("Metrics").Get<MetricsOption>();
         context.Services.AddMetricServer(options => { options.Port = metricsOption.Port; });
