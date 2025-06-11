@@ -142,12 +142,16 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
             await aeFinderGrainClient.SubscribeTransmittedAsync(chain.ChainId, confirmedHeight, consumedBlockHeight);
         if (jobsResult.Success && jobsResult.Data != null)
         {
+            _logger.LogInformation(
+                $"[CommitSearchWorker] SubscribeTransmittedAsync found {jobsResult.Data.Count} VRF jobs for chainId={chain.ChainId}");
             foreach (var job in jobsResult.Data)
             {
                 var vrfJobGrain = _clusterClient.GetGrain<IVrfJobGrain>(job.RequestId);
                 var vrfJob = await vrfJobGrain.GetAsync();
                 if (vrfJob?.Data == null)
                 {
+                    _logger.LogInformation(
+                        $"[CommitSearchWorker] VRF job not found, reporting as Datafeeds. RequestId: {job.RequestId}, ChainId: {chain.ChainId}");
                     _jobsReporter.ReportCommittedReport(job.RequestId, chain.ChainId, chain.ChainId,
                         StartedRequestTypeName.Datafeeds);
                     continue;
@@ -155,13 +159,18 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
                 if (vrfJob.Data.CommitTime > 0 || job.StartTime <= 0 || vrfJob.Data.StartTime <= 0)
                 {
+                    _logger.LogDebug(
+                        $"[CommitSearchWorker] VRF job skipped. RequestId: {job.RequestId}, CommitTime: {vrfJob.Data.CommitTime}, JobStartTime: {job.StartTime}, VRFStartTime: {vrfJob.Data.StartTime}");
                     continue;
                 }
+
+                var duration = (job.StartTime - vrfJob.Data.StartTime) / 1000.0;
+                _logger.LogInformation(
+                    $"[CommitSearchWorker] VRF Commit: RequestId={job.RequestId}, ChainId={chain.ChainId}, StartTime={vrfJob.Data.StartTime}, CommitTime={job.StartTime}, Duration={duration}s");
 
                 _jobsReporter.ReportCommittedReport(job.RequestId, chain.ChainId, chain.ChainId,
                     StartedRequestTypeName.Vrf);
 
-                var duration = (job.StartTime - vrfJob.Data.StartTime) / 1000.0;
                 _jobsReporter.ReportExecutionDuration(job.RequestId, chain.ChainId, chain.ChainId,
                     StartedRequestTypeName.Vrf, duration);
                 vrfJob.Data.CommitTime = job.StartTime;
