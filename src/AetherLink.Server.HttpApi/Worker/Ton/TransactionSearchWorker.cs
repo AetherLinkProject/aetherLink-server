@@ -119,11 +119,12 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
             return;
         }
 
-        _jobsReporter.ReportCommittedReport(response.Data.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
+        _jobsReporter.ReportCommittedReport(TonTransactionConstants.TonChainId.ToString(),
+            StartedRequestTypeName.Crosschain);
 
         var duration = (transaction.Now - response.Data.StartTime) / 1000.0;
-        _jobsReporter.ReportExecutionDuration(response.Data.SourceChainId.ToString(), StartedRequestTypeName.Crosschain,
-            duration);
+        _jobsReporter.ReportExecutionDuration(TonTransactionConstants.TonChainId.ToString(),
+            StartedRequestTypeName.Crosschain, duration);
 
         response.Data.CommitTime = transaction.Now;
         crossChainRequestData = response.Data;
