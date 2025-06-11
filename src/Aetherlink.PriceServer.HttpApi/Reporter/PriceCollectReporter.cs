@@ -23,7 +23,9 @@ public class PriceCollectReporter : IPriceCollectReporter, ISingletonDependency
         _priceCollectedGauge = MetricsReporter.RegistryGauges(Definition.PriceCollectGaugeName,
             Definition.PriceCollectLabels);
         _priceCollectLatency = MetricsReporter.RegistryHistograms(Definition.ThirdPartyCollectLatencyName,
-            Definition.ThirdPartyCollectLabels);
+            Definition.ThirdPartyCollectLabels,
+            Definition.ThirdPartyCollectLatencyHelp,
+            Definition.PriceCollectLatencyBuckets);
     }
 
     public void RecordPriceCollected(SourceType type, string tokenPair, long price)

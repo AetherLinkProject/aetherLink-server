@@ -40,6 +40,8 @@ public static class MetricsConstants
     public const string ChainTon = "ton";
     public const string ChainEvm = "evm";
     public const string ChainAelf = "aelf";
+
+    public static readonly double[] DefaultExecutionDurationBuckets = { 1, 5, 10, 30, 60, 120 };
 }
 
 public static class RequestTypeConst

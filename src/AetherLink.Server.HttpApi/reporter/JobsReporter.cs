@@ -24,17 +24,18 @@ namespace AetherLink.Server.HttpApi.Reporter
             _executionDurationHistogram = MetricsReporter.RegistryHistograms(
                 MetricsConstants.ExecutionDurationHistogram,
                 MetricsConstants.ExecutionDurationHistogramLabels,
-                MetricsConstants.ExecutionDurationHistogramHelp);
+                MetricsConstants.ExecutionDurationHistogramHelp,
+                MetricsConstants.DefaultExecutionDurationBuckets);
         }
 
         public void ReportStartedRequest(string chain, string taskType)
         {
-            _startedRequestCounter.WithLabels(chain, taskType).Inc(1);
+            _startedRequestCounter.WithLabels(chain, taskType).Inc();
         }
 
         public void ReportCommittedReport(string chain, string type)
         {
-            _committedReportCounter.WithLabels(chain, type).Inc(1);
+            _committedReportCounter.WithLabels(chain, type).Inc();
         }
 
         public void ReportExecutionDuration(string chain, string type, double durationSeconds)
