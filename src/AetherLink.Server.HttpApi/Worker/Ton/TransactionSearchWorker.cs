@@ -91,7 +91,7 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         if (transactionIdGrainResponse.Data == null)
         {
-            _logger.LogWarning($"[TonSearchWorker] TransactionId grain {messageId} not exist, no need to update.");
+            _logger.LogWarning($"[TonSearchWorker] TransactionId grain messageId {messageId} not exist, no need to update.");
             return;
         }
 
