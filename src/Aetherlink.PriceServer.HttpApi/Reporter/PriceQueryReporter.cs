@@ -30,7 +30,9 @@ public class PriceQueryReporter : IPriceQueryReporter, ISingletonDependency
         _appRequests = MetricsReporter.RegistryGauges(Definition.AppRequestsName,
             Definition.AppRequestsLabels);
         _priceRequestLatency = MetricsReporter.RegistryHistograms(Definition.PriceRequestLatencyName,
-            Definition.PriceRequestLatencyLabels);
+            Definition.PriceRequestLatencyLabels,
+            Definition.PriceRequestLatencyHelp,
+            Definition.PriceRequestLatencyBuckets);
         _aggregatedPriceRequestsTotal = MetricsReporter.RegistryCounters(Definition.AggregatedPriceRequestsTotalName,
             Definition.AggregatedPriceRequestsTotalLabels);
     }

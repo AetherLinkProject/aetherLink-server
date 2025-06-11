@@ -12,6 +12,9 @@ public class MetricsReporter
     public static Counter RegistryCounters(string counterName, string[] labels, string help = "")
         => Metrics.CreateCounter(Prefix + counterName, help, labels);
 
-    public static Histogram RegistryHistograms(string histogramName, string[] labels, string help = "")
-        => Metrics.CreateHistogram(Prefix + histogramName, help, labels);
+    public static Histogram RegistryHistograms(string histogramName, string[] labels, string help = "",
+        params double[] buckets) => buckets is { Length: > 0 }
+        ? Metrics.CreateHistogram(Prefix + histogramName, help, labels,
+            new HistogramConfiguration { Buckets = buckets })
+        : Metrics.CreateHistogram(Prefix + histogramName, help, labels);
 }
