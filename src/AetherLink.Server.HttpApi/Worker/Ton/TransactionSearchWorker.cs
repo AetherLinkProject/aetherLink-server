@@ -130,9 +130,10 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
     private async Task CreateRequestAsync(TonTransactionGrainDto transaction)
     {
-        _jobsReporter.ReportCommittedReport(TonTransactionConstants.TonChainId.ToString(),
+        _jobsReporter.ReportStartedRequest(TonTransactionConstants.TonChainId.ToString(),
             StartedRequestTypeName.Crosschain);
-        var messageId = HashHelper.ComputeFrom(transaction.Hash).ToHex();
+        // var messageId = HashHelper.ComputeFrom(transaction.Hash).ToHex();
+        var messageId = transaction.Hash;
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(messageId);
         if (transaction.OutMsgs == null)
         {
