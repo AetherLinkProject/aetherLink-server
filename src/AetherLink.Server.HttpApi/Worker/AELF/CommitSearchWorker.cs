@@ -146,19 +146,23 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
             {
                 var vrfJobGrain = _clusterClient.GetGrain<IVrfJobGrain>(job.RequestId);
                 var vrfJob = await vrfJobGrain.GetAsync();
-                if (vrfJob?.Data == null || vrfJob.Data.CommitTime > 0 || job.StartTime <= 0 ||
-                    vrfJob.Data.StartTime <= 0)
+                if (vrfJob?.Data == null)
                 {
-                    _jobsReporter.ReportCommittedReport(ChainHelper.ConvertBase58ToChainId(chain.ChainId).ToString(),
+                    _jobsReporter.ReportCommittedReport(job.RequestId, chain.ChainId, chain.ChainId,
                         StartedRequestTypeName.Datafeeds);
                     continue;
                 }
 
-                _jobsReporter.ReportCommittedReport(ChainHelper.ConvertBase58ToChainId(chain.ChainId).ToString(),
+                if (vrfJob.Data.CommitTime > 0 || job.StartTime <= 0 || vrfJob.Data.StartTime <= 0)
+                {
+                    continue;
+                }
+
+                _jobsReporter.ReportCommittedReport(job.RequestId, chain.ChainId, chain.ChainId,
                     StartedRequestTypeName.Vrf);
 
                 var duration = (job.StartTime - vrfJob.Data.StartTime) / 1000.0;
-                _jobsReporter.ReportExecutionDuration(chain.ChainId, StartedRequestTypeName.Vrf, duration);
+                _jobsReporter.ReportExecutionDuration(job.RequestId, chain.ChainId, StartedRequestTypeName.Vrf, duration);
                 vrfJob.Data.CommitTime = job.StartTime;
                 await vrfJobGrain.UpdateAsync(vrfJob.Data);
             }
@@ -185,12 +189,12 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
         _logger.LogInformation(
             $"[CommitSearchWorker] Reporting committed for MessageId {requestData.MessageId}, ChainId {requestData.SourceChainId}");
 
-        _jobsReporter.ReportCommittedReport(requestData.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
+        _jobsReporter.ReportCommittedReport(requestData.MessageId, requestData.SourceChainId.ToString(),
+            requestData.TargetChainId.ToString(), StartedRequestTypeName.Crosschain);
 
         var duration = (requestData.CommitTime - result.Data.StartTime) / 1000.0;
 
-        _jobsReporter.ReportExecutionDuration(requestData.SourceChainId.ToString(), StartedRequestTypeName.Crosschain,
-            duration);
+        _jobsReporter.ReportExecutionDuration(requestData.MessageId, requestData.SourceChainId.ToString(), StartedRequestTypeName.Crosschain, duration);
 
         var updateResult = await requestGrain.UpdateAsync(new()
         {
