@@ -7,16 +7,11 @@ namespace AetherLink.Server.HttpApi.Reporter
 {
     public class CrossChainReporter : ISingletonDependency
     {
-        private readonly Counter _crossChainRequestCounter;
         private readonly Counter _crossChainQueryHitCounter;
         private readonly Counter _crossChainQueryTotalCounter;
 
         public CrossChainReporter()
         {
-            _crossChainRequestCounter = MetricsReporter.RegistryCounters(
-                MetricsConstants.CrossChainRequestCounter,
-                MetricsConstants.CrossChainRequestCounterLabels,
-                MetricsConstants.CrossChainRequestCounterHelp);
             _crossChainQueryHitCounter = MetricsReporter.RegistryCounters(
                 MetricsConstants.CrossChainQueryHitCounter,
                 MetricsConstants.CrossChainQueryHitCounterLabels,
@@ -27,10 +22,6 @@ namespace AetherLink.Server.HttpApi.Reporter
                 MetricsConstants.CrossChainQueryTotalCounterHelp);
         }
 
-        public void ReportCrossChainRequest(string messageId, string sourceChain, string targetChain)
-        {
-            _crossChainRequestCounter.WithLabels(messageId, sourceChain, targetChain).Inc();
-        }
 
         public void ReportCrossChainQueryHitCount(string id, string chain, bool hit)
         {
