@@ -2,8 +2,6 @@ using Prometheus;
 using AetherLink.Server.HttpApi.Constants;
 using Volo.Abp.DependencyInjection;
 using AetherLink.Metric;
-using Microsoft.Extensions.Options;
-using AetherLink.Server.HttpApi.Options;
 
 namespace AetherLink.Server.HttpApi.Reporter
 {
@@ -13,7 +11,7 @@ namespace AetherLink.Server.HttpApi.Reporter
         private readonly Gauge _executionDurationGauge;
         private readonly Counter _committedReportCounter;
 
-        public JobsReporter(IOptions<MetricsBucketsOptions> options)
+        public JobsReporter()
         {
             _startedRequestCounter = MetricsReporter.RegistryCounters(
                 MetricsConstants.StartedRequestCounter,
