@@ -10,6 +10,8 @@ using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 using AetherLink.Server.HttpApi.Reporter;
+using Org.BouncyCastle.Utilities.Encoders;
+using AElf;
 
 namespace AetherLink.Server.HttpApi.Worker.AELF;
 
@@ -144,32 +146,55 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
         }
     }
 
-    private async Task HandleRampRequestAsync(AELFRampRequestGrainDto requestData)
+    private async Task HandleRampRequestAsync(AELFRampRequestGrainDto data)
     {
-        _logger.LogDebug($"[RequestSearchWorker] Start to create cross chain request for {requestData.MessageId}");
+        var messageId = data.MessageId;
+        if (data.TargetChainId == ChainConstants.TonChainId) messageId = ChangeTonMessageId(data.MessageId);
 
-        _jobsReporter.ReportStartedRequest(requestData.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
-        _crossChainReporter.ReportCrossChainRequest(requestData.MessageId, requestData.SourceChainId.ToString(),
-            requestData.TargetChainId.ToString());
+        _logger.LogDebug($"[RequestSearchWorker] Start to create cross chain request for {messageId}");
 
-        var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(requestData.TransactionId);
+        _jobsReporter.ReportStartedRequest(data.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
+        _crossChainReporter.ReportCrossChainRequest(messageId, data.SourceChainId.ToString(),
+            data.TargetChainId.ToString());
+
+        var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(data.TransactionId);
         var result = await requestGrain.UpdateAsync(new()
         {
-            Id = requestData.MessageId,
-            SourceChainId = requestData.SourceChainId,
-            TargetChainId = requestData.TargetChainId,
-            MessageId = requestData.MessageId,
+            Id = messageId,
+            SourceChainId = data.SourceChainId,
+            TargetChainId = data.TargetChainId,
+            MessageId = messageId,
             Status = CrossChainStatus.Started.ToString(),
-            StartTime = requestData.StartTime
+            StartTime = data.StartTime
         });
 
-        _logger.LogDebug($"[RequestSearchWorker] Update {requestData.TransactionId} started {result.Success}");
+        _logger.LogDebug($"[RequestSearchWorker] Update {data.TransactionId} started {result.Success}");
 
-        var transactionIdGrainClient = _clusterClient.GetGrain<ITransactionIdGrain>(requestData.MessageId);
+        var transactionIdGrainClient = _clusterClient.GetGrain<ITransactionIdGrain>(messageId);
         var transactionIdUpdateResult =
-            await transactionIdGrainClient.UpdateAsync(new() { GrainId = requestData.TransactionId });
+            await transactionIdGrainClient.UpdateAsync(new() { GrainId = data.TransactionId });
 
         _logger.LogDebug(
-            $"[RequestSearchWorker] Update {requestData.TransactionId} messageId {requestData.MessageId} started {transactionIdUpdateResult.Success}");
+            $"[RequestSearchWorker] Update {data.TransactionId} messageId {messageId} started {transactionIdUpdateResult.Success}");
+    }
+
+    private string ChangeTonMessageId(string originMessageId)
+    {
+        var messageIdBytes = ByteStringHelper.FromHexString(originMessageId).ToByteArray();
+        switch (messageIdBytes.Length)
+        {
+            case > 16:
+                messageIdBytes = messageIdBytes.Take(16).ToArray();
+                break;
+            case < 16:
+            {
+                var paddedBytes = new byte[16];
+                Array.Copy(messageIdBytes, 0, paddedBytes, 16 - messageIdBytes.Length, messageIdBytes.Length);
+                messageIdBytes = paddedBytes;
+                break;
+            }
+        }
+
+        return Base64.ToBase64String(messageIdBytes);
     }
 }
