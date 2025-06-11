@@ -1,4 +1,3 @@
-using AElf;
 using AetherLink.Server.Grains.Grain.Indexer;
 using AetherLink.Server.Grains.Grain.Request;
 using AetherLink.Server.HttpApi.Constants;
@@ -12,6 +11,7 @@ using Volo.Abp.Threading;
 using TonSdk.Core.Boc;
 using AetherLink.Server.HttpApi.Reporter;
 using Org.BouncyCastle.Utilities.Encoders;
+using AetherLink.Server.HttpApi.Provider;
 
 namespace AetherLink.Server.HttpApi.Worker.Ton;
 
@@ -125,14 +125,16 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
                 return;
             }
 
-            _jobsReporter.ReportCommittedReport(response.Data.MessageId, response.Data.SourceChainId.ToString(),
-                TonTransactionConstants.TonChainId.ToString(), StartedRequestTypeName.Crosschain);
+            var sourceChainName = ChainIdNameHelper.ToChainName(response.Data.SourceChainId);
+            var targetChainName = ChainIdNameHelper.ToChainName(TonTransactionConstants.TonChainId);
+            _jobsReporter.ReportCommittedReport(response.Data.MessageId, sourceChainName, targetChainName,
+                StartedRequestTypeName.Crosschain);
 
-            var duration = (transaction.Now - response.Data.StartTime) / 1000.0;
+            var duration = transaction.Now - response.Data.StartTime / 1000.0;
             _logger.LogDebug(
                 $"[TonSearchWorker] [UpdateRequestStateAsync] Reporting execution duration. MessageId: {response.Data.MessageId}, SourceChainId: {response.Data.SourceChainId}, TargetChainId: {TonTransactionConstants.TonChainId}, Duration: {duration}");
-            _jobsReporter.ReportExecutionDuration(response.Data.MessageId, response.Data.SourceChainId.ToString(),
-                TonTransactionConstants.TonChainId.ToString(), StartedRequestTypeName.Crosschain, duration);
+            _jobsReporter.ReportExecutionDuration(response.Data.MessageId, sourceChainName, targetChainName,
+                StartedRequestTypeName.Crosschain, duration);
 
             response.Data.CommitTime = transaction.Now;
             crossChainRequestData = response.Data;
@@ -175,7 +177,9 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         _logger.LogDebug(
             $"[TonSearchWorker] Create {messageId} request traceId {transaction.TraceId} {traceCreatedResult.Success}");
 
-        _jobsReporter.ReportStartedRequest(messageId, TonTransactionConstants.TonChainId.ToString(),
-            targetChainId.ToString(), StartedRequestTypeName.Crosschain);
+        var sourceChainName = ChainIdNameHelper.ToChainName(TonTransactionConstants.TonChainId);
+        var targetChainName = ChainIdNameHelper.ToChainName(targetChainId);
+        _jobsReporter.ReportStartedRequest(messageId, sourceChainName, targetChainName,
+            StartedRequestTypeName.Crosschain);
     }
 }

@@ -12,6 +12,7 @@ using Volo.Abp.Threading;
 using AetherLink.Server.HttpApi.Reporter;
 using Org.BouncyCastle.Utilities.Encoders;
 using AElf;
+using AetherLink.Server.HttpApi.Provider;
 
 namespace AetherLink.Server.HttpApi.Worker.AELF;
 
@@ -150,7 +151,9 @@ public class RequestSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         _logger.LogDebug($"[RequestSearchWorker] Start to create cross chain request for {messageId}");
 
-        _jobsReporter.ReportStartedRequest(messageId, data.SourceChainId.ToString(), data.TargetChainId.ToString(),
+        var sourceChainName = ChainIdNameHelper.ToChainName(data.SourceChainId);
+        var targetChainName = ChainIdNameHelper.ToChainName(data.TargetChainId);
+        _jobsReporter.ReportStartedRequest(messageId, sourceChainName, targetChainName,
             StartedRequestTypeName.Crosschain);
 
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(data.TransactionId);
