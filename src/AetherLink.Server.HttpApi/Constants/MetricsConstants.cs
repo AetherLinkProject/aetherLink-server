@@ -7,12 +7,6 @@ public static class MetricsConstants
     public static readonly string[] BalanceGaugeLabels = { "chain", "address" };
 
     // ===================== Counter =====================
-    public const string CrossChainRequestCounter = "cross_chain_request";
-    public static readonly string[] CrossChainRequestCounterLabels = { "MessageId", "SourceChain", "TargetChain" };
-
-    public const string CrossChainRequestCounterHelp =
-        "Number of crosschain requests (by MessageId, SourceChain, TargetChain)";
-
     public const string CrossChainQueryHitCounter = "cross_chain_query_hit_count";
     public static readonly string[] CrossChainQueryHitCounterLabels = { "id", "chain", "hit" };
     public const string CrossChainQueryHitCounterHelp = "Number of cross-chain query hits (by id, chain, hit)";
@@ -35,7 +29,7 @@ public static class MetricsConstants
 
     // ===================== Histogram =====================
     public const string ExecutionDurationHistogram = "task_execution_duration";
-    public static readonly string[] ExecutionDurationHistogramLabels = { "chain", "type" };
+    public static readonly string[] ExecutionDurationHistogramLabels = { "id", "source_chain", "target_chain", "type" };
     public const string ExecutionDurationHistogramHelp = "Time between task start and commit (seconds)";
 
     // ===================== Other =====================
