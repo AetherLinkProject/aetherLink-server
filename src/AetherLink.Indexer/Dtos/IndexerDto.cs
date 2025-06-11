@@ -53,6 +53,7 @@ public class IndexerTransmittedListDto
 public class TransmittedDto : IndexerBasicDto
 {
     public string TransactionId { get; set; }
+    public string RequestId { get; set; }
     public long Epoch { get; set; }
     public long StartTime { get; set; }
 }
@@ -68,6 +69,7 @@ public class RampCommitReportAcceptedDto
     public long TargetChainId { get; set; }
     public string TransactionId { get; set; }
     public string MessageId { get; set; }
+    public long CommitTime { get; set; }
 }
 
 // Cancelled event

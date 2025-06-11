@@ -161,7 +161,8 @@ public class AeFinderProvider : IAeFinderProvider, ITransientDependency
                         sourceChainId,
                         targetChainId,
                         transactionId,
-                        messageId
+                        messageId,
+                        commitTime
                 }
             }",
                 Variables = new
