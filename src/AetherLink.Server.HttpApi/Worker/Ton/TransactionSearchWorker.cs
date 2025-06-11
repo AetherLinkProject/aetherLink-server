@@ -91,7 +91,8 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         if (transactionIdGrainResponse.Data == null)
         {
-            _logger.LogWarning($"[TonSearchWorker] TransactionId grain messageId {messageId} not exist, no need to update.");
+            _logger.LogWarning(
+                $"[TonSearchWorker] TransactionId grain messageId {messageId} not exist, no need to update.");
             return;
         }
 
@@ -119,8 +120,8 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
         }
 
         var duration = (transaction.Now - response.Data.StartTime) / 1000.0;
-        _jobsReporter.ReportExecutionDuration(crossChainRequestData.SourceChainId.ToString(),
-            StartedRequestTypeName.Crosschain, duration);
+        _jobsReporter.ReportExecutionDuration(response.Data.SourceChainId.ToString(), StartedRequestTypeName.Crosschain,
+            duration);
 
         response.Data.CommitTime = transaction.Now;
         crossChainRequestData = response.Data;
@@ -132,7 +133,6 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
     {
         _jobsReporter.ReportStartedRequest(TonTransactionConstants.TonChainId.ToString(),
             StartedRequestTypeName.Crosschain);
-        // var messageId = HashHelper.ComputeFrom(transaction.Hash).ToHex();
         var messageId = transaction.Hash;
         var requestGrain = _clusterClient.GetGrain<ICrossChainRequestGrain>(messageId);
         if (transaction.OutMsgs == null)
