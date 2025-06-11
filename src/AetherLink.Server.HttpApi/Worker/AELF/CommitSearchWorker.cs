@@ -144,16 +144,18 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
         {
             foreach (var job in jobsResult.Data)
             {
-                _jobsReporter.ReportCommittedReport(ChainHelper.ConvertBase58ToChainId(chain.ChainId).ToString(),
-                    StartedRequestTypeName.Crosschain);
-
                 var vrfJobGrain = _clusterClient.GetGrain<IVrfJobGrain>(job.RequestId);
                 var vrfJob = await vrfJobGrain.GetAsync();
                 if (vrfJob?.Data == null || vrfJob.Data.CommitTime > 0 || job.StartTime <= 0 ||
                     vrfJob.Data.StartTime <= 0)
                 {
+                    _jobsReporter.ReportCommittedReport(ChainHelper.ConvertBase58ToChainId(chain.ChainId).ToString(),
+                        StartedRequestTypeName.Datafeeds);
                     continue;
                 }
+
+                _jobsReporter.ReportCommittedReport(ChainHelper.ConvertBase58ToChainId(chain.ChainId).ToString(),
+                    StartedRequestTypeName.Vrf);
 
                 var duration = (job.StartTime - vrfJob.Data.StartTime) / 1000.0;
                 _jobsReporter.ReportExecutionDuration(chain.ChainId, StartedRequestTypeName.Vrf, duration);

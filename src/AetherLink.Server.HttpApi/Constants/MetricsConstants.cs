@@ -41,7 +41,7 @@ public static class MetricsConstants
     public const string ChainEvm = "evm";
     public const string ChainAelf = "aelf";
 
-    public static readonly double[] DefaultExecutionDurationBuckets = { 1, 5, 10, 30, 60, 120 };
+    public static readonly double[] DefaultExecutionDurationBuckets = { 40, 50, 60, 80, 100, 120, 180, 300 };
 }
 
 public static class RequestTypeConst
