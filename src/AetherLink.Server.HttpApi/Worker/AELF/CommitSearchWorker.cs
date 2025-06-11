@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
 using AetherLink.Server.HttpApi.Reporter;
+using AetherLink.Server.HttpApi.Provider;
 
 namespace AetherLink.Server.HttpApi.Worker.AELF;
 
@@ -199,13 +200,15 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
         _logger.LogInformation(
             $"[CommitSearchWorker] Reporting committed for MessageId {requestData.MessageId}, ChainId {requestData.SourceChainId}");
 
-        _jobsReporter.ReportCommittedReport(requestData.MessageId, requestData.SourceChainId.ToString(),
-            requestData.TargetChainId.ToString(), StartedRequestTypeName.Crosschain);
+        var sourceChainName = ChainIdNameHelper.ToChainName(requestData.SourceChainId);
+        var targetChainName = ChainIdNameHelper.ToChainName(requestData.TargetChainId);
+        _jobsReporter.ReportCommittedReport(requestData.MessageId, sourceChainName,
+            targetChainName, StartedRequestTypeName.Crosschain);
 
         var duration = (requestData.CommitTime - result.Data.StartTime) / 1000.0;
 
-        _jobsReporter.ReportExecutionDuration(requestData.MessageId, requestData.SourceChainId.ToString(),
-            requestData.TargetChainId.ToString(), StartedRequestTypeName.Crosschain, duration);
+        _jobsReporter.ReportExecutionDuration(requestData.MessageId, sourceChainName, targetChainName,
+            StartedRequestTypeName.Crosschain, duration);
 
         var updateResult = await requestGrain.UpdateAsync(new()
         {
