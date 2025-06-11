@@ -119,6 +119,8 @@ public class TransactionSearchWorker : AsyncPeriodicBackgroundWorkerBase
             return;
         }
 
+        _jobsReporter.ReportCommittedReport(response.Data.SourceChainId.ToString(), StartedRequestTypeName.Crosschain);
+
         var duration = (transaction.Now - response.Data.StartTime) / 1000.0;
         _jobsReporter.ReportExecutionDuration(response.Data.SourceChainId.ToString(), StartedRequestTypeName.Crosschain,
             duration);
