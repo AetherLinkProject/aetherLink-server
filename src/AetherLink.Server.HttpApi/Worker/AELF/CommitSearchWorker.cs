@@ -144,6 +144,9 @@ public class CommitSearchWorker : AsyncPeriodicBackgroundWorkerBase
         {
             foreach (var job in jobsResult.Data)
             {
+                _jobsReporter.ReportCommittedReport(ChainHelper.ConvertBase58ToChainId(chain.ChainId).ToString(),
+                    StartedRequestTypeName.Crosschain);
+
                 var vrfJobGrain = _clusterClient.GetGrain<IVrfJobGrain>(job.RequestId);
                 var vrfJob = await vrfJobGrain.GetAsync();
                 if (vrfJob?.Data == null || vrfJob.Data.CommitTime > 0 || job.StartTime <= 0 ||
