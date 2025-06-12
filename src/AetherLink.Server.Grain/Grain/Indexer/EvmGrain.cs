@@ -58,6 +58,7 @@ public class EvmGrain : Grain<EvmState>, IEvmGrain
             catch (Exception e)
             {
                 _logger.LogError(e, $"[EvmGrain] Updated {op.NetworkName} index height failed.");
+                throw;
             }
         }
 

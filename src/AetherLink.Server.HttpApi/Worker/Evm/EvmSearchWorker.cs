@@ -52,9 +52,9 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         await Task.WhenAll(result.Data.Select(d => HandleRequestsAsync(d.NetworkName, d.ConsumedBlockHeight)));
     }
 
-    private async Task HandleRequestsAsync(string networkName, long confirmedHeight)
+    private async Task HandleRequestsAsync(string networkName, long latestBlockHeight)
     {
-        _logger.LogDebug("[EvmSearchWorker] Start handler {networkName} request ...");
+        _logger.LogDebug($"[EvmSearchWorker] Start handler {networkName} request ...");
 
         var grainId =
             GrainIdHelper.GenerateGrainId(GrainKeyConstants.RequestWorkerConsumedBlockHeightGrainKey, networkName);
@@ -69,34 +69,32 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         var consumedBlockHeight = consumedHeight.Data;
         if (consumedBlockHeight == 0)
         {
-            await client.UpdateConsumedHeightAsync(confirmedHeight);
+            await client.UpdateConsumedHeightAsync(latestBlockHeight);
             _logger.LogInformation($"[EvmSearchWorker] Initial {networkName} consumed block height. ");
             return;
         }
 
-        var safeBlockHeight = confirmedHeight - _options.SubscribeBlocksDelay;
-        _logger.LogDebug($"[EvmSearchWorker] {networkName} Current safe block height: {safeBlockHeight}.");
-
-        if (consumedBlockHeight >= safeBlockHeight)
+        var confirmedBlockHeight = latestBlockHeight - _options.SubscribeBlocksDelay;
+        if (consumedBlockHeight + _options.SubscribeBlocksStep >= confirmedBlockHeight)
         {
             _logger.LogDebug(
-                $"[EvmSearchWorker] Current: {consumedBlockHeight}, Latest: {confirmedHeight}, Waiting for syncing {networkName} latest block info.");
+                $"[EvmSearchWorker] Current: {consumedBlockHeight}, Latest: {latestBlockHeight}, Waiting for syncing {networkName} latest block info.");
             return;
         }
 
         _logger.LogInformation(
-            $"[EvmSearchWorker] {networkName} Starting HTTP query from block {consumedBlockHeight} to latestBlock {confirmedHeight}");
+            $"[EvmSearchWorker] {networkName} Starting HTTP query from block {consumedBlockHeight} to latestBlock {confirmedBlockHeight}");
 
         var from = consumedBlockHeight + 1;
         var evmIndexerGrainClient = _clusterClient.GetGrain<IEvmGrain>(GrainKeyConstants.SearchRampRequestsGrainKey);
-        var requests = await evmIndexerGrainClient.SearchEvmRequestsAsync(networkName, safeBlockHeight, from);
+        var requests = await evmIndexerGrainClient.SearchEvmRequestsAsync(networkName, confirmedBlockHeight, from);
 
         _logger.LogInformation($"[EvmSearchWorker] {networkName} get {requests.Data?.Count} requests.");
 
         await Task.WhenAll(requests.Data.Select(HandleCrossChainRequestAsync));
-        await client.UpdateConsumedHeightAsync(safeBlockHeight);
+        await client.UpdateConsumedHeightAsync(confirmedBlockHeight);
 
-        _logger.LogInformation($"[EvmSearchWorker] {networkName} confirmed at {confirmedHeight}");
+        _logger.LogInformation($"[EvmSearchWorker] {networkName} confirmed at {confirmedBlockHeight}");
     }
 
     private async Task HandleCrossChainRequestAsync(EvmRampRequestGrainDto metadata)
@@ -147,7 +145,8 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         var sourceChainName = ChainIdNameHelper.ToChainName(metadata.SourceChainId);
         var targetChainName = ChainIdNameHelper.ToChainName(metadata.TargetChainId);
-        _jobsReporter.ReportStartedRequest(messageId, sourceChainName, targetChainName, StartedRequestTypeName.Crosschain);
+        _jobsReporter.ReportStartedRequest(messageId, sourceChainName, targetChainName,
+            StartedRequestTypeName.Crosschain);
     }
 
     private async Task HandleCommittedAsync(EvmRampRequestGrainDto metadata)
@@ -201,12 +200,14 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
 
         var sourceChainName = ChainIdNameHelper.ToChainName(metadata.SourceChainId);
         var targetChainName = ChainIdNameHelper.ToChainName(metadata.TargetChainId);
-        _jobsReporter.ReportCommittedReport(messageId, sourceChainName, targetChainName, StartedRequestTypeName.Crosschain);
+        _jobsReporter.ReportCommittedReport(messageId, sourceChainName, targetChainName,
+            StartedRequestTypeName.Crosschain);
 
         var duration = (metadata.BlockTime - response.Data.StartTime) / 1000.0;
         _logger.LogInformation(
             $"[EvmSearchWorker] [HandleCommitted] ReportExecutionDuration: MessageId={messageId}, ChainId={metadata.SourceChainId}, Duration={duration}s");
-        _jobsReporter.ReportExecutionDuration(messageId, sourceChainName, targetChainName, StartedRequestTypeName.Crosschain, duration);
+        _jobsReporter.ReportExecutionDuration(messageId, sourceChainName, targetChainName,
+            StartedRequestTypeName.Crosschain, duration);
 
         response.Data.CommitTime = metadata.BlockTime;
         var result = await requestGrain.UpdateAsync(response.Data);
