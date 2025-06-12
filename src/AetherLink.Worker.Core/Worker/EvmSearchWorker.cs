@@ -56,7 +56,8 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
                 return;
             }
 
-            if (consumedBlockHeight + options.SubscribeBlocksDelay >= latestBlock)
+            var confirmedBlockHeight = latestBlock - options.SubscribeBlocksDelay;
+            if (consumedBlockHeight + options.SubscribeBlocksStep >= confirmedBlockHeight)
             {
                 _logger.LogDebug(
                     $"[EvmSearchWorker] Current: {consumedBlockHeight}, Latest: {latestBlock}, Waiting for syncing {networkName} latest block info.");
@@ -67,11 +68,12 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
                 $"[EvmSearchWorker] {networkName} Starting HTTP query from block {consumedBlockHeight} to latestBlock {latestBlock}");
 
             var from = consumedBlockHeight + 1;
-
             _logger.LogInformation($"[EvmSearchWorker] {networkName} Processed blocks from {from} to {latestBlock}.");
-            for (var curFrom = from; curFrom <= latestBlock; curFrom += EvmSubscribeConstants.SubscribeBlockStep)
+            for (var curFrom = from;
+                 curFrom <= confirmedBlockHeight;
+                 curFrom += EvmSubscribeConstants.SubscribeBlockStep)
             {
-                var currentTo = Math.Min(curFrom + EvmSubscribeConstants.SubscribeBlockStep - 1, latestBlock);
+                var currentTo = Math.Min(curFrom + EvmSubscribeConstants.SubscribeBlockStep - 1, confirmedBlockHeight);
 
                 try
                 {
