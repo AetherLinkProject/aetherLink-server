@@ -74,27 +74,27 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
             return;
         }
 
-        if (consumedBlockHeight + _options.SubscribeBlocksStep + _options.SubscribeBlocksDelay >= latestBlockHeight)
+        var confirmedBlockHeight = latestBlockHeight - _options.SubscribeBlocksDelay;
+        if (consumedBlockHeight + _options.SubscribeBlocksStep >= confirmedBlockHeight)
         {
             _logger.LogDebug(
                 $"[EvmSearchWorker] Current: {consumedBlockHeight}, Latest: {latestBlockHeight}, Waiting for syncing {networkName} latest block info.");
             return;
         }
 
-        var safeBlockHeight = consumedBlockHeight + _options.SubscribeBlocksStep;
         _logger.LogInformation(
-            $"[EvmSearchWorker] {networkName} Starting HTTP query from block {consumedBlockHeight} to latestBlock {safeBlockHeight}");
+            $"[EvmSearchWorker] {networkName} Starting HTTP query from block {consumedBlockHeight} to latestBlock {confirmedBlockHeight}");
 
         var from = consumedBlockHeight + 1;
         var evmIndexerGrainClient = _clusterClient.GetGrain<IEvmGrain>(GrainKeyConstants.SearchRampRequestsGrainKey);
-        var requests = await evmIndexerGrainClient.SearchEvmRequestsAsync(networkName, safeBlockHeight, from);
+        var requests = await evmIndexerGrainClient.SearchEvmRequestsAsync(networkName, confirmedBlockHeight, from);
 
         _logger.LogInformation($"[EvmSearchWorker] {networkName} get {requests.Data?.Count} requests.");
 
         await Task.WhenAll(requests.Data.Select(HandleCrossChainRequestAsync));
-        await client.UpdateConsumedHeightAsync(safeBlockHeight);
+        await client.UpdateConsumedHeightAsync(confirmedBlockHeight);
 
-        _logger.LogInformation($"[EvmSearchWorker] {networkName} confirmed at {safeBlockHeight}");
+        _logger.LogInformation($"[EvmSearchWorker] {networkName} confirmed at {confirmedBlockHeight}");
     }
 
     private async Task HandleCrossChainRequestAsync(EvmRampRequestGrainDto metadata)
