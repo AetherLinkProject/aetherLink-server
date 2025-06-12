@@ -65,10 +65,11 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
             }
 
             _logger.LogInformation(
-                $"[EvmSearchWorker] {networkName} Starting HTTP query from block {consumedBlockHeight} to latestBlock {latestBlock}");
+                $"[EvmSearchWorker] {networkName} Starting HTTP query from block {consumedBlockHeight} to confirmedBlockHeight {confirmedBlockHeight}");
 
             var from = consumedBlockHeight + 1;
-            _logger.LogInformation($"[EvmSearchWorker] {networkName} Processed blocks from {from} to {latestBlock}.");
+            _logger.LogInformation(
+                $"[EvmSearchWorker] {networkName} Processed blocks from {from} to {confirmedBlockHeight}.");
             for (var curFrom = from;
                  curFrom <= confirmedBlockHeight;
                  curFrom += EvmSubscribeConstants.SubscribeBlockStep)
