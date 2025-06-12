@@ -102,6 +102,7 @@ public class EvmSearchWorker : AsyncPeriodicBackgroundWorkerBase
         catch (Exception e)
         {
             _logger.LogError(e, $"[EvmSearchWorker] {networkName} Error processing http subscribe.");
+            throw;
         }
     }
 
